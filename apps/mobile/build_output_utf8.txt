@@ -1,0 +1,89 @@
+﻿Running Gradle task 'assembleDebug'...                          
+D:\Softwares\flutter\bin\flutter.bat : ../
+../packages/features/armario/lib/src/scree
+ns/outfits_tab.dart:82:15: Error: 
+Expected an identifier, but got ')'.
+En línea: 1 Carácter: 1
++ D:\Softwares\flutter\bin\flutter.bat 
+build apk --debug > build_output ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (../../packages/...r, but got ')'.  
+  :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 
+Try inserting an identifier before ')'.
+              ),
+              ^
+../../packages/features/armario/lib/src/sc
+reens/outfits_tab.dart:82:15: Error: 
+Expected ']' before this.
+              ),
+              ^
+../../packages/features/armario/lib/src/sc
+reens/wardrobe_tab.dart:101:79: Error: 
+Not a constant expression.
+                              padding: 
+const EdgeInsets.only(bottom: 12, top: 
+sectionIndex == 0 ? 0 : 20),
+                                          
+                                    
+^^^^^^^^^^^^
+../../packages/features/armario/lib/src/sc
+reens/wardrobe_tab.dart:180:18: Error: A 
+value of type 'void' can't be returned 
+from an async function with return type 
+'Future<WardrobeGarment>'.
+ - 'Future' is from 'dart:async'.
+ - 'WardrobeGarment' is from 'package:doma
+in/src/armario/entities/wardrobe_garment.d
+art' ('../../packages/domain/lib/src/armar
+io/entities/wardrobe_garment.dart').
+          return saved;
+                 ^
+../../packages/features/armario/lib/src/sc
+reens/wardrobe_tab.dart:573:39: Error: 
+This expression has type 'void' and can't 
+be used.
+            garmentIds: [savedTop.id, 
+savedShort.id],
+                                      ^
+../../packages/features/armario/lib/src/sc
+reens/wardrobe_tab.dart:573:50: Error: 
+The getter 'id' isn't defined for the 
+type 'void'.
+Try correcting the name to the name of an 
+existing getter, or defining a getter or 
+field named 'id'.
+            garmentIds: [savedTop.id, 
+savedShort.id],
+                                          
+       ^^
+Target kernel_snapshot_program failed: 
+Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task 
+':app:compileFlutterBuildDebug'.
+> Process 'command 
+'D:\Softwares\flutter\bin\flutter.bat'' 
+finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the 
+stack trace.
+> Run with --info or --debug option to 
+get more log output.
+> Run with --scan to get full insights.
+> Get more help at 
+https://help.gradle.org.
+
+BUILD FAILED in 8s
+Running Gradle task 'assembleDebug'...                              8.4s
+Gradle task assembleDebug failed with 
+exit code 1

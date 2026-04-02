@@ -1,0 +1,18 @@
+name: my_life_os_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.10.8
+
+# Dart Workspaces — un solo `flutter pub get` en la raíz resuelve todo
+workspace:
+  - apps/mobile
+  - packages/core
+  - packages/data
+  - packages/domain
+  - packages/features/armario
+  - packages/features/backup
+  - packages/features/cocina
+  - packages/features/finanzas
+  - packages/features/foodcoach
+  - packages/features/settings

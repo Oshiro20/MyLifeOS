@@ -1,0 +1,71 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Consulta GitHub releases de MyLifeOS y notifica si hay una versión nueva.
+class MyLifeOSUpdateNotifier {
+  static const _repoOwner = 'Oshiro20';
+  static const _repoName = 'MyLifeOS';
+  static const _prefKey = 'mylifeos_last_known_version';
+  static const _notifId = 9002;
+
+  final FlutterLocalNotificationsPlugin _notifications;
+
+  MyLifeOSUpdateNotifier(this._notifications);
+
+  Future<void> checkForUpdates() async {
+    try {
+      final latestVersion = await _fetchLatestVersion();
+      if (latestVersion == null) return;
+
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = 'v${packageInfo.version}';
+
+      final prefs = await SharedPreferences.getInstance();
+      final lastKnown = prefs.getString(_prefKey);
+
+      if (lastKnown != latestVersion && latestVersion != currentVersion) {
+        await prefs.setString(_prefKey, latestVersion);
+        if (lastKnown != null) {
+          await _showNotification(latestVersion);
+        }
+      }
+    } catch (e) {
+      debugPrint('[MyLifeOSUpdateNotifier] Error: $e');
+    }
+  }
+
+  Future<String?> _fetchLatestVersion() async {
+    final uri = Uri.parse(
+      'https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest',
+    );
+    final response = await http.get(
+      uri,
+      headers: {'Accept': 'application/vnd.github+json'},
+    );
+    if (response.statusCode != 200) return null;
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return json['tag_name'] as String?;
+  }
+
+  Future<void> _showNotification(String version) async {
+    const androidDetails = AndroidNotificationDetails(
+      'mylifeos_updates',
+      'MyLifeOS Updates',
+      channelDescription: 'Notificaciones de nuevas versiones de MyLifeOS',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      icon: '@mipmap/ic_launcher',
+    );
+    const details = NotificationDetails(android: androidDetails);
+    await _notifications.show(
+      _notifId,
+      '✨ MyLifeOS actualizado',
+      'Nueva versión $version disponible. Actualiza para obtener las últimas mejoras.',
+      details,
+    );
+  }
+}
