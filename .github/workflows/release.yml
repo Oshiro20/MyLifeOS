@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Extract version notes from pubspec
+        id: notes
+        run: |
+          VERSION=$(grep '^version:' apps/mobile/pubspec.yaml | awk '{print $2}')
+          echo "PUBSPEC_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: "MyLifeOS ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## MyLifeOS ${{ steps.version.outputs.VERSION }}
+            
+            Nueva versión disponible.
+            
+            ### Instalación
+            Descarga el APK adjunto e instálalo en tu dispositivo Android.
+            
+            > Los usuarios con la app instalada recibirán una notificación automática.
+          draft: false
+          prerelease: false
