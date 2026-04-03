@@ -113,7 +113,7 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -138,7 +138,7 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -341,6 +341,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
   String _primaryCategory = 'Otros';
   DateTime? _expiry;
   String? _qtyError;
+  String? _nameError;
   bool _saving = false;
   bool _autoDetected = false;
 
@@ -445,7 +446,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 flex: 3,
                 child: DropdownButtonFormField<MeasurementUnit>(
                   value: _unit,
-                  dropdowncolor: Theme.of(context).cardColor,
+                  dropdownColor: Theme.of(context).cardColor,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: _inputDeco('Unidad', Icons.scale_outlined),
                   items: MeasurementUnit.values.map((u) => DropdownMenuItem(
@@ -463,7 +464,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 flex: 1,
                 child: DropdownButtonFormField<String>(
                   value: _primaryCategory,
-                  dropdowncolor: Theme.of(context).cardColor,
+                  dropdownColor: Theme.of(context).cardColor,
                   isExpanded: true,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
                   decoration: _inputDeco('Categoría', Icons.category_outlined),
@@ -485,7 +486,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
             // Lugar de Guardado
             DropdownButtonFormField<String>(
               value: _storageArea,
-              dropdowncolor: Theme.of(context).cardColor,
+              dropdownColor: Theme.of(context).cardColor,
               isExpanded: true,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
               decoration: _inputDeco('Lugar de guardado', Icons.kitchen_outlined),
@@ -795,10 +796,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
   InputDecoration _inputDeco(String hint, IconData icon) => InputDecoration(
         hintText: hint,
-        hintstyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true,
-        fillcolor: Theme.of(context).scaffoldBackgroundColor,
+        fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
@@ -831,7 +832,7 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundcolor: Theme.of(context).cardColor,
+      backgroundColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),

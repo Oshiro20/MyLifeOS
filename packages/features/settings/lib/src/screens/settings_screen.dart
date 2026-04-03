@@ -235,7 +235,7 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
     final result = await showDialog<String>(
       context: ctx,
       builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text('Gemini API Key',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
@@ -250,12 +250,12 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
             const SizedBox(height: 16),
             TextField(
               controller: ctrl,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Pega tu API Key de AI Studio',
-                hintstyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+                hintStyle: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.38)),
                 filled: true,
-                fillcolor: Theme.of(context).scaffoldBackgroundColor,
+                fillColor: Theme.of(ctx).scaffoldBackgroundColor,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
             ),
@@ -301,12 +301,12 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
     final result = await showDialog<bool>(
       context: ctx,
       builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(title,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700)),
+            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface, fontWeight: FontWeight.w700)),
         content: Text(message,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), height: 1.5)),
+            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.6), height: 1.5)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -335,7 +335,7 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
       context: ctx,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text('Cuasi listo ✅',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
@@ -396,7 +396,7 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        tilecolor: Theme.of(context).cardColor,
+        tileColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: Icon(icon, color: Colors.white38, size: 20),
         title: Text(label,

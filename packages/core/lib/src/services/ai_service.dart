@@ -321,4 +321,73 @@ Ejemplo de salida válida:
       throw Exception('Error en Gemini al analizar producto simple: $e');
     }
   }
+
+  /// Extracts a recipe from a given text (caption/URL) or a media file (video/image).
+  /// Instructs Gemini to act as a chef and return a structured JSON representing the Recipe.
+  Future<String?> extractRecipe({
+    String? textContext,
+    String? mediaPath,
+  }) async {
+    final useVision = mediaPath != null;
+    final model = await _getModel(useVision: useVision);
+    if (model == null) return null;
+
+    final prompt = '''
+Eres un chef experto y analista gastronómico. Tu objetivo es extraer la receta exacta que se muestra o se describe en el contenido proporcionado.
+Extrae la receta y devuélvela EXACTAMENTE como un objeto JSON estructurado, sin usar Markdown ni backticks (```json).
+
+El formato del JSON debe ser rigurosamente el siguiente:
+{
+  "name": "Nombre descriptivo de la receta",
+  "description": "Una breve descripción de 1 a 2 oraciones de la receta y qué la hace especial.",
+  "durationMinutes": <entero estimado de minutos totales de preparación y cocción, ej: 45>,
+  "servings": <entero estimado de porciones, asume 2 si no es claro>,
+  "ingredients": [
+    {
+      "ingredientName": "Nombre claro del ingrediente (ej. Pollo, Cebolla, Sal)",
+      "quantity": <número flotante, ej. 1.0, 500.0, 0.5. Si dicen "una pizca", pon 1.0>,
+      "unit": "unidades" | "gramos" | "kilos" | "litros" | "mililitros" | "tazas" | "cucharadas" | "cucharaditas" | "pizca" | "al gusto"
+    }
+  ],
+  "instructions": [
+    "Paso 1 preciso...",
+    "Paso 2 preciso...",
+    "Paso 3 preciso..."
+  ],
+  "tags": ["Fácil", "Desayuno", "Vegetariano"] // 2 a 4 tags relevantes
 }
+
+Instrucciones adicionales:
+1. Si falta información como el tiempo o porciones, infiérelos con sentido común.
+2. Si el texto o video está en otro idioma, TRADÚCELO todo al ESPAÑOL en tu respuesta JSON.
+3. Si la orden no tiene ninguna referencia a una receta o ingredientes, devuelve el JSON con valores por defecto pero con "description" indicando "No se detectó una receta válida".
+${textContext != null && textContext.isNotEmpty ? '\nEl usuario ha proporcionado el siguiente texto o enlace como contexto inicial:\n"$textContext"' : ''}
+''';
+
+    final content = <Content>[];
+    if (mediaPath != null) {
+      final file = File(mediaPath);
+      if (file.existsSync()) {
+        final bytes = await file.readAsBytes();
+        final mimeType = _getMimeType(mediaPath);
+        // Gemini supports video/mp4, image/jpeg, etc.
+        content.add(Content.multi([
+          TextPart(prompt),
+          DataPart(mimeType, bytes),
+        ]));
+      } else {
+        content.add(Content.text(prompt));
+      }
+    } else {
+      content.add(Content.text(prompt));
+    }
+
+    try {
+      final response = await model.generateContent(content);
+      return response.text;
+    } catch (e) {
+      throw Exception('Error en Gemini al extraer la receta: $e');
+    }
+  }
+}
+

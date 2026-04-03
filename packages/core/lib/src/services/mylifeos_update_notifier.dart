@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Consulta GitHub releases de MyLifeOS y notifica si hay una versión nueva.
 class MyLifeOSUpdateNotifier {
@@ -16,10 +17,12 @@ class MyLifeOSUpdateNotifier {
 
   MyLifeOSUpdateNotifier(this._notifications);
 
-  Future<void> checkForUpdates() async {
+  /// Devuelve la nueva versión si hay una disponible para instalar,
+  /// o null si ya estamos en la más reciente.
+  Future<String?> checkForUpdates() async {
     try {
       final latestVersion = await _fetchLatestVersion();
-      if (latestVersion == null) return;
+      if (latestVersion == null) return null;
 
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = 'v${packageInfo.version}';
@@ -27,14 +30,27 @@ class MyLifeOSUpdateNotifier {
       final prefs = await SharedPreferences.getInstance();
       final lastKnown = prefs.getString(_prefKey);
 
-      if (lastKnown != latestVersion && latestVersion != currentVersion) {
+      // Si hay una nueva versión (diferente a la que está instalada).
+      // Por simplicidad, comparamos si el tag (vX.Y.Z) es diferente al actual.
+      if (latestVersion != currentVersion) {
         await prefs.setString(_prefKey, latestVersion);
-        if (lastKnown != null) {
+        if (lastKnown != latestVersion) {
           await _showNotification(latestVersion);
         }
+        return latestVersion;
       }
+      return null;
     } catch (e) {
       debugPrint('[MyLifeOSUpdateNotifier] Error: $e');
+      return null;
+    }
+  }
+
+  /// Lanza el enlace en el navegador hacia la página principal de "Releases" o los asstes.
+  static Future<void> launchUpdater() async {
+    final uri = Uri.parse('https://github.com/$_repoOwner/$_repoName/releases/latest');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint('No se pudo abrir $uri');
     }
   }
 

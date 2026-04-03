@@ -1,0 +1,42 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+*.log
+
+# Build outputs
+build/
+*.apk
+*.aab
+*.ipa
+
+# Logs y archivos temporales
+*.txt
+analyze_output*.txt
+build_*.txt
+build_log*.txt
+build_output*.txt
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Android
+**/android/.gradle/
+**/android/local.properties
+**/android/.kotlin/
+
+# iOS/macOS
+**/ios/Pods/
+**/macos/Pods/
+**/ios/.symlinks/
+
+# Pub cache
+.pub-cache/
+pubspec.lock
+
+# Secrets
+.env
+*.env

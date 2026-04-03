@@ -619,7 +619,7 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
           List<String> options, void Function(String?) onChanged) =>
       DropdownButtonFormField<String>(
         value: value,
-        dropdowncolor: Theme.of(context).cardColor,
+        dropdownColor: Theme.of(context).cardColor,
         style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         decoration: _deco(label, icon),
         items: options
@@ -633,10 +633,10 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
         hintText: hint,
-        hintstyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true,
-        fillcolor: Theme.of(context).scaffoldBackgroundColor,
+        fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none),

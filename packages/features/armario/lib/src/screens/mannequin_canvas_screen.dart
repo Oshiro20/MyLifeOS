@@ -201,7 +201,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            backgroundcolor: Theme.of(context).cardColor,
+            backgroundColor: Theme.of(context).cardColor,
             title: const Text('Guardar Outfit 📸', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
               child: Column(
@@ -219,7 +219,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    dropdowncolor: Theme.of(context).cardColor,
+                    dropdownColor: Theme.of(context).cardColor,
                     value: occasion,
                     items: const [
                       DropdownMenuItem(value: 'casual', child: Text('Casual', style: TextStyle(color: Colors.white))),
@@ -233,7 +233,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<Season>(
-                    dropdowncolor: Theme.of(context).cardColor,
+                    dropdownColor: Theme.of(context).cardColor,
                     value: season,
                     items: Season.values.map((s) => DropdownMenuItem(value: s, child: Text(s.name.toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)))).toList(),
                     onChanged: (v) => setModalState(() => season = v!),
