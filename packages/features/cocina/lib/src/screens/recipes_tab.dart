@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/src/cocina/entities/recipe.dart';
 import 'package:core/core.dart';
@@ -83,7 +83,7 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -100,7 +100,7 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -247,10 +247,10 @@ class _RecipeDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _chip(String text) => Container(
+  Widget _chip(BuildContext context, String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(color: const Color(0xFF2A2A40), borderRadius: BorderRadius.circular(8)),
-    child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 12)),
+    child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 12)),
   );
 }
 

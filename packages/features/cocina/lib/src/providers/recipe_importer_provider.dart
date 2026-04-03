@@ -4,7 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
-import 'package:uuid/uuid.dart';
 
 enum RecipeImportState {
   initial,
@@ -14,20 +13,15 @@ enum RecipeImportState {
   error
 }
 
-class RecipeImportNotifier extends StateNotifier<RecipeImportState> {
-  final ExtractRecipeUseCase _extractUseCase;
-  final TikTokService _tikTokService;
-  
+class RecipeImportNotifier extends Notifier<RecipeImportState> {
   Recipe? importedRecipe;
   String? errorMessage;
   String currentStatusMessage = '';
 
-  RecipeImportNotifier({
-    required ExtractRecipeUseCase extractUseCase,
-    required TikTokService tikTokService,
-  }) : _extractUseCase = extractUseCase,
-       _tikTokService = tikTokService,
-       super(RecipeImportState.initial);
+  @override
+  RecipeImportState build() {
+    return RecipeImportState.initial;
+  }
 
   Future<void> importFromTikTokUrl(String url) async {
     state = RecipeImportState.downloadingVideo;
@@ -35,8 +29,9 @@ class RecipeImportNotifier extends StateNotifier<RecipeImportState> {
     errorMessage = null;
 
     try {
+      final tikTokService = ref.read(tikTokServiceProvider);
       // 1. Get Video info from API
-      final info = await _tikTokService.getTikTokVideoInfo(url);
+      final info = await tikTokService.getTikTokVideoInfo(url);
       if (info == null || !info.containsKey('data')) {
         throw Exception('No se pudo resolver la información del video de TikTok.');
       }
@@ -49,7 +44,7 @@ class RecipeImportNotifier extends StateNotifier<RecipeImportState> {
 
       currentStatusMessage = 'Descargando video en background...';
       final tempDir = await getTemporaryDirectory();
-      final tempFile = File('\${tempDir.path}/tiktok_video_\${const Uuid().v4()}.mp4');
+      final tempFile = File('\${tempDir.path}/tiktok_video_\${DateTime.now().millisecondsSinceEpoch}.mp4');
       
       final response = await http.get(Uri.parse(videoUrl));
       if (response.statusCode != 200) {
@@ -77,7 +72,8 @@ class RecipeImportNotifier extends StateNotifier<RecipeImportState> {
     errorMessage = null;
 
     try {
-      final recipe = await _extractUseCase.execute(mediaPath: filePath);
+      final extractUseCase = ref.read(extractRecipeUseCaseProvider);
+      final recipe = await extractUseCase.execute(mediaPath: filePath);
       
       if (recipe != null) {
         importedRecipe = recipe;
@@ -115,11 +111,8 @@ final tikTokServiceProvider = Provider<TikTokService>((ref) {
   return TikTokService('5bef8f8804msh689bebc06557fa2p1f4126jsn0b7a9680766c');
 });
 
-final recipeImportProvider = StateNotifierProvider<RecipeImportNotifier, RecipeImportState>((ref) {
-  return RecipeImportNotifier(
-    extractUseCase: ref.watch(extractRecipeUseCaseProvider),
-    tikTokService: ref.watch(tikTokServiceProvider),
-  );
+final recipeImportProvider = NotifierProvider<RecipeImportNotifier, RecipeImportState>(() {
+  return RecipeImportNotifier();
 });
 
 class _GeminiExtractorAdapter implements IAIRecipeExtractor {
