@@ -111,7 +111,7 @@ class OutfitsTab extends ConsumerWidget {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => _CreateOutfitSheet(
@@ -160,7 +160,7 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Nombre (ej: Outfit de playa)',
-              hintstyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
               filled: true, fillColor: const Color(0xFF2A2A40),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),

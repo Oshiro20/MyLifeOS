@@ -69,8 +69,17 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
               const Text('WalletAI',
                   style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
               const Spacer(),
-              Text('v${s.version}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('v${s.version}',
+                      style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text(
+                    'Sincronizado: ${s.exportedAt.day}/${s.exportedAt.month} ${s.exportedAt.hour}:${s.exportedAt.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: Colors.white24, fontSize: 9),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 12),

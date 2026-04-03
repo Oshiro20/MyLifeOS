@@ -196,9 +196,9 @@ class _RecipeDetailSheet extends StatelessWidget {
           ],
           const SizedBox(height: 14),
           Wrap(spacing: 8, children: [
-            _chip('⏱ ${recipe.durationMinutes} min'),
-            _chip('👥 ${recipe.servings} porciones'),
-            _chip('🍳 ${recipe.ingredients.length} ingredientes'),
+            _chip(context, '⏱ ${recipe.durationMinutes} min'),
+            _chip(context, '👥 ${recipe.servings} porciones'),
+            _chip(context, '🍳 ${recipe.ingredients.length} ingredientes'),
           ]),
           if (recipe.ingredients.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -315,7 +315,7 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
             const SizedBox(height: 8),
             DropdownButtonFormField<NutritionGoal>(
               value: _goal,
-              dropdowncolor: Theme.of(context).cardColor,
+              dropdownColor: Theme.of(context).cardColor,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: _deco('Objetivo nutricional', Icons.flag_outlined),
               items: const [
@@ -395,7 +395,7 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
                   decoration: InputDecoration(
                     hintText: 'Paso ${e.key + 1}...',
                     hintStyle: const TextStyle(color: Colors.white24),
-                    filled: true, fillcolor: Theme.of(context).scaffoldBackgroundColor,
+                    filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   ),
@@ -512,9 +512,9 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
       );
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
-        hintText: hint, hintstyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintText: hint, hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
-        filled: true, fillcolor: Theme.of(context).scaffoldBackgroundColor,
+        filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
@@ -558,7 +558,7 @@ class _IngredientRowState extends State<_IngredientRow> {
             decoration: InputDecoration(
               hintText: 'Ingrediente',
               hintStyle: const TextStyle(color: Colors.white24),
-              filled: true, fillcolor: Theme.of(context).scaffoldBackgroundColor,
+              filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
@@ -575,7 +575,7 @@ class _IngredientRowState extends State<_IngredientRow> {
             decoration: InputDecoration(
               hintText: 'Cant.',
               hintStyle: const TextStyle(color: Colors.white24),
-              filled: true, fillcolor: Theme.of(context).scaffoldBackgroundColor,
+              filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
@@ -587,10 +587,10 @@ class _IngredientRowState extends State<_IngredientRow> {
           flex: 3,
           child: DropdownButtonFormField<String>(
             value: widget.entry.unit,
-            dropdowncolor: Theme.of(context).cardColor,
+            dropdownColor: Theme.of(context).cardColor,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 12),
             decoration: InputDecoration(
-              filled: true, fillcolor: Theme.of(context).scaffoldBackgroundColor,
+              filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             ),

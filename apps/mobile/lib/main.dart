@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:data/data.dart';
@@ -42,6 +44,12 @@ final _router = GoRouter(
         GoRoute(
           path: '/cocina',
           builder: (context, state) => const CocinaScreen(),
+          routes: [
+            GoRoute(
+              path: 'import',
+              builder: (context, state) => const RecipeImporterScreen(),
+            ),
+          ],
         ),
         GoRoute(
           path: '/armario',
@@ -91,11 +99,51 @@ Future<void> main() async {
   );
 }
 
-class MyLifeOSApp extends ConsumerWidget {
+class MyLifeOSApp extends ConsumerStatefulWidget {
   const MyLifeOSApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyLifeOSApp> createState() => _MyLifeOSAppState();
+}
+
+class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
+  StreamSubscription? _intentDataStreamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen to media sharing incoming links while the app is in memory
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
+      _handleSharedMedia(value);
+    });
+
+    // Listen to media sharing incoming links when the app is closed
+    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+      _handleSharedMedia(value);
+    });
+  }
+
+  void _handleSharedMedia(List<SharedMediaFile> value) {
+    if (value.isNotEmpty) {
+      final textOrUrl = value.first.path; // Url/Text defaults to path
+      if (textOrUrl.isNotEmpty) {
+        _router.go('/cocina/import');
+        Future.delayed(const Duration(milliseconds: 500), () {
+          ref.read(recipeImportProvider.notifier).importFromTikTokUrl(textOrUrl);
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _intentDataStreamSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'MyLifeOS',

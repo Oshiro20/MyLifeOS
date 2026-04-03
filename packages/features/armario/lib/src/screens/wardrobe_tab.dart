@@ -150,7 +150,7 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => _AddGarmentSheet(
@@ -625,7 +625,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
-            backgroundcolor: Theme.of(context).cardColor,
+            backgroundColor: Theme.of(context).cardColor,
             title: const Text('🏃 Conjunto Deportivo', style: TextStyle(color: Colors.white)),
             content: const Text('Has guardado un top deportivo. ¿Deseas escanear el short ahora para armar tu conjunto automáticamente?', style: TextStyle(color: Colors.white70)),
             actions: [
@@ -700,7 +700,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
       String Function(T) display, void Function(T?) onChanged) {
     return DropdownButtonFormField<T>(
       value: value,
-      dropdowncolor: Theme.of(context).cardColor,
+      dropdownColor: Theme.of(context).cardColor,
       style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       decoration: _deco(label, icon),
       items: items.map((v) => DropdownMenuItem(value: v,
@@ -710,9 +710,9 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
   }
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
-        hintText: hint, hintstyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintText: hint, hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
-        filled: true, fillcolor: Theme.of(context).scaffoldBackgroundColor,
+        filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),

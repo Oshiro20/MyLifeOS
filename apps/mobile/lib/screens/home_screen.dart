@@ -1,9 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:core/core.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkOtaUpdates();
+  }
+
+  Future<void> _checkOtaUpdates() async {
+    final notifier = MyLifeOSUpdateNotifier(FlutterLocalNotificationsPlugin());
+    final newVersion = await notifier.checkForUpdates();
+    if (newVersion != null && mounted) {
+      _showUpdateDialog(newVersion);
+    }
+  }
+
+  void _showUpdateDialog(String version) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF152019),
+        title: const Text('✨ Actualización disponible', 
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Se ha encontrado la versión $version de MyLifeOS. Te recomendamos descargarla e instalarla para obtener las últimas novedades.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Más tarde', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C896)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              MyLifeOSUpdateNotifier.launchUpdater();
+            },
+            child: const Text('Descargar', style: TextStyle(color: Color(0xFF0A0F0D), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

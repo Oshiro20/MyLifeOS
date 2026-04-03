@@ -117,7 +117,7 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                     prefixIcon: const Icon(Icons.add_circle_outline,
                         color: Color(0xFF00C896), size: 20),
                     filled: true,
-                    fillcolor: Theme.of(context).cardColor,
+                    fillColor: Theme.of(context).cardColor,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none),
@@ -184,7 +184,7 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
             spacing: 6, runSpacing: 6,
             children: _quickSuggestions.map((s) => ActionChip(
               label: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 11)),
-              backgroundcolor: Theme.of(context).cardColor,
+              backgroundColor: Theme.of(context).cardColor,
               onPressed: () => ref.read(foodCoachProvider.notifier).addIngredient(s),
               padding: EdgeInsets.zero,
             )).toList(),

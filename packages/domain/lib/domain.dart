@@ -3,6 +3,9 @@ library domain;
 
 // Cocina
 export 'src/cocina/entities/ingredient.dart';
+export 'src/cocina/entities/recipe.dart';
+export 'src/cocina/usecases/extract_recipe_use_case.dart';
+export 'src/cocina/repositories/i_ai_recipe_extractor.dart';
 
 // Armario
 export 'src/armario/entities/garment.dart';

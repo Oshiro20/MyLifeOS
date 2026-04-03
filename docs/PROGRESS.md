@@ -7,9 +7,10 @@ Este documento mantiene un registro **en vivo** de las tareas, checkpoints y dec
 - [x] Establecer estructura de carpetas Multi-Package (Clean Architecture).
 - [x] Generar / Consolidar estructura base de UI en `mobile/`.
 - [x] Remover tablas redundantes y generar Drift models V3.
-- [ ] Módulo **Cocina**: Implementar casos de uso `CalculateRecipeViabilityUseCase` y `GenerateShoppingListUseCase`.
-- [ ] Tests Core: Unit tests para normalización y Motor de Viabilidad en Cocina.
+- [x] Módulo **Cocina**: Implementar casos de uso `CalculateRecipeViabilityUseCase` y `GenerateShoppingListUseCase`.
+- [x] Tests Core: Unit tests para normalización y Motor de Viabilidad en Cocina.
 - [ ] **[Idea Externa]**: Integración Cloud Sync (Stub Firebase).
+- [ ] **[Idea Externa]**: Importador AI de Recetas (TikTok / Facebook Videos).
 
 ## Bitácora Diaria
 
