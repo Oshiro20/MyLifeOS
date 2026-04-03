@@ -76,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.4))),
+                            .withValues(alpha: 0.4))),
               ),
             ),
 
@@ -111,7 +111,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         decoration: BoxDecoration(
                           color: i == _currentPage
                               ? currentColor
-                              : currentColor.withOpacity(0.25),
+                              : currentColor.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -187,7 +187,7 @@ class _OnboardingPageView extends StatelessWidget {
             width: 160,
             height: 160,
             decoration: BoxDecoration(
-              color: page.color.withOpacity(isDark ? 0.15 : 0.1),
+              color: page.color.withValues(alpha: isDark ? 0.15 : 0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -214,7 +214,7 @@ class _OnboardingPageView extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               height: 1.6,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
             ),
           ),
         ],

@@ -102,7 +102,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
     if (_ai != null) {
       try {
-        final jsonStr = await _ai!.generateFoodEvaluation(
+        final jsonStr = await _ai.generateFoodEvaluation(
           ingredients: lowerIngredients,
           photoPath: photoPath,
         );
@@ -145,8 +145,9 @@ class FoodCoachRepository implements IFoodCoachRepository {
         if (score != null) {
           matched.add(ingredient);
           totalScore += score;
-          if (score >= 2) pos.add(ingredient);
-          else if (score <= -2) neg.add(ingredient);
+          if (score >= 2) {
+            pos.add(ingredient);
+          } else if (score <= -2) neg.add(ingredient);
         }
       }
 

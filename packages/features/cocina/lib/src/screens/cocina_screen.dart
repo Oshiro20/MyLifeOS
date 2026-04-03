@@ -1,8 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
-import 'package:domain/src/cocina/entities/recipe.dart';
-import '../providers/cocina_providers.dart';
 import 'inventory_tab.dart';
 import 'recipes_tab.dart';
 import 'suggestions_tab.dart';

@@ -146,7 +146,7 @@ class _RecipeTile extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
           subtitle: Text(
             '${recipe.durationMinutes} min · ${recipe.servings} porciones · ${recipe.ingredients.length} ingredientes',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -192,7 +192,7 @@ class _RecipeDetailSheet extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 20, fontWeight: FontWeight.w700)),
           if (recipe.description.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(recipe.description, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 14)),
+            Text(recipe.description, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 14)),
           ],
           const SizedBox(height: 14),
           Wrap(spacing: 8, children: [
@@ -211,10 +211,10 @@ class _RecipeDetailSheet extends StatelessWidget {
               child: Row(children: [
                 const Icon(Icons.fiber_manual_record, size: 8, color: Color(0xFF00C896)),
                 const SizedBox(width: 10),
-                Text('${ing.ingredientName}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
+                Text(ing.ingredientName, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                 const Spacer(),
                 Text('${ing.quantity} ${ing.unit}',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 12)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
               ]),
             )),
           ],
@@ -238,7 +238,7 @@ class _RecipeDetailSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(child: Text(e.value,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 14))),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 14))),
               ]),
             )),
           ],
@@ -314,7 +314,7 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
             ]),
             const SizedBox(height: 8),
             DropdownButtonFormField<NutritionGoal>(
-              value: _goal,
+              initialValue: _goal,
               dropdownColor: Theme.of(context).cardColor,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: _deco('Objetivo nutricional', Icons.flag_outlined),
@@ -512,7 +512,7 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
       );
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
-        hintText: hint, hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintText: hint, hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -586,7 +586,7 @@ class _IngredientRowState extends State<_IngredientRow> {
         Expanded(
           flex: 3,
           child: DropdownButtonFormField<String>(
-            value: widget.entry.unit,
+            initialValue: widget.entry.unit,
             dropdownColor: Theme.of(context).cardColor,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 12),
             decoration: InputDecoration(

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -77,7 +77,7 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
                         Icon(isShoesTab ? Icons.snowshoeing : Icons.checkroom_outlined, size: 64, color: Colors.white12),
                         const SizedBox(height: 12),
                         Text('No hay ${isShoesTab ? 'calzado' : 'ropa'} aquí',
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 17)),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 17)),
                         const SizedBox(height: 8),
                         TextButton.icon(
                           onPressed: () => _showAddSheet(context, notifier, isShoesTab),
@@ -114,7 +114,7 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
                                 const SizedBox(height: 12),
                                 Text(type.label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 4),
-                                Text('${items.length} prendas', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 13)),
+                                Text('${items.length} prendas', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 13)),
                               ],
                             ),
                           ),
@@ -241,7 +241,7 @@ class _GarmentCard extends StatelessWidget {
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 2),
             Text('${garment.type.label} · ${garment.style.label}',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 11)),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
             const SizedBox(height: 8),
             Row(children: [
               _SmallBtn(
@@ -411,7 +411,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
             if ([GarmentType.jacket, GarmentType.hoodie, GarmentType.sweater].contains(_type)) ...[
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF00C896),
+                activeThumbColor: const Color(0xFF00C896),
                 title: const Text('¿Tiene capucha desmontable?', style: TextStyle(color: Colors.white, fontSize: 13)),
                 value: _hasRemovableHood,
                 onChanged: (val) => setState(() => _hasRemovableHood = val),
@@ -485,7 +485,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
                 : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(Icons.camera_alt_outlined, color: Color(0xFF00C896), size: 24),
                     const SizedBox(height: 4),
-                    Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 10), textAlign: TextAlign.center),
+                    Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 10), textAlign: TextAlign.center),
                   ]),
             ),
           ),
@@ -699,7 +699,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
   Widget _dropdown<T>(String label, IconData icon, T value, List<T> items,
       String Function(T) display, void Function(T?) onChanged) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       dropdownColor: Theme.of(context).cardColor,
       style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       decoration: _deco(label, icon),
@@ -710,7 +710,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
   }
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
-        hintText: hint, hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintText: hint, hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true, fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),

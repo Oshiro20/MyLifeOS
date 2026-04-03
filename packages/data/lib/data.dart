@@ -1,5 +1,5 @@
 // Barrel de exportación del paquete data
-library data;
+library;
 
 export 'src/local/database.dart';
 export 'src/local/tables.dart';

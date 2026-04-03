@@ -1,6 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/foodcoach_provider.dart';
 import 'evaluate_tab.dart';
 import 'history_tab.dart';
 import 'stats_tab.dart';

@@ -48,7 +48,7 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFF00C896).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.2)),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -59,7 +59,7 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00C896).withOpacity(0.2),
+                  color: const Color(0xFF00C896).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.account_balance_wallet_outlined,
@@ -150,13 +150,13 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: color.withOpacity(0.7), fontSize: 10)),
+          Text(label, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
           Text(value, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),

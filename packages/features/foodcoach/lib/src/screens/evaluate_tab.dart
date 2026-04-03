@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -183,7 +183,7 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
           Wrap(
             spacing: 6, runSpacing: 6,
             children: _quickSuggestions.map((s) => ActionChip(
-              label: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 11)),
+              label: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 11)),
               backgroundColor: Theme.of(context).cardColor,
               onPressed: () => ref.read(foodCoachProvider.notifier).addIngredient(s),
               padding: EdgeInsets.zero,
@@ -329,7 +329,7 @@ class _ResultView extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text('Puntuación de salud: $score / 100',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 12)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 12)),
               ],
             ),
           ),
@@ -429,7 +429,7 @@ class _InfoCard extends StatelessWidget {
                         fontWeight: FontWeight.w700, fontSize: 12)),
                 const SizedBox(height: 4),
                 Text(content,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 13)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13)),
               ],
             ),
           ),

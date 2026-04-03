@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:domain/src/cocina/entities/ingredient.dart';
 import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
 import 'package:domain/src/cocina/entities/recipe.dart';
 import 'package:domain/src/cocina/repositories/i_cocina_repository.dart';

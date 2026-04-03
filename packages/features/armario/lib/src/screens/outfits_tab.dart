@@ -1,6 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
 import 'package:domain/src/armario/entities/wardrobe_garment.dart';
 import '../providers/armario_provider.dart';
 import 'mannequin_canvas_screen.dart';
@@ -63,7 +62,7 @@ class OutfitsTab extends ConsumerWidget {
                           fontSize: 15)),
                 ),
                 Text('${outfit.timesWorn}× usado',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 11)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
               ]),
               const SizedBox(height: 8),
               Row(
@@ -139,8 +138,8 @@ class _CreateOutfitSheet extends StatefulWidget {
 class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
   final _name = TextEditingController();
   final Set<String> _selected = {};
-  String _occasion = 'casual';
-  Season _season = Season.all;
+  final String _occasion = 'casual';
+  final Season _season = Season.all;
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +159,7 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Nombre (ej: Outfit de playa)',
-              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
               filled: true, fillColor: const Color(0xFF2A2A40),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
@@ -178,14 +177,17 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
                   contentPadding: EdgeInsets.zero,
                   leading: _ColorDot(hex: g.primaryColor),
                   title: Text(g.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-                  subtitle: Text(g.type.label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38))),
+                  subtitle: Text(g.type.label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38))),
                   trailing: Icon(
                     isSelected ? Icons.check_circle : Icons.circle_outlined,
                     color: isSelected ? const Color(0xFF00C896) : Colors.white38,
                   ),
                   onTap: () => setState(() {
-                    if (isSelected) _selected.remove(g.id);
-                    else _selected.add(g.id);
+                    if (isSelected) {
+                      _selected.remove(g.id);
+                    } else {
+                      _selected.add(g.id);
+                    }
                   }),
                 );
               },
@@ -243,6 +245,6 @@ class _Tag extends StatelessWidget {
           color: const Color(0xFF2A2A40),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 10)),
+        child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 10)),
       );
 }

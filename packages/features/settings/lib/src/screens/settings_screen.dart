@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -253,7 +253,7 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
               style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Pega tu API Key de AI Studio',
-                hintStyle: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.38)),
+                hintStyle: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.38)),
                 filled: true,
                 fillColor: Theme.of(ctx).scaffoldBackgroundColor,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -306,7 +306,7 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
         title: Text(title,
             style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface, fontWeight: FontWeight.w700)),
         content: Text(message,
-            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.6), height: 1.5)),
+            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.6), height: 1.5)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -400,9 +400,9 @@ class _InfoTile extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: Icon(icon, color: Colors.white38, size: 20),
         title: Text(label,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 13)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13)),
         trailing: Text(value,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 12)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
       );
 }
 
@@ -445,7 +445,7 @@ class _ActionTile extends StatelessWidget {
                             fontWeight: FontWeight.w700, fontSize: 14)),
                     const SizedBox(height: 2),
                     Text(subtitle,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 11)),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
                   ],
                 ),
               ),
@@ -525,7 +525,7 @@ class _ThemeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF00C896).withOpacity(0.2)
+              ? const Color(0xFF00C896).withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(

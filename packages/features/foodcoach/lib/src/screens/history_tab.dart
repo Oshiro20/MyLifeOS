@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/src/foodcoach/entities/meal_evaluation.dart';
 import 'package:core/core.dart';
@@ -115,7 +115,7 @@ class _HistoryTile extends StatelessWidget {
                 Text(log.feedback,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 11)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
                 const SizedBox(height: 6),
                 // mini barra de salud
                 ClipRRect(

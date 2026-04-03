@@ -92,9 +92,6 @@ class BackupService {
 
       final zipEncoder = ZipEncoder();
       final zipBytes = zipEncoder.encode(archive);
-      if (zipBytes == null) {
-        return const BackupFailure('Error al comprimir el backup.');
-      }
 
       // Guardar a disco temporalmente
       final tempDir = await getTemporaryDirectory();

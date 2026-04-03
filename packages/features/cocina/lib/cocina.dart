@@ -1,5 +1,5 @@
 // Barrel de exportación del paquete cocina
-library cocina;
+library;
 
 export 'src/screens/cocina_screen.dart';
 export 'src/screens/recipe_importer_screen.dart';

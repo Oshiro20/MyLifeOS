@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundColor: primary.withOpacity(0.2),
+                      backgroundColor: primary.withValues(alpha: 0.2),
                       child: Icon(Icons.person_outline, color: primary, size: 22),
                     ),
                     const SizedBox(width: 12),
@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(greeting,
                             style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 fontSize: 13)),
                         const Text('Joel',
                             style: TextStyle(
@@ -163,10 +163,10 @@ class _WellbeingCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primary.withOpacity(0.2)),
+        border: Border.all(color: primary.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(isDark ? 0.15 : 0.08),
+            color: primary.withValues(alpha: isDark ? 0.15 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -186,7 +186,7 @@ class _WellbeingCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text('Vas por buen camino hoy',
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                         fontSize: 13)),
                 const SizedBox(height: 16),
                 Row(
@@ -210,7 +210,7 @@ class _WellbeingCard extends StatelessWidget {
                 CircularProgressIndicator(
                   value: 0.85,
                   strokeWidth: 7,
-                  backgroundColor: primary.withOpacity(0.15),
+                  backgroundColor: primary.withValues(alpha: 0.15),
                   valueColor: AlwaysStoppedAnimation(primary),
                   strokeCap: StrokeCap.round,
                 ),
@@ -225,7 +225,7 @@ class _WellbeingCard extends StatelessWidget {
                     Text('/100',
                         style: TextStyle(
                             fontSize: 10,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4))),
                   ],
                 ),
               ],
@@ -248,14 +248,14 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label,
-              style: TextStyle(color: color.withOpacity(0.7), fontSize: 10)),
+              style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
           const SizedBox(width: 4),
           Text(value,
               style: TextStyle(
@@ -322,7 +322,7 @@ class _QuickAccessGrid extends StatelessWidget {
               border: Border(left: BorderSide(color: m.$5, width: 3)),
               boxShadow: [
                 BoxShadow(
-                  color: m.$5.withOpacity(isDark ? 0.1 : 0.06),
+                  color: m.$5.withValues(alpha: isDark ? 0.1 : 0.06),
                   blurRadius: 12,
                   offset: const Offset(0, 2),
                 ),
@@ -346,7 +346,7 @@ class _QuickAccessGrid extends StatelessWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                             fontSize: 11)),
                   ],
                 ),
@@ -392,7 +392,7 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
           decoration: BoxDecoration(
             color: surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: widget.primary.withOpacity(0.15)),
+            border: Border.all(color: widget.primary.withValues(alpha: 0.15)),
           ),
           child: Row(
             children: [
@@ -422,7 +422,7 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: widget.primary.withOpacity(0.15)),
+          border: Border.all(color: widget.primary.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -445,7 +445,7 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                           fontSize: 12)),
                 ],
               ),
@@ -478,7 +478,7 @@ class _RecentActivity extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primary.withOpacity(0.15)),
+        border: Border.all(color: primary.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: List.generate(_items.length, (i) {
@@ -493,7 +493,7 @@ class _RecentActivity extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: primary.withOpacity(0.1),
+                    color: primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
@@ -509,7 +509,7 @@ class _RecentActivity extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.45),
+                            .withValues(alpha: 0.45),
                         fontSize: 11)),
                 trailing: item.$4.isNotEmpty
                     ? Text(item.$4,
@@ -523,7 +523,7 @@ class _RecentActivity extends StatelessWidget {
                 Divider(
                     height: 1,
                     indent: 70,
-                    color: primary.withOpacity(0.08)),
+                    color: primary.withValues(alpha: 0.08)),
             ],
           );
         }),

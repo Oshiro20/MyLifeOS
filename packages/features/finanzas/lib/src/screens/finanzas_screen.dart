@@ -120,7 +120,7 @@ class _WeeklyChart extends StatelessWidget {
         color: surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: primary.withOpacity(isDark ? 0.15 : 0.1),
+          color: primary.withValues(alpha: isDark ? 0.15 : 0.1),
         ),
       ),
       child: Column(
@@ -144,14 +144,14 @@ class _WeeklyChart extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                             gradient: isActive
                                 ? LinearGradient(
-                                    colors: [primary, primary.withOpacity(0.6)],
+                                    colors: [primary, primary.withValues(alpha: 0.6)],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   )
                                 : null,
-                            color: isActive ? null : primary.withOpacity(0.2),
+                            color: isActive ? null : primary.withValues(alpha: 0.2),
                             boxShadow: isActive
-                                ? [BoxShadow(color: primary.withOpacity(0.4), blurRadius: 8)]
+                                ? [BoxShadow(color: primary.withValues(alpha: 0.4), blurRadius: 8)]
                                 : null,
                           ),
                         ),
@@ -209,7 +209,7 @@ class _CategoryList extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primary.withOpacity(isDark ? 0.15 : 0.1)),
+        border: Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
       ),
       child: Column(
         children: _categories.map((c) {
@@ -240,7 +240,7 @@ class _CategoryList extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 5,
-                    backgroundColor: c.$5.withOpacity(0.15),
+                    backgroundColor: c.$5.withValues(alpha: 0.15),
                     valueColor: AlwaysStoppedAnimation(c.$5),
                   ),
                 ),
@@ -274,7 +274,7 @@ class _RecentTransactions extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primary.withOpacity(isDark ? 0.15 : 0.1)),
+        border: Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
       ),
       child: Column(
         children: List.generate(_txns.length, (i) {
@@ -291,7 +291,7 @@ class _RecentTransactions extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: primary.withOpacity(0.1),
+                    color: primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
@@ -318,7 +318,7 @@ class _RecentTransactions extends StatelessWidget {
                 Divider(
                   height: 1,
                   indent: 72,
-                  color: primary.withOpacity(0.08),
+                  color: primary.withValues(alpha: 0.08),
                 ),
             ],
           );

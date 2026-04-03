@@ -1,10 +1,9 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:core/core.dart';
-import 'package:domain/domain.dart';
 import 'package:domain/src/armario/entities/wardrobe_garment.dart';
 import '../providers/armario_provider.dart';
 

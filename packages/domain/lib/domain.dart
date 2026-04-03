@@ -1,5 +1,5 @@
 // Barrel de exportación del paquete domain
-library domain;
+library;
 
 // Cocina
 export 'src/cocina/entities/ingredient.dart';

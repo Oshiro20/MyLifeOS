@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart'; // Para acceso a geminiServiceProvider si es necesario
 import 'package:domain/src/armario/entities/wardrobe_garment.dart';
@@ -75,7 +75,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           const SizedBox(height: 8),
           Text(
             'Tienes ${state.garments.length} prendas registradas (${state.garments.where((g) => g.isClean).length} limpias).',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 14),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 14),
           ),
           const SizedBox(height: 24),
 
@@ -171,7 +171,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         children: [
           const Icon(Icons.error_outline, color: Colors.redAccent, size: 32),
           const SizedBox(height: 12),
-          Text(error, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
+          Text(error, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
           const SizedBox(height: 16),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: themeColor),
@@ -328,7 +328,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     hasData 
                         ? 'Gemini usa esta info para tus outfits.'
                         : 'Descubre qué ropa te favorece.',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 12),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 12),
                   ),
                 ],
               ),
@@ -363,7 +363,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           const SizedBox(height: 6),
           Text(
             g.name,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 10),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 10),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,

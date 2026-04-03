@@ -1,5 +1,5 @@
 // Barrel del paquete core
-library core;
+library;
 
 export 'src/feedback/app_feedback.dart';
 export 'src/validation/validator.dart';

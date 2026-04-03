@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/src/cocina/entities/recipe.dart';
 import '../providers/cocina_providers.dart';
@@ -77,7 +77,7 @@ class SuggestionsTab extends ConsumerWidget {
               const SizedBox(height: 2),
               Text(
                 '${invState.ingredients.length} ingredientes en tu despensa · ${state.recipes.length} recetas guardadas',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12),
               ),
             ],
           ),
@@ -149,7 +149,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(msg,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 14)),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 14)),
         ],
       ),
     );
@@ -203,7 +203,7 @@ class _SuggestionCard extends StatelessWidget {
           if (recipe.description.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(recipe.description,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 13),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 13),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),
           ],

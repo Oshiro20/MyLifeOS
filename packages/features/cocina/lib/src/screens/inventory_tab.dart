@@ -1,9 +1,7 @@
-﻿import 'dart:convert';
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:domain/src/cocina/entities/ingredient.dart';
 import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
 import 'package:domain/src/cocina/entities/ingredient_units.dart';
 import 'package:data/src/services/ingredient_detector.dart';
@@ -54,7 +52,7 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.2),
             ),
             const Spacer(),
-            Text('${itemsInCat.length}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontWeight: FontWeight.bold)),
+            Text('${itemsInCat.length}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontWeight: FontWeight.bold)),
           ],
         ),
       ));
@@ -445,7 +443,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 flex: 3,
                 child: DropdownButtonFormField<MeasurementUnit>(
-                  value: _unit,
+                  initialValue: _unit,
                   dropdownColor: Theme.of(context).cardColor,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: _inputDeco('Unidad', Icons.scale_outlined),
@@ -463,7 +461,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 flex: 1,
                 child: DropdownButtonFormField<String>(
-                  value: _primaryCategory,
+                  initialValue: _primaryCategory,
                   dropdownColor: Theme.of(context).cardColor,
                   isExpanded: true,
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
@@ -485,7 +483,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
             // Lugar de Guardado
             DropdownButtonFormField<String>(
-              value: _storageArea,
+              initialValue: _storageArea,
               dropdownColor: Theme.of(context).cardColor,
               isExpanded: true,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
@@ -508,8 +506,8 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00C896).withOpacity(0.1),
-                  border: Border.all(color: const Color(0xFF00C896).withOpacity(0.3)),
+                  color: const Color(0xFF00C896).withValues(alpha: 0.1),
+                  border: Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -519,7 +517,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(_aiStorageTip!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 12, height: 1.3)),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 12, height: 1.3)),
                     ),
                   ],
                 ),
@@ -796,7 +794,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
   InputDecoration _inputDeco(String hint, IconData icon) => InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
@@ -866,7 +864,7 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                             width: 60,
                             child: TextFormField(
                               initialValue: item.quantity.toString(),
-                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 13),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13),
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
                               onChanged: (val) {
@@ -874,7 +872,7 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                               },
                             ),
                           ),
-                          Text(item.unit, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 13)),
+                          Text(item.unit, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13)),
                         ],
                       ),
                       trailing: IconButton(

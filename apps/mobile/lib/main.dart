@@ -193,7 +193,7 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
           }),
         ),
         cardColor: const Color(0xFF152019),
-        dividerColor: const Color(0xFF00C896).withOpacity(0.1),
+        dividerColor: const Color(0xFF00C896).withValues(alpha: 0.1),
         textTheme: const TextTheme(
           bodyMedium: TextStyle(color: Color(0xFFA8C5B8)),
           bodyLarge: TextStyle(color: Color(0xFFF0FFF8)),
@@ -205,7 +205,7 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
         ),
         chipTheme: ChipThemeData(
           backgroundColor: const Color(0xFF152019),
-          selectedColor: const Color(0xFF00C896).withOpacity(0.2),
+          selectedColor: const Color(0xFF00C896).withValues(alpha: 0.2),
           labelStyle: const TextStyle(color: Color(0xFFA8C5B8)),
           side: const BorderSide(color: Color(0xFF00C896), width: 0.5),
         ),
@@ -249,7 +249,7 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
           }),
         ),
         cardColor: const Color(0xFFFFFFFF),
-        dividerColor: const Color(0xFF00A37A).withOpacity(0.15),
+        dividerColor: const Color(0xFF00A37A).withValues(alpha: 0.15),
         textTheme: const TextTheme(
           bodyMedium: TextStyle(color: Color(0xFF4A7A65)),
           bodyLarge: TextStyle(color: Color(0xFF0A1F16)),
@@ -261,7 +261,7 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
         ),
         chipTheme: ChipThemeData(
           backgroundColor: const Color(0xFFE0F7F0),
-          selectedColor: const Color(0xFF00A37A).withOpacity(0.15),
+          selectedColor: const Color(0xFF00A37A).withValues(alpha: 0.15),
           labelStyle: const TextStyle(color: Color(0xFF0A1F16)),
           side: const BorderSide(color: Color(0xFF00A37A), width: 0.5),
         ),
@@ -278,7 +278,7 @@ class _AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<_AppShell> {
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
 
   static const _tabs = [
     ('/home',      Icons.home_outlined,                   'Inicio'),

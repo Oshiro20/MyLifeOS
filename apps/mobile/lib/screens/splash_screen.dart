@@ -66,14 +66,14 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 90,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [primary, primary.withOpacity(0.6)],
+                      colors: [primary, primary.withValues(alpha: 0.6)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: primary.withOpacity(0.4),
+                        color: primary.withValues(alpha: 0.4),
                         blurRadius: 30,
                         offset: const Offset(0, 8),
                       ),
@@ -97,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen>
                   'Tu sistema operativo personal',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 48),
@@ -106,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: primary.withOpacity(0.5),
+                    color: primary.withValues(alpha: 0.5),
                   ),
                 ),
               ],

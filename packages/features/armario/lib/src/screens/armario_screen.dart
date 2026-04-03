@@ -1,8 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
-import 'package:uuid/uuid.dart';
-import '../providers/armario_provider.dart';
 import 'wardrobe_tab.dart';
 import 'outfits_tab.dart';
 import 'suggestions_outfit_tab.dart';

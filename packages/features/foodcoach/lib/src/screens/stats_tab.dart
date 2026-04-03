@@ -1,6 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/foodcoach/entities/meal_evaluation.dart';
 import '../providers/foodcoach_provider.dart';
 
 class StatsTab extends ConsumerWidget {
@@ -151,7 +150,7 @@ class StatsTab extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         _weeklyTip(stats.averageHealthScore, stats.junkPercent),
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 13),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13),
                       ),
                     ],
                   ),
@@ -214,8 +213,8 @@ class _ClassCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text('$count', style: TextStyle(color: color,
               fontSize: 22, fontWeight: FontWeight.w900)),
-          Text('$pct%', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 11)),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54), fontSize: 10),
+          Text('$pct%', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 10),
               textAlign: TextAlign.center),
         ],
       ),

@@ -1,5 +1,6 @@
 name: settings
 description: "Módulo de configuración y backup para MyLifeOS."
+publish_to: 'none'
 version: 0.0.1
 
 resolution: workspace
@@ -16,6 +17,9 @@ dependencies:
   core:
     path: ../../core
 
+  flutter_secure_storage: any
+  data: any
+  domain: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

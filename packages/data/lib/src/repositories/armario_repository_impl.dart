@@ -210,7 +210,7 @@ class ArmarioRepository implements IArmarioRepository {
         // Color compatibility: neutros combinan con todo, complementarios se priorizan
         if (!_colorsCompatible(top.primaryColor, bottom.primaryColor)) continue;
         final shoe = shoes.isNotEmpty ? shoes.first : null;
-        final combo = [top, bottom, if (shoe != null) shoe];
+        final combo = [top, bottom, ?shoe];
         suggestions.add(combo);
         if (suggestions.length >= limit) return suggestions;
       }

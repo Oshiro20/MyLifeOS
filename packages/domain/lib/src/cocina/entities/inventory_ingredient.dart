@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'ingredient.dart';
 export 'ingredient.dart';
 
 class InventoryIngredient extends Equatable {

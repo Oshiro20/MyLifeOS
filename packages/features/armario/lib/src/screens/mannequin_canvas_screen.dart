@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/src/armario/entities/wardrobe_garment.dart';
@@ -220,7 +220,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     dropdownColor: Theme.of(context).cardColor,
-                    value: occasion,
+                    initialValue: occasion,
                     items: const [
                       DropdownMenuItem(value: 'casual', child: Text('Casual', style: TextStyle(color: Colors.white))),
                       DropdownMenuItem(value: 'sport', child: Text('Deporte', style: TextStyle(color: Colors.white))),
@@ -234,7 +234,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<Season>(
                     dropdownColor: Theme.of(context).cardColor,
-                    value: season,
+                    initialValue: season,
                     items: Season.values.map((s) => DropdownMenuItem(value: s, child: Text(s.name.toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)))).toList(),
                     onChanged: (v) => setModalState(() => season = v!),
                     decoration: const InputDecoration(labelText: 'Temporada', labelStyle: TextStyle(color: Colors.white54)),

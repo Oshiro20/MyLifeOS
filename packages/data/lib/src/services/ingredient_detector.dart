@@ -1,4 +1,3 @@
-import 'package:domain/src/cocina/entities/ingredient.dart';
 import 'package:domain/src/cocina/entities/ingredient_units.dart';
 
 /// Resultado de detección automática de un ingrediente.

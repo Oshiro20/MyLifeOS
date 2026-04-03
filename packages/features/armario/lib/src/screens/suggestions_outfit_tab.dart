@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/src/armario/entities/wardrobe_garment.dart';
 import '../providers/armario_provider.dart';
@@ -149,7 +149,7 @@ class _OccasionPicker extends StatelessWidget {
         const SizedBox(height: 4),
         if (greeting.isNotEmpty)
           Text('Tu perfil: $greeting',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 12)),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
         const SizedBox(height: 16),
         ..._SuggestionsOutfitTabState._occasions.entries.map((e) =>
             _OccasionCard(
@@ -300,7 +300,7 @@ class _OutfitResults extends StatelessWidget {
     for (final top in scoredTops) {
       for (final bottom in scoredBottoms) {
         final shoe = shoes.isNotEmpty ? shoes.first : null;
-        results.add([top, bottom, if (shoe != null) shoe]);
+        results.add([top, bottom, ?shoe]);
         if (results.length >= 3) return results;
       }
     }
@@ -330,7 +330,7 @@ class _OutfitResults extends StatelessWidget {
                       fontWeight: FontWeight.w700)),
               const Spacer(),
               Text('${filtered.length} opciones',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), fontSize: 12)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
             ],
           ),
         ),
@@ -420,7 +420,7 @@ class _OutfitResults extends StatelessWidget {
                                 final ids =
                                     combo.map((g) => g.id).toList();
                                 onSave(
-                                    'Outfit ${occasion} ${i + 1}',
+                                    'Outfit $occasion ${i + 1}',
                                     occasion,
                                     ids);
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -618,7 +618,7 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
   Widget _dropdownField(String label, IconData icon, String value,
           List<String> options, void Function(String?) onChanged) =>
       DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         dropdownColor: Theme.of(context).cardColor,
         style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         decoration: _deco(label, icon),
@@ -633,7 +633,7 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
