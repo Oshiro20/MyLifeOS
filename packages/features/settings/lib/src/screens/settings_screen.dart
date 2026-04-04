@@ -63,7 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           // ── Perfil y App Info ─────────────────────────────────────────────
-          _ProfileCard(isDark: isDark),
+          _ProfileCard(isDark: isDark, appVersion: _appVersion),
           const SizedBox(height: 16),
 
           // ── Apariencia ────────────────────────────────────────────────────
@@ -173,7 +173,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 class _ProfileCard extends StatelessWidget {
   final bool isDark;
-  const _ProfileCard({required this.isDark});
+  final String appVersion;
+  const _ProfileCard({required this.isDark, required this.appVersion});
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +215,7 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _appVersion,
+                  appVersion,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
