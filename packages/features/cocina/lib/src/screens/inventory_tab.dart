@@ -2,9 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
-import 'package:domain/src/cocina/entities/ingredient_units.dart';
-import 'package:data/src/services/ingredient_detector.dart';
+import 'package:domain/domain.dart';
+import 'package:data/data.dart';
 import 'package:uuid/uuid.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
@@ -155,16 +154,6 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
 }
 
 // ── Sub-widgets ──────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  final String label; final Color color;
-  const _SectionHeader({required this.label, required this.color});
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 13)),
-      );
-}
 
 class _IngredientTile extends StatelessWidget {
   final InventoryIngredient ingredient;
@@ -644,6 +633,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       }
 
       if (newItems.isNotEmpty) {
+        if (!mounted) return;
         final confirmed = await showDialog<List<InventoryIngredient>>(
            context: context,
            builder: (_) => _ReviewMultipleDialog(items: newItems),

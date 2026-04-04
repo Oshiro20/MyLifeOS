@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
-import 'package:domain/src/cocina/entities/recipe.dart';
-import 'package:domain/src/cocina/repositories/i_cocina_repository.dart';
+import 'package:domain/domain.dart';
 
 // ── Estados ───────────────────────────────────────────────────────────────────
 class InventoryState {

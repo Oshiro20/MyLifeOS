@@ -2,24 +2,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:domain/domain.dart';
 
 void main() {
-  group('Garment entity', () {
+  group('WardrobeGarment entity', () {
     test('dos prendas con mismo id son iguales', () {
-      const a = Garment(
-        id: 'g1', imageUrl: 'img.jpg', type: GarmentType.shirt,
-        primaryColor: '#FFF', style: GarmentStyle.casual,
+      final ts = DateTime(2026, 4, 1, 12);
+      final a = WardrobeGarment(
+        id: 'g1', name: 'Shirt 1', type: GarmentType.shirt,
+        primaryColor: '#FFF', style: GarmentStyle.casual, addedAt: ts,
       );
-      const b = Garment(
-        id: 'g1', imageUrl: 'img.jpg', type: GarmentType.shirt,
-        primaryColor: '#FFF', style: GarmentStyle.casual,
+      final b = WardrobeGarment(
+        id: 'g1', name: 'Shirt 1', type: GarmentType.shirt,
+        primaryColor: '#FFF', style: GarmentStyle.casual, addedAt: ts,
       );
       expect(a, equals(b));
     });
 
     test('prenda favorita se puede crear', () {
-      const g = Garment(
-        id: 'g2', imageUrl: '', type: GarmentType.jeans,
+      final ts = DateTime(2026, 4, 1, 12);
+      final g = WardrobeGarment(
+        id: 'g2', name: 'Jeans', type: GarmentType.jeans,
         primaryColor: '#000', style: GarmentStyle.streetwear,
-        isFavorite: true,
+        isFavorite: true, addedAt: ts,
       );
       expect(g.isFavorite, isTrue);
     });

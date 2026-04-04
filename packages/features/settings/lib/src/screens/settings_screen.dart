@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:core/core.dart';
-import 'package:data/src/local/database.dart'; // Para inyectar la DB en el Sync
 import '../providers/backup_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -13,7 +11,6 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final backup = ref.watch(backupProvider);
-    final db = AppDatabase(); // Instancia base para pasar al _sync()
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -215,78 +212,10 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
 
     // Borrar el archivo de base de datos
     try {
-      final dbFile = File(
-        '${(await ref.read(backupServiceProvider).getLastBackupDate()) ?? DateTime.now()}',
-      );
       // Mejor practica: solo vaciamos tablas vía DB, no borramos el archivo.
       showSuccess(ctx, 'Datos eliminados. Reinicia la app.');
     } catch (e) {
       showError(ctx, 'Error al borrar datos: $e');
-    }
-  }
-
-  Future<void> _updateApiKey(BuildContext ctx, WidgetRef ref) async {
-    final aiService = ref.read(geminiServiceProvider);
-    final currentKey = await aiService.getApiKey();
-    final ctrl = TextEditingController(text: currentKey ?? '');
-
-    if (!ctx.mounted) return;
-
-    final result = await showDialog<String>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Gemini API Key',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'La clave se encriptará y solo se guardará localmente en tu dispositivo usando Secure Storage.',
-              style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: ctrl,
-              style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
-              decoration: InputDecoration(
-                hintText: 'Pega tu API Key de AI Studio',
-                hintStyle: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.38)),
-                filled: true,
-                fillColor: Theme.of(ctx).scaffoldBackgroundColor,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white38)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C896),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Guardar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null && ctx.mounted) {
-      if (result.isEmpty) {
-        await aiService.removeApiKey();
-        showInfo(ctx, 'API Key eliminada.');
-      } else {
-        await aiService.saveApiKey(result);
-        showSuccess(ctx, 'API Key guardada de forma segura ✓');
-      }
     }
   }
 

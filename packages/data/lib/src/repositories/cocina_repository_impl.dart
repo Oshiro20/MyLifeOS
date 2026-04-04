@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
-import 'package:domain/src/cocina/entities/recipe.dart';
-import 'package:domain/src/cocina/repositories/i_cocina_repository.dart';
-import 'package:data/src/local/database.dart';
+import 'package:domain/domain.dart';
+import 'package:data/data.dart';
 
 class CocinaRepository implements ICocinaRepository {
   final AppDatabase _db;

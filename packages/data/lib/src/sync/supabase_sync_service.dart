@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:domain/domain.dart';
-import 'package:data/src/local/database.dart';
+import 'package:data/data.dart';
 
 class SupabaseSyncService implements ISyncService {
   SupabaseClient? _client;

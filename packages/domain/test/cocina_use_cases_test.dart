@@ -1,8 +1,5 @@
 import 'package:test/test.dart';
-import 'package:domain/src/cocina/usecases/calculate_recipe_viability_use_case.dart';
-import 'package:domain/src/cocina/usecases/generate_shopping_list_use_case.dart';
-import 'package:domain/src/cocina/entities/recipe.dart';
-import 'package:domain/src/cocina/entities/inventory_ingredient.dart';
+import 'package:domain/domain.dart';
 
 void main() {
   group('CalculateRecipeViabilityUseCase', () {

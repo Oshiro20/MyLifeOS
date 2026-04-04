@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
+import 'package:domain/domain.dart';
 import 'dart:convert';
 import 'package:core/core.dart';
 import '../providers/armario_provider.dart';
@@ -135,15 +135,6 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
         ),
       ],
     );
-  }
-
-  Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, WardrobeGarment g) async {
-    final confirmed = await showConfirmDelete(context,
-        itemName: g.name, subtitle: '${g.type.label} · ${g.style.label}');
-    if (!confirmed) return;
-    await ref.read(armarioProvider.notifier).deleteGarment(g.id);
-    if (context.mounted) showSuccess(context, '"${g.name}" eliminada del armario.');
   }
 
   void _showAddSheet(BuildContext ctx, ArmarioNotifier notifier, bool isShoesTab) {

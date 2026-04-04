@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/foodcoach/entities/meal_evaluation.dart';
+import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import '../providers/foodcoach_provider.dart';
 

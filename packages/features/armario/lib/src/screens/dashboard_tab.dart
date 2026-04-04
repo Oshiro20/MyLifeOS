@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart'; // Para acceso a geminiServiceProvider si es necesario
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
+import 'package:domain/domain.dart';
 import '../providers/armario_provider.dart';
 import 'physical_scanner_screen.dart';
 import 'mannequin_canvas_screen.dart';

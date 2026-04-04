@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
+import 'package:domain/domain.dart';
 import '../providers/armario_provider.dart';
 import 'mannequin_canvas_screen.dart';
 
@@ -103,26 +103,6 @@ class OutfitsTab extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  void _showCreateSheet(BuildContext ctx, WidgetRef ref, List<WardrobeGarment> garments) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => _CreateOutfitSheet(
-        garments: garments,
-        onCreate: (name, gIds, occasion, s) async {
-          final o = Outfit(
-            id: '', name: name, garmentIds: gIds,
-            occasion: occasion, season: s, createdAt: DateTime.now(),
-          );
-          await ref.read(armarioProvider.notifier).saveOutfit(o);
-        },
-      ),
     );
   }
 }

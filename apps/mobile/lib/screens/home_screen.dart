@@ -150,8 +150,6 @@ class _WellbeingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surface = isDark ? const Color(0xFF152019) : Colors.white;
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

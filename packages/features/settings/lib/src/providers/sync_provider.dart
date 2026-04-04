@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:data/src/sync/supabase_sync_service.dart';
+import 'package:data/data.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart'; // Para secureStorageProvider
 

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -68,16 +69,17 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 10) {
             try {
+              // ignore: experimental_member_use
               await m.alterTable(TableMigration(inventoryIngredients));
             } catch (e) {
-              print('Error migrando v10: $e');
+              debugPrint('Error migrando v10: $e');
             }
           }
           if (from < 11) {
             try {
               await m.addColumn(inventoryIngredients, inventoryIngredients.storageArea);
             } catch (e) {
-              print('Error migrando v11: $e');
+              debugPrint('Error migrando v11: $e');
             }
           }
         },

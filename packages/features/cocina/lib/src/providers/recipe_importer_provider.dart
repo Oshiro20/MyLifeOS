@@ -43,8 +43,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       currentStatusMessage = 'Descargando video en background...';
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File('\${tempDir.path}/tiktok_video_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+      final tempFile = File('${(await getTemporaryDirectory()).path}/tiktok_video_${DateTime.now().millisecondsSinceEpoch}.mp4');
       
       final response = await http.get(Uri.parse(videoUrl));
       if (response.statusCode != 200) {

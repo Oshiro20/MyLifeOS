@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/cocina/entities/recipe.dart';
+import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';

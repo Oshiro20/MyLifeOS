@@ -1,9 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
-import 'package:domain/src/armario/repositories/i_armario_repository.dart';
-import 'package:data/src/local/database.dart';
+import 'package:domain/domain.dart';
+import 'package:data/data.dart';
 
 class ArmarioRepository implements IArmarioRepository {
   final AppDatabase _db;

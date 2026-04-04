@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/foodcoach/entities/meal_evaluation.dart';
-import 'package:domain/src/foodcoach/repositories/i_foodcoach_repository.dart';
+import 'package:domain/domain.dart';
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 class FoodCoachState {

@@ -278,7 +278,6 @@ class _AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<_AppShell> {
-  final int _currentIndex = 0;
 
   static const _tabs = [
     ('/home',      Icons.home_outlined,                   'Inicio'),

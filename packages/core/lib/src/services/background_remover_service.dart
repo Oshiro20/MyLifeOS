@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_rembg/local_rembg.dart';
 
@@ -27,7 +28,7 @@ class BackgroundRemoverService {
     } catch (e) {
       // Ignoramos el error silenciosamente y devolvemos la ruta original o null,
       // para no quebrar la subida de ropa si falla la librería.
-      print('Error interno al remover fondo: $e');
+      debugPrint('Error interno al remover fondo: $e');
     }
     return null;
   }

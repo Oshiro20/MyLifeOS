@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
+import 'package:domain/domain.dart';
 import '../providers/armario_provider.dart';
 
 /// Tab "Sugeridos" — pregunta "¿A dónde irás?" y muestra 3 outfits.

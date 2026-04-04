@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
-import 'package:domain/src/armario/repositories/i_armario_repository.dart';
+import 'package:domain/domain.dart';
 import 'dart:convert' as dart_convert;
 
 // ── State ─────────────────────────────────────────────────────────────────────

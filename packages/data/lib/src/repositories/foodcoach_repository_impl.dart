@@ -1,10 +1,10 @@
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
-import 'package:domain/src/foodcoach/entities/meal_evaluation.dart';
-import 'package:domain/src/foodcoach/repositories/i_foodcoach_repository.dart';
-import 'package:data/src/local/database.dart';
+import 'package:domain/domain.dart';
+import 'package:data/data.dart';
 import 'dart:convert';
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart';
 
 // ── Diccionario de ingredientes ───────────────────────────────────────────────
 // score > 0 = saludable, < 0 = chatarra, 0 = neutro
@@ -122,7 +122,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
           aiSuccess = true;
         }
       } catch (e) {
-        print('Error IA FoodCoach: $e'); // Log silencioso
+        debugPrint('Error IA FoodCoach: $e'); // Log silencioso
       }
     }
 
@@ -147,7 +147,9 @@ class FoodCoachRepository implements IFoodCoachRepository {
           totalScore += score;
           if (score >= 2) {
             pos.add(ingredient);
-          } else if (score <= -2) neg.add(ingredient);
+          } else if (score <= -2) {
+            neg.add(ingredient);
+          }
         }
       }
 

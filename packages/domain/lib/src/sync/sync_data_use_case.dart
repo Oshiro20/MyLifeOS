@@ -1,4 +1,4 @@
-import 'package:domain/src/sync/i_sync_service.dart';
+import 'package:domain/domain.dart';
 
 class SyncDataUseCase {
   final ISyncService _syncService;

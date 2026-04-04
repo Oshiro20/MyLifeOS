@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class TikTokService {
@@ -10,7 +11,7 @@ class TikTokService {
   /// Obtiene la información del video de TikTok (incluyendo la URL de descarga sin marca de agua).
   Future<Map<String, dynamic>?> getTikTokVideoInfo(String tiktokUrl) async {
     final encodedUrl = Uri.encodeComponent(tiktokUrl);
-    final uri = Uri.parse('https://\$_apiHost/tiktok/info?url=\$encodedUrl');
+    final uri = Uri.parse('https://$_apiHost/tiktok/info?url=$encodedUrl');
 
     try {
       final response = await http.get(
@@ -27,11 +28,11 @@ class TikTokService {
         // Por lo general puede venir en decoded['data']['play'] o similar.
         return decoded;
       } else {
-        print('Error consultando TikTok API: \${response.statusCode} - \${response.body}');
+        debugPrint('Error consultando TikTok API: \${response.statusCode} - \${response.body}');
         return null;
       }
     } catch (e) {
-      print('Exception en TikTokService: \$e');
+      debugPrint('Exception en TikTokService: \$e');
       return null;
     }
   }

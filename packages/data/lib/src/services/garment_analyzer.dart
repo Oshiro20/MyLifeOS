@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:image/image.dart' as img;
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
+import 'package:domain/domain.dart';
 
 /// Resultado de análisis de una prenda.
 class GarmentSuggestion {

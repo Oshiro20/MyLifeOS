@@ -19,13 +19,13 @@ enum GarmentType {
 }
 
 enum GarmentStyle {
-  casual, formal, sport, streetwear, elegant, smart_casual, workwear;
+  casual, formal, sport, streetwear, elegant, smartCasual, workwear;
 
   String get label {
     const labels = {
       casual: 'Casual', formal: 'Formal', sport: 'Deportivo',
       streetwear: 'Urbano', elegant: 'Elegante',
-      smart_casual: 'Smart Casual / Semi-Formal', workwear: 'Útiles / Trabajo / Drill',
+      smartCasual: 'Smart Casual / Semi-Formal', workwear: 'Útiles / Trabajo / Drill',
     };
     return labels[this] ?? name;
   }

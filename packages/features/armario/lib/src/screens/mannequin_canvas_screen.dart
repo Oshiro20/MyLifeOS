@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:domain/src/armario/entities/wardrobe_garment.dart';
+import 'package:domain/domain.dart';
 import '../providers/armario_provider.dart';
 
 class CanvasGarment {
@@ -263,7 +263,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   );
 
                   await ref.read(armarioProvider.notifier).saveOutfit(newOutfit);
-                  if (mounted) Navigator.pop(ctx, true);
+                  if (ctx.mounted) Navigator.pop(ctx, true);
                 },
                 child: const Text('Guardar', style: TextStyle(color: Colors.white)),
               ),
@@ -324,8 +324,8 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                 child: Transform(
                   alignment: Alignment.center,
                   transform: Matrix4.identity()
-                    ..translate(0.0, 0.0)
                     ..rotateZ(item.rotation)
+                    // ignore: deprecated_member_use
                     ..scale(item.scale),
                   child: Stack(
                     clipBehavior: Clip.none,

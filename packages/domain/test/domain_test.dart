@@ -42,33 +42,36 @@ void main() {
     });
   });
 
-  group('Garment', () {
+  group('WardrobeGarment', () {
     test('equality por props', () {
-      const a = Garment(
-        id: 'g1', imageUrl: 'path/img.jpg',
+      final ts = DateTime(2026, 4, 1, 12);
+      final a = WardrobeGarment(
+        id: 'g1', name: 'Shirt 1',
         type: GarmentType.shirt, primaryColor: '#FFFFFF',
-        style: GarmentStyle.casual,
+        style: GarmentStyle.casual, addedAt: ts,
       );
-      const b = Garment(
-        id: 'g1', imageUrl: 'path/img.jpg',
+      final b = WardrobeGarment(
+        id: 'g1', name: 'Shirt 1',
         type: GarmentType.shirt, primaryColor: '#FFFFFF',
-        style: GarmentStyle.casual,
+        style: GarmentStyle.casual, addedAt: ts,
       );
       expect(a, equals(b));
     });
 
     test('isFavorite por defecto es false', () {
-      const g = Garment(
-        id: 'g1', imageUrl: '', type: GarmentType.pants,
-        primaryColor: '#000', style: GarmentStyle.formal,
+      final ts = DateTime(2026, 4, 1, 12);
+      final g = WardrobeGarment(
+        id: 'g1', name: 'Pants', type: GarmentType.pants,
+        primaryColor: '#000', style: GarmentStyle.formal, addedAt: ts,
       );
       expect(g.isFavorite, isFalse);
     });
 
     test('secondaryColor por defecto es vacío', () {
-      const g = Garment(
-        id: 'g1', imageUrl: '', type: GarmentType.shoes,
-        primaryColor: '#FFF', style: GarmentStyle.sport,
+      final ts = DateTime(2026, 4, 1, 12);
+      final g = WardrobeGarment(
+        id: 'g1', name: 'Shoes', type: GarmentType.shoes,
+        primaryColor: '#FFF', style: GarmentStyle.sport, addedAt: ts,
       );
       expect(g.secondaryColor, isEmpty);
     });
@@ -79,32 +82,25 @@ void main() {
       final ts = DateTime(2026, 4, 1, 12);
       final a = MealLog(
         id: 'm1', timestamp: ts, photoPath: 'path/photo.jpg',
-        classification: MealClassification.healthy,
+        classification: FoodClassification.healthy,
+        healthScore: 0.9,
         feedback: 'Muy nutritivo',
       );
       final b = MealLog(
         id: 'm1', timestamp: ts, photoPath: 'path/photo.jpg',
-        classification: MealClassification.healthy,
+        classification: FoodClassification.healthy,
+        healthScore: 0.9,
         feedback: 'Muy nutritivo',
       );
       expect(a, equals(b));
     });
 
-    test('detectedIngredients por defecto es lista vacía', () {
-      final log = MealLog(
-        id: 'm1', timestamp: DateTime.now(), photoPath: '',
-        classification: MealClassification.unknown, feedback: '',
-      );
-      expect(log.detectedIngredients, isEmpty);
-    });
-
     test('clasificaciones disponibles', () {
-      expect(MealClassification.values.length, 4);
-      expect(MealClassification.values, containsAll([
-        MealClassification.healthy,
-        MealClassification.junk,
-        MealClassification.balanced,
-        MealClassification.unknown,
+      expect(FoodClassification.values.length, 3);
+      expect(FoodClassification.values, containsAll([
+        FoodClassification.healthy,
+        FoodClassification.junk,
+        FoodClassification.balanced,
       ]));
     });
   });

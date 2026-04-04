@@ -9,16 +9,13 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 });
 
 final geminiServiceProvider = Provider<GeminiService>((ref) {
-  final storage = ref.watch(secureStorageProvider);
-  return GeminiService(storage);
+  return GeminiService();
 });
 
 // ── Service Class ─────────────────────────────────────────────────────────────
 class GeminiService {
-  final FlutterSecureStorage _storage;
-  static const _apiKeyStorageKey = 'gemini_api_key';
 
-  GeminiService(this._storage);
+  GeminiService();
 
   Future<void> saveApiKey(String key) async {}
 

@@ -1,4 +1,4 @@
-import 'package:domain/src/cocina/entities/ingredient_units.dart';
+import 'package:domain/domain.dart';
 
 /// Resultado de detección automática de un ingrediente.
 class IngredientSuggestion {

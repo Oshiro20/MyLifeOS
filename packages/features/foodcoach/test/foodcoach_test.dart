@@ -2,24 +2,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:domain/domain.dart';
 
 void main() {
-  group('MealLog entity', () {
-    test('meal log con ingredientes detectados', () {
-      final log = MealLog(
+  group('MealEvaluation entity', () {
+    test('meal evaluation con ingredientes detectados', () {
+      final log = MealEvaluation(
         id: 'm1',
         timestamp: DateTime(2026, 4, 1),
         photoPath: 'photos/meal.jpg',
-        classification: MealClassification.healthy,
+        classification: FoodClassification.healthy,
+        healthScore: 0.9,
+        positiveFactors: const [],
+        negativeFactors: const [],
+        recommendation: '',
         feedback: 'Rico en proteínas',
-        detectedIngredients: ['pollo', 'arroz', 'brócoli'],
+        detectedIngredients: const ['pollo', 'arroz', 'brócoli'],
       );
       expect(log.detectedIngredients.length, 3);
-      expect(log.classification, MealClassification.healthy);
+      expect(log.classification, FoodClassification.healthy);
     });
 
-    test('meal log sin ingredientes tiene lista vacía', () {
-      final log = MealLog(
+    test('meal evaluation sin ingredientes tiene lista vacía', () {
+      final log = MealEvaluation(
         id: 'm2', timestamp: DateTime.now(), photoPath: '',
-        classification: MealClassification.unknown, feedback: '',
+        classification: FoodClassification.balanced, healthScore: 0.5,
+        positiveFactors: const [], negativeFactors: const [], recommendation: '',
+        feedback: '', detectedIngredients: const [],
       );
       expect(log.detectedIngredients, isEmpty);
     });
