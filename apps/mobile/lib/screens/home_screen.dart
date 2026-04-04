@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:core/core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:armario/armario.dart';
@@ -29,7 +31,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final newVersion = await notifier.checkForUpdates();
     if (newVersion != null && mounted) {
       setState(() => _newVersion = newVersion);
+      // Mostrar diálogo solo si es la primera vez que se detecta esta versión
       _showUpdateDialog(newVersion);
+    } else if (mounted) {
+      // Aún así verificar si hay versión pendiente de descarga
+      final prefs = await SharedPreferences.getInstance();
+      final pendingVersion = prefs.getString('mylifeos_last_known_version');
+      if (pendingVersion != null) {
+        final packageInfo = await PackageInfo.fromPlatform();
+        final currentVersion = 'v${packageInfo.version}';
+        if (pendingVersion != currentVersion && mounted) {
+          setState(() => _newVersion = pendingVersion);
+        }
+      }
     }
   }
 

@@ -16,7 +16,6 @@ import 'wallet_summary_reader.dart';
 /// 4. Abrir WalletAI con parámetros de contexto
 class WalletAICommunicationService {
   static const _walletAIScheme = 'walletai';
-  static const _walletAIPackage = 'com.oshiro.wallet_ai';
   static const _requestSyncFileName = 'wallet_sync_request.json';
   static const _responseSyncFileName = 'wallet_sync_response.json';
 
@@ -123,23 +122,44 @@ class WalletAICommunicationService {
   /// Verifica el estado de conexión con WalletAI
   static Future<WalletConnectionStatus> checkConnectionStatus() async {
     final summaryResult = await WalletSummaryReader.readWithValidation();
+    final isInstalled = await isWalletAIInstalled();
+    final hasSummary = await WalletSummaryReader.isWalletAIAvailable();
 
-    if (!summaryResult.isConnected) {
-      return const WalletConnectionStatus(
+    if (!hasSummary && !isInstalled) {
+      return WalletConnectionStatus(
         isConnected: false,
         isWalletAIAvailable: false,
         isProjectIdMatched: false,
         lastSync: null,
-        error: 'WalletAI no está conectado',
+        error: 'WalletAI no está instalado',
       );
     }
 
-    final isAvailable = await WalletSummaryReader.isWalletAIAvailable();
+    if (!hasSummary && isInstalled) {
+      return WalletConnectionStatus(
+        isConnected: false,
+        isWalletAIAvailable: true,
+        isProjectIdMatched: false,
+        lastSync: null,
+        error: 'WalletAI instalado pero sin datos exportados. Abre WalletAI.',
+      );
+    }
+
+    if (!summaryResult.isConnected) {
+      return WalletConnectionStatus(
+        isConnected: false,
+        isWalletAIAvailable: hasSummary,
+        isProjectIdMatched: false,
+        lastSync: null,
+        error: summaryResult.error ?? 'Error al leer datos',
+      );
+    }
+
     final lastSync = await SharedIdentityService.getLastSync();
 
     return WalletConnectionStatus(
       isConnected: true,
-      isWalletAIAvailable: isAvailable,
+      isWalletAIAvailable: hasSummary,
       isProjectIdMatched: summaryResult.isProjectIdMatched,
       lastSync: lastSync,
       summary: summaryResult.summary,
@@ -188,6 +208,16 @@ class WalletAICommunicationService {
   /// Genera un código de emparejamiento para compartir con WalletAI
   static Future<String> generatePairingCode() async {
     return await SharedIdentityService.generateSharingCode();
+  }
+
+  /// Verifica si WalletAI está instalado mediante deep link
+  static Future<bool> isWalletAIInstalled() async {
+    try {
+      final uri = Uri.parse('$_walletAIScheme://');
+      return await canLaunchUrl(uri);
+    } catch (_) {
+      return false;
+    }
   }
 }
 

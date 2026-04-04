@@ -30,11 +30,12 @@ class MyLifeOSUpdateNotifier {
       final prefs = await SharedPreferences.getInstance();
       final lastKnown = prefs.getString(_prefKey);
 
-      // Si hay una nueva versión (diferente a la que está instalada).
-      // Por simplicidad, comparamos si el tag (vX.Y.Z) es diferente al actual.
+      // Si la versión más reciente es diferente a la instalada, hay actualización.
       if (latestVersion != currentVersion) {
-        await prefs.setString(_prefKey, latestVersion);
-        if (lastKnown != latestVersion) {
+        // Siempre mostrar notificación si es una versión diferente a la última conocida
+        // O si nunca se había chequeado antes
+        if (lastKnown == null || lastKnown != latestVersion) {
+          await prefs.setString(_prefKey, latestVersion);
           await _showNotification(latestVersion);
         }
         return latestVersion;
