@@ -70,19 +70,21 @@ class MyLifeOSUpdateNotifier {
   }
 
   Future<void> _showNotification(String version) async {
+    // Crear canal de notificación si no existe
+    await _notifications.resolvePlatformSpecificCommunication();
     const androidDetails = AndroidNotificationDetails(
       'mylifeos_updates',
       'MyLifeOS Updates',
       channelDescription: 'Notificaciones de nuevas versiones de MyLifeOS',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
+      importance: Importance.high,
+      priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
     const details = NotificationDetails(android: androidDetails);
     await _notifications.show(
       _notifId,
-      '✨ MyLifeOS actualizado',
-      'Nueva versión $version disponible. Actualiza para obtener las últimas mejoras.',
+      '✨ Nueva versión disponible',
+      'MyLifeOS $version está lista. Toca para descargar e instalar.',
       details,
     );
   }
