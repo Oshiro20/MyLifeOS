@@ -43,11 +43,11 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
 
   @override
   FoodCoachState build() {
-    Future.microtask(() => _load());
+    Future.microtask(() => load());
     return const FoodCoachState();
   }
 
-  Future<void> _load() async {
+  Future<void> load() async {
     try {
       final history = await _repo.getHistory();
       final stats = await _repo.getWeeklyStats();
@@ -61,8 +61,8 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
     if (ingredient.trim().isEmpty) return;
     final trimmed = ingredient.trim().toLowerCase();
     if (!state.currentIngredients.contains(trimmed)) {
-      state = state.copyWith(
-          currentIngredients: [...state.currentIngredients, trimmed]);
+      state = state
+          .copyWith(currentIngredients: [...state.currentIngredients, trimmed]);
     }
   }
 

@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 
 class TikTokService {
   final String apiKey;
-  static const String _apiHost = 'tiktok-download-video-no-watermark.p.rapidapi.com';
+  static const String _apiHost =
+      'tiktok-download-video-no-watermark.p.rapidapi.com';
 
   TikTokService(this.apiKey);
 
@@ -28,7 +29,8 @@ class TikTokService {
         // Por lo general puede venir en decoded['data']['play'] o similar.
         return decoded;
       } else {
-        debugPrint('Error consultando TikTok API: \${response.statusCode} - \${response.body}');
+        debugPrint(
+            'Error consultando TikTok API: \${response.statusCode} - \${response.body}');
         return null;
       }
     } catch (e) {

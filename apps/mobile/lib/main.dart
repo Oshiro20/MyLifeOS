@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
@@ -74,28 +76,62 @@ final _db = AppDatabase();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar notificaciones locales
-  await _notifications.initialize(
-    const InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-    ),
-  );
+  // Configurar manejo de errores global
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    developer.log(
+      'Flutter Error: ${details.exception}',
+      name: 'MyLifeOS.Error',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+  };
 
-  // Verificar actualizaciones de WalletAI en background
-  WalletUpdateNotifier(_notifications).checkForUpdates();
-  // Verificar actualizaciones de MyLifeOS en background
-  MyLifeOSUpdateNotifier(_notifications).checkForUpdates();
+  // Capturar errores de Zone (errores asíncronos no manejados)
+  runZonedGuarded(
+    () async {
+      // Cargar variables de entorno desde .env
+      await dotenv.load(fileName: '.env');
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        cocinaRepositoryProvider.overrideWithValue(CocinaRepository(_db)),
-        armarioRepositoryProvider.overrideWithValue(ArmarioRepository(_db)),
-        foodCoachRepositoryProvider.overrideWith((ref) => FoodCoachRepository(_db, ref.watch(geminiServiceProvider))),
-        // BackupService no requiere override — usa el Provider estándar
-      ],
-      child: const MyLifeOSApp(),
-    ),
+      // Inicializar notificaciones locales
+      await _notifications.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        ),
+      );
+
+      // Inicializar backup automático
+      await AutoBackupService.initialize();
+
+      // Verificar actualizaciones de WalletAI en background
+      WalletUpdateNotifier(_notifications).checkForUpdates();
+      // Verificar actualizaciones de MyLifeOS en background
+      MyLifeOSUpdateNotifier(_notifications).checkForUpdates();
+
+      runApp(
+        ProviderScope(
+          overrides: [
+            cocinaRepositoryProvider.overrideWithValue(CocinaRepository(_db)),
+            armarioRepositoryProvider.overrideWithValue(ArmarioRepository(_db)),
+            foodCoachRepositoryProvider.overrideWith((ref) =>
+                FoodCoachRepository(_db, ref.watch(geminiServiceProvider))),
+            // Register cocina providers
+            inventoryProvider.overrideWith(InventoryNotifier.new),
+            recipesProvider.overrideWith(RecipesNotifier.new),
+            // BackupService no requiere override — usa el Provider estándar
+          ],
+          child: const MyLifeOSApp(),
+        ),
+      );
+    },
+    (error, stackTrace) {
+      developer.log(
+        'Uncaught Zone Error: $error',
+        name: 'MyLifeOS.Error',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    },
   );
 }
 
@@ -114,12 +150,16 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
     super.initState();
 
     // Listen to media sharing incoming links while the app is in memory
-    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance
+        .getMediaStream()
+        .listen((List<SharedMediaFile> value) {
       _handleSharedMedia(value);
     });
 
     // Listen to media sharing incoming links when the app is closed
-    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+    ReceiveSharingIntent.instance
+        .getInitialMedia()
+        .then((List<SharedMediaFile> value) {
       _handleSharedMedia(value);
     });
   }
@@ -130,7 +170,9 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
       if (textOrUrl.isNotEmpty) {
         _router.go('/cocina/import');
         Future.delayed(const Duration(milliseconds: 500), () {
-          ref.read(recipeImportProvider.notifier).importFromTikTokUrl(textOrUrl);
+          ref
+              .read(recipeImportProvider.notifier)
+              .importFromTikTokUrl(textOrUrl);
         });
       }
     }
@@ -197,7 +239,8 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
         textTheme: const TextTheme(
           bodyMedium: TextStyle(color: Color(0xFFA8C5B8)),
           bodyLarge: TextStyle(color: Color(0xFFF0FFF8)),
-          titleLarge: TextStyle(color: Color(0xFFF0FFF8), fontWeight: FontWeight.w700),
+          titleLarge:
+              TextStyle(color: Color(0xFFF0FFF8), fontWeight: FontWeight.w700),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: Color(0xFF00C896),
@@ -253,7 +296,8 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
         textTheme: const TextTheme(
           bodyMedium: TextStyle(color: Color(0xFF4A7A65)),
           bodyLarge: TextStyle(color: Color(0xFF0A1F16)),
-          titleLarge: TextStyle(color: Color(0xFF0A1F16), fontWeight: FontWeight.w700),
+          titleLarge:
+              TextStyle(color: Color(0xFF0A1F16), fontWeight: FontWeight.w700),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: Color(0xFF00A37A),
@@ -278,14 +322,13 @@ class _AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<_AppShell> {
-
   static const _tabs = [
-    ('/home',      Icons.home_outlined,                   'Inicio'),
-    ('/armario',   Icons.checkroom_outlined,              'Armario'),
-    ('/cocina',    Icons.soup_kitchen_outlined,           'Cocina'),
-    ('/finanzas',  Icons.account_balance_wallet_outlined, 'Finanzas'),
-    ('/foodcoach', Icons.restaurant_menu_outlined,        'FoodCoach'),
-    ('/settings',  Icons.settings_outlined,               'Ajustes'),
+    ('/home', Icons.home_outlined, 'Inicio'),
+    ('/armario', Icons.checkroom_outlined, 'Armario'),
+    ('/cocina', Icons.soup_kitchen_outlined, 'Cocina'),
+    ('/finanzas', Icons.account_balance_wallet_outlined, 'Finanzas'),
+    ('/foodcoach', Icons.restaurant_menu_outlined, 'FoodCoach'),
+    ('/settings', Icons.settings_outlined, 'Ajustes'),
   ];
 
   int _indexFromLocation(String location) {

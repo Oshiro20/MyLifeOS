@@ -12,33 +12,45 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
     final history = ref.watch(foodCoachProvider).history;
 
     if (history.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.history_outlined, size: 64, color: Colors.white12),
-            SizedBox(height: 12),
-            Text('Sin evaluaciones aún',
-                style: TextStyle(color: Colors.white38, fontSize: 17)),
-            SizedBox(height: 6),
-            Text('Evalúa tu primera comida en la pestaña "Evaluar".',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white24, fontSize: 13)),
-          ],
+      return RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(foodCoachProvider.notifier).load();
+        },
+        color: const Color(0xFF00C896),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.history_outlined, size: 64, color: Colors.white12),
+              SizedBox(height: 12),
+              Text('Sin evaluaciones aún',
+                  style: TextStyle(color: Colors.white38, fontSize: 17)),
+              SizedBox(height: 6),
+              Text('Evalúa tu primera comida en la pestaña "Evaluar".',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white24, fontSize: 13)),
+            ],
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: history.length,
-      itemBuilder: (ctx, i) {
-        final log = history[i];
-        return _HistoryTile(
-          log: log,
-          onDelete: () => _confirmDelete(context, ref, log),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(foodCoachProvider.notifier).load();
       },
+      color: const Color(0xFF00C896),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: history.length,
+        itemBuilder: (ctx, i) {
+          final log = history[i];
+          return _HistoryTile(
+            log: log,
+            onDelete: () => _confirmDelete(context, ref, log),
+          );
+        },
+      ),
     );
   }
 
@@ -46,7 +58,8 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
       BuildContext context, WidgetRef ref, MealLog log) async {
     final confirmed = await showConfirmDelete(context,
         itemName: _dateLabel(log.timestamp),
-        subtitle: '${_label(log.classification)} · ${(log.healthScore * 100).round()}pts');
+        subtitle:
+            '${_label(log.classification)} · ${(log.healthScore * 100).round()}pts');
     if (!confirmed) return;
     await ref.read(foodCoachProvider.notifier).deleteFromHistory(log.id);
     if (context.mounted) showSuccess(context, 'Registro eliminado.');
@@ -57,9 +70,12 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
 
   String _label(FoodClassification c) {
     switch (c) {
-      case FoodClassification.healthy: return 'Saludable';
-      case FoodClassification.balanced: return 'Balanceado';
-      case FoodClassification.junk: return 'No recomendable';
+      case FoodClassification.healthy:
+        return 'Saludable';
+      case FoodClassification.balanced:
+        return 'Balanceado';
+      case FoodClassification.junk:
+        return 'No recomendable';
     }
   }
 }
@@ -71,17 +87,23 @@ class _HistoryTile extends StatelessWidget {
 
   Color get _color {
     switch (log.classification) {
-      case FoodClassification.healthy: return const Color(0xFF4CAF50);
-      case FoodClassification.balanced: return const Color(0xFFFFB74D);
-      case FoodClassification.junk: return const Color(0xFFFF5252);
+      case FoodClassification.healthy:
+        return const Color(0xFF4CAF50);
+      case FoodClassification.balanced:
+        return const Color(0xFFFFB74D);
+      case FoodClassification.junk:
+        return const Color(0xFFFF5252);
     }
   }
 
   String get _emoji {
     switch (log.classification) {
-      case FoodClassification.healthy: return '💚';
-      case FoodClassification.balanced: return '💛';
-      case FoodClassification.junk: return '🔴';
+      case FoodClassification.healthy:
+        return '💚';
+      case FoodClassification.balanced:
+        return '💛';
+      case FoodClassification.junk:
+        return '🔴';
     }
   }
 
@@ -110,12 +132,19 @@ class _HistoryTile extends StatelessWidget {
               children: [
                 Text(dateStr,
                     style: const TextStyle(
-                        color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(log.feedback,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.38),
+                        fontSize: 11)),
                 const SizedBox(height: 6),
                 // mini barra de salud
                 ClipRRect(
@@ -128,12 +157,14 @@ class _HistoryTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text('$score pts', style: TextStyle(color: _color, fontSize: 10)),
+                Text('$score pts',
+                    style: TextStyle(color: _color, fontSize: 10)),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.white24, size: 20),
+            icon: const Icon(Icons.delete_outline,
+                color: Colors.white24, size: 20),
             onPressed: onDelete,
           ),
         ],

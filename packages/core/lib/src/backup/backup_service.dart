@@ -86,9 +86,9 @@ class BackupService {
         dbBytes.length,
         dbBytes,
       ));
-      final metaBytes =
-          utf8.encode(jsonEncode(metadata.toJson()));
-      archive.addFile(ArchiveFile('metadata.json', metaBytes.length, metaBytes));
+      final metaBytes = utf8.encode(jsonEncode(metadata.toJson()));
+      archive
+          .addFile(ArchiveFile('metadata.json', metaBytes.length, metaBytes));
 
       final zipEncoder = ZipEncoder();
       final zipBytes = zipEncoder.encode(archive);
@@ -138,9 +138,8 @@ class BackupService {
       }
 
       // Validar metadatos
-      final metaJson =
-          jsonDecode(utf8.decode(metaEntry.content as List<int>))
-              as Map<String, dynamic>;
+      final metaJson = jsonDecode(utf8.decode(metaEntry.content as List<int>))
+          as Map<String, dynamic>;
       final meta = BackupMetadata.fromJson(metaJson);
 
       if (meta.appId_ != BackupMetadata.appId) {

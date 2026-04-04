@@ -35,8 +35,17 @@ class InventoryIngredient extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, name, primaryCategory, subCategory, quantity, unit, expirationDate, imageAssetId, storageArea];
+  List<Object?> get props => [
+        id,
+        name,
+        primaryCategory,
+        subCategory,
+        quantity,
+        unit,
+        expirationDate,
+        imageAssetId,
+        storageArea
+      ];
 }
 
 class ShoppingItem extends Equatable {
@@ -57,6 +66,5 @@ class ShoppingItem extends Equatable {
   });
 
   @override
-  List<Object?> get props =>
-      [id, name, quantity, unit, bought, createdAt];
+  List<Object?> get props => [id, name, quantity, unit, bought, createdAt];
 }

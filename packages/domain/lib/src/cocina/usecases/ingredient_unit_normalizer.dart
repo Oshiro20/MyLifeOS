@@ -4,7 +4,8 @@ class IngredientUnitNormalizer {
   /// Intenta convertir la cantidad [fromQuantity] que está en [fromUnit] hacia [toUnit].
   /// Retorna un valor nulo si la conversión es matemáticamente imposible
   /// (ej. tratar de convertir 'litros' a 'unidades' o 'docenas' a 'kg').
-  static double? convert(double fromQuantity, MeasurementUnit fromUnit, MeasurementUnit toUnit) {
+  static double? convert(
+      double fromQuantity, MeasurementUnit fromUnit, MeasurementUnit toUnit) {
     if (fromUnit == toUnit) return fromQuantity;
 
     // Normalizar a una base de volumen (base en ml)
@@ -58,9 +59,9 @@ class IngredientUnitNormalizer {
       case MeasurementUnit.taza:
         return q * 250.0; // asumiendo 1 taza = 250ml
       case MeasurementUnit.cucharada:
-        return q * 15.0;  // 1 cda = 15ml
+        return q * 15.0; // 1 cda = 15ml
       case MeasurementUnit.cucharadita:
-        return q * 5.0;   // 1 cdta = 5ml
+        return q * 5.0; // 1 cdta = 5ml
       default:
         throw ArgumentError("No es unidad de volumen volumétrica estricta");
     }

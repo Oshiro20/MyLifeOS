@@ -3,7 +3,9 @@ class ValidationResult {
   final bool isValid;
   final String? errorMessage;
 
-  const ValidationResult.ok() : isValid = true, errorMessage = null;
+  const ValidationResult.ok()
+      : isValid = true,
+        errorMessage = null;
   const ValidationResult.fail(this.errorMessage) : isValid = false;
 }
 
@@ -19,9 +21,11 @@ class Validator {
     return const ValidationResult.ok();
   }
 
-  static ValidationResult maxLength(String? value, int max, {String field = 'campo'}) {
+  static ValidationResult maxLength(String? value, int max,
+      {String field = 'campo'}) {
     if (value != null && value.trim().length > max) {
-      return ValidationResult.fail('El $field no puede superar $max caracteres.');
+      return ValidationResult.fail(
+          'El $field no puede superar $max caracteres.');
     }
     return const ValidationResult.ok();
   }
@@ -51,10 +55,12 @@ class Validator {
 
   static ValidationResult recipeDuration(int? minutes) {
     if (minutes == null || minutes <= 0) {
-      return const ValidationResult.fail('La duración debe ser mayor que 0 minutos.');
+      return const ValidationResult.fail(
+          'La duración debe ser mayor que 0 minutos.');
     }
     if (minutes > 1440) {
-      return const ValidationResult.fail('La duración no puede superar 24 horas (1440 min).');
+      return const ValidationResult.fail(
+          'La duración no puede superar 24 horas (1440 min).');
     }
     return const ValidationResult.ok();
   }
@@ -72,11 +78,13 @@ class Validator {
     }
     final hex = color.trim().replaceAll('#', '');
     if (hex.length != 6) {
-      return const ValidationResult.fail('El color debe ser un hex válido (ej: #3A86FF).');
+      return const ValidationResult.fail(
+          'El color debe ser un hex válido (ej: #3A86FF).');
     }
     final isHex = RegExp(r'^[0-9A-Fa-f]{6}$').hasMatch(hex);
     if (!isHex) {
-      return const ValidationResult.fail('El color debe contener solo caracteres hexadecimales.');
+      return const ValidationResult.fail(
+          'El color debe contener solo caracteres hexadecimales.');
     }
     return const ValidationResult.ok();
   }

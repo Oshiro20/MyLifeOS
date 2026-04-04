@@ -2,6 +2,7 @@
 sealed class SyncResult {}
 
 class SyncSuccess extends SyncResult {}
+
 class SyncFailure extends SyncResult {
   final String message;
   SyncFailure(this.message);
@@ -25,7 +26,6 @@ abstract class ISyncService {
 
   // ── Food Coach ──────────────────────────────────────────────────────────
   Future<SyncResult> syncFoodCoach(dynamic localDatabase);
-
 
   // ── Cocina ──────────────────────────────────────────────────────────────
   Future<SyncResult> syncCocina(dynamic localDatabase);

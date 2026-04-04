@@ -35,13 +35,14 @@ class SyncState {
     bool? isSyncing,
     String? lastError,
     DateTime? lastSync,
-  }) => SyncState(
-    isConnecting: isConnecting ?? this.isConnecting,
-    isConnected: isConnected ?? this.isConnected,
-    isSyncing: isSyncing ?? this.isSyncing,
-    lastError: lastError,
-    lastSync: lastSync ?? this.lastSync,
-  );
+  }) =>
+      SyncState(
+        isConnecting: isConnecting ?? this.isConnecting,
+        isConnected: isConnected ?? this.isConnected,
+        isSyncing: isSyncing ?? this.isSyncing,
+        lastError: lastError,
+        lastSync: lastSync ?? this.lastSync,
+      );
 }
 
 class SyncNotifier extends Notifier<SyncState> {
@@ -59,13 +60,14 @@ class SyncNotifier extends Notifier<SyncState> {
 
   Future<void> _tryAutoConnect() async {
     const url = 'https://opxwfwtsdiktjuaajvexp.supabase.co';
-    const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9weHdmd3NkaWt0anVhYWp2ZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzc2OTksImV4cCI6MjA4Nzk1MzY5OX0.x1inE4FzaP6WG_tNTTka0aX9bs2Jw5rhkt3z8ejOp3U';
+    const key =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9weHdmd3NkaWt0anVhYWp2ZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzc2OTksImV4cCI6MjA4Nzk1MzY5OX0.x1inE4FzaP6WG_tNTTka0aX9bs2Jw5rhkt3z8ejOp3U';
     await connect(url, key);
   }
 
   Future<bool> connect(String url, String anonKey) async {
     state = state.copyWith(isConnecting: true, lastError: null);
-    
+
     final res = await _useCase.connect(url.trim(), anonKey.trim());
     if (res is SyncSuccess) {
       await _storage.write(key: _urlKey, value: url.trim());
@@ -91,7 +93,7 @@ class SyncNotifier extends Notifier<SyncState> {
     state = state.copyWith(isSyncing: true, lastError: null);
 
     final res = await _useCase.executeSync(appDatabase);
-    
+
     if (res is SyncSuccess) {
       state = state.copyWith(isSyncing: false, lastSync: DateTime.now());
       return true;
@@ -103,4 +105,5 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 }
 
-final syncProvider = NotifierProvider<SyncNotifier, SyncState>(SyncNotifier.new);
+final syncProvider =
+    NotifierProvider<SyncNotifier, SyncState>(SyncNotifier.new);

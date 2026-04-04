@@ -45,9 +45,15 @@ class _FoodCoachScreenState extends ConsumerState<FoodCoachScreen>
           labelStyle:
               const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           tabs: const [
-            Tab(icon: Icon(Icons.restaurant_outlined, size: 20), text: 'Evaluar'),
-            Tab(icon: Icon(Icons.history_outlined, size: 20), text: 'Historial'),
-            Tab(icon: Icon(Icons.bar_chart_outlined, size: 20), text: 'Progreso'),
+            Tab(
+                icon: Icon(Icons.restaurant_outlined, size: 20),
+                text: 'Evaluar'),
+            Tab(
+                icon: Icon(Icons.history_outlined, size: 20),
+                text: 'Historial'),
+            Tab(
+                icon: Icon(Icons.bar_chart_outlined, size: 20),
+                text: 'Progreso'),
           ],
         ),
       ),

@@ -36,67 +36,75 @@ class OutfitsTab extends ConsumerWidget {
       content = ListView.builder(
         padding: const EdgeInsets.all(12),
         itemCount: outfits.length,
-      itemBuilder: (ctx, i) {
-        final outfit = outfits[i];
-        final garments = outfit.garmentIds
-            .map((id) => garmentMap[id])
-            .whereType<WardrobeGarment>()
-            .toList();
+        itemBuilder: (ctx, i) {
+          final outfit = outfits[i];
+          final garments = outfit.garmentIds
+              .map((id) => garmentMap[id])
+              .whereType<WardrobeGarment>()
+              .toList();
 
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Expanded(
-                  child: Text(outfit.name,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15)),
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(
+                    child: Text(outfit.name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15)),
+                  ),
+                  Text('${outfit.timesWorn}× usado',
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.38),
+                          fontSize: 11)),
+                ]),
+                const SizedBox(height: 8),
+                Row(
+                  children: garments
+                      .take(4)
+                      .map((g) => Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: _ColorDot(hex: g.primaryColor),
+                          ))
+                      .toList(),
                 ),
-                Text('${outfit.timesWorn}× usado',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
-              ]),
-              const SizedBox(height: 8),
-              Row(
-                children: garments
-                    .take(4)
-                    .map((g) => Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: _ColorDot(hex: g.primaryColor),
-                        ))
-                    .toList(),
-              ),
-              const SizedBox(height: 8),
-              Row(children: [
-                _Tag(outfit.occasion), const SizedBox(width: 6),
-                _Tag(outfit.season.name),
-              ]),
-            ],
-          ),
-        );
-      },
-    );
+                const SizedBox(height: 8),
+                Row(children: [
+                  _Tag(outfit.occasion),
+                  const SizedBox(width: 6),
+                  _Tag(outfit.season.name),
+                ]),
+              ],
+            ),
+          );
+        },
+      );
     }
 
     return Stack(
       children: [
         content,
         Positioned(
-          right: 16, bottom: 16,
+          right: 16,
+          bottom: 16,
           child: FloatingActionButton(
             heroTag: 'add_outfit',
             backgroundColor: const Color(0xFF00C896),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MannequinCanvasScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const MannequinCanvasScreen()),
               );
             },
             child: const Icon(Icons.add, color: Colors.white),
@@ -125,23 +133,36 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        left: 20, right: 20, top: 20,
+        left: 20,
+        right: 20,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       height: MediaQuery.of(context).size.height * 0.8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Crear Outfit', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Crear Outfit',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(
             controller: _name,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Nombre (ej: Outfit de playa)',
-              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
-              filled: true, fillColor: const Color(0xFF2A2A40),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              hintStyle: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38)),
+              filled: true,
+              fillColor: const Color(0xFF2A2A40),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
             ),
           ),
           const SizedBox(height: 16),
@@ -156,11 +177,19 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: _ColorDot(hex: g.primaryColor),
-                  title: Text(g.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-                  subtitle: Text(g.type.label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38))),
+                  title: Text(g.name,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface)),
+                  subtitle: Text(g.type.label,
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.38))),
                   trailing: Icon(
                     isSelected ? Icons.check_circle : Icons.circle_outlined,
-                    color: isSelected ? const Color(0xFF00C896) : Colors.white38,
+                    color:
+                        isSelected ? const Color(0xFF00C896) : Colors.white38,
                   ),
                   onTap: () => setState(() {
                     if (isSelected) {
@@ -177,14 +206,17 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00C896),
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               if (_name.text.trim().isEmpty || _selected.isEmpty) return;
-              widget.onCreate(_name.text.trim(), _selected.toList(), _occasion, _season);
+              widget.onCreate(
+                  _name.text.trim(), _selected.toList(), _occasion, _season);
               Navigator.pop(context);
             },
-            child: const Text('Guardar Outfit', style: TextStyle(color: Colors.white, fontSize: 16)),
+            child: const Text('Guardar Outfit',
+                style: TextStyle(color: Colors.white, fontSize: 16)),
           ),
         ],
       ),
@@ -206,7 +238,8 @@ class _ColorDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 20, height: 20,
+        width: 20,
+        height: 20,
         decoration: BoxDecoration(
           color: _color,
           shape: BoxShape.circle,
@@ -225,6 +258,12 @@ class _Tag extends StatelessWidget {
           color: const Color(0xFF2A2A40),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 10)),
+        child: Text(text,
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.38),
+                fontSize: 10)),
       );
 }

@@ -54,8 +54,12 @@ void main() {
     test('exportedAt se parsea correctamente', () {
       final summary = WalletSummary.fromJson({
         'exportedAt': '2026-04-02T15:30:00.000',
-        'version': '', 'month': '', 'balance': 0,
-        'income': 0, 'expenses': 0, 'currency': 'PEN',
+        'version': '',
+        'month': '',
+        'balance': 0,
+        'income': 0,
+        'expenses': 0,
+        'currency': 'PEN',
       });
 
       expect(summary.exportedAt.year, 2026);
@@ -67,8 +71,12 @@ void main() {
       final before = DateTime.now();
       final summary = WalletSummary.fromJson({
         'exportedAt': 'fecha-invalida',
-        'version': '', 'month': '', 'balance': 0,
-        'income': 0, 'expenses': 0, 'currency': 'PEN',
+        'version': '',
+        'month': '',
+        'balance': 0,
+        'income': 0,
+        'expenses': 0,
+        'currency': 'PEN',
       });
       final after = DateTime.now();
 

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/cocina_providers.dart';
 
@@ -88,7 +88,8 @@ class ShoppingTab extends ConsumerWidget {
             backgroundColor: const Color(0xFF00C896),
             icon: const Icon(Icons.auto_awesome, color: Colors.white),
             label: const Text('Generar lista',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w700)),
             onPressed: () => notifier.generateShoppingList(state.suggestions),
           ),
         ),
@@ -133,7 +134,8 @@ class _ShoppingTile extends StatelessWidget {
         ),
         subtitle: Text(subtitle,
             style: TextStyle(
-                color: checked ? Colors.white12 : Colors.white38, fontSize: 12)),
+                color: checked ? Colors.white12 : Colors.white38,
+                fontSize: 12)),
         controlAffinity: ListTileControlAffinity.leading,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

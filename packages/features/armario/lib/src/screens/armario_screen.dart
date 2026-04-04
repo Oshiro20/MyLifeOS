@@ -53,7 +53,9 @@ class _ArmarioScreenState extends ConsumerState<ArmarioScreen>
             Tab(icon: Icon(Icons.checkroom_outlined, size: 20), text: 'Ropa'),
             Tab(icon: Icon(Icons.snowshoeing, size: 20), text: 'Calzado'),
             Tab(icon: Icon(Icons.style_outlined, size: 20), text: 'Outfits'),
-            Tab(icon: Icon(Icons.auto_awesome_outlined, size: 20), text: 'Asistente'),
+            Tab(
+                icon: Icon(Icons.auto_awesome_outlined, size: 20),
+                text: 'Asistente'),
           ],
         ),
       ),

@@ -44,12 +44,19 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           labelColor: const Color(0xFF00C896),
           unselectedLabelColor: Colors.white38,
           isScrollable: false,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          labelStyle:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(icon: Icon(Icons.kitchen_outlined, size: 20), text: 'Despensa'),
-            Tab(icon: Icon(Icons.menu_book_outlined, size: 20), text: 'Recetas'),
-            Tab(icon: Icon(Icons.lightbulb_outline, size: 20), text: 'Sugeridas'),
-            Tab(icon: Icon(Icons.shopping_cart_outlined, size: 20), text: 'Lista'),
+            Tab(
+                icon: Icon(Icons.menu_book_outlined, size: 20),
+                text: 'Recetas'),
+            Tab(
+                icon: Icon(Icons.lightbulb_outline, size: 20),
+                text: 'Sugeridas'),
+            Tab(
+                icon: Icon(Icons.shopping_cart_outlined, size: 20),
+                text: 'Lista'),
           ],
         ),
       ),

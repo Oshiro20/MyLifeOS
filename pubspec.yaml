@@ -2,7 +2,7 @@ name: my_life_os_workspace
 publish_to: none
 
 environment:
-  sdk: ^3.3.4
+  sdk: ^3.5.0
 
 # Dart Workspaces — un solo `flutter pub get` en la raíz resuelve todo
 workspace:

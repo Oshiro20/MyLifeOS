@@ -30,7 +30,8 @@ class WalletSummary {
         income: (json['income'] as num?)?.toDouble() ?? 0.0,
         expenses: (json['expenses'] as num?)?.toDouble() ?? 0.0,
         currency: json['currency'] as String? ?? 'PEN',
-        exportedAt: DateTime.tryParse(json['exportedAt'] as String? ?? '') ?? DateTime.now(),
+        exportedAt: DateTime.tryParse(json['exportedAt'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -44,7 +45,8 @@ class WalletSummaryReader {
       final dir = await getApplicationDocumentsDirectory();
       final file = File(p.join(dir.path, _fileName));
       if (!await file.exists()) return null;
-      final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      final json =
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>;
       return WalletSummary.fromJson(json);
     } catch (_) {
       return null;

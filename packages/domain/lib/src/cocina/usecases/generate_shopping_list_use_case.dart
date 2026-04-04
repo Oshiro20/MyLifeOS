@@ -56,16 +56,16 @@ class GenerateShoppingListUseCase {
               );
             }
           } else {
-             // Treat as missing entirely
-             missingItems.add(
-                ShoppingItem(
-                  id: '',
-                  name: requirement.ingredientName,
-                  quantity: reqQuantity,
-                  unit: requirement.unit,
-                  createdAt: DateTime.now(),
-                ),
-              );
+            // Treat as missing entirely
+            missingItems.add(
+              ShoppingItem(
+                id: '',
+                name: requirement.ingredientName,
+                quantity: reqQuantity,
+                unit: requirement.unit,
+                createdAt: DateTime.now(),
+              ),
+            );
           }
         }
       } else {
@@ -85,7 +85,8 @@ class GenerateShoppingListUseCase {
     return missingItems;
   }
 
-  InventoryIngredient? _findInInventory(List<InventoryIngredient> inventory, String name) {
+  InventoryIngredient? _findInInventory(
+      List<InventoryIngredient> inventory, String name) {
     for (final inv in inventory) {
       if (inv.name.toLowerCase().trim() == name) {
         return inv;

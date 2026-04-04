@@ -34,7 +34,9 @@ class FinanzasScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // ── Gráfico semanal ─────────────────────────────────────────
-                _SectionTitle(title: 'Actividad semanal', trailing: 'Promedio: S/280/día'),
+                _SectionTitle(
+                    title: 'Actividad semanal',
+                    trailing: 'Promedio: S/280/día'),
                 const SizedBox(height: 10),
                 _WeeklyChart(isDark: isDark),
                 const SizedBox(height: 20),
@@ -91,7 +93,9 @@ class _SectionTitle extends StatelessWidget {
                 style: TextStyle(
                   color: onTrailingTap != null ? primary : Colors.grey,
                   fontSize: 12,
-                  fontWeight: onTrailingTap != null ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: onTrailingTap != null
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                 )),
           ),
       ],
@@ -143,14 +147,23 @@ class _WeeklyChart extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                             gradient: isActive
                                 ? LinearGradient(
-                                    colors: [primary, primary.withValues(alpha: 0.6)],
+                                    colors: [
+                                      primary,
+                                      primary.withValues(alpha: 0.6)
+                                    ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   )
                                 : null,
-                            color: isActive ? null : primary.withValues(alpha: 0.2),
+                            color: isActive
+                                ? null
+                                : primary.withValues(alpha: 0.2),
                             boxShadow: isActive
-                                ? [BoxShadow(color: primary.withValues(alpha: 0.4), blurRadius: 8)]
+                                ? [
+                                    BoxShadow(
+                                        color: primary.withValues(alpha: 0.4),
+                                        blurRadius: 8)
+                                  ]
                                 : null,
                           ),
                         ),
@@ -171,7 +184,8 @@ class _WeeklyChart extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: i == _activeDay ? FontWeight.w700 : FontWeight.normal,
+                    fontWeight:
+                        i == _activeDay ? FontWeight.w700 : FontWeight.normal,
                     color: i == _activeDay
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey,
@@ -208,7 +222,8 @@ class _CategoryList extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
+        border:
+            Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
       ),
       child: Column(
         children: _categories.map((c) {
@@ -273,7 +288,8 @@ class _RecentTransactions extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
+        border:
+            Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
       ),
       child: Column(
         children: List.generate(_txns.length, (i) {
@@ -301,7 +317,8 @@ class _RecentTransactions extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 13)),
                 subtitle: Text('${t.$3} · ${t.$2}',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+                    style:
+                        TextStyle(color: Colors.grey.shade500, fontSize: 11)),
                 trailing: Text(
                   '${isPositive ? '+' : ''}S/ ${t.$4.toStringAsFixed(2)}',
                   style: TextStyle(

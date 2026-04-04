@@ -17,12 +17,12 @@ class ExtractRecipeUseCase {
 
     try {
       final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      
+
       final name = decoded['name'] ?? 'Receta Importada';
       final description = decoded['description'] ?? '';
       final durationMinutes = decoded['durationMinutes'] as int? ?? 30;
       final servings = decoded['servings'] as int? ?? 2;
-      
+
       final rawIngredients = decoded['ingredients'] as List<dynamic>? ?? [];
       final List<RecipeIngredient> ingredients = [];
 
@@ -30,7 +30,7 @@ class ExtractRecipeUseCase {
 
       for (int i = 0; i < rawIngredients.length; i++) {
         final item = rawIngredients[i] as Map<String, dynamic>;
-        
+
         final ingName = item['ingredientName'] ?? 'Ingrediente \$i';
         final qty = (item['quantity'] as num?)?.toDouble() ?? 1.0;
         final rawUnit = item['unit'] as String? ?? 'unidades';
@@ -40,7 +40,7 @@ class ExtractRecipeUseCase {
           recipeId: recipeId,
           ingredientName: ingName,
           quantity: qty,
-          unit: rawUnit, 
+          unit: rawUnit,
         ));
       }
 
@@ -61,7 +61,6 @@ class ExtractRecipeUseCase {
         tags: tags,
         createdAt: DateTime.now(),
       );
-
     } catch (e) {
       throw Exception('Error al parsear receta desde IA: \$e');
     }

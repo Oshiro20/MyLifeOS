@@ -6,8 +6,12 @@ void main() {
     test('ingrediente con fecha de vencimiento', () {
       final expiry = DateTime(2026, 12, 31);
       final i = Ingredient(
-        id: '1', name: 'Leche', category: IngredientCategory.dairy,
-        quantity: 1, unit: 'L', expirationDate: expiry,
+        id: '1',
+        name: 'Leche',
+        category: IngredientCategory.dairy,
+        quantity: 1,
+        unit: 'L',
+        expirationDate: expiry,
       );
       expect(i.expirationDate, expiry);
     });

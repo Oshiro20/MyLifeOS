@@ -36,8 +36,6 @@ class WeeklyStats {
     required this.totalMeals,
   });
 
-  double get healthyPercent =>
-      totalMeals == 0 ? 0 : healthyCount / totalMeals;
-  double get junkPercent =>
-      totalMeals == 0 ? 0 : junkCount / totalMeals;
+  double get healthyPercent => totalMeals == 0 ? 0 : healthyCount / totalMeals;
+  double get junkPercent => totalMeals == 0 ? 0 : junkCount / totalMeals;
 }

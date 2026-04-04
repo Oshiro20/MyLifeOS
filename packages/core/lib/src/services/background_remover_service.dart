@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_rembg/local_rembg.dart';
 
-final backgroundRemoverServiceProvider = Provider<BackgroundRemoverService>((ref) {
+final backgroundRemoverServiceProvider =
+    Provider<BackgroundRemoverService>((ref) {
   return BackgroundRemoverService();
 });
 

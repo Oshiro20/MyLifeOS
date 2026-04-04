@@ -11,7 +11,8 @@ class PhysicalScannerScreen extends ConsumerStatefulWidget {
   const PhysicalScannerScreen({super.key});
 
   @override
-  ConsumerState<PhysicalScannerScreen> createState() => _PhysicalScannerScreenState();
+  ConsumerState<PhysicalScannerScreen> createState() =>
+      _PhysicalScannerScreenState();
 }
 
 class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
@@ -45,7 +46,8 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
 
   Future<void> _analyze() async {
     if (_imageFile == null) {
-      setState(() => _error = 'Por favor, tómate una foto o selecciona una de la galería.');
+      setState(() => _error =
+          'Por favor, tómate una foto o selecciona una de la galería.');
       return;
     }
     if (_heightController.text.isEmpty || _weightController.text.isEmpty) {
@@ -66,13 +68,17 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
         _weightController.text,
       );
 
-      if (jsonResponse == null) throw Exception('No se recibió respuesta de la IA.');
+      if (jsonResponse == null) {
+        throw Exception('No se recibió respuesta de la IA.');
+      }
 
       // Limpiar markdown si Gemini lo incluye
       var cleanJson = jsonResponse.trim();
       if (cleanJson.startsWith('```json')) {
         cleanJson = cleanJson.substring(7);
-        if (cleanJson.endsWith('```')) cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+        if (cleanJson.endsWith('```')) {
+          cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+        }
       }
       cleanJson = cleanJson.trim();
 
@@ -96,7 +102,8 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Perfil físico analizado y guardado con éxito!')),
+        const SnackBar(
+            content: Text('¡Perfil físico analizado y guardado con éxito!')),
       );
       Navigator.of(context).pop();
     } catch (e) {
@@ -170,9 +177,11 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
                       ? const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.camera_alt, size: 48, color: Colors.white54),
+                            Icon(Icons.camera_alt,
+                                size: 48, color: Colors.white54),
                             SizedBox(height: 8),
-                            Text('Tocar para añadir foto', style: TextStyle(color: Colors.white54)),
+                            Text('Tocar para añadir foto',
+                                style: TextStyle(color: Colors.white54)),
                           ],
                         )
                       : null,
@@ -189,11 +198,16 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00C896),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: _isAnalyzing
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Analizar Perfil con Gemini ✨', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                  : const Text('Analizar Perfil con Gemini ✨',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -210,7 +224,8 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white),
-              title: const Text('Tomar Foto', style: TextStyle(color: Colors.white)),
+              title: const Text('Tomar Foto',
+                  style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.of(context).pop();
                 _pickImage(ImageSource.camera);
@@ -218,7 +233,8 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.white),
-              title: const Text('Elegir de Galería', style: TextStyle(color: Colors.white)),
+              title: const Text('Elegir de Galería',
+                  style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.of(context).pop();
                 _pickImage(ImageSource.gallery);

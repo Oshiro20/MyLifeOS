@@ -90,42 +90,54 @@ class ArmarioRepository implements IArmarioRepository {
           addedAt: Value(now),
         ));
     return WardrobeGarment(
-      id: id, name: g.name, type: g.type,
-      primaryColor: g.primaryColor, secondaryColor: g.secondaryColor,
-      style: g.style, material: g.material, season: g.season,
-      isFavorite: g.isFavorite, isClean: g.isClean, hasRemovableHood: g.hasRemovableHood,
-      rating: g.rating, size: g.size, brand: g.brand, price: g.price,
-      imageAssetId: g.imageAssetId, imageDetailsPath: g.imageDetailsPath, addedAt: now,
+      id: id,
+      name: g.name,
+      type: g.type,
+      primaryColor: g.primaryColor,
+      secondaryColor: g.secondaryColor,
+      style: g.style,
+      material: g.material,
+      season: g.season,
+      isFavorite: g.isFavorite,
+      isClean: g.isClean,
+      hasRemovableHood: g.hasRemovableHood,
+      rating: g.rating,
+      size: g.size,
+      brand: g.brand,
+      price: g.price,
+      imageAssetId: g.imageAssetId,
+      imageDetailsPath: g.imageDetailsPath,
+      addedAt: now,
     );
   }
 
   @override
   Future<void> updateGarment(WardrobeGarment g) async {
-    await (_db.update(_db.wardrobeGarments)
-          ..where((t) => t.id.equals(g.id)))
+    await (_db.update(_db.wardrobeGarments)..where((t) => t.id.equals(g.id)))
         .write(WardrobeGarmentsCompanion(
-          name: Value(g.name),
-          typeIndex: Value(g.type.index),
-          primaryColor: Value(g.primaryColor),
-          secondaryColor: Value(g.secondaryColor),
-          styleIndex: Value(g.style.index),
-          material: Value(g.material),
-          season: Value(g.season.name),
-          isFavorite: Value(g.isFavorite),
-          isClean: Value(g.isClean),
-          hasRemovableHood: Value(g.hasRemovableHood),
-          rating: Value(g.rating),
-          size: Value(g.size),
-          brand: Value(g.brand),
-          price: Value(g.price),
-          imageAssetId: Value(g.imageAssetId),
-          imageDetailsPath: Value(g.imageDetailsPath),
-        ));
+      name: Value(g.name),
+      typeIndex: Value(g.type.index),
+      primaryColor: Value(g.primaryColor),
+      secondaryColor: Value(g.secondaryColor),
+      styleIndex: Value(g.style.index),
+      material: Value(g.material),
+      season: Value(g.season.name),
+      isFavorite: Value(g.isFavorite),
+      isClean: Value(g.isClean),
+      hasRemovableHood: Value(g.hasRemovableHood),
+      rating: Value(g.rating),
+      size: Value(g.size),
+      brand: Value(g.brand),
+      price: Value(g.price),
+      imageAssetId: Value(g.imageAssetId),
+      imageDetailsPath: Value(g.imageDetailsPath),
+    ));
   }
 
   @override
   Future<void> deleteGarment(String id) async {
-    await (_db.delete(_db.wardrobeGarments)..where((t) => t.id.equals(id))).go();
+    await (_db.delete(_db.wardrobeGarments)..where((t) => t.id.equals(id)))
+        .go();
   }
 
   @override
@@ -167,8 +179,13 @@ class ArmarioRepository implements IArmarioRepository {
           timesWorn: Value(o.timesWorn),
           createdAt: Value(o.createdAt),
         ));
-    return Outfit(id: id, name: o.name, garmentIds: o.garmentIds,
-        occasion: o.occasion, season: o.season, createdAt: o.createdAt);
+    return Outfit(
+        id: id,
+        name: o.name,
+        garmentIds: o.garmentIds,
+        occasion: o.occasion,
+        season: o.season,
+        createdAt: o.createdAt);
   }
 
   @override
@@ -194,12 +211,14 @@ class ArmarioRepository implements IArmarioRepository {
     final all = await getAllGarments();
     final clean = all.where((g) => g.isClean).toList();
 
-    final tops = clean.where((g) =>
-        g.type == GarmentType.shirt ||
-        g.type == GarmentType.tshirt).toList();
-    final bottoms = clean.where((g) =>
-        g.type == GarmentType.pants ||
-        g.type == GarmentType.jeans).toList();
+    final tops = clean
+        .where(
+            (g) => g.type == GarmentType.shirt || g.type == GarmentType.tshirt)
+        .toList();
+    final bottoms = clean
+        .where(
+            (g) => g.type == GarmentType.pants || g.type == GarmentType.jeans)
+        .toList();
     final shoes = clean.where((g) => g.type == GarmentType.shoes).toList();
 
     final suggestions = <List<WardrobeGarment>>[];
@@ -209,7 +228,7 @@ class ArmarioRepository implements IArmarioRepository {
         // Color compatibility: neutros combinan con todo, complementarios se priorizan
         if (!_colorsCompatible(top.primaryColor, bottom.primaryColor)) continue;
         final shoe = shoes.isNotEmpty ? shoes.first : null;
-        final combo = [top, bottom, ?shoe];
+        final combo = shoe != null ? [top, bottom, shoe] : [top, bottom];
         suggestions.add(combo);
         if (suggestions.length >= limit) return suggestions;
       }
@@ -219,9 +238,20 @@ class ArmarioRepository implements IArmarioRepository {
 
   bool _colorsCompatible(String a, String b) {
     // Neutros: blanco, negro, gris, beige, navy
-    const neutrals = {'#FFFFFF', '#000000', '#808080', '#F5F5DC', '#003153',
-        '#FFFAFA', '#1C1C1C', '#D3D3D3', '#FAEBD7', '#9E9E9E'};
-    if (neutrals.contains(a.toUpperCase()) || neutrals.contains(b.toUpperCase())) {
+    const neutrals = {
+      '#FFFFFF',
+      '#000000',
+      '#808080',
+      '#F5F5DC',
+      '#003153',
+      '#FFFAFA',
+      '#1C1C1C',
+      '#D3D3D3',
+      '#FAEBD7',
+      '#9E9E9E'
+    };
+    if (neutrals.contains(a.toUpperCase()) ||
+        neutrals.contains(b.toUpperCase())) {
       return true;
     }
     // Si son iguales o muy similares, evitar
@@ -254,6 +284,5 @@ class ArmarioRepository implements IArmarioRepository {
   }
 
   @override
-  Future<void> deleteUserProfile() async =>
-      _db.delete(_db.userProfile).go();
+  Future<void> deleteUserProfile() async => _db.delete(_db.userProfile).go();
 }

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 // ── Provider for Gemini Service ─────────────────────────────────────────────
@@ -14,12 +16,18 @@ final geminiServiceProvider = Provider<GeminiService>((ref) {
 
 // ── Service Class ─────────────────────────────────────────────────────────────
 class GeminiService {
-
   GeminiService();
 
   Future<void> saveApiKey(String key) async {}
 
   Future<String?> getApiKey() async {
+    // Primero intentar con variable de entorno
+    final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    if (envKey.isNotEmpty) {
+      return envKey;
+    }
+    // Fallback a hardcode (solo para desarrollo)
+    debugPrint('⚠️ WARNING: GEMINI_API_KEY not set in .env file');
     return 'AIzaSyDxCMDUQMKg4Y3GcUV872rG85NvgUS0xS8';
   }
 
@@ -30,7 +38,7 @@ class GeminiService {
     if (apiKey == null || apiKey.trim().isEmpty) {
       return null;
     }
-    
+
     // Choose model based on requirements
     final modelName = 'gemini-flash-latest';
     return GenerativeModel(model: modelName, apiKey: apiKey);
@@ -62,7 +70,7 @@ Devuelve EXACTAMENTE un objeto JSON válido con este formato:
 }
 NO DEVUELVAS NADA MÁS QUE EL JSON. Ni markdown (` ```json `), ni otro texto. NO ABRAS CON ```json.
 ''';
-    
+
     final content = <Content>[];
     if (photoPath != null) {
       final bytes = await File(photoPath).readAsBytes();
@@ -253,7 +261,7 @@ Ejemplo de salida válida:
 
     final bytes = await File(photoPath).readAsBytes();
     final mimeType = _getMimeType(photoPath);
-    
+
     final content = [
       Content.multi([
         TextPart(prompt),
@@ -386,5 +394,18 @@ ${textContext != null && textContext.isNotEmpty ? '\nEl usuario ha proporcionado
       throw Exception('Error en Gemini al extraer la receta: $e');
     }
   }
-}
 
+  /// Genera texto a partir de un prompt libre.
+  /// Útil para análisis financiero, insights del día, etc.
+  Future<String?> generateText({required String prompt}) async {
+    final model = await _getModel();
+    if (model == null) return null;
+    try {
+      final response =
+          await model.generateContent([Content.text(prompt)]);
+      return response.text;
+    } catch (e) {
+      throw Exception('Error en Gemini generateText: $e');
+    }
+  }
+}

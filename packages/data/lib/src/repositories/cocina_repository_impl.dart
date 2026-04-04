@@ -90,21 +90,20 @@ class CocinaRepository implements ICocinaRepository {
     await (_db.update(_db.inventoryIngredients)
           ..where((t) => t.id.equals(ing.id)))
         .write(InventoryIngredientsCompanion(
-          name: Value(ing.name),
-          primaryCategory: Value(ing.primaryCategory),
-          subCategory: Value(ing.subCategory),
-          quantity: Value(ing.quantity),
-          unit: Value(ing.unit),
-          expirationDate: Value(ing.expirationDate),
-          imageAssetId: Value(ing.imageAssetId),
-          storageArea: Value(ing.storageArea),
-        ));
+      name: Value(ing.name),
+      primaryCategory: Value(ing.primaryCategory),
+      subCategory: Value(ing.subCategory),
+      quantity: Value(ing.quantity),
+      unit: Value(ing.unit),
+      expirationDate: Value(ing.expirationDate),
+      imageAssetId: Value(ing.imageAssetId),
+      storageArea: Value(ing.storageArea),
+    ));
   }
 
   @override
   Future<void> deleteIngredient(String id) async {
-    await (_db.delete(_db.inventoryIngredients)
-          ..where((t) => t.id.equals(id)))
+    await (_db.delete(_db.inventoryIngredients)..where((t) => t.id.equals(id)))
         .go();
   }
 
@@ -194,8 +193,7 @@ class CocinaRepository implements ICocinaRepository {
     int limit = 10,
   }) async {
     final allRecipes = await getAllRecipes();
-    final availableNames =
-        inventory.map((i) => i.name.toLowerCase()).toSet();
+    final availableNames = inventory.map((i) => i.name.toLowerCase()).toSet();
 
     // Puntuar cada receta según cobertura de ingredientes
     final scored = allRecipes.map((recipe) {

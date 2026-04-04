@@ -2,7 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
 
 // ── Estado ────────────────────────────────────────────────────────────────────
-enum BackupStatus { idle, exportingInProgress, importingInProgress, done, error }
+enum BackupStatus {
+  idle,
+  exportingInProgress,
+  importingInProgress,
+  done,
+  error
+}
 
 class BackupState {
   final BackupStatus status;
@@ -58,7 +64,8 @@ class BackupNotifier extends Notifier<BackupState> {
       case BackupSuccess():
         state = state.copyWith(
           status: BackupStatus.done,
-          lastMessage: 'Backup exportado correctamente (${_formatSize(result.sizeBytes)}).',
+          lastMessage:
+              'Backup exportado correctamente (${_formatSize(result.sizeBytes)}).',
         );
       case BackupFailure():
         state = state.copyWith(
@@ -79,7 +86,8 @@ class BackupNotifier extends Notifier<BackupState> {
       case RestoreSuccess():
         state = state.copyWith(
           status: BackupStatus.done,
-          lastMessage: '¡Restauración exitosa! Reinicia la app para aplicar los cambios.',
+          lastMessage:
+              '¡Restauración exitosa! Reinicia la app para aplicar los cambios.',
         );
       case BackupFailure():
         state = state.copyWith(

@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 
@@ -33,7 +35,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       // 1. Get Video info from API
       final info = await tikTokService.getTikTokVideoInfo(url);
       if (info == null || !info.containsKey('data')) {
-        throw Exception('No se pudo resolver la información del video de TikTok.');
+        throw Exception(
+            'No se pudo resolver la información del video de TikTok.');
       }
 
       // El endpoint de RapidAPI suele devolver 'play' para el video sin marca de agua
@@ -43,8 +46,9 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       currentStatusMessage = 'Descargando video en background...';
-      final tempFile = File('${(await getTemporaryDirectory()).path}/tiktok_video_${DateTime.now().millisecondsSinceEpoch}.mp4');
-      
+      final tempFile = File(
+          '${(await getTemporaryDirectory()).path}/tiktok_video_${DateTime.now().millisecondsSinceEpoch}.mp4');
+
       final response = await http.get(Uri.parse(videoUrl));
       if (response.statusCode != 200) {
         throw Exception('Fallo al descargar el video de TikTok.');
@@ -58,7 +62,6 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       if (tempFile.existsSync()) {
         tempFile.deleteSync();
       }
-
     } catch (e) {
       errorMessage = e.toString();
       state = RecipeImportState.error;
@@ -73,17 +76,18 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     try {
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
       final recipe = await extractUseCase.execute(mediaPath: filePath);
-      
+
       if (recipe != null) {
         importedRecipe = recipe;
         currentStatusMessage = '¡Receta encontrada!';
         state = RecipeImportState.success;
       } else {
-        throw Exception('La IA no pudo estructurar la receta o el formato no es válido.');
+        throw Exception(
+            'La IA no pudo estructurar la receta o el formato no es válido.');
       }
     } catch (e) {
-       errorMessage = e.toString();
-       state = RecipeImportState.error;
+      errorMessage = e.toString();
+      state = RecipeImportState.error;
     }
   }
 
@@ -97,7 +101,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
 // PROVIDERS DECLARATION
 final extractRecipeUseCaseProvider = Provider<ExtractRecipeUseCase>((ref) {
-  // We need to inject an IAIRecipeExtractor. 
+  // We need to inject an IAIRecipeExtractor.
   // For simplicity since the Core GeminiService provides exactly what we need,
   // we proxy it via an anonymous class implementing IAIRecipeExtractor.
   final gemini = ref.watch(geminiServiceProvider);
@@ -107,10 +111,18 @@ final extractRecipeUseCaseProvider = Provider<ExtractRecipeUseCase>((ref) {
 });
 
 final tikTokServiceProvider = Provider<TikTokService>((ref) {
-  return TikTokService('5bef8f8804msh689bebc06557fa2p1f4126jsn0b7a9680766c');
+  final apiKey = dotenv.env['TIKTOK_API_KEY'] ?? '';
+  if (apiKey.isEmpty) {
+    // Log warning in development but don't crash
+    debugPrint('⚠️ WARNING: TIKTOK_API_KEY not set in .env file');
+    debugPrint(
+        'Get your key from: https://rapidapi.com/DataCrawler/api/tiktok-scraper7');
+  }
+  return TikTokService(apiKey);
 });
 
-final recipeImportProvider = NotifierProvider<RecipeImportNotifier, RecipeImportState>(() {
+final recipeImportProvider =
+    NotifierProvider<RecipeImportNotifier, RecipeImportState>(() {
   return RecipeImportNotifier();
 });
 

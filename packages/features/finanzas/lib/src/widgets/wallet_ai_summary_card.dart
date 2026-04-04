@@ -23,7 +23,12 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
 
   Future<void> _load() async {
     final summary = await WalletSummaryReader.read();
-    if (mounted) setState(() { _summary = summary; _loading = false; });
+    if (mounted) {
+      setState(() {
+        _summary = summary;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -48,7 +53,8 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.2)),
+        border:
+            Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.2)),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -67,13 +73,17 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
               ),
               const SizedBox(width: 8),
               const Text('WalletAI',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('v${s.version}',
-                      style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 11)),
                   Text(
                     'Sincronizado: ${s.exportedAt.day}/${s.exportedAt.month} ${s.exportedAt.hour}:${s.exportedAt.minute.toString().padLeft(2, '0')}',
                     style: const TextStyle(color: Colors.white24, fontSize: 9),
@@ -86,7 +96,9 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
           Text(
             '${s.currency} ${s.balance.toStringAsFixed(2)}',
             style: TextStyle(
-              color: isPositive ? const Color(0xFF00E5FF) : const Color(0xFFFF6B6B),
+              color: isPositive
+                  ? const Color(0xFF00E5FF)
+                  : const Color(0xFFFF6B6B),
               fontSize: 26,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
@@ -112,11 +124,13 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
               const Spacer(),
               TextButton.icon(
                 onPressed: _openWalletAI,
-                icon: const Icon(Icons.open_in_new, size: 14, color: Color(0xFF00C896)),
+                icon: const Icon(Icons.open_in_new,
+                    size: 14, color: Color(0xFF00C896)),
                 label: const Text('Abrir',
                     style: TextStyle(color: Color(0xFF00C896), fontSize: 12)),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -143,7 +157,8 @@ class _MetricChip extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _MetricChip({required this.label, required this.value, required this.color});
+  const _MetricChip(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -156,8 +171,12 @@ class _MetricChip extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
-          Text(value, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(label,
+              style:
+                  TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );

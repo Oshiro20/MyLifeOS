@@ -48,7 +48,8 @@ class MyLifeOSUpdateNotifier {
 
   /// Lanza el enlace en el navegador hacia la página principal de "Releases" o los asstes.
   static Future<void> launchUpdater() async {
-    final uri = Uri.parse('https://github.com/$_repoOwner/$_repoName/releases/latest');
+    final uri =
+        Uri.parse('https://github.com/$_repoOwner/$_repoName/releases/latest');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       debugPrint('No se pudo abrir $uri');
     }

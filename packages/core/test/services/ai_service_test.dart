@@ -7,7 +7,7 @@ void main() {
   group('GeminiService Tests', () {
     test('generateFoodEvaluation performs an evaluation', () async {
       final service = GeminiService();
-      // We expect this to fail or return null without real API auth in tests, 
+      // We expect this to fail or return null without real API auth in tests,
       // but the goal is to make it compile and not have unused variables.
       try {
         await service.generateFoodEvaluation(ingredients: ['manzana']);
@@ -17,7 +17,8 @@ void main() {
     test('analyzeGarment performs an analysis', () async {
       final service = GeminiService();
       try {
-        await service.analyzeGarment(name: 'Camisa azul', photoPath: 'dummy.jpg');
+        await service.analyzeGarment(
+            name: 'Camisa azul', photoPath: 'dummy.jpg');
       } catch (_) {}
     });
   });

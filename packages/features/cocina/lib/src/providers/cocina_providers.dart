@@ -93,11 +93,10 @@ class InventoryNotifier extends Notifier<InventoryState> {
   Future<void> update(InventoryIngredient ing) async {
     try {
       await _repo.updateIngredient(ing);
-      state = state.copyWith(
-          ingredients: [
-            for (final i in state.ingredients)
-              if (i.id == ing.id) ing else i
-          ]);
+      state = state.copyWith(ingredients: [
+        for (final i in state.ingredients)
+          if (i.id == ing.id) ing else i
+      ]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -154,7 +153,10 @@ class RecipesNotifier extends Notifier<RecipesState> {
       final existing = state.recipes.any((r) => r.id == saved.id);
       state = state.copyWith(
         recipes: existing
-            ? [for (final r in state.recipes) if (r.id == saved.id) saved else r]
+            ? [
+                for (final r in state.recipes)
+                  if (r.id == saved.id) saved else r
+              ]
             : [saved, ...state.recipes],
       );
     } catch (e) {
@@ -200,7 +202,8 @@ class RecipesNotifier extends Notifier<RecipesState> {
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 final cocinaRepositoryProvider = Provider<ICocinaRepository>((ref) {
-  throw UnimplementedError('Provide ICocinaRepository via ProviderScope.overrides');
+  throw UnimplementedError(
+      'Provide ICocinaRepository via ProviderScope.overrides');
 });
 
 final inventoryProvider =

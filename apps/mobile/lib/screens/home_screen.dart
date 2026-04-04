@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:core/core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:armario/armario.dart';
+import 'package:cocina/cocina.dart';
+import 'package:foodcoach/foodcoach.dart';
+import 'search_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
@@ -31,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF152019),
-        title: const Text('✨ Actualización disponible', 
+        title: const Text('✨ Actualización disponible',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: Text(
           'Se ha encontrado la versión $version de MyLifeOS. Te recomendamos descargarla e instalarla para obtener las últimas novedades.',
@@ -40,15 +45,19 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Más tarde', style: TextStyle(color: Colors.white38)),
+            child: const Text('Más tarde',
+                style: TextStyle(color: Colors.white38)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C896)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896)),
             onPressed: () {
               Navigator.pop(ctx);
               MyLifeOSUpdateNotifier.launchUpdater();
             },
-            child: const Text('Descargar', style: TextStyle(color: Color(0xFF0A0F0D), fontWeight: FontWeight.bold)),
+            child: const Text('Descargar',
+                style: TextStyle(
+                    color: Color(0xFF0A0F0D), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -61,95 +70,134 @@ class _HomeScreenState extends State<HomeScreen> {
     final primary = Theme.of(context).colorScheme.primary;
     final now = DateTime.now();
     final hour = now.hour;
-    final greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
+    final greeting = hour < 12
+        ? 'Buenos días'
+        : hour < 18
+            ? 'Buenas tardes'
+            : 'Buenas noches';
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // ── Header ────────────────────────────────────────────────────────
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: primary.withValues(alpha: 0.2),
-                      child: Icon(Icons.person_outline, color: primary, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(greeting,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                fontSize: 13)),
-                        const Text('Joel',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 20)),
-                      ],
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined),
-                      onPressed: () {},
-                    ),
-                  ],
+      body: RefreshIndicator(
+        color: primary,
+        backgroundColor: isDark ? const Color(0xFF152019) : Colors.white,
+        onRefresh: () async {
+          ref.invalidate(armarioProvider);
+          ref.invalidate(recipesProvider);
+          ref.invalidate(foodCoachProvider);
+          await Future.delayed(const Duration(milliseconds: 800));
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics()),
+          slivers: [
+            // ── Header ────────────────────────────────────────────────────────
+            SliverAppBar(
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: primary.withValues(alpha: 0.2),
+                        child: Icon(Icons.person_outline,
+                            color: primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(greeting,
+                              style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
+                                  fontSize: 13)),
+                          const Text('Joel',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 20)),
+                        ],
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.search_rounded),
+                        tooltip: 'Búsqueda global',
+                        onPressed: () => showSearch(
+                          context: context,
+                          delegate: MyLifeOSSearchDelegate(ref),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // ── Score de bienestar ──────────────────────────────────────
-                _WellbeingCard(isDark: isDark, primary: primary),
-                const SizedBox(height: 20),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // ── Score de bienestar ──────────────────────────────────────
+                  _WellbeingCard(isDark: isDark, primary: primary),
+                  const SizedBox(height: 20),
 
-                // ── Acceso rápido ───────────────────────────────────────────
-                const Text('Módulos',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(height: 12),
-                _QuickAccessGrid(),
-                const SizedBox(height: 20),
+                  // ── Acceso rápido ───────────────────────────────────────────
+                  const Text('Módulos',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  const SizedBox(height: 12),
+                  _QuickAccessGrid(),
+                  const SizedBox(height: 20),
 
-                // ── WalletAI resumen ────────────────────────────────────────
-                const Text('Finanzas',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(height: 12),
-                _FinanceSummary(isDark: isDark, primary: primary),
-                const SizedBox(height: 20),
+                  // ── WalletAI resumen ────────────────────────────────────────
+                  const Text('Finanzas',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  const SizedBox(height: 12),
+                  _FinanceSummary(isDark: isDark, primary: primary),
+                  const SizedBox(height: 20),
 
-                // ── Actividad reciente ──────────────────────────────────────
-                const Text('Actividad reciente',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(height: 12),
-                _RecentActivity(isDark: isDark, primary: primary),
-              ]),
+                  // ── Actividad reciente ──────────────────────────────────────
+                  const Text('Actividad reciente',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  const SizedBox(height: 12),
+                  _RecentActivity(isDark: isDark, primary: primary),
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ── Wellbeing card ────────────────────────────────────────────────────────────
-class _WellbeingCard extends StatelessWidget {
+class _WellbeingCard extends ConsumerWidget {
   final bool isDark;
   final Color primary;
   const _WellbeingCard({required this.isDark, required this.primary});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final armarioState = ref.watch(armarioProvider);
+    final foodCoachState = ref.watch(foodCoachProvider);
+    final outfitsCount = armarioState.outfits.length;
+
+    final avgScore = foodCoachState.weeklyStats?.averageHealthScore ?? 0.0;
+    final healthStr =
+        avgScore > 0 ? '${(avgScore * 100).toStringAsFixed(0)}%' : 'N/A';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -184,14 +232,23 @@ class _WellbeingCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text('Vas por buen camino hoy',
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.5),
                         fontSize: 13)),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _StatPill(label: 'Armario', value: '12 outfits', color: primary),
+                    _StatPill(
+                        label: 'Armario',
+                        value: '$outfitsCount outfits',
+                        color: primary),
                     const SizedBox(width: 8),
-                    _StatPill(label: 'Kcal', value: '1,840', color: const Color(0xFFFF6B6B)),
+                    _StatPill(
+                        label: 'Salud',
+                        value: healthStr,
+                        color: const Color(0xFFFF6B6B)),
                   ],
                 ),
               ],
@@ -223,7 +280,10 @@ class _WellbeingCard extends StatelessWidget {
                     Text('/100',
                         style: TextStyle(
                             fontSize: 10,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4))),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.4))),
                   ],
                 ),
               ],
@@ -239,7 +299,8 @@ class _StatPill extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _StatPill({required this.label, required this.value, required this.color});
+  const _StatPill(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +314,8 @@ class _StatPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label,
-              style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
+              style:
+                  TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10)),
           const SizedBox(width: 4),
           Text(value,
               style: TextStyle(
@@ -265,42 +327,73 @@ class _StatPill extends StatelessWidget {
 }
 
 // ── Quick access grid ─────────────────────────────────────────────────────────
-class _QuickAccessGrid extends StatelessWidget {
-  static const _modules = [
-    (
-      '/armario',
-      Icons.checkroom_outlined,
-      'Armario',
-      '12 outfits',
-      Color(0xFF00C896),
-    ),
-    (
-      '/cocina',
-      Icons.soup_kitchen_outlined,
-      'Cocina',
-      '3 recetas',
-      Color(0xFFF59E0B),
-    ),
-    (
-      '/finanzas',
-      Icons.account_balance_wallet_outlined,
-      'Finanzas',
-      'S/ 3,240',
-      Color(0xFF06B6D4),
-    ),
-    (
-      '/foodcoach',
-      Icons.restaurant_menu_outlined,
-      'FoodCoach',
-      '1,840 kcal',
-      Color(0xFFFF6B6B),
-    ),
-  ];
+class _QuickAccessGrid extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_QuickAccessGrid> createState() => _QuickAccessGridState();
+}
+
+class _QuickAccessGridState extends ConsumerState<_QuickAccessGrid> {
+  WalletSummary? _walletSummary;
+
+  @override
+  void initState() {
+    super.initState();
+    WalletSummaryReader.read().then((v) {
+      if (mounted) setState(() => _walletSummary = v);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF152019) : Colors.white;
+
+    final armarioState = ref.watch(armarioProvider);
+    final recipesState = ref.watch(recipesProvider);
+    final foodCoachState = ref.watch(foodCoachProvider);
+
+    final String armarioData = '${armarioState.outfits.length} outfits';
+    final String cocinaData = '${recipesState.recipes.length} recetas';
+
+    // Count meals in history for now (since MealLog doesn't have nutritionInfo directly)
+    final mealCount = foodCoachState.history.length;
+    final String foodCoachData =
+        mealCount > 0 ? '$mealCount comidas registradas' : '0 kcal';
+
+    final String finanzasData = _walletSummary != null
+        ? '${_walletSummary!.currency} ${_walletSummary!.balance.toStringAsFixed(0)}'
+        : 'S/ 0';
+
+    final modules = [
+      (
+        '/armario',
+        Icons.checkroom_outlined,
+        'Armario',
+        armarioData,
+        const Color(0xFF00C896)
+      ),
+      (
+        '/cocina',
+        Icons.soup_kitchen_outlined,
+        'Cocina',
+        cocinaData,
+        const Color(0xFFF59E0B)
+      ),
+      (
+        '/finanzas',
+        Icons.account_balance_wallet_outlined,
+        'Finanzas',
+        finanzasData,
+        const Color(0xFF06B6D4)
+      ),
+      (
+        '/foodcoach',
+        Icons.restaurant_menu_outlined,
+        'FoodCoach',
+        foodCoachData,
+        const Color(0xFFFF6B6B)
+      ),
+    ];
 
     return GridView.count(
       crossAxisCount: 2,
@@ -309,7 +402,7 @@ class _QuickAccessGrid extends StatelessWidget {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 1.5,
-      children: _modules.map((m) {
+      children: modules.map((m) {
         return GestureDetector(
           onTap: () => context.go(m.$1),
           child: Container(
@@ -495,8 +588,7 @@ class _RecentActivity extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
-                    child: Text(item.$1,
-                        style: const TextStyle(fontSize: 16)),
+                    child: Text(item.$1, style: const TextStyle(fontSize: 16)),
                   ),
                 ),
                 title: Text(item.$2,

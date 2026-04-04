@@ -33,8 +33,11 @@ class StatsTab extends ConsumerWidget {
         children: [
           // Resumen semanal
           const Text('RESUMEN SEMANAL',
-              style: TextStyle(color: Colors.white38, fontSize: 11,
-                  fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+              style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5)),
           const SizedBox(height: 12),
 
           // Score central
@@ -59,7 +62,8 @@ class StatsTab extends ConsumerWidget {
                         fontWeight: FontWeight.w900)),
                 Text('puntos de salud promedio',
                     style: TextStyle(
-                        color: _scoreColor(stats.averageHealthScore).withAlpha(180),
+                        color: _scoreColor(stats.averageHealthScore)
+                            .withAlpha(180),
                         fontSize: 12)),
                 const SizedBox(height: 12),
                 ClipRRect(
@@ -79,22 +83,37 @@ class StatsTab extends ConsumerWidget {
 
           // Distribución
           const Text('DISTRIBUCIÓN',
-              style: TextStyle(color: Colors.white38, fontSize: 11,
-                  fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+              style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5)),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _ClassCard(
-                emoji: '💚', label: 'Saludable', count: stats.healthyCount,
-                total: stats.totalMeals, color: const Color(0xFF4CAF50))),
+              Expanded(
+                  child: _ClassCard(
+                      emoji: '💚',
+                      label: 'Saludable',
+                      count: stats.healthyCount,
+                      total: stats.totalMeals,
+                      color: const Color(0xFF4CAF50))),
               const SizedBox(width: 8),
-              Expanded(child: _ClassCard(
-                emoji: '💛', label: 'Balanceado', count: stats.balancedCount,
-                total: stats.totalMeals, color: const Color(0xFFFFB74D))),
+              Expanded(
+                  child: _ClassCard(
+                      emoji: '💛',
+                      label: 'Balanceado',
+                      count: stats.balancedCount,
+                      total: stats.totalMeals,
+                      color: const Color(0xFFFFB74D))),
               const SizedBox(width: 8),
-              Expanded(child: _ClassCard(
-                emoji: '🔴', label: 'Chatarra', count: stats.junkCount,
-                total: stats.totalMeals, color: const Color(0xFFFF5252))),
+              Expanded(
+                  child: _ClassCard(
+                      emoji: '🔴',
+                      label: 'Chatarra',
+                      count: stats.junkCount,
+                      total: stats.totalMeals,
+                      color: const Color(0xFFFF5252))),
             ],
           ),
           const SizedBox(height: 20),
@@ -138,19 +157,27 @@ class StatsTab extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.lightbulb_outline, color: Color(0xFF00C896), size: 20),
+                const Icon(Icons.lightbulb_outline,
+                    color: Color(0xFF00C896), size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Consejo de la semana',
-                          style: TextStyle(color: Color(0xFF00C896),
-                              fontWeight: FontWeight.w700, fontSize: 12)),
+                          style: TextStyle(
+                              color: Color(0xFF00C896),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12)),
                       const SizedBox(height: 4),
                       Text(
                         _weeklyTip(stats.averageHealthScore, stats.junkPercent),
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13),
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
+                            fontSize: 13),
                       ),
                     ],
                   ),
@@ -178,9 +205,15 @@ class StatsTab extends ConsumerWidget {
   }
 
   String _weeklyTip(double avg, double junkPct) {
-    if (avg >= 0.68) return 'Semana excelente. Mantén el ritmo incluyendo proteína en cada comida.';
-    if (avg >= 0.50) return 'Buen progreso. Intenta reemplazar una comida chatarra por ensalada esta semana.';
-    if (junkPct >= 0.5) return 'Más del 50% de tus comidas fueron poco saludables. Planea tu menú con anticipación.';
+    if (avg >= 0.68) {
+      return 'Semana excelente. Mantén el ritmo incluyendo proteína en cada comida.';
+    }
+    if (avg >= 0.50) {
+      return 'Buen progreso. Intenta reemplazar una comida chatarra por ensalada esta semana.';
+    }
+    if (junkPct >= 0.5) {
+      return 'Más del 50% de tus comidas fueron poco saludables. Planea tu menú con anticipación.';
+    }
     return 'Hay espacio para mejorar. Comienza añadiendo una fruta a tu desayuno cada día.';
   }
 }
@@ -193,8 +226,11 @@ class _ClassCard extends StatelessWidget {
   final Color color;
 
   const _ClassCard({
-    required this.emoji, required this.label,
-    required this.count, required this.total, required this.color,
+    required this.emoji,
+    required this.label,
+    required this.count,
+    required this.total,
+    required this.color,
   });
 
   @override
@@ -211,10 +247,23 @@ class _ClassCard extends StatelessWidget {
         children: [
           Text(emoji, style: const TextStyle(fontSize: 24)),
           const SizedBox(height: 4),
-          Text('$count', style: TextStyle(color: color,
-              fontSize: 22, fontWeight: FontWeight.w900)),
-          Text('$pct%', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
-          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 10),
+          Text('$count',
+              style: TextStyle(
+                  color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+          Text('$pct%',
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38),
+                  fontSize: 11)),
+          Text(label,
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.54),
+                  fontSize: 10),
               textAlign: TextAlign.center),
         ],
       ),

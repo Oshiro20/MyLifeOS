@@ -101,13 +101,21 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
         for (final g in state.garments)
           if (g.id == id)
             WardrobeGarment(
-              id: g.id, name: g.name, type: g.type,
-              primaryColor: g.primaryColor, secondaryColor: g.secondaryColor,
-              style: g.style, material: g.material, season: g.season,
-              isFavorite: g.isFavorite, isClean: !g.isClean,
-              imageAssetId: g.imageAssetId, addedAt: g.addedAt,
+              id: g.id,
+              name: g.name,
+              type: g.type,
+              primaryColor: g.primaryColor,
+              secondaryColor: g.secondaryColor,
+              style: g.style,
+              material: g.material,
+              season: g.season,
+              isFavorite: g.isFavorite,
+              isClean: !g.isClean,
+              imageAssetId: g.imageAssetId,
+              addedAt: g.addedAt,
             )
-          else g
+          else
+            g
       ],
     );
     _refreshSuggestions();
@@ -120,13 +128,21 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
         for (final g in state.garments)
           if (g.id == id)
             WardrobeGarment(
-              id: g.id, name: g.name, type: g.type,
-              primaryColor: g.primaryColor, secondaryColor: g.secondaryColor,
-              style: g.style, material: g.material, season: g.season,
-              isFavorite: !g.isFavorite, isClean: g.isClean,
-              imageAssetId: g.imageAssetId, addedAt: g.addedAt,
+              id: g.id,
+              name: g.name,
+              type: g.type,
+              primaryColor: g.primaryColor,
+              secondaryColor: g.secondaryColor,
+              style: g.style,
+              material: g.material,
+              season: g.season,
+              isFavorite: !g.isFavorite,
+              isClean: g.isClean,
+              imageAssetId: g.imageAssetId,
+              addedAt: g.addedAt,
             )
-          else g
+          else
+            g
       ],
     );
   }
@@ -147,10 +163,16 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
       outfits: [
         for (final o in state.outfits)
           if (o.id == id)
-            Outfit(id: o.id, name: o.name, garmentIds: o.garmentIds,
-                occasion: o.occasion, season: o.season,
-                timesWorn: o.timesWorn + 1, createdAt: o.createdAt)
-          else o
+            Outfit(
+                id: o.id,
+                name: o.name,
+                garmentIds: o.garmentIds,
+                occasion: o.occasion,
+                season: o.season,
+                timesWorn: o.timesWorn + 1,
+                createdAt: o.createdAt)
+          else
+            o
       ],
     );
   }
@@ -170,24 +192,31 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
     state = state.copyWith(suggestions: s);
   }
 
-  Future<void> generateOutfitOfTheDay(dynamic aiService, String weatherContext) async {
+  Future<void> generateOutfitOfTheDay(
+      dynamic aiService, String weatherContext) async {
     state = state.copyWith(isLoadingOotd: true, error: null);
     try {
       final cleanGarments = state.garments.where((g) => g.isClean).toList();
       if (cleanGarments.isEmpty) {
-        state = state.copyWith(isLoadingOotd: false, ootd: null, error: 'No hay prendas limpias para sugerir un outfit.');
+        state = state.copyWith(
+            isLoadingOotd: false,
+            ootd: null,
+            error: 'No hay prendas limpias para sugerir un outfit.');
         return;
       }
-      
-      final garmentsJson = cleanGarments.map((g) => {
-        'id': g.id,
-        'name': g.name,
-        'type': g.type.name,
-        'color': g.primaryColor,
-        'style': g.style.name,
-      }).toList().toString();
 
-      final profileCtx = state.userProfile != null 
+      final garmentsJson = cleanGarments
+          .map((g) => {
+                'id': g.id,
+                'name': g.name,
+                'type': g.type.name,
+                'color': g.primaryColor,
+                'style': g.style.name,
+              })
+          .toList()
+          .toString();
+
+      final profileCtx = state.userProfile != null
           ? 'Estatura: ${state.userProfile!.height}cm, Peso: ${state.userProfile!.weight}kg, Tipo de Cuerpo: ${state.userProfile!.bodyShape ?? 'No especificado'}, Colorimetría: ${state.userProfile!.colorimetry ?? 'No especificada'}'
           : null;
 
@@ -204,8 +233,12 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
 
       // Parse JSON from Gemini (assuming it replies with raw JSON, but maybe it has markdown blocks)
       String cleanJson = resString.trim();
-      if (cleanJson.startsWith('```json')) cleanJson = cleanJson.replaceAll('```json', '');
-      if (cleanJson.startsWith('```')) cleanJson = cleanJson.replaceAll('```', '');
+      if (cleanJson.startsWith('```json')) {
+        cleanJson = cleanJson.replaceAll('```json', '');
+      }
+      if (cleanJson.startsWith('```')) {
+        cleanJson = cleanJson.replaceAll('```', '');
+      }
       cleanJson = cleanJson.trim();
 
       if (cleanJson.endsWith('```')) {
@@ -213,7 +246,7 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
       }
 
       final Map<String, dynamic> decoded = dart_convert.jsonDecode(cleanJson);
-      
+
       final topId = decoded['top_id'];
       final bottomId = decoded['bottom_id'];
       final shoesId = decoded['shoes_id'];
@@ -234,20 +267,20 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
       } catch (_) {}
 
       if (topData != null && bottomData != null) {
-        state = state.copyWith(
-          isLoadingOotd: false,
-          ootd: {
-            'top': topData,
-            'bottom': bottomData,
-            'shoes': shoesData,
-            'explanation': explanation,
-          }
-        );
+        state = state.copyWith(isLoadingOotd: false, ootd: {
+          'top': topData,
+          'bottom': bottomData,
+          'shoes': shoesData,
+          'explanation': explanation,
+        });
       } else {
-        state = state.copyWith(isLoadingOotd: false, error: 'Gemini sugirió prendas no encontradas.');
+        state = state.copyWith(
+            isLoadingOotd: false,
+            error: 'Gemini sugirió prendas no encontradas.');
       }
     } catch (e) {
-      state = state.copyWith(isLoadingOotd: false, error: 'Fallo al sugerir outfit: $e');
+      state = state.copyWith(
+          isLoadingOotd: false, error: 'Fallo al sugerir outfit: $e');
     }
   }
 
@@ -256,7 +289,8 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 final armarioRepositoryProvider = Provider<IArmarioRepository>((ref) {
-  throw UnimplementedError('Provide IArmarioRepository via ProviderScope.overrides');
+  throw UnimplementedError(
+      'Provide IArmarioRepository via ProviderScope.overrides');
 });
 
 final armarioProvider =

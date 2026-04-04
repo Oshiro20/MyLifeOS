@@ -5,9 +5,9 @@ void main() async {
   print('Iniciando Test Local Generative AI...');
   try {
     const apiKey = 'AIzaSyDxCMDUQMKg4Y3GcUV872rG85NvgUS0xS8';
-    
+
     // Probar el modelo permitido 'gemini-flash-latest'
-    final modelName = 'gemini-flash-latest'; 
+    final modelName = 'gemini-flash-latest';
     print('Testing model: $modelName');
     final model = GenerativeModel(model: modelName, apiKey: apiKey);
 

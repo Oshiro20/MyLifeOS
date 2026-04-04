@@ -1,9 +1,5 @@
 import 'package:drift/drift.dart';
 
-
-
-
-
 @DataClassName('MealLogEntry')
 class MealLogs extends Table {
   TextColumn get id => text()();
@@ -24,7 +20,8 @@ class MealLogs extends Table {
 class InventoryIngredients extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
-  TextColumn get primaryCategory => text().withDefault(const Constant('Otros'))();
+  TextColumn get primaryCategory =>
+      text().withDefault(const Constant('Otros'))();
   TextColumn get subCategory => text().nullable()();
   RealColumn get quantity => real()();
   TextColumn get unit => text()();
@@ -34,6 +31,12 @@ class InventoryIngredients extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+
+  List<TableIndex> get indexes => [
+        TableIndex(
+            name: 'idx_ingredients_category', columns: {primaryCategory}),
+        TableIndex(name: 'idx_ingredients_expiry', columns: {expirationDate}),
+      ];
 }
 
 @DataClassName('RecipeEntry')
@@ -97,15 +100,17 @@ class ShoppingItems extends Table {
 class WardrobeGarments extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
-  IntColumn get typeIndex => integer()();   // GarmentType
-  TextColumn get primaryColor => text()();  // hex
+  IntColumn get typeIndex => integer()(); // GarmentType
+  TextColumn get primaryColor => text()(); // hex
   TextColumn get secondaryColor => text().withDefault(const Constant(''))();
-  IntColumn get styleIndex => integer()();  // GarmentStyle
+  IntColumn get styleIndex => integer()(); // GarmentStyle
   TextColumn get material => text().withDefault(const Constant(''))();
-  TextColumn get season => text().withDefault(const Constant('all'))(); // all|spring|summer|autumn|winter
+  TextColumn get season => text()
+      .withDefault(const Constant('all'))(); // all|spring|summer|autumn|winter
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   BoolColumn get isClean => boolean().withDefault(const Constant(true))();
-  BoolColumn get hasRemovableHood => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasRemovableHood =>
+      boolean().withDefault(const Constant(false))();
   IntColumn get rating => integer().withDefault(const Constant(0))();
   TextColumn get size => text().nullable()();
   TextColumn get brand => text().nullable()();
@@ -116,6 +121,12 @@ class WardrobeGarments extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+
+  List<TableIndex> get indexes => [
+        TableIndex(name: 'idx_garments_type', columns: {typeIndex}),
+        TableIndex(name: 'idx_garments_favorite', columns: {isFavorite}),
+        TableIndex(name: 'idx_garments_clean', columns: {isClean}),
+      ];
 }
 
 /// Outfits guardados (combinación de prendas)
@@ -124,7 +135,8 @@ class Outfits extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get garmentIdsCsv => text()(); // CSV de IDs de WardrobeGarments
-  TextColumn get occasion => text().withDefault(const Constant('casual'))(); // casual|formal|sport
+  TextColumn get occasion =>
+      text().withDefault(const Constant('casual'))(); // casual|formal|sport
   TextColumn get season => text().withDefault(const Constant('all'))();
   IntColumn get timesWorn => integer().withDefault(const Constant(0))();
   DateTime? get lastWornDate => null;
@@ -139,14 +151,18 @@ class Outfits extends Table {
 class UserProfile extends Table {
   TextColumn get id => text()();
   // Los valores son opcionales — el usuario elige qué ingresar
-  TextColumn get skinTone => text().nullable()();       // claro|medio|trigueño|oscuro
-  TextColumn get bodyType => text().nullable()();       // delgado|atlético|promedio|robusto
-  TextColumn get height => text().nullable()();         // ej: "170"
-  TextColumn get weight => text().nullable()();         // ej: "70"
-  TextColumn get hairType => text().nullable()();       // lacio|ondulado|rizado
-  TextColumn get colorimetry => text().nullable()();    // ej: "invierno", "otoño", "verano", "primavera"
-  TextColumn get bodyShape => text().nullable()();      // ej: "triángulo invertido", "reloj de arena", "rectángulo"
-  BoolColumn get consentGranted => boolean().withDefault(const Constant(false))();
+  TextColumn get skinTone => text().nullable()(); // claro|medio|trigueño|oscuro
+  TextColumn get bodyType =>
+      text().nullable()(); // delgado|atlético|promedio|robusto
+  TextColumn get height => text().nullable()(); // ej: "170"
+  TextColumn get weight => text().nullable()(); // ej: "70"
+  TextColumn get hairType => text().nullable()(); // lacio|ondulado|rizado
+  TextColumn get colorimetry =>
+      text().nullable()(); // ej: "invierno", "otoño", "verano", "primavera"
+  TextColumn get bodyShape => text()
+      .nullable()(); // ej: "triángulo invertido", "reloj de arena", "rectángulo"
+  BoolColumn get consentGranted =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

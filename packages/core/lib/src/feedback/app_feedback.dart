@@ -46,7 +46,8 @@ mixin AppFeedback {
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
           backgroundColor: const Color(0xFF1E1E30),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           duration: duration,
           content: Row(
             children: [
@@ -79,11 +80,13 @@ mixin AppFeedback {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(
           children: [
-            const Icon(Icons.delete_outline, color: Color(0xFFFF5252), size: 22),
+            const Icon(Icons.delete_outline,
+                color: Color(0xFFFF5252), size: 22),
             const SizedBox(width: 10),
             const Text(
               '¿Eliminar?',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -116,17 +119,20 @@ mixin AppFeedback {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white38)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF5252),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
               'Eliminar',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
             ),
           ),
         ],

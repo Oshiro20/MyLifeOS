@@ -40,7 +40,8 @@ class WalletUpdateNotifier {
     final uri = Uri.parse(
       'https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest',
     );
-    final response = await http.get(uri, headers: {'Accept': 'application/vnd.github+json'});
+    final response =
+        await http.get(uri, headers: {'Accept': 'application/vnd.github+json'});
     if (response.statusCode != 200) return null;
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     return json['tag_name'] as String?;

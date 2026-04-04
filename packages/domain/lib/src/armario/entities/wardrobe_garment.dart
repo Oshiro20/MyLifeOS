@@ -1,43 +1,85 @@
 import 'package:equatable/equatable.dart';
 
 enum GarmentType {
-  shirt, tshirt, pants, jeans, shoes, jacket,
-  accessories, dress, shorts, sweater, hoodie, skirt, other, polo,
-  sneakers, boots, sandals;
+  shirt,
+  tshirt,
+  pants,
+  jeans,
+  shoes,
+  jacket,
+  accessories,
+  dress,
+  shorts,
+  sweater,
+  hoodie,
+  skirt,
+  other,
+  polo,
+  sneakers,
+  boots,
+  sandals;
 
   String get label {
     const labels = {
-      shirt: 'Camisa', tshirt: 'Camiseta (Deportiva/Interior)', pants: 'Pantalón',
-      jeans: 'Jeans', shoes: 'Zapatos/Calzado Formal', jacket: 'Chaqueta',
-      accessories: 'Accesorios', dress: 'Vestido', shorts: 'Shorts',
-      sweater: 'Suéter', hoodie: 'Polera/Hoodie', skirt: 'Falda',
-      other: 'Otro', polo: 'Polo (Cuello/Casual)',
-      sneakers: 'Zapatillas/Sneakers', boots: 'Botas', sandals: 'Sandalias',
+      shirt: 'Camisa',
+      tshirt: 'Camiseta (Deportiva/Interior)',
+      pants: 'Pantalón',
+      jeans: 'Jeans',
+      shoes: 'Zapatos/Calzado Formal',
+      jacket: 'Chaqueta',
+      accessories: 'Accesorios',
+      dress: 'Vestido',
+      shorts: 'Shorts',
+      sweater: 'Suéter',
+      hoodie: 'Polera/Hoodie',
+      skirt: 'Falda',
+      other: 'Otro',
+      polo: 'Polo (Cuello/Casual)',
+      sneakers: 'Zapatillas/Sneakers',
+      boots: 'Botas',
+      sandals: 'Sandalias',
     };
     return labels[this] ?? name;
   }
 }
 
 enum GarmentStyle {
-  casual, formal, sport, streetwear, elegant, smartCasual, workwear;
+  casual,
+  formal,
+  sport,
+  streetwear,
+  elegant,
+  smartCasual,
+  workwear;
 
   String get label {
     const labels = {
-      casual: 'Casual', formal: 'Formal', sport: 'Deportivo',
-      streetwear: 'Urbano', elegant: 'Elegante',
-      smartCasual: 'Smart Casual / Semi-Formal', workwear: 'Útiles / Trabajo / Drill',
+      casual: 'Casual',
+      formal: 'Formal',
+      sport: 'Deportivo',
+      streetwear: 'Urbano',
+      elegant: 'Elegante',
+      smartCasual: 'Smart Casual / Semi-Formal',
+      workwear: 'Útiles / Trabajo / Drill',
     };
     return labels[this] ?? name;
   }
 }
 
 enum Season {
-  all, spring, summer, autumn, winter;
+  all,
+  spring,
+  summer,
+  autumn,
+  winter;
 
   String get label {
     const labels = {
-      all: 'Todo el año', spring: 'Primavera', summer: 'Verano',
-      autumn: 'Otoño', winter: 'Invierno',
+      all: 'Todo el año',
+      spring: 'Primavera',
+      summer: 'Verano',
+      autumn: 'Otoño',
+      winter: 'Invierno',
     };
     return labels[this] ?? name;
   }
@@ -86,8 +128,24 @@ class WardrobeGarment extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, name, type, primaryColor, secondaryColor, style,
-        material, season, isFavorite, isClean, hasRemovableHood, rating, size, brand, price, imageAssetId, imageDetailsPath, addedAt
+        id,
+        name,
+        type,
+        primaryColor,
+        secondaryColor,
+        style,
+        material,
+        season,
+        isFavorite,
+        isClean,
+        hasRemovableHood,
+        rating,
+        size,
+        brand,
+        price,
+        imageAssetId,
+        imageDetailsPath,
+        addedAt
       ];
 }
 
@@ -111,15 +169,16 @@ class Outfit extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, name, garmentIds, occasion, season, timesWorn, createdAt];
+  List<Object?> get props =>
+      [id, name, garmentIds, occasion, season, timesWorn, createdAt];
 }
 
 class UserPhysicalProfile extends Equatable {
   final String id;
   final String? skinTone;
-  final String? bodyType;   // delgado, atlético, promedio, robusto
-  final String? height;     // ej: "170"
-  final String? weight;     // ej: "70"
+  final String? bodyType; // delgado, atlético, promedio, robusto
+  final String? height; // ej: "170"
+  final String? weight; // ej: "70"
   final String? hairType;
   final String? colorimetry;
   final String? bodyShape;
@@ -140,6 +199,16 @@ class UserPhysicalProfile extends Equatable {
   });
 
   @override
-  List<Object?> get props =>
-      [id, skinTone, bodyType, height, weight, hairType, colorimetry, bodyShape, consentGranted, updatedAt];
+  List<Object?> get props => [
+        id,
+        skinTone,
+        bodyType,
+        height,
+        weight,
+        hairType,
+        colorimetry,
+        bodyShape,
+        consentGranted,
+        updatedAt
+      ];
 }

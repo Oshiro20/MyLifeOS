@@ -29,7 +29,9 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      await container.read(themeModeProvider.notifier).setTheme(ThemeMode.light);
+      await container
+          .read(themeModeProvider.notifier)
+          .setTheme(ThemeMode.light);
       expect(container.read(themeModeProvider), ThemeMode.light);
     });
 
@@ -47,7 +49,9 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      await container.read(themeModeProvider.notifier).setTheme(ThemeMode.light);
+      await container
+          .read(themeModeProvider.notifier)
+          .setTheme(ThemeMode.light);
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('app_theme_mode'), 'light');
@@ -57,7 +61,9 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      await container.read(themeModeProvider.notifier).setTheme(ThemeMode.system);
+      await container
+          .read(themeModeProvider.notifier)
+          .setTheme(ThemeMode.system);
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('app_theme_mode'), 'system');

@@ -23,64 +23,103 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
+        onCreate: (m) async {
+          debugPrint('🗄️ [DB] Creating all tables...');
+          await m.createAll();
+          debugPrint('✅ [DB] Database created successfully');
+        },
         onUpgrade: (m, from, to) async {
+          debugPrint('🔄 [DB] Migrating from version $from to $to');
+
           // if (from < 2) ... (mediaAssets eliminado)
           if (from < 3) {
+            debugPrint('📦 [DB v3] Creating cocina tables...');
             await m.createTable(inventoryIngredients);
             await m.createTable(recipes);
             await m.createTable(recipeIngredients);
             await m.createTable(appliances);
             await m.createTable(shoppingItems);
+            debugPrint('✅ [DB v3] Cocina tables created');
           }
           if (from < 4) {
+            debugPrint('👔 [DB v4] Creating armario tables...');
             await m.createTable(wardrobeGarments);
             await m.createTable(outfits);
             await m.createTable(userProfile);
+            debugPrint('✅ [DB v4] Armario tables created');
           }
           if (from < 5) {
             try {
+              debugPrint('📏 [DB v5] Adding weight column to userProfile...');
               await m.addColumn(userProfile, userProfile.weight);
-            } catch (_) {}
+            } catch (e) {
+              debugPrint('⚠️ [DB v5] Migration failed: $e');
+            }
           }
           if (from < 6) {
             try {
-              await m.addColumn(wardrobeGarments, wardrobeGarments.hasRemovableHood);
-            } catch (_) {}
+              debugPrint('🧥 [DB v6] Adding hasRemovableHood column...');
+              await m.addColumn(
+                  wardrobeGarments, wardrobeGarments.hasRemovableHood);
+            } catch (e) {
+              debugPrint('⚠️ [DB v6] Migration failed: $e');
+            }
           }
           if (from < 7) {
             try {
+              debugPrint(
+                  '⭐ [DB v7] Adding rating, size, brand, price columns...');
               await m.addColumn(wardrobeGarments, wardrobeGarments.rating);
               await m.addColumn(wardrobeGarments, wardrobeGarments.size);
               await m.addColumn(wardrobeGarments, wardrobeGarments.brand);
               await m.addColumn(wardrobeGarments, wardrobeGarments.price);
-            } catch (_) {}
+            } catch (e) {
+              debugPrint('⚠️ [DB v7] Migration failed: $e');
+            }
           }
           if (from < 8) {
             try {
-              await m.addColumn(wardrobeGarments, wardrobeGarments.imageDetailsPath);
-            } catch (_) {}
+              debugPrint('🖼️ [DB v8] Adding imageDetailsPath column...');
+              await m.addColumn(
+                  wardrobeGarments, wardrobeGarments.imageDetailsPath);
+            } catch (e) {
+              debugPrint('⚠️ [DB v8] Migration failed: $e');
+            }
           }
           if (from < 9) {
             try {
+              debugPrint(
+                  '🎨 [DB v9] Adding colorimetry and bodyShape columns...');
               await m.addColumn(userProfile, userProfile.colorimetry);
               await m.addColumn(userProfile, userProfile.bodyShape);
-            } catch (_) {}
+            } catch (e) {
+              debugPrint('⚠️ [DB v9] Migration failed: $e');
+            }
           }
           if (from < 10) {
             try {
+              debugPrint('🔄 [DB v10] Altering inventoryIngredients table...');
               // ignore: experimental_member_use
               await m.alterTable(TableMigration(inventoryIngredients));
             } catch (e) {
-              debugPrint('Error migrando v10: $e');
+              debugPrint('⚠️ [DB v10] Migration failed: $e');
             }
           }
           if (from < 11) {
             try {
-              await m.addColumn(inventoryIngredients, inventoryIngredients.storageArea);
+              debugPrint('📍 [DB v11] Adding storageArea column...');
+              await m.addColumn(
+                  inventoryIngredients, inventoryIngredients.storageArea);
             } catch (e) {
-              debugPrint('Error migrando v11: $e');
+              debugPrint('⚠️ [DB v11] Migration failed: $e');
             }
+          }
+
+          debugPrint('✅ [DB] Migration completed from v$from to v$to');
+        },
+        beforeOpen: (details) async {
+          if (kDebugMode) {
+            debugPrint('🔍 [DB] Opening database');
           }
         },
       );

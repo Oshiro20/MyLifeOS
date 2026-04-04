@@ -77,7 +77,12 @@ class SuggestionsTab extends ConsumerWidget {
               const SizedBox(height: 2),
               Text(
                 '${invState.ingredients.length} ingredientes en tu despensa · ${state.recipes.length} recetas guardadas',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.38),
+                    fontSize: 12),
               ),
             ],
           ),
@@ -129,16 +134,20 @@ class _EmptyState extends StatelessWidget {
 
     if (!hasRecipes && !hasIngredients) {
       icon = Icons.restaurant_outlined;
-      msg = 'Agrega recetas e ingredientes a\ntu despensa para ver sugerencias.';
+      msg =
+          'Agrega recetas e ingredientes a\ntu despensa para ver sugerencias.';
     } else if (!hasRecipes) {
       icon = Icons.menu_book_outlined;
-      msg = 'Tienes ingredientes pero no recetas.\nAgrega recetas para ver qué puedes cocinar.';
+      msg =
+          'Tienes ingredientes pero no recetas.\nAgrega recetas para ver qué puedes cocinar.';
     } else if (!hasIngredients) {
       icon = Icons.kitchen_outlined;
-      msg = 'Tienes recetas pero la despensa está vacía.\nAgrega ingredientes para ver sugerencias.';
+      msg =
+          'Tienes recetas pero la despensa está vacía.\nAgrega ingredientes para ver sugerencias.';
     } else {
       icon = Icons.lightbulb_outline;
-      msg = 'No se encontraron recetas que coincidan\ncon tus ingredientes actuales (75%+ cobertura).';
+      msg =
+          'No se encontraron recetas que coincidan\ncon tus ingredientes actuales (75%+ cobertura).';
     }
 
     return Center(
@@ -149,7 +158,12 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(msg,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 14)),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38),
+                  fontSize: 14)),
         ],
       ),
     );
@@ -161,15 +175,13 @@ class _EmptyState extends StatelessWidget {
 class _SuggestionCard extends StatelessWidget {
   final Recipe recipe;
   final Set<String> availableNames;
-  const _SuggestionCard(
-      {required this.recipe, required this.availableNames});
+  const _SuggestionCard({required this.recipe, required this.availableNames});
 
   @override
   Widget build(BuildContext context) {
     final total = recipe.ingredients.length;
     final found = recipe.ingredients
-        .where(
-            (i) => availableNames.contains(i.ingredientName.toLowerCase()))
+        .where((i) => availableNames.contains(i.ingredientName.toLowerCase()))
         .length;
     final coverage = total > 0 ? (found / total * 100).round() : 100;
     final missing = total - found;
@@ -184,8 +196,8 @@ class _SuggestionCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: const Color(0xFF00C896).withAlpha(60), width: 1),
+        border:
+            Border.all(color: const Color(0xFF00C896).withAlpha(60), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +215,12 @@ class _SuggestionCard extends StatelessWidget {
           if (recipe.description.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(recipe.description,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 13),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.54),
+                    fontSize: 13),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),
           ],

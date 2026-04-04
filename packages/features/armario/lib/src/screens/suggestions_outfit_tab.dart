@@ -98,7 +98,9 @@ class _NoProfileBanner extends StatelessWidget {
           const SizedBox(height: 16),
           const Text('Configura tu perfil',
               style: TextStyle(
-                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           const Text(
             'Para sugerirte los mejores outfits necesito conocer tu estatura, peso, tono de piel y contextura.',
@@ -145,18 +147,25 @@ class _OccasionPicker extends StatelessWidget {
         const SizedBox(height: 8),
         const Text('¿A dónde irás hoy?',
             style: TextStyle(
-                color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         if (greeting.isNotEmpty)
           Text('Tu perfil: $greeting',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38),
+                  fontSize: 12)),
         const SizedBox(height: 16),
-        ..._SuggestionsOutfitTabState._occasions.entries.map((e) =>
-            _OccasionCard(
-              label: e.value.$2,
-              icon: e.value.$1,
-              onTap: () => onPick(e.key),
-            )),
+        ..._SuggestionsOutfitTabState._occasions.entries
+            .map((e) => _OccasionCard(
+                  label: e.value.$2,
+                  icon: e.value.$1,
+                  onTap: () => onPick(e.key),
+                )),
       ],
     );
   }
@@ -191,7 +200,9 @@ class _OccasionCard extends StatelessWidget {
             const SizedBox(width: 16),
             Text(label,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500)),
             const Spacer(),
             const Icon(Icons.arrow_forward_ios,
                 color: Colors.white24, size: 14),
@@ -258,8 +269,8 @@ class _OutfitResults extends StatelessWidget {
         preferredStyles.addAll([GarmentStyle.formal, GarmentStyle.elegant]);
         break;
       case 'cita':
-        preferredStyles
-            .addAll([GarmentStyle.elegant, GarmentStyle.casual, GarmentStyle.formal]);
+        preferredStyles.addAll(
+            [GarmentStyle.elegant, GarmentStyle.casual, GarmentStyle.formal]);
         break;
       case 'fiesta':
         preferredStyles.addAll([GarmentStyle.streetwear, GarmentStyle.elegant]);
@@ -300,7 +311,7 @@ class _OutfitResults extends StatelessWidget {
     for (final top in scoredTops) {
       for (final bottom in scoredBottoms) {
         final shoe = shoes.isNotEmpty ? shoes.first : null;
-        results.add([top, bottom, ?shoe]);
+        results.add(shoe != null ? [top, bottom, shoe] : [top, bottom]);
         if (results.length >= 3) return results;
       }
     }
@@ -330,7 +341,12 @@ class _OutfitResults extends StatelessWidget {
                       fontWeight: FontWeight.w700)),
               const Spacer(),
               Text('${filtered.length} opciones',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.38),
+                      fontSize: 12)),
             ],
           ),
         ),
@@ -372,8 +388,7 @@ class _OutfitResults extends StatelessWidget {
                                 .map((g) => Expanded(
                                       child: Column(
                                         children: [
-                                          Text(
-                                              _typeEmoji[g.type] ?? '🎽',
+                                          Text(_typeEmoji[g.type] ?? '🎽',
                                               style: const TextStyle(
                                                   fontSize: 36)),
                                           const SizedBox(height: 4),
@@ -381,8 +396,8 @@ class _OutfitResults extends StatelessWidget {
                                             width: 16,
                                             height: 16,
                                             decoration: BoxDecoration(
-                                              color: _parseColor(
-                                                  g.primaryColor),
+                                              color:
+                                                  _parseColor(g.primaryColor),
                                               shape: BoxShape.circle,
                                               border: Border.all(
                                                   color: Colors.white24),
@@ -394,8 +409,7 @@ class _OutfitResults extends StatelessWidget {
                                                   color: Colors.white70,
                                                   fontSize: 11),
                                               maxLines: 1,
-                                              overflow:
-                                                  TextOverflow.ellipsis),
+                                              overflow: TextOverflow.ellipsis),
                                           Text(g.type.label,
                                               style: const TextStyle(
                                                   color: Colors.white30,
@@ -417,28 +431,20 @@ class _OutfitResults extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(10)),
                               ),
                               onPressed: () {
-                                final ids =
-                                    combo.map((g) => g.id).toList();
+                                final ids = combo.map((g) => g.id).toList();
                                 onSave(
-                                    'Outfit $occasion ${i + 1}',
-                                    occasion,
-                                    ids);
+                                    'Outfit $occasion ${i + 1}', occasion, ids);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content:
-                                          Text('Outfit guardado ✓'),
-                                      backgroundColor:
-                                          Color(0xFF66BB6A)),
+                                      content: Text('Outfit guardado ✓'),
+                                      backgroundColor: Color(0xFF66BB6A)),
                                 );
                               },
-                              icon: const Icon(
-                                  Icons.bookmark_add_outlined,
-                                  color: Colors.white,
-                                  size: 16),
+                              icon: const Icon(Icons.bookmark_add_outlined,
+                                  color: Colors.white, size: 16),
                               label: const Text('Guardar',
                                   style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12)),
+                                      color: Colors.white, fontSize: 12)),
                             ),
                           ),
                         ],
@@ -453,8 +459,7 @@ class _OutfitResults extends StatelessWidget {
 
   Color _parseColor(String hex) {
     try {
-      return Color(
-          int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
+      return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
     } catch (_) {
       return Colors.grey;
     }
@@ -529,11 +534,14 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
 
             // Estatura y Peso
             Row(children: [
-              Expanded(child: _field(_heightCtrl, 'Estatura (cm)', Icons.height,
-                  keyboardType: TextInputType.number)),
+              Expanded(
+                  child: _field(_heightCtrl, 'Estatura (cm)', Icons.height,
+                      keyboardType: TextInputType.number)),
               const SizedBox(width: 8),
-              Expanded(child: _field(_weightCtrl, 'Peso (kg)', Icons.monitor_weight_outlined,
-                  keyboardType: TextInputType.number)),
+              Expanded(
+                  child: _field(
+                      _weightCtrl, 'Peso (kg)', Icons.monitor_weight_outlined,
+                      keyboardType: TextInputType.number)),
             ]),
             const SizedBox(height: 10),
 
@@ -570,8 +578,7 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
                             color: Colors.white, strokeWidth: 2))
                     : const Text('Guardar perfil',
                         style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700)),
+                            color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -626,14 +633,19 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
             .map((o) => DropdownMenuItem(
                 value: o,
                 child: Text(o[0].toUpperCase() + o.substring(1),
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface))))
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface))))
             .toList(),
         onChanged: onChanged,
       );
 
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
+        hintStyle: TextStyle(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.38)),
         prefixIcon: Icon(icon, color: Colors.white38, size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
@@ -645,7 +657,6 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
             borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: Color(0xFF00C896), width: 1.5)),
+            borderSide: const BorderSide(color: Color(0xFF00C896), width: 1.5)),
       );
 }

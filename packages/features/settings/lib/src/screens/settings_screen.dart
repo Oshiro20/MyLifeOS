@@ -11,420 +11,253 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final backup = ref.watch(backupProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF0A0F0D) : Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        title: const Text('Ajustes ⚙️',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Ajustes',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.white54),
+            onPressed: () => _showAboutDialog(context),
+            tooltip: 'Acerca de',
+          ),
+        ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          // ── Sección Base de datos ─────────────────────────────────────────
-          _SectionHeader(label: 'BASE DE DATOS'),
-          _InfoTile(
-            icon: Icons.storage_outlined,
-            label: 'Tamaño de la DB',
-            value: _formatSize(backup.dbSizeBytes),
-          ),
-          _InfoTile(
-            icon: Icons.update_outlined,
-            label: 'Última modificación',
-            value: backup.lastModified != null
-                ? _dateStr(backup.lastModified!)
-                : 'Desconocida',
-          ),
-          const SizedBox(height: 20),
+          // ── Perfil y App Info ─────────────────────────────────────────────
+          _ProfileCard(isDark: isDark),
+          const SizedBox(height: 16),
 
-          // ── Sección Backup ────────────────────────────────────────────────
-          _SectionHeader(label: 'BACKUP & RESTORE'),
-          const SizedBox(height: 8),
+          // ── Apariencia ────────────────────────────────────────────────────
+          _AppearanceSection(ref: ref, isDark: isDark),
+          const SizedBox(height: 16),
 
-          // Info card
+          // ── Backup & Datos ────────────────────────────────────────────────
+          _BackupSection(backup: backup, ref: ref, isDark: isDark),
+          const SizedBox(height: 16),
+
+          // ── Módulos ───────────────────────────────────────────────────────
+          _ModulesSection(isDark: isDark),
+          const SizedBox(height: 16),
+
+          // ── Preferencias Avanzadas ────────────────────────────────────────
+          _AdvancedSection(isDark: isDark),
+          const SizedBox(height: 24),
+
+          // ── Zona de Peligro ──────────────────────────────────────────────
+          _DangerZone(context, ref),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAboutDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00C896), Color(0xFF4CAF82)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child:
+                    const Icon(Icons.dashboard, color: Colors.white, size: 32),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'MyLifeOS',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Versión 1.0.7+1',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tu sistema operativo personal potenciado por IA. Centraliza tu vida: finanzas, armario, cocina y nutrición en un solo lugar.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00C896),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'Cerrar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Profile Card ──────────────────────────────────────────────────────────────
+
+class _ProfileCard extends StatelessWidget {
+  final bool isDark;
+  const _ProfileCard({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F2017), Color(0xFF1A3A28)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(bottom: 14),
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF00C896).withAlpha(40)),
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Row(
+            child:
+                const Icon(Icons.person_outline, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.shield_outlined, color: Color(0xFF00C896), size: 20),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Tu backup contiene todos tus datos: despensa, recetas, prendas y evaluaciones de comidas. '
-                    'Los datos se almacenan únicamente en tu dispositivo.',
-                    style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.5),
+                const Text(
+                  'MyLifeOS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'v1.0.7+1 · Offline-First',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-
-          // Botón Exportar
-          _ActionTile(
-            icon: Icons.file_upload_outlined,
-            label: 'Exportar backup',
-            subtitle: 'Comparte tu backup como archivo .mylifeos_backup',
-            color: const Color(0xFF00C896),
-            isLoading: backup.status == BackupStatus.exportingInProgress,
-            onTap: () => _export(context, ref),
-          ),
-          const SizedBox(height: 10),
-
-          // Botón Importar
-          _ActionTile(
-            icon: Icons.file_download_outlined,
-            label: 'Restaurar backup',
-            subtitle: 'Selecciona un archivo .mylifeos_backup desde tu almacenamiento',
-            color: const Color(0xFFFFB74D),
-            isLoading: backup.status == BackupStatus.importingInProgress,
-            onTap: () => _import(context, ref),
-          ),
-          const SizedBox(height: 24),
-
-          // ── Sección App ───────────────────────────────────────────────────
-          _SectionHeader(label: 'APLICACIÓN'),
-          _InfoTile(icon: Icons.info_outline, label: 'Versión', value: '1.1.0 · Fase 8'),
-          _InfoTile(icon: Icons.code_outlined, label: 'Schema DB', value: 'v5 (Drift Flutter)'),
-          const SizedBox(height: 8),
-          _ThemeToggleTile(ref: ref),
-          const SizedBox(height: 24),
-
-          // ── Zona de peligro ───────────────────────────────────────────────
-          _SectionHeader(label: 'ZONA DE PELIGRO', color: const Color(0xFFFF5252)),
-          const SizedBox(height: 8),
-          _ActionTile(
-            icon: Icons.delete_forever_outlined,
-            label: 'Borrar todos los datos',
-            subtitle: 'Elimina todos tus registros permanentemente. No se puede deshacer.',
-            color: const Color(0xFFFF5252),
-            isLoading: false,
-            onTap: () => _confirmDeleteAll(context, ref),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _export(BuildContext ctx, WidgetRef ref) async {
-    // Confirmación antes de proceder
-    final ok = await _showConfirm(
-      ctx,
-      title: '¿Exportar backup?',
-      message:
-          'Se creará un archivo con todos tus datos. Compártelo en un lugar seguro.',
-      confirmLabel: 'Exportar',
-      confirmColor: const Color(0xFF00C896),
-    );
-    if (!ok) return;
-
-    final result = await ref.read(backupProvider.notifier).exportBackup();
-    if (!ctx.mounted) return;
-
-    switch (result) {
-      case BackupSuccess():
-        showSuccess(ctx, 'Backup exportado correctamente ✓');
-      case BackupFailure():
-        showError(ctx, result.message);
-      case RestoreSuccess():
-        break;
-    }
-  }
-
-  Future<void> _import(BuildContext ctx, WidgetRef ref) async {
-    // Advertencia de riesgo con 2 pasos
-    final step1 = await _showConfirm(
-      ctx,
-      title: '⚠️ Restaurar backup',
-      message:
-          'Al restaurar, todos tus datos actuales serán reemplazados por los del backup. '
-          'Esta operación no se puede deshacer.',
-      confirmLabel: 'Continuar',
-      confirmColor: const Color(0xFFFFB74D),
-    );
-    if (!step1) return;
-
-    // Seleccionar archivo
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      dialogTitle: 'Selecciona tu backup de MyLifeOS',
-    );
-    if (result == null || result.files.single.path == null) return;
-    if (!ctx.mounted) return;
-
-    final filePath = result.files.single.path!;
-
-    final step2 = await _showConfirm(
-      ctx,
-      title: 'Confirmar restauración',
-      message: '¿Restaurar desde "${result.files.single.name}"? '
-          'Tus datos actuales se perderán.',
-      confirmLabel: '¡Restaurar ahora!',
-      confirmColor: const Color(0xFFFF5252),
-      isDestructive: true,
-    );
-    if (!step2 || !ctx.mounted) return;
-
-    final backupResult = await ref.read(backupProvider.notifier).importBackup(filePath);
-    if (!ctx.mounted) return;
-
-    switch (backupResult) {
-      case RestoreSuccess():
-        showSuccess(ctx, '¡Restauración exitosa! Reinicia la app.');
-        _showRestartDialog(ctx);
-      case BackupFailure():
-        showError(ctx, backupResult.message);
-      case BackupSuccess():
-        break;
-    }
-  }
-
-  Future<void> _confirmDeleteAll(BuildContext ctx, WidgetRef ref) async {
-    final step1 = await _showConfirm(
-      ctx,
-      title: '🗑️ Borrar TODOS los datos',
-      message:
-          'Se eliminarán PERMANENTEMENTE todos tus ingredientes, recetas, prendas, evaluaciones de comidas y medios. '
-          'Esta acción no tiene marcha atrás.',
-      confirmLabel: 'Borrar todo',
-      confirmColor: const Color(0xFFFF5252),
-      isDestructive: true,
-    );
-    if (!step1 || !ctx.mounted) return;
-
-    // Segundo paso de confirmación
-    final step2 = await _showConfirm(
-      ctx,
-      title: 'Confirmación final',
-      message: '¿Estás COMPLETAMENTE seguro? No habrá forma de recuperar los datos.',
-      confirmLabel: '¡Sí, borrar todo!',
-      confirmColor: const Color(0xFFFF5252),
-      isDestructive: true,
-    );
-    if (!step2 || !ctx.mounted) return;
-
-    // Borrar el archivo de base de datos
-    try {
-      // Mejor practica: solo vaciamos tablas vía DB, no borramos el archivo.
-      showSuccess(ctx, 'Datos eliminados. Reinicia la app.');
-    } catch (e) {
-      showError(ctx, 'Error al borrar datos: $e');
-    }
-  }
-
-  Future<bool> _showConfirm(
-    BuildContext ctx, {
-    required String title,
-    required String message,
-    required String confirmLabel,
-    required Color confirmColor,
-    bool isDestructive = false,
-  }) async {
-    final result = await showDialog<bool>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(title,
-            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface, fontWeight: FontWeight.w700)),
-        content: Text(message,
-            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.6), height: 1.5)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white38)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: confirmColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00C896),
+              borderRadius: BorderRadius.circular(20),
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(confirmLabel,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-    return result ?? false;
-  }
-
-
-
-  void _showRestartDialog(BuildContext ctx) {
-    showDialog(
-      context: ctx,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Cuasi listo ✅',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-        content: const Text(
-          'El backup se restauró correctamente. '
-          'Cierra y vuelve a abrir la app para ver tus datos.',
-          style: TextStyle(color: Colors.white60, height: 1.5),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C896),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendido',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
-  String _dateStr(DateTime d) =>
-      '${d.day}/${d.month}/${d.year}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-}
-
-// ── Sub-widgets ───────────────────────────────────────────────────────────────
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _SectionHeader({required this.label, this.color = Colors.white38});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10, top: 4),
-        child: Text(label,
-            style: TextStyle(
-                color: color,
+            child: const Text(
+              'Fase 8',
+              style: TextStyle(
+                color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.5)),
-      );
-}
-
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _InfoTile({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        tileColor: Theme.of(context).cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        leading: Icon(icon, color: Colors.white38, size: 20),
-        title: Text(label,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13)),
-        trailing: Text(value,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12)),
-      );
-}
-
-class _ActionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color color;
-  final bool isLoading;
-  final VoidCallback onTap;
-  const _ActionTile({
-    required this.icon, required this.label, required this.subtitle,
-    required this.color, required this.isLoading, required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: isLoading ? null : onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border(left: BorderSide(color: color, width: 3)),
-          ),
-          child: Row(
-            children: [
-              isLoading
-                  ? SizedBox(height: 22, width: 22,
-                      child: CircularProgressIndicator(color: color, strokeWidth: 2))
-                  : Icon(icon, color: color, size: 22),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: TextStyle(color: color,
-                            fontWeight: FontWeight.w700, fontSize: 14)),
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 11)),
-                  ],
-                ),
               ),
-              Icon(Icons.chevron_right, color: color.withAlpha(120), size: 20),
-            ],
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    );
+  }
 }
 
-class _ThemeToggleTile extends ConsumerWidget {
+// ── Appearance Section ────────────────────────────────────────────────────────
+
+class _AppearanceSection extends ConsumerWidget {
   final WidgetRef ref;
-  const _ThemeToggleTile({required this.ref});
+  final bool isDark;
+  const _AppearanceSection({required this.ref, required this.isDark});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(themeModeProvider);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return _SectionCard(
+      isDark: isDark,
+      icon: Icons.palette_outlined,
+      title: 'Apariencia',
       child: Row(
         children: [
-          const Icon(Icons.palette_outlined, color: Colors.white38, size: 20),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Text('Tema', style: TextStyle(color: Colors.white70, fontSize: 13)),
-          ),
           _ThemeChip(
             label: 'Claro',
             icon: Icons.light_mode_outlined,
             selected: current == ThemeMode.light,
-            onTap: () => ref.read(themeModeProvider.notifier).setTheme(ThemeMode.light),
+            onTap: () =>
+                ref.read(themeModeProvider.notifier).setTheme(ThemeMode.light),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           _ThemeChip(
             label: 'Sistema',
             icon: Icons.brightness_auto_outlined,
             selected: current == ThemeMode.system,
-            onTap: () => ref.read(themeModeProvider.notifier).setTheme(ThemeMode.system),
+            onTap: () =>
+                ref.read(themeModeProvider.notifier).setTheme(ThemeMode.system),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           _ThemeChip(
             label: 'Oscuro',
             icon: Icons.dark_mode_outlined,
             selected: current == ThemeMode.dark,
-            onTap: () => ref.read(themeModeProvider.notifier).setTheme(ThemeMode.dark),
+            onTap: () =>
+                ref.read(themeModeProvider.notifier).setTheme(ThemeMode.dark),
           ),
         ],
       ),
@@ -447,38 +280,739 @@ class _ThemeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF00C896).withValues(alpha: 0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? const Color(0xFF00C896) : Colors.white12,
-            width: 1,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFF00C896).withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF00C896)
+                  : Colors.white.withValues(alpha: 0.1),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? const Color(0xFF00C896) : Colors.white54,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? const Color(0xFF00C896) : Colors.white54,
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Backup Section ────────────────────────────────────────────────────────────
+
+class _BackupSection extends StatelessWidget {
+  final BackupState backup;
+  final WidgetRef ref;
+  final bool isDark;
+  const _BackupSection(
+      {required this.backup, required this.ref, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      isDark: isDark,
+      icon: Icons.cloud_sync_outlined,
+      title: 'Backup & Datos',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Info box
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00C896).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00C896).withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline,
+                    color: Color(0xFF00C896), size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tamaño actual: ${_formatSize(backup.dbSizeBytes)}',
+                    style: const TextStyle(
+                      color: Color(0xFF00C896),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Auto backup toggle
+          FutureBuilder<bool>(
+            future: AutoBackupService.isEnabled(),
+            builder: (context, snapshot) {
+              final isEnabled = snapshot.data ?? false;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.autorenew,
+                      color: Color(0xFFFFB74D), size: 18),
+                ),
+                title: const Text(
+                  'Backup automático',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Cada 24 horas en background',
+                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+                trailing: Switch(
+                  value: isEnabled,
+                  activeColor: const Color(0xFF00C896),
+                  onChanged: (val) async {
+                    if (val) {
+                      await AutoBackupService.enable();
+                    } else {
+                      await AutoBackupService.disable();
+                    }
+                  },
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+
+          // Export button
+          _BackupActionTile(
+            icon: Icons.file_upload_outlined,
+            label: 'Exportar backup',
+            subtitle: 'Crear archivo .mylifeos_backup',
+            color: const Color(0xFF00C896),
+            isLoading: backup.status == BackupStatus.exportingInProgress,
+            onTap: () => _exportBackup(context, ref),
+          ),
+          const SizedBox(height: 8),
+
+          // Import button
+          _BackupActionTile(
+            icon: Icons.file_download_outlined,
+            label: 'Restaurar backup',
+            subtitle: 'Seleccionar archivo .mylifeos_backup',
+            color: const Color(0xFFFFB74D),
+            isLoading: backup.status == BackupStatus.importingInProgress,
+            onTap: () => _importBackup(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Future<void> _exportBackup(BuildContext context, WidgetRef ref) async {
+    final ok = await _showConfirmDialog(
+      context,
+      title: '¿Exportar backup?',
+      message:
+          'Se creará un archivo con todos tus datos. Guárdalo en un lugar seguro.',
+      confirmLabel: 'Exportar',
+      confirmColor: const Color(0xFF00C896),
+    );
+    if (!ok) return;
+
+    final result = await ref.read(backupProvider.notifier).exportBackup();
+    if (!context.mounted) return;
+
+    if (result is BackupSuccess) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Backup exportado correctamente'),
+            backgroundColor: Color(0xFF00C896),
+          ),
+        );
+      }
+    } else if (result is BackupFailure) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${result.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _importBackup(BuildContext context, WidgetRef ref) async {
+    final step1 = await _showConfirmDialog(
+      context,
+      title: '⚠️ Restaurar backup',
+      message:
+          'Todos tus datos actuales serán reemplazados. Esta operación no se puede deshacer.',
+      confirmLabel: 'Continuar',
+      confirmColor: const Color(0xFFFFB74D),
+    );
+    if (!step1) return;
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      dialogTitle: 'Selecciona tu backup de MyLifeOS',
+    );
+    if (result == null || result.files.single.path == null) return;
+    if (!context.mounted) return;
+
+    final step2 = await _showConfirmDialog(
+      context,
+      title: 'Confirmar restauración',
+      message:
+          '¿Restaurar desde "${result.files.single.name}"? Tus datos actuales se perderán.',
+      confirmLabel: '¡Restaurar ahora!',
+      confirmColor: Colors.red,
+      isDestructive: true,
+    );
+    if (!step2 || !context.mounted) return;
+
+    final backupResult = await ref
+        .read(backupProvider.notifier)
+        .importBackup(result.files.single.path!);
+    if (!context.mounted) return;
+
+    if (backupResult is RestoreSuccess) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ ¡Restauración exitosa! Reinicia la app.'),
+            backgroundColor: Color(0xFF00C896),
+          ),
+        );
+      }
+    } else if (backupResult is BackupFailure) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${backupResult.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<bool> _showConfirmDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+    required Color confirmColor,
+    bool isDestructive = false,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(title,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700)),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: confirmColor,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              confirmLabel,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+}
+
+class _BackupActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final bool isLoading;
+  final VoidCallback onTap;
+
+  const _BackupActionTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 13,
-                color: selected ? const Color(0xFF00C896) : Colors.white38),
-            const SizedBox(width: 4),
-            Text(
-              label,
+            isLoading
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child:
+                        CircularProgressIndicator(color: color, strokeWidth: 2),
+                  )
+                : Icon(icon, color: color, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!isLoading)
+              Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Modules Section ───────────────────────────────────────────────────────────
+
+class _ModulesSection extends StatelessWidget {
+  final bool isDark;
+  const _ModulesSection({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      isDark: isDark,
+      icon: Icons.apps_outlined,
+      title: 'Módulos',
+      child: Column(
+        children: [
+          _ModuleTile(
+            emoji: '💰',
+            icon: Icons.account_balance_wallet_outlined,
+            name: 'Finanzas',
+            description: 'WalletAI con análisis inteligente',
+            color: const Color(0xFFFFC107),
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _ModuleTile(
+            emoji: '👗',
+            icon: Icons.checkroom_outlined,
+            name: 'Armario',
+            description: 'Gestión de prendas con IA',
+            color: const Color(0xFF29B6F6),
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _ModuleTile(
+            emoji: '🍽️',
+            icon: Icons.soup_kitchen_outlined,
+            name: 'Cocina',
+            description: 'Despensa y recetas',
+            color: const Color(0xFFFF7043),
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _ModuleTile(
+            emoji: '🥗',
+            icon: Icons.restaurant_outlined,
+            name: 'Food Coach',
+            description: 'Evaluación nutricional',
+            color: const Color(0xFFFF5252),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModuleTile extends StatelessWidget {
+  final String emoji;
+  final IconData icon;
+  final String name;
+  final String description;
+  final Color color;
+
+  const _ModuleTile({
+    required this.emoji,
+    required this.icon,
+    required this.name,
+    required this.description,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 20)),
+                Positioned(
+                  bottom: 2,
+                  right: 2,
+                  child: Icon(icon, size: 10, color: color),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Advanced Section ──────────────────────────────────────────────────────────
+
+class _AdvancedSection extends StatelessWidget {
+  final bool isDark;
+  const _AdvancedSection({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      isDark: isDark,
+      icon: Icons.build_outlined,
+      title: 'Preferencias Avanzadas',
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF29B6F6).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.widgets_outlined,
+                  color: Color(0xFF29B6F6), size: 18),
+            ),
+            title: const Text(
+              'Widget de Home Screen',
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                color: selected ? const Color(0xFF00C896) : Colors.white38,
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              'Configurar widget en pantalla de inicio',
+              style: TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+            onTap: () {
+              // TODO: Implementar configuración del widget
+            },
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5252).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_sweep_outlined,
+                  color: Color(0xFFFF5252), size: 18),
+            ),
+            title: const Text(
+              'Limpiar caché',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              'Eliminar imágenes temporales',
+              style: TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+            onTap: () {
+              // TODO: Implementar limpieza de caché
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Danger Zone ───────────────────────────────────────────────────────────────
+
+Widget _DangerZone(BuildContext context, WidgetRef ref) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.red.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.warning_amber_outlined, color: Colors.red, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Zona de Peligro',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: () => _confirmDeleteAll(context, ref),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.delete_forever_outlined,
+                    color: Colors.red, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Borrar todos los datos',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Elimina permanentemente todos tus registros',
+                        style: TextStyle(color: Colors.red, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.red),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _confirmDeleteAll(BuildContext context, WidgetRef ref) async {
+  final step1 = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      backgroundColor: Theme.of(context).cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      title: const Text('🗑️ Borrar TODO',
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
+      content: const Text(
+        'Se eliminarán PERMANENTEMENTE todos tus datos. Esta acción no tiene marcha atrás.',
+        style: TextStyle(color: Colors.white60, height: 1.5),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child:
+              const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Borrar todo',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        ),
+      ],
+    ),
+  );
+
+  if (step1 == true && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Funcionalidad en desarrollo'),
+        backgroundColor: Color(0xFF00C896),
+      ),
+    );
+  }
+}
+
+// ── Section Card Wrapper ──────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  const _SectionCard({
+    required this.isDark,
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF111814) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: const Color(0xFF00C896), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }

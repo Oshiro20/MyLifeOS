@@ -22,10 +22,16 @@ void main() {
 
     test('meal evaluation sin ingredientes tiene lista vacía', () {
       final log = MealEvaluation(
-        id: 'm2', timestamp: DateTime.now(), photoPath: '',
-        classification: FoodClassification.balanced, healthScore: 0.5,
-        positiveFactors: const [], negativeFactors: const [], recommendation: '',
-        feedback: '', detectedIngredients: const [],
+        id: 'm2',
+        timestamp: DateTime.now(),
+        photoPath: '',
+        classification: FoodClassification.balanced,
+        healthScore: 0.5,
+        positiveFactors: const [],
+        negativeFactors: const [],
+        recommendation: '',
+        feedback: '',
+        detectedIngredients: const [],
       );
       expect(log.detectedIngredients, isEmpty);
     });

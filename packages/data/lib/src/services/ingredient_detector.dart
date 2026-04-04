@@ -6,7 +6,8 @@ class IngredientSuggestion {
   final String? subCategory;
   final MeasurementUnit? suggestedUnit;
 
-  const IngredientSuggestion({this.primaryCategory, this.subCategory, this.suggestedUnit});
+  const IngredientSuggestion(
+      {this.primaryCategory, this.subCategory, this.suggestedUnit});
 }
 
 /// Motor offline de detección de ingredientes basado en diccionarios.
@@ -32,7 +33,8 @@ class IngredientDetector {
     // Fallback: buscar por categoría general
     primary ??= _guessCategory(lower);
 
-    return IngredientSuggestion(primaryCategory: primary, subCategory: sub, suggestedUnit: unit);
+    return IngredientSuggestion(
+        primaryCategory: primary, subCategory: sub, suggestedUnit: unit);
   }
 
   static String? _guessCategory(String lower) {
@@ -67,7 +69,11 @@ class IngredientDetector {
 
     // ── Verduras ──
     'tomate': ('Verduras', 'Verduras de fruto', MeasurementUnit.unidades),
-    'cebolla': ('Condimentos y especias', 'Aromáticos', MeasurementUnit.unidades),
+    'cebolla': (
+      'Condimentos y especias',
+      'Aromáticos',
+      MeasurementUnit.unidades
+    ),
     'ajo': ('Condimentos y especias', 'Aromáticos', MeasurementUnit.unidades),
     'papa': ('Tubérculos y raíces', 'Tubérculos andinos', MeasurementUnit.kg),
     'zanahoria': ('Verduras', 'Verduras de raíz', MeasurementUnit.unidades),
@@ -165,7 +171,11 @@ class IngredientDetector {
 
     // ── Enlatados ──
     'conserva': ('Otros', 'Conservas', MeasurementUnit.lata),
-    'sardina': ('Proteínas animales', 'Pescados enlatados', MeasurementUnit.lata),
+    'sardina': (
+      'Proteínas animales',
+      'Pescados enlatados',
+      MeasurementUnit.lata
+    ),
     'leche evaporada': ('Lácteos', 'Leche procesada', MeasurementUnit.lata),
     'leche condensada': ('Lácteos', 'Leche procesada', MeasurementUnit.lata),
   };

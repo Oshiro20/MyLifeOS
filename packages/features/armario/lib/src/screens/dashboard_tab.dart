@@ -28,14 +28,14 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   void _checkAndGenerateOotd() {
     final state = ref.read(armarioProvider);
-    if (!state.isLoading && 
-        !state.isLoadingOotd && 
-        state.ootd == null && 
+    if (!state.isLoading &&
+        !state.isLoadingOotd &&
+        state.ootd == null &&
         state.garments.where((g) => g.isClean).isNotEmpty) {
       ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
-        ref.read(geminiServiceProvider), 
-        _mockWeather,
-      );
+            ref.read(geminiServiceProvider),
+            _mockWeather,
+          );
     }
   }
 
@@ -56,9 +56,9 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       onRefresh: () async {
         await ref.read(armarioProvider.notifier).load();
         ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
-          ref.read(geminiServiceProvider), 
-          _mockWeather,
-        );
+              ref.read(geminiServiceProvider),
+              _mockWeather,
+            );
       },
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -75,7 +75,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           const SizedBox(height: 8),
           Text(
             'Tienes ${state.garments.length} prendas registradas (${state.garments.where((g) => g.isClean).length} limpias).',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 14),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.54),
+                fontSize: 14),
           ),
           const SizedBox(height: 24),
 
@@ -91,14 +96,20 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.wb_sunny_outlined, color: Color(0xFFFFB74D), size: 32),
+                const Icon(Icons.wb_sunny_outlined,
+                    color: Color(0xFFFFB74D), size: 32),
                 const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Clima hoy (Mock)', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('Clima hoy (Mock)',
+                        style: TextStyle(color: Colors.white54, fontSize: 12)),
                     const SizedBox(height: 2),
-                    Text(_mockWeather, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(_mockWeather,
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -108,7 +119,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
           // Physical Profile AI Banner
           _buildPhysicalProfileBanner(context, state.userProfile, themeColor),
-          
+
           const SizedBox(height: 32),
 
           // OOTD AI Card
@@ -118,7 +129,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               const SizedBox(width: 8),
               const Text(
                 'Outfit del Día (AI Stylist)',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -151,8 +165,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           children: [
             CircularProgressIndicator(color: Color(0xFF00C896)),
             SizedBox(height: 16),
-            Text('Analizando tu armario...', style: TextStyle(color: Colors.white54)),
-            Text('Gemini está creando tu outfit ideal', style: TextStyle(color: Colors.white38, fontSize: 12)),
+            Text('Analizando tu armario...',
+                style: TextStyle(color: Colors.white54)),
+            Text('Gemini está creando tu outfit ideal',
+                style: TextStyle(color: Colors.white38, fontSize: 12)),
           ],
         ),
       ),
@@ -171,14 +187,22 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         children: [
           const Icon(Icons.error_outline, color: Colors.redAccent, size: 32),
           const SizedBox(height: 12),
-          Text(error, textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+          Text(error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7))),
           const SizedBox(height: 16),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: themeColor),
-            onPressed: () => ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
-              ref.read(geminiServiceProvider), _mockWeather
-            ),
-            child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
+            onPressed: () => ref
+                .read(armarioProvider.notifier)
+                .generateOutfitOfTheDay(
+                    ref.read(geminiServiceProvider), _mockWeather),
+            child:
+                const Text('Reintentar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -197,14 +221,17 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         children: [
           const Icon(Icons.checkroom_outlined, color: Colors.white38, size: 40),
           const SizedBox(height: 12),
-          const Text('No hay sugerencia disponible', style: TextStyle(color: Colors.white70)),
+          const Text('No hay sugerencia disponible',
+              style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 16),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: themeColor),
-            onPressed: () => ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
-              ref.read(geminiServiceProvider), _mockWeather
-            ),
-            child: const Text('Generar Outfit', style: TextStyle(color: Colors.white)),
+            onPressed: () => ref
+                .read(armarioProvider.notifier)
+                .generateOutfitOfTheDay(
+                    ref.read(geminiServiceProvider), _mockWeather),
+            child: const Text('Generar Outfit',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -234,7 +261,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           if (explanation != null) ...[
             Text(
               '"\$explanation"',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 20),
           ],
@@ -254,15 +284,21 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: themeColor,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => MannequinCanvasScreen(suggestedOutfit: ootd)),
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          MannequinCanvasScreen(suggestedOutfit: ootd)),
                 );
               },
-              icon: const Icon(Icons.style_rounded, color: Colors.white, size: 20),
-              label: const Text('Ver en Maniquí', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              icon: const Icon(Icons.style_rounded,
+                  color: Colors.white, size: 20),
+              label: const Text('Ver en Maniquí',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -270,8 +306,11 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     );
   }
 
-  Widget _buildPhysicalProfileBanner(BuildContext context, UserPhysicalProfile? profile, Color themeColor) {
-    final hasData = profile != null && profile.colorimetry != null && profile.bodyShape != null;
+  Widget _buildPhysicalProfileBanner(
+      BuildContext context, UserPhysicalProfile? profile, Color themeColor) {
+    final hasData = profile != null &&
+        profile.colorimetry != null &&
+        profile.bodyShape != null;
 
     return GestureDetector(
       onTap: () {
@@ -298,7 +337,9 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                hasData ? Icons.accessibility_new_rounded : Icons.camera_front_outlined,
+                hasData
+                    ? Icons.accessibility_new_rounded
+                    : Icons.camera_front_outlined,
                 color: hasData ? themeColor : Colors.white54,
                 size: 28,
               ),
@@ -309,7 +350,9 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    hasData ? 'Perfil Físico IA Activo' : 'Escáner Físico con I.A.',
+                    hasData
+                        ? 'Perfil Físico IA Activo'
+                        : 'Escáner Físico con I.A.',
                     style: TextStyle(
                       color: hasData ? Colors.white : Colors.white70,
                       fontWeight: FontWeight.bold,
@@ -320,20 +363,29 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                   if (hasData) ...[
                     Text(
                       '${profile.colorimetry} • ${profile.bodyShape}',
-                      style: TextStyle(color: themeColor.withAlpha(200), fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: themeColor.withAlpha(200),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
                   ],
                   Text(
-                    hasData 
+                    hasData
                         ? 'Gemini usa esta info para tus outfits.'
                         : 'Descubre qué ropa te favorece.',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 12),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.54),
+                        fontSize: 12),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: hasData ? themeColor : Colors.white38),
+            Icon(Icons.chevron_right,
+                color: hasData ? themeColor : Colors.white38),
           ],
         ),
       ),
@@ -353,7 +405,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           Text(_emojiFor(g.type), style: const TextStyle(fontSize: 32)),
           const SizedBox(height: 8),
           Container(
-            width: 16, height: 16,
+            width: 16,
+            height: 16,
             decoration: BoxDecoration(
               color: _parseColor(g.primaryColor),
               shape: BoxShape.circle,
@@ -363,7 +416,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           const SizedBox(height: 6),
           Text(
             g.name,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 10),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
+                fontSize: 10),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -375,17 +433,27 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 
   String _emojiFor(GarmentType type) {
     switch (type) {
-      case GarmentType.shirt: return '👕';
-      case GarmentType.tshirt: return '👚';
-      case GarmentType.pants: return '👖';
+      case GarmentType.shirt:
+        return '👕';
+      case GarmentType.tshirt:
+        return '👚';
+      case GarmentType.pants:
+        return '👖';
       case GarmentType.shoes:
-      case GarmentType.sneakers: return '👟';
-      case GarmentType.boots: return '🥾';
-      case GarmentType.sandals: return '🩴';
-      case GarmentType.jacket: return '🧥';
-      case GarmentType.shorts: return '🩳';
-      case GarmentType.dress: return '👗';
-      default: return '🎽';
+      case GarmentType.sneakers:
+        return '👟';
+      case GarmentType.boots:
+        return '🥾';
+      case GarmentType.sandals:
+        return '🩴';
+      case GarmentType.jacket:
+        return '🧥';
+      case GarmentType.shorts:
+        return '🩳';
+      case GarmentType.dress:
+        return '👗';
+      default:
+        return '🎽';
     }
   }
 

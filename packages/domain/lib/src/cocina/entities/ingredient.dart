@@ -1,7 +1,16 @@
 import 'package:equatable/equatable.dart';
 
 enum IngredientCategory {
-  fruit, vegetable, protein, dairy, grain, spice, beverage, oil, canned, other;
+  fruit,
+  vegetable,
+  protein,
+  dairy,
+  grain,
+  spice,
+  beverage,
+  oil,
+  canned,
+  other;
 
   String get label {
     const labels = {
@@ -39,6 +48,11 @@ class Ingredient extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, name, category, quantity, unit, expirationDate,
+        id,
+        name,
+        category,
+        quantity,
+        unit,
+        expirationDate,
       ];
 }

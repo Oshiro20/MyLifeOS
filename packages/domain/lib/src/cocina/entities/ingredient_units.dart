@@ -1,8 +1,22 @@
 /// Unidades de medida disponibles para ingredientes.
 enum MeasurementUnit {
-  unidades, kg, g, litro, ml, botella, lata,
-  paquete, sobre, taza, cucharada, cucharadita,
-  docena, libra, onza, caja, bolsa;
+  unidades,
+  kg,
+  g,
+  litro,
+  ml,
+  botella,
+  lata,
+  paquete,
+  sobre,
+  taza,
+  cucharada,
+  cucharadita,
+  docena,
+  libra,
+  onza,
+  caja,
+  bolsa;
 
   String get label {
     const labels = {

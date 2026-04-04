@@ -1,17 +1,17 @@
 import 'package:equatable/equatable.dart';
 
 enum FoodClassification {
-  healthy,   // Saludable 💚
-  balanced,  // Balanceado 💛
-  junk,      // Chatarra 🔴
+  healthy, // Saludable 💚
+  balanced, // Balanceado 💛
+  junk, // Chatarra 🔴
 }
 
 class MealEvaluation extends Equatable {
   final String id;
   final DateTime timestamp;
-  final String? photoPath;          // path de la foto capturada (puede ser null)
+  final String? photoPath; // path de la foto capturada (puede ser null)
   final FoodClassification classification;
-  final double healthScore;         // 0.0 – 1.0
+  final double healthScore; // 0.0 – 1.0
   final List<String> detectedIngredients;
   final List<String> positiveFactors;
   final List<String> negativeFactors;
@@ -33,10 +33,17 @@ class MealEvaluation extends Equatable {
 
   @override
   List<Object?> get props => [
-    id, timestamp, photoPath, classification,
-    healthScore, detectedIngredients, positiveFactors,
-    negativeFactors, feedback, recommendation,
-  ];
+        id,
+        timestamp,
+        photoPath,
+        classification,
+        healthScore,
+        detectedIngredients,
+        positiveFactors,
+        negativeFactors,
+        feedback,
+        recommendation,
+      ];
 }
 
 class MealLog extends Equatable {
@@ -57,5 +64,6 @@ class MealLog extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, timestamp, photoPath, classification, healthScore, feedback];
+  List<Object?> get props =>
+      [id, timestamp, photoPath, classification, healthScore, feedback];
 }

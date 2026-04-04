@@ -107,7 +107,8 @@ class FoodCoachRepository implements IFoodCoachRepository {
           photoPath: photoPath,
         );
         if (jsonStr != null) {
-          final cleanJson = jsonStr.replaceAll(RegExp(r'```json\n|```'), '').trim();
+          final cleanJson =
+              jsonStr.replaceAll(RegExp(r'```json\n|```'), '').trim();
           final decoded = json.decode(cleanJson) as Map<String, dynamic>;
           final clsStr = decoded['classification'] as String? ?? 'balanced';
           classification = FoodClassification.values.firstWhere(
@@ -156,19 +157,24 @@ class FoodCoachRepository implements IFoodCoachRepository {
       final maxPossible = lowerIngredients.length * 3;
       final minPossible = lowerIngredients.length * -3;
       final range = maxPossible - minPossible;
-      healthScore = range == 0 ? 0.5 : ((totalScore - minPossible) / range).clamp(0.0, 1.0);
+      healthScore = range == 0
+          ? 0.5
+          : ((totalScore - minPossible) / range).clamp(0.0, 1.0);
 
       if (healthScore >= 0.68) {
         classification = FoodClassification.healthy;
-        feedback = '¡Esta comida es muy saludable! 💚 ${pos.isNotEmpty ? "Destacan: ${pos.take(3).join(", ")}." : ""}';
+        feedback =
+            '¡Esta comida es muy saludable! 💚 ${pos.isNotEmpty ? "Destacan: ${pos.take(3).join(", ")}." : ""}';
         rec = _healthyTips[_tipIndex % _healthyTips.length];
       } else if (healthScore >= 0.40) {
         classification = FoodClassification.balanced;
-        feedback = 'Comida balanceada. 💛 ${neg.isNotEmpty ? "Cuidado con: ${neg.take(2).join(", ")}." : ""}';
+        feedback =
+            'Comida balanceada. 💛 ${neg.isNotEmpty ? "Cuidado con: ${neg.take(2).join(", ")}." : ""}';
         rec = _balancedTips[_tipIndex % _balancedTips.length];
       } else {
         classification = FoodClassification.junk;
-        feedback = 'Alto en calorías vacías. 🔴 ${neg.isNotEmpty ? "Modera: ${neg.take(3).join(", ")}." : ""}';
+        feedback =
+            'Alto en calorías vacías. 🔴 ${neg.isNotEmpty ? "Modera: ${neg.take(3).join(", ")}." : ""}';
         rec = _junkTips[_tipIndex % _junkTips.length];
       }
       _tipIndex++;
@@ -198,15 +204,17 @@ class FoodCoachRepository implements IFoodCoachRepository {
       ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
       ..limit(limit);
     final rows = await q.get();
-    return rows.map((r) => MealLog(
-          id: r.id,
-          timestamp: r.timestamp,
-          photoPath: r.photoPath.isEmpty ? null : r.photoPath,
-          classification:
-              FoodClassification.values[r.classificationIndex.clamp(0, 2)],
-          healthScore: r.classificationIndex / 2.0,
-          feedback: r.feedback,
-        )).toList();
+    return rows
+        .map((r) => MealLog(
+              id: r.id,
+              timestamp: r.timestamp,
+              photoPath: r.photoPath.isEmpty ? null : r.photoPath,
+              classification:
+                  FoodClassification.values[r.classificationIndex.clamp(0, 2)],
+              healthScore: r.classificationIndex / 2.0,
+              feedback: r.feedback,
+            ))
+        .toList();
   }
 
   @override
@@ -217,8 +225,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
           photoPath: Value(eval.photoPath ?? ''),
           classificationIndex: Value(eval.classification.index),
           feedback: Value(eval.feedback),
-          detectedIngredientsCsv:
-              Value(eval.detectedIngredients.join(',')),
+          detectedIngredientsCsv: Value(eval.detectedIngredients.join(',')),
         ));
   }
 

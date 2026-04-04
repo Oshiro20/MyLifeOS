@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../providers/foodcoach_provider.dart';
 
 class EvaluateTab extends ConsumerStatefulWidget with AppFeedback {
@@ -52,7 +53,8 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
             ),
             child: const Row(
               children: [
-                Icon(Icons.tips_and_updates_outlined, color: Color(0xFF00C896), size: 22),
+                Icon(Icons.tips_and_updates_outlined,
+                    color: Color(0xFF00C896), size: 22),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -67,7 +69,10 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
 
           // Foto opcional
           const Text('Foto (opcional)',
-              style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: _pickPhoto,
@@ -81,17 +86,19 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
               child: _photoPath != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.file(File(_photoPath!), fit: BoxFit.cover,
-                          width: double.infinity),
+                      child: Image.file(File(_photoPath!),
+                          fit: BoxFit.cover, width: double.infinity),
                     )
                   : const Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_a_photo_outlined, color: Colors.white24, size: 32),
+                          Icon(Icons.add_a_photo_outlined,
+                              color: Colors.white24, size: 32),
                           SizedBox(height: 6),
                           Text('Toca para añadir foto',
-                              style: TextStyle(color: Colors.white24, fontSize: 12)),
+                              style: TextStyle(
+                                  color: Colors.white24, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -101,14 +108,18 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
 
           // Input de ingredientes
           const Text('Ingredientes',
-              style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _ingredientCtrl,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   textInputAction: TextInputAction.done,
                   onSubmitted: _addIngredient,
                   decoration: InputDecoration(
@@ -134,11 +145,13 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                   backgroundColor: const Color(0xFF00C896),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 ),
                 onPressed: () => _addIngredient(_ingredientCtrl.text),
                 child: const Text('Añadir',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -152,19 +165,25 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
               children: state.currentIngredients.map((ing) {
                 return Chip(
                   label: Text(ing,
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 12)),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 12)),
                   backgroundColor: const Color(0xFF2A2A40),
-                  deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white38),
-                  onDeleted: () =>
-                      ref.read(foodCoachProvider.notifier).removeIngredient(ing),
+                  deleteIcon:
+                      const Icon(Icons.close, size: 14, color: Colors.white38),
+                  onDeleted: () => ref
+                      .read(foodCoachProvider.notifier)
+                      .removeIngredient(ing),
                   padding: EdgeInsets.zero,
                 );
               }).toList(),
             ),
             const SizedBox(height: 4),
             TextButton.icon(
-              onPressed: () => ref.read(foodCoachProvider.notifier).clearIngredients(),
-              icon: const Icon(Icons.clear_all, size: 16, color: Colors.white38),
+              onPressed: () =>
+                  ref.read(foodCoachProvider.notifier).clearIngredients(),
+              icon:
+                  const Icon(Icons.clear_all, size: 16, color: Colors.white38),
               label: const Text('Limpiar todo',
                   style: TextStyle(color: Colors.white38, fontSize: 12)),
             ),
@@ -178,16 +197,29 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
           // Sugerencias rápidas
           const SizedBox(height: 8),
           const Text('Sugerencias rápidas',
-              style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Wrap(
-            spacing: 6, runSpacing: 6,
-            children: _quickSuggestions.map((s) => ActionChip(
-              label: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 11)),
-              backgroundColor: Theme.of(context).cardColor,
-              onPressed: () => ref.read(foodCoachProvider.notifier).addIngredient(s),
-              padding: EdgeInsets.zero,
-            )).toList(),
+            spacing: 6,
+            runSpacing: 6,
+            children: _quickSuggestions
+                .map((s) => ActionChip(
+                      label: Text(s,
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.54),
+                              fontSize: 11)),
+                      backgroundColor: Theme.of(context).cardColor,
+                      onPressed: () =>
+                          ref.read(foodCoachProvider.notifier).addIngredient(s),
+                      padding: EdgeInsets.zero,
+                    ))
+                .toList(),
           ),
 
           const SizedBox(height: 28),
@@ -211,14 +243,17 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                       .evaluate(photoPath: _photoPath),
               icon: state.isEvaluating
                   ? const SizedBox(
-                      height: 18, width: 18,
+                      height: 18,
+                      width: 18,
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.analytics_outlined, color: Colors.white),
               label: Text(
                 state.isEvaluating ? 'Evaluando…' : 'Evaluar comida',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -228,9 +263,21 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
   }
 
   static const _quickSuggestions = [
-    'pollo', 'arroz', 'ensalada', 'brócoli', 'salmón',
-    'papas fritas', 'hamburguesa', 'pizza', 'tomate', 'aguacate',
-    'yogur', 'avena', 'huevo', 'atún', 'quinoa',
+    'pollo',
+    'arroz',
+    'ensalada',
+    'brócoli',
+    'salmón',
+    'papas fritas',
+    'hamburguesa',
+    'pizza',
+    'tomate',
+    'aguacate',
+    'yogur',
+    'avena',
+    'huevo',
+    'atún',
+    'quinoa',
   ];
 
   void _addIngredient(String text) {
@@ -242,7 +289,46 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
   Future<void> _pickPhoto() async {
     final picked = await ImagePicker()
         .pickImage(source: ImageSource.camera, imageQuality: 80);
-    if (picked != null) setState(() => _photoPath = picked.path);
+    if (picked != null) {
+      // Compress the image
+      final compressedFile = await _compressImage(File(picked.path));
+      setState(() => _photoPath = compressedFile.path);
+    }
+  }
+
+  Future<File> _compressImage(File originalFile) async {
+    try {
+      final dir = Directory('${originalFile.parent.path}/compressed');
+      if (!await dir.exists()) {
+        await dir.create();
+      }
+
+      final compressedPath =
+          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      final result = await FlutterImageCompress.compressAndGetFile(
+        originalFile.path,
+        compressedPath,
+        quality: 70,
+        minWidth: 1024,
+        minHeight: 1024,
+      );
+
+      if (result != null) {
+        final compressedFile = File(result.path);
+        // Delete original file to save space
+        if (await originalFile.exists()) {
+          await originalFile.delete();
+        }
+        return compressedFile;
+      }
+
+      // If compression fails, return original file
+      return originalFile;
+    } catch (e) {
+      // If compression fails, return original file
+      return originalFile;
+    }
   }
 }
 
@@ -266,17 +352,23 @@ class _ResultView extends StatelessWidget {
 
   String get _classEmoji {
     switch (evaluation.classification) {
-      case FoodClassification.healthy: return '💚';
-      case FoodClassification.balanced: return '💛';
-      case FoodClassification.junk: return '🔴';
+      case FoodClassification.healthy:
+        return '💚';
+      case FoodClassification.balanced:
+        return '💛';
+      case FoodClassification.junk:
+        return '🔴';
     }
   }
 
   String get _classLabel {
     switch (evaluation.classification) {
-      case FoodClassification.healthy: return 'Saludable';
-      case FoodClassification.balanced: return 'Balanceado';
-      case FoodClassification.junk: return 'No recomendable';
+      case FoodClassification.healthy:
+        return 'Saludable';
+      case FoodClassification.balanced:
+        return 'Balanceado';
+      case FoodClassification.junk:
+        return 'No recomendable';
     }
   }
 
@@ -314,8 +406,10 @@ class _ResultView extends StatelessWidget {
                 Text(_classEmoji, style: const TextStyle(fontSize: 56)),
                 const SizedBox(height: 8),
                 Text(_classLabel,
-                    style: TextStyle(color: _classColor,
-                        fontSize: 22, fontWeight: FontWeight.w800)),
+                    style: TextStyle(
+                        color: _classColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
                 // Barra de salud
                 ClipRRect(
@@ -329,7 +423,12 @@ class _ResultView extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text('Puntuación de salud: $score / 100',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 12)),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.54),
+                        fontSize: 12)),
               ],
             ),
           ),
@@ -379,12 +478,14 @@ class _ResultView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00C896),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
               onPressed: onReset,
               icon: const Icon(Icons.refresh, color: Colors.white),
               label: const Text('Evaluar otra comida',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -425,11 +526,18 @@ class _InfoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: TextStyle(color: color,
-                        fontWeight: FontWeight.w700, fontSize: 12)),
+                    style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12)),
                 const SizedBox(height: 4),
                 Text(content,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 13)),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.7),
+                        fontSize: 13)),
               ],
             ),
           ),
