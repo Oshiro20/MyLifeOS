@@ -16,6 +16,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String? _newVersion;
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final notifier = MyLifeOSUpdateNotifier(FlutterLocalNotificationsPlugin());
     final newVersion = await notifier.checkForUpdates();
     if (newVersion != null && mounted) {
+      setState(() => _newVersion = newVersion);
       _showUpdateDialog(newVersion);
     }
   }
@@ -146,6 +149,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  // ── Banner de actualización ─────────────────────────────────
+                  if (_newVersion != null) _UpdateBanner(version: _newVersion!),
+                  if (_newVersion != null) const SizedBox(height: 12),
+
                   // ── Score de bienestar ──────────────────────────────────────
                   _WellbeingCard(isDark: isDark, primary: primary),
                   const SizedBox(height: 20),
@@ -617,6 +624,76 @@ class _RecentActivity extends StatelessWidget {
             ],
           );
         }),
+      ),
+    );
+  }
+}
+
+/// Banner de actualización visible en el home
+class _UpdateBanner extends StatelessWidget {
+  final String version;
+  const _UpdateBanner({required this.version});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        MyLifeOSUpdateNotifier.launchUpdater();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF00C896).withValues(alpha: 0.15),
+              const Color(0xFF00E5FF).withValues(alpha: 0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: const Color(0xFF00C896).withValues(alpha: 0.3),
+          ),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00C896).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.system_update,
+                  color: Color(0xFF00C896), size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '✨ Actualización disponible',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Versión $version lista para descargar',
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF00C896), size: 20),
+          ],
+        ),
       ),
     );
   }
