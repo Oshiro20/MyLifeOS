@@ -46,26 +46,29 @@ class WalletAICommunicationService {
 
     try {
       if (await canLaunchUrl(deepLinkUri)) {
-        return await launchUrl(deepLinkUri);
+        debugPrint('[WalletAICommunication] Abriendo WalletAI con deep link');
+        return await launchUrl(deepLinkUri,
+            mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       debugPrint('[WalletAICommunication] Error con deep link: $e');
     }
 
-    // Fallback: Intentar abrir la app directamente
-    final appStoreUri = Uri.parse('market://details?id=$_walletAIPackage');
+    // Fallback: Intentar abrir por scheme directo
+    final directUri = Uri.parse('$_walletAIScheme://');
     try {
-      if (await canLaunchUrl(appStoreUri)) {
-        return await launchUrl(appStoreUri);
+      if (await canLaunchUrl(directUri)) {
+        debugPrint('[WalletAICommunication] Abriendo WalletAI (directo)');
+        return await launchUrl(directUri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      debugPrint('[WalletAICommunication] Error con Play Store: $e');
+      debugPrint('[WalletAICommunication] Error con uri directa: $e');
     }
 
-    // Último fallback: Abrir en navegador
-    final webUri = Uri.parse(
-        'https://play.google.com/store/apps/details?id=$_walletAIPackage');
-    return await launchUrl(webUri);
+    // Último fallback: WalletAI no está disponible
+    debugPrint(
+        '[WalletAICommunication] WalletAI no está instalado o no soporta deep links');
+    return false;
   }
 
   /// Solicita sincronización con WalletAI
