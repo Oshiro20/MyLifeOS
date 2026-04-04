@@ -121,11 +121,12 @@ class WalletAICommunicationService {
 
   /// Verifica el estado de conexión con WalletAI
   static Future<WalletConnectionStatus> checkConnectionStatus() async {
-    final summaryResult = await WalletSummaryReader.readWithValidation();
     final isInstalled = await isWalletAIInstalled();
     final hasSummary = await WalletSummaryReader.isWalletAIAvailable();
+    final summaryResult = await WalletSummaryReader.readWithValidation();
 
-    if (!hasSummary && !isInstalled) {
+    // Caso 1: WalletAI no está instalado
+    if (!isInstalled && !hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
         isWalletAIAvailable: false,
@@ -135,31 +136,34 @@ class WalletAICommunicationService {
       );
     }
 
-    if (!hasSummary && isInstalled) {
+    // Caso 2: WalletAI instalado pero no ha exportado datos aún
+    if (isInstalled && !hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
         isWalletAIAvailable: true,
         isProjectIdMatched: false,
         lastSync: null,
-        error: 'WalletAI instalado pero sin datos exportados. Abre WalletAI.',
+        error: 'Abre WalletAI para que exporte los datos automáticamente',
       );
     }
 
+    // Caso 3: Hay datos pero error de lectura
     if (!summaryResult.isConnected) {
       return WalletConnectionStatus(
         isConnected: false,
-        isWalletAIAvailable: hasSummary,
+        isWalletAIAvailable: true,
         isProjectIdMatched: false,
         lastSync: null,
         error: summaryResult.error ?? 'Error al leer datos',
       );
     }
 
+    // Caso 4: Datos leídos correctamente
     final lastSync = await SharedIdentityService.getLastSync();
 
     return WalletConnectionStatus(
       isConnected: true,
-      isWalletAIAvailable: hasSummary,
+      isWalletAIAvailable: true,
       isProjectIdMatched: summaryResult.isProjectIdMatched,
       lastSync: lastSync,
       summary: summaryResult.summary,
