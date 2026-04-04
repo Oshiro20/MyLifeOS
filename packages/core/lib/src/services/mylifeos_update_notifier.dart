@@ -70,8 +70,6 @@ class MyLifeOSUpdateNotifier {
   }
 
   Future<void> _showNotification(String version) async {
-    // Crear canal de notificación si no existe
-    await _notifications.resolvePlatformSpecificCommunication();
     const androidDetails = AndroidNotificationDetails(
       'mylifeos_updates',
       'MyLifeOS Updates',
