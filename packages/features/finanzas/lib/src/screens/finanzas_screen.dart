@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/wallet_ai_summary_card.dart';
+import '../screens/walletai_connection_screen.dart';
 
 class FinanzasScreen extends StatelessWidget {
   const FinanzasScreen({super.key});
@@ -18,6 +19,18 @@ class FinanzasScreen extends StatelessWidget {
             title: const Text('Finanzas',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.link),
+                tooltip: 'Conexión con WalletAI',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const WalletAIConnectionSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.tune_outlined),
                 onPressed: () {},

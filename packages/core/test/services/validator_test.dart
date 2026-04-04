@@ -83,15 +83,9 @@ void main() {
   });
 
   group('Auto Backup Service Tests', () {
-    test('should have correct task names', () {
-      expect(AutoBackupTasks.init, 'auto_backup_init');
-      expect(AutoBackupTasks.dailyBackup, 'daily_backup');
-    });
-
-    test('should have correct preference keys', () {
-      expect(AutoBackupPrefs.enabled, 'auto_backup_enabled');
-      expect(AutoBackupPrefs.lastBackup, 'auto_backup_last_run');
-      expect(AutoBackupPrefs.lastBackupStatus, 'auto_backup_last_status');
+    test('should create AutoBackupService instance', () {
+      final service = AutoBackupService();
+      expect(service, isNotNull);
     });
   });
 

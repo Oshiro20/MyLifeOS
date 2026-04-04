@@ -401,7 +401,7 @@ class _BackupSection extends StatelessWidget {
                 ),
                 trailing: Switch(
                   value: isEnabled,
-                  activeColor: const Color(0xFF00C896),
+                  activeThumbColor: const Color(0xFF00C896),
                   onChanged: (val) async {
                     if (val) {
                       await AutoBackupService.enable();

@@ -1,13 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'backup_service.dart';
 
 /// Servicio de backup automático programado con WorkManager.
 /// NOTA: WorkManager temporalmente deshabilitado - actualizar a workmanager 0.9.0+
 /// Las referencias a WorkManager están comentadas para permitir la compilación.
 class AutoBackupService {
-  final BackupService _backupService;
-
-  AutoBackupService(this._backupService);
+  AutoBackupService();
 
   /// Inicializa el servicio de backup automático.
   static Future<void> initialize() async {

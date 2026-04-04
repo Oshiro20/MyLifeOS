@@ -1,41 +1,19 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-
-/// Limpia el caché de imágenes comprimidas.
-Future<int> _getCacheSize() async {
-  try {
-    final appDir = await getApplicationDocumentsDirectory();
-    final compressedDir = Directory('${appDir.path}/compressed');
-    
-    if (!compressedDir.existsSync()) return 0;
-    
-    int totalSize = 0;
-    await for (final file in compressedDir.list()) {
-      if (file is File) {
-        totalSize += await file.length();
-      }
-    }
-    
-    return totalSize;
-  } catch (_) {
-    return 0;
-  }
-}
 
 /// Limpia el caché y retorna el espacio liberado.
 Future<String> clearImageCache() async {
   try {
     final appDir = await getApplicationDocumentsDirectory();
     final compressedDir = Directory('${appDir.path}/compressed');
-    
+
     if (!compressedDir.existsSync()) {
       return 'No hay caché para limpiar';
     }
-    
+
     int totalSize = 0;
     int fileCount = 0;
-    
+
     await for (final file in compressedDir.list()) {
       if (file is File) {
         totalSize += await file.length();
@@ -43,12 +21,12 @@ Future<String> clearImageCache() async {
         fileCount++;
       }
     }
-    
+
     // Eliminar directorio si está vacío
     if (await compressedDir.list().isEmpty) {
       await compressedDir.delete();
     }
-    
+
     return '✅ $fileCount archivos eliminados (${_formatSize(totalSize)} liberados)';
   } catch (e) {
     return '❌ Error al limpiar caché: $e';

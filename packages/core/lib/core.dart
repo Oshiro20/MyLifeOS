@@ -11,6 +11,8 @@ export 'src/services/tiktok_service.dart';
 export 'src/services/wallet_summary_reader.dart';
 export 'src/services/wallet_update_notifier.dart';
 export 'src/services/mylifeos_update_notifier.dart';
+export 'src/services/shared_identity_service.dart';
+export 'src/services/walletai_communication_service.dart';
 // Fase 1 — Infraestructura
 export 'src/services/offline_cache_service.dart';
 export 'src/services/connectivity_service.dart';
