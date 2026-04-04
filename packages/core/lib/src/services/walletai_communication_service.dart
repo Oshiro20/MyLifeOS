@@ -122,11 +122,12 @@ class WalletAICommunicationService {
   /// Verifica el estado de conexión con WalletAI
   static Future<WalletConnectionStatus> checkConnectionStatus() async {
     final isInstalled = await isWalletAIInstalled();
+    final isPackageInstalled = await isWalletAIPackageInstalled();
     final hasSummary = await WalletSummaryReader.isWalletAIAvailable();
     final summaryResult = await WalletSummaryReader.readWithValidation();
 
-    // Caso 1: WalletAI no está instalado
-    if (!isInstalled && !hasSummary) {
+    // Caso 1: WalletAI no está instalado de ninguna forma
+    if (!isInstalled && !isPackageInstalled && !hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
         isWalletAIAvailable: false,
@@ -136,7 +137,18 @@ class WalletAICommunicationService {
       );
     }
 
-    // Caso 2: WalletAI instalado pero no ha exportado datos aún
+    // Caso 2: WalletAI instalado pero versión vieja (sin deep link soporte)
+    if (!isInstalled && isPackageInstalled && !hasSummary) {
+      return WalletConnectionStatus(
+        isConnected: false,
+        isWalletAIAvailable: true,
+        isProjectIdMatched: false,
+        lastSync: null,
+        error: 'WalletAI necesita actualizarse a v1.3.0+ para la integración',
+      );
+    }
+
+    // Caso 3: WalletAI instalado (nuevo) pero no ha exportado datos aún
     if (isInstalled && !hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
@@ -147,7 +159,7 @@ class WalletAICommunicationService {
       );
     }
 
-    // Caso 3: Hay datos pero error de lectura
+    // Caso 4: Hay datos pero error de lectura
     if (!summaryResult.isConnected) {
       return WalletConnectionStatus(
         isConnected: false,
@@ -158,7 +170,7 @@ class WalletAICommunicationService {
       );
     }
 
-    // Caso 4: Datos leídos correctamente
+    // Caso 5: Datos leídos correctamente
     final lastSync = await SharedIdentityService.getLastSync();
 
     return WalletConnectionStatus(
@@ -218,6 +230,18 @@ class WalletAICommunicationService {
   static Future<bool> isWalletAIInstalled() async {
     try {
       final uri = Uri.parse('$_walletAIScheme://');
+      return await canLaunchUrl(uri);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Verifica si WalletAI está instalado por package name (incluso si es versión vieja)
+  static Future<bool> isWalletAIPackageInstalled() async {
+    try {
+      // Intentar abrir con package name directo
+      final uri = Uri.parse(
+          'intent://wallet_ai#Intent;scheme=walletai;package=com.oshiro.wallet_ai;end');
       return await canLaunchUrl(uri);
     } catch (_) {
       return false;

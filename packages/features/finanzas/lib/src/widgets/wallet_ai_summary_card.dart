@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:core/core.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Card que muestra el resumen ejecutivo de WalletAI en el módulo de Finanzas.
 /// Si WalletAI no está instalado o no ha exportado datos, muestra un estado vacío.
@@ -343,39 +344,93 @@ class _WalletNotConnectedCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onOpenWalletAI,
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('Abrir WalletAI'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF00C896),
-                    side: const BorderSide(
-                      color: Color(0xFF00C896),
+          _isWalletAIUpdateNeeded()
+              ? _UpdateWalletButton()
+              : Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onOpenWalletAI,
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: const Text('Abrir WalletAI'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF00C896),
+                          side: const BorderSide(color: Color(0xFF00C896)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Reintentar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00C896),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
+  bool _isWalletAIUpdateNeeded() {
+    return status.error?.contains('necesita actualizarse') ?? false;
+  }
+}
+
+/// Botón para actualizar WalletAI
+class _UpdateWalletButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.system_update, color: Color(0xFFF59E0B), size: 20),
+              SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Reintentar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00C896),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
+                child: Text(
+                  'Descarga WalletAI v1.3.0+ desde GitHub',
+                  style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await launchUrl(
+                Uri.parse(
+                    'https://github.com/Oshiro20/WalletAI/releases/latest'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            icon: const Icon(Icons.download, size: 16),
+            label: const Text('Descargar WalletAI'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF59E0B),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
