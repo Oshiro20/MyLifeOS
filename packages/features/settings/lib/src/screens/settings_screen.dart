@@ -1,15 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:core/core.dart';
 import '../providers/backup_provider.dart';
 import '../providers/theme_provider.dart';
 
-class SettingsScreen extends ConsumerWidget with AppFeedback {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = 'Cargando...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = 'v${info.version}+${info.buildNumber}');
+      }
+    } catch (_) {
+      if (mounted) setState(() => _appVersion = 'v1.0.4');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final backup = ref.watch(backupProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -98,7 +123,7 @@ class SettingsScreen extends ConsumerWidget with AppFeedback {
               ),
               const SizedBox(height: 4),
               Text(
-                'Versión 1.0.7+1',
+                _appVersion,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 13,
@@ -189,7 +214,7 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'v1.0.7+1 · Offline-First',
+                  _appVersion,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
