@@ -191,6 +191,26 @@ class RecipesNotifier extends Notifier<RecipesState> {
     await load();
   }
 
+  Future<void> deleteShoppingItem(String id) async {
+    await _repo.deleteShoppingItem(id);
+    await load();
+  }
+
+  Future<void> clearBoughtShoppingItems() async {
+    final bought = state.shoppingList.where((i) => i.bought).toList();
+    for (final item in bought) {
+      await _repo.deleteShoppingItem(item.id);
+    }
+    await load();
+  }
+
+  Future<void> clearAllShoppingList() async {
+    for (final item in state.shoppingList) {
+      await _repo.deleteShoppingItem(item.id);
+    }
+    state = state.copyWith(shoppingList: []);
+  }
+
   Future<void> generateShoppingList(List<Recipe> selected) async {
     final items = await _repo.generateShoppingListFromRecipes(
         selected, await _repo.getAllIngredients());

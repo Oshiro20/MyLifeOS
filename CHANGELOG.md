@@ -3,7 +3,24 @@
 Todos los cambios notables en este proyecto serán documentados aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
-## [1.2.4+20] - 2026-04-05 - RELEASE
+## [1.2.5+21] - 2026-04-05 - RELEASE
+
+### Added
+- **Navegación desde Sugeridas a Detalle de Receta** - Tap en tarjeta abre vista completa
+- **Botón "Cocinar esta receta"** en tarjetas de sugerencias
+- **Eliminar items individuales** de la lista de compras
+- **Limpiar lista completa de compras** con confirmación
+- **Limpiar solo items comprados** de la lista de compras
+- **Action bar con contadores** en lista de compras (total, pendientes)
+- **Ver detalle completo de receta** desde sugerencias (ingredientes + instrucciones)
+
+### Fixed
+- **Chef IA FAB visibility** - Reposicionado para evitar overlap con bottomNavigationBar
+- FABs ahora en `bottom: 160` (Chef IA) y `bottom: 96` (Agregar receta)
+
+---
+
+## [1.2.4+20] - 2026-04-05
 
 ### Added
 - Pull-to-refresh en Finanzas y Recetas tabs

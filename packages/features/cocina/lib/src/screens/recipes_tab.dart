@@ -72,7 +72,7 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
           ),
           Positioned(
             right: 16,
-            bottom: 80,
+            bottom: 160,
             child: FloatingActionButton(
               heroTag: 'import_tiktok',
               backgroundColor: const Color(0xFFFF4D4D),
@@ -84,7 +84,7 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
           ),
           Positioned(
             right: 16,
-            bottom: 16,
+            bottom: 96,
             child: FloatingActionButton(
               heroTag: 'add_recipe',
               backgroundColor: const Color(0xFF00C896),
