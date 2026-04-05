@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 class MyLifeOSUpdateNotifier {
   static const _repoOwner = 'Oshiro20';
   static const _repoName = 'MyLifeOS';
-  static const _prefKey = 'mylifeos_last_known_version';
+  static const _prefKey = 'mylifeos_last_notified_version';
   static const _notifId = 9002;
 
   final FlutterLocalNotificationsPlugin _notifications;
@@ -21,33 +21,54 @@ class MyLifeOSUpdateNotifier {
   /// o null si ya estamos en la más reciente.
   Future<String?> checkForUpdates() async {
     try {
-      final latestVersion = await _fetchLatestVersion();
-      if (latestVersion == null) return null;
-
       final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersion = 'v${packageInfo.version}';
+      final currentVersion = packageInfo.version; // Ej: "1.1.4"
+
+      final latestTag = await _fetchLatestTag();
+      if (latestTag == null) return null;
+
+      // Limpiar prefijo 'v' si existe
+      final latestVersion =
+          latestTag.replaceAll('v', ''); // Ej: "v1.1.4" -> "1.1.4"
+
+      // Comparación semántica (igual que WalletAI)
+      if (!_isVersionGreater(latestVersion, currentVersion)) {
+        return null; // Ya estamos en la versión más reciente
+      }
 
       final prefs = await SharedPreferences.getInstance();
-      final lastKnown = prefs.getString(_prefKey);
+      final lastNotified = prefs.getString(_prefKey);
 
-      // Si la versión más reciente es diferente a la instalada, hay actualización.
-      if (latestVersion != currentVersion) {
-        // Siempre mostrar notificación si es una versión diferente a la última conocida
-        // O si nunca se había chequeado antes
-        if (lastKnown == null || lastKnown != latestVersion) {
-          await prefs.setString(_prefKey, latestVersion);
-          await _showNotification(latestVersion);
-        }
-        return latestVersion;
+      // Solo notificar si es una versión diferente a la última notificada
+      if (lastNotified != latestTag) {
+        await prefs.setString(_prefKey, latestTag);
+        await _showNotification(latestTag);
       }
-      return null;
+
+      return latestTag;
     } catch (e) {
       debugPrint('[MyLifeOSUpdateNotifier] Error: $e');
       return null;
     }
   }
 
-  /// Lanza el enlace en el navegador hacia la página principal de "Releases" o los asstes.
+  /// Compara dos versiones semánticas.
+  /// Retorna true si latest > current.
+  bool _isVersionGreater(String latest, String current) {
+    final latestParts =
+        latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+    final currentParts =
+        current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+
+    for (var i = 0; i < latestParts.length; i++) {
+      if (i >= currentParts.length) return true;
+      if (latestParts[i] > currentParts[i]) return true;
+      if (latestParts[i] < currentParts[i]) return false;
+    }
+    return false;
+  }
+
+  /// Lanza el enlace en el navegador hacia la página de Releases.
   static Future<void> launchUpdater() async {
     final uri =
         Uri.parse('https://github.com/$_repoOwner/$_repoName/releases/latest');
@@ -56,7 +77,7 @@ class MyLifeOSUpdateNotifier {
     }
   }
 
-  Future<String?> _fetchLatestVersion() async {
+  Future<String?> _fetchLatestTag() async {
     final uri = Uri.parse(
       'https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest',
     );
