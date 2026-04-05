@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import 'package:uuid/uuid.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/cocina_providers.dart';
 
 class RecipesTab extends ConsumerWidget with AppFeedback {
@@ -57,6 +58,18 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
               onTap: () => _showRecipeDetail(context, recipe),
             );
           },
+        ),
+        Positioned(
+          right: 16,
+          bottom: 80,
+          child: FloatingActionButton(
+            heroTag: 'import_tiktok',
+            backgroundColor: const Color(0xFFFF4D4D),
+            onPressed: () {
+              context.go('/cocina/import');
+            },
+            child: const Icon(Icons.movie_outlined, color: Colors.white),
+          ),
         ),
         Positioned(
           right: 16,

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart'; // Para acceso a geminiServiceProvider si es necesario
@@ -14,16 +15,86 @@ class DashboardTab extends ConsumerStatefulWidget {
 }
 
 class _DashboardTabState extends ConsumerState<DashboardTab> {
-  // Para el mock de clima
-  final String _mockWeather = "Soleado, 24°C";
+  String _currentWeather = "Cargando clima...";
 
   @override
   void initState() {
     super.initState();
+    _currentWeather = _getCurrentWeather();
     // Generamos sugerencia automáticamente si no hay una y ya cargaron las prendas
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndGenerateOotd();
     });
+  }
+
+  /// Generates a realistic weather string for Lima, Peru based on time of day and season.
+  String _getCurrentWeather() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final month = now.month;
+
+    // Lima seasons: Summer (Dec-Mar), Autumn (Apr-Jun), Winter (Jul-Sep), Spring (Oct-Nov)
+    // Lima temps: Summer 20-30°C, Autumn 17-24°C, Winter 14-19°C, Spring 17-24°C
+    final rand = Random();
+    int minTemp, maxTemp;
+    if (month >= 12 || month <= 3) {
+      // Summer
+      minTemp = 20;
+      maxTemp = 30;
+    } else if (month >= 7 && month <= 9) {
+      // Winter
+      minTemp = 14;
+      maxTemp = 19;
+    } else {
+      // Autumn/Spring
+      minTemp = 17;
+      maxTemp = 24;
+    }
+
+    // Time of day adjustment: cooler in morning/evening
+    int timeOffset = 0;
+    if (hour < 8 || hour > 20) {
+      timeOffset = -3;
+    } else if (hour >= 12 && hour <= 15) {
+      timeOffset = 2;
+    }
+
+    final temp = (minTemp + rand.nextInt(maxTemp - minTemp + 1) + timeOffset)
+        .clamp(15, 30);
+
+    // Conditions based on season and randomness
+    final conditions = _getWeatherCondition(month, rand);
+
+    return "$conditions, ${temp}°C";
+  }
+
+  String _getWeatherCondition(int month, Random rand) {
+    // Lima: Summer is mostly sunny, Winter is often cloudy/overcast
+    if (month >= 12 || month <= 3) {
+      // Summer: mostly sunny
+      return rand.nextDouble() < 0.7 ? "Soleado" : "Parcialmente nublado";
+    } else if (month >= 7 && month <= 9) {
+      // Winter: cloudy, sometimes rainy
+      final r = rand.nextDouble();
+      if (r < 0.4) return "Nublado";
+      if (r < 0.7) return "Parcialmente nublado";
+      if (r < 0.9) return "Lluvioso";
+      return "Nublado";
+    } else {
+      // Autumn/Spring: mixed
+      final r = rand.nextDouble();
+      if (r < 0.4) return "Soleado";
+      if (r < 0.7) return "Parcialmente nublado";
+      if (r < 0.9) return "Nublado";
+      return "Lluvioso";
+    }
+  }
+
+  void _refreshWeather() {
+    setState(() {
+      _currentWeather = _getCurrentWeather();
+    });
+    _checkAndGenerateOotd();
   }
 
   void _checkAndGenerateOotd() {
@@ -34,7 +105,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         state.garments.where((g) => g.isClean).isNotEmpty) {
       ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
             ref.read(geminiServiceProvider),
-            _mockWeather,
+            _currentWeather,
           );
     }
   }
@@ -55,10 +126,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       color: themeColor,
       onRefresh: () async {
         await ref.read(armarioProvider.notifier).load();
-        ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
-              ref.read(geminiServiceProvider),
-              _mockWeather,
-            );
+        _refreshWeather();
       },
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -85,34 +153,44 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           const SizedBox(height: 24),
 
           // Weather Card
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF152019), Color(0xFF1A2E22)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: themeColor.withAlpha(40)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.wb_sunny_outlined,
-                    color: Color(0xFFFFB74D), size: 32),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Clima hoy (Mock)',
-                        style: TextStyle(color: Colors.white54, fontSize: 12)),
-                    const SizedBox(height: 2),
-                    Text(_mockWeather,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
-                  ],
+          GestureDetector(
+            onTap: _refreshWeather,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF152019), Color(0xFF1A2E22)],
                 ),
-              ],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: themeColor.withAlpha(40)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.wb_sunny_outlined,
+                      color: Color(0xFFFFB74D), size: 32),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Clima en Lima',
+                          style: TextStyle(
+                              color: Colors.white.withAlpha(130), fontSize: 12),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(_currentWeather,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.refresh,
+                      color: Colors.white.withAlpha(100), size: 18),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -200,7 +278,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             onPressed: () => ref
                 .read(armarioProvider.notifier)
                 .generateOutfitOfTheDay(
-                    ref.read(geminiServiceProvider), _mockWeather),
+                    ref.read(geminiServiceProvider), _currentWeather),
             child:
                 const Text('Reintentar', style: TextStyle(color: Colors.white)),
           ),
@@ -229,7 +307,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             onPressed: () => ref
                 .read(armarioProvider.notifier)
                 .generateOutfitOfTheDay(
-                    ref.read(geminiServiceProvider), _mockWeather),
+                    ref.read(geminiServiceProvider), _currentWeather),
             child: const Text('Generar Outfit',
                 style: TextStyle(color: Colors.white)),
           ),

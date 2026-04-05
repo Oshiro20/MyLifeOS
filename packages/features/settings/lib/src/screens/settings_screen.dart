@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:core/core.dart';
 import '../providers/backup_provider.dart';
 import '../providers/theme_provider.dart';
@@ -47,17 +46,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Ajustes',
           style: TextStyle(
-            color: Colors.white,
+            color: isDark ? Colors.white : const Color(0xFF0A1F16),
             fontWeight: FontWeight.w700,
             fontSize: 24,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline, color: Colors.white54),
+            icon: Icon(Icons.info_outline,
+                color: isDark
+                    ? Colors.white54
+                    : const Color(0xFF4A7A65).withValues(alpha: 0.6)),
             onPressed: () => _showAboutDialog(context),
             tooltip: 'Acerca de',
           ),
@@ -185,10 +187,12 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0F2017), Color(0xFF1A3A28)],
+          colors: isDark
+              ? const [Color(0xFF0F2017), Color(0xFF1A3A28)]
+              : const [Color(0xFFE0F7F0), Color(0xFFB2DFDB)],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -198,21 +202,26 @@ class _ProfileCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : const Color(0xFF00A37A).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(16),
             ),
-            child:
-                const Icon(Icons.person_outline, color: Colors.white, size: 28),
+            child: Icon(
+              Icons.person_outline,
+              color: isDark ? Colors.white : const Color(0xFF0A1F16),
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'MyLifeOS',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark ? Colors.white : const Color(0xFF0A1F16),
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -221,7 +230,9 @@ class _ProfileCard extends StatelessWidget {
                 Text(
                   appVersion,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.6)
+                        : const Color(0xFF4A7A65),
                     fontSize: 12,
                   ),
                 ),
@@ -270,6 +281,7 @@ class _AppearanceSection extends ConsumerWidget {
             label: 'Claro',
             icon: Icons.light_mode_outlined,
             selected: current == ThemeMode.light,
+            isDark: isDark,
             onTap: () =>
                 ref.read(themeModeProvider.notifier).setTheme(ThemeMode.light),
           ),
@@ -278,6 +290,7 @@ class _AppearanceSection extends ConsumerWidget {
             label: 'Sistema',
             icon: Icons.brightness_auto_outlined,
             selected: current == ThemeMode.system,
+            isDark: isDark,
             onTap: () =>
                 ref.read(themeModeProvider.notifier).setTheme(ThemeMode.system),
           ),
@@ -286,6 +299,7 @@ class _AppearanceSection extends ConsumerWidget {
             label: 'Oscuro',
             icon: Icons.dark_mode_outlined,
             selected: current == ThemeMode.dark,
+            isDark: isDark,
             onTap: () =>
                 ref.read(themeModeProvider.notifier).setTheme(ThemeMode.dark),
           ),
@@ -299,17 +313,20 @@ class _ThemeChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool selected;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _ThemeChip({
     required this.label,
     required this.icon,
     required this.selected,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final unselectedColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -319,12 +336,16 @@ class _ThemeChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? const Color(0xFF00C896).withValues(alpha: 0.2)
-                : Colors.white.withValues(alpha: 0.05),
+                : isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFF00A37A).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
                   ? const Color(0xFF00C896)
-                  : Colors.white.withValues(alpha: 0.1),
+                  : isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : const Color(0xFF00A37A).withValues(alpha: 0.2),
               width: 1.5,
             ),
           ),
@@ -333,7 +354,7 @@ class _ThemeChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: selected ? const Color(0xFF00C896) : Colors.white54,
+                color: selected ? const Color(0xFF00C896) : unselectedColor,
               ),
               const SizedBox(height: 4),
               Text(
@@ -341,7 +362,7 @@ class _ThemeChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? const Color(0xFF00C896) : Colors.white54,
+                  color: selected ? const Color(0xFF00C896) : unselectedColor,
                 ),
               ),
             ],
@@ -406,6 +427,9 @@ class _BackupSection extends StatelessWidget {
             future: AutoBackupService.isEnabled(),
             builder: (context, snapshot) {
               final isEnabled = snapshot.data ?? false;
+              final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+              final subtitleColor =
+                  isDark ? Colors.white54 : const Color(0xFF4A7A65);
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Container(
@@ -417,17 +441,17 @@ class _BackupSection extends StatelessWidget {
                   child: const Icon(Icons.autorenew,
                       color: Color(0xFFFFB74D), size: 18),
                 ),
-                title: const Text(
+                title: Text(
                   'Backup automático',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Cada 24 horas en background',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: subtitleColor, fontSize: 11),
                 ),
                 trailing: Switch(
                   value: isEnabled,
@@ -671,7 +695,9 @@ class _BackupActionTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : const Color(0xFF4A7A65),
                       fontSize: 11,
                     ),
                   ),
@@ -695,6 +721,9 @@ class _ModulesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dividerColor = isDark
+        ? Colors.white10
+        : const Color(0xFF00A37A).withValues(alpha: 0.12);
     return _SectionCard(
       isDark: isDark,
       icon: Icons.apps_outlined,
@@ -707,30 +736,34 @@ class _ModulesSection extends StatelessWidget {
             name: 'Finanzas',
             description: 'WalletAI con análisis inteligente',
             color: const Color(0xFFFFC107),
+            isDark: isDark,
           ),
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: dividerColor),
           _ModuleTile(
             emoji: '👗',
             icon: Icons.checkroom_outlined,
             name: 'Armario',
             description: 'Gestión de prendas con IA',
             color: const Color(0xFF29B6F6),
+            isDark: isDark,
           ),
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: dividerColor),
           _ModuleTile(
             emoji: '🍽️',
             icon: Icons.soup_kitchen_outlined,
             name: 'Cocina',
             description: 'Despensa y recetas',
             color: const Color(0xFFFF7043),
+            isDark: isDark,
           ),
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: dividerColor),
           _ModuleTile(
             emoji: '🥗',
             icon: Icons.restaurant_outlined,
             name: 'Food Coach',
             description: 'Evaluación nutricional',
             color: const Color(0xFFFF5252),
+            isDark: isDark,
           ),
         ],
       ),
@@ -744,6 +777,7 @@ class _ModuleTile extends StatelessWidget {
   final String name;
   final String description;
   final Color color;
+  final bool isDark;
 
   const _ModuleTile({
     required this.emoji,
@@ -751,6 +785,7 @@ class _ModuleTile extends StatelessWidget {
     required this.name,
     required this.description,
     required this.color,
+    this.isDark = true,
   });
 
   @override
@@ -785,8 +820,8 @@ class _ModuleTile extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0A1F16),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -795,7 +830,9 @@ class _ModuleTile extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : const Color(0xFF4A7A65),
                     fontSize: 11,
                   ),
                 ),
@@ -817,6 +854,14 @@ class _AdvancedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final subtitleColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
+    final dividerColor = isDark
+        ? Colors.white10
+        : const Color(0xFF00A37A).withValues(alpha: 0.12);
+    final chevronColor = isDark
+        ? Colors.white24
+        : const Color(0xFF4A7A65).withValues(alpha: 0.4);
     return _SectionCard(
       isDark: isDark,
       icon: Icons.build_outlined,
@@ -834,35 +879,28 @@ class _AdvancedSection extends StatelessWidget {
               child: const Icon(Icons.widgets_outlined,
                   color: Color(0xFF29B6F6), size: 18),
             ),
-            title: const Text(
+            title: Text(
               'Widget de Home Screen',
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600),
+                  color: textColor, fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Configurar widget en pantalla de inicio',
-              style: TextStyle(color: Colors.white54, fontSize: 11),
+              style: TextStyle(color: subtitleColor, fontSize: 11),
             ),
-            trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-            onTap: () async {
-              // Abrir configuración de widgets de Android
-              final uri = Uri.parse('package:com.mylifeos.app/widget_config');
-              if (!await launchUrl(uri)) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Mantén presionado el widget en la pantalla de inicio para configurarlo'),
-                      backgroundColor: Color(0xFF00C896),
-                    ),
-                  );
-                }
+            trailing: Icon(Icons.chevron_right, color: chevronColor),
+            onTap: () {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🚧 Widget de Home Screen - Próximamente'),
+                    backgroundColor: Color(0xFF00C896),
+                  ),
+                );
               }
             },
           ),
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: dividerColor),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Container(
@@ -874,18 +912,16 @@ class _AdvancedSection extends StatelessWidget {
               child: const Icon(Icons.delete_sweep_outlined,
                   color: Color(0xFFFF5252), size: 18),
             ),
-            title: const Text(
+            title: Text(
               'Limpiar caché',
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600),
+                  color: textColor, fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Eliminar imágenes temporales',
-              style: TextStyle(color: Colors.white54, fontSize: 11),
+              style: TextStyle(color: subtitleColor, fontSize: 11),
             ),
-            trailing: const Icon(Icons.chevron_right, color: Colors.white24),
+            trailing: Icon(Icons.chevron_right, color: chevronColor),
             onTap: () => _clearCache(context),
           ),
         ],
@@ -1131,12 +1167,16 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF111814) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1147,8 +1187,8 @@ class _SectionCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),

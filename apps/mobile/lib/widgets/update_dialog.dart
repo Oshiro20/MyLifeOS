@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'services/mylifeos_update_service.dart';
+import '../services/mylifeos_update_service.dart';
 
 class MyLifeOSUpdateDialog extends StatefulWidget {
   final GithubRelease release;
@@ -143,7 +143,8 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
         const SizedBox(height: 24),
         const Text(
           'Descargando actualización...',
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         LinearProgressIndicator(
