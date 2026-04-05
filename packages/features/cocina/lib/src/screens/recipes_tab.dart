@@ -46,72 +46,70 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await ref.read(recipesProvider.notifier).load();
-      },
-      color: const Color(0xFF00C896),
-      child: Stack(
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(recipesProvider.notifier).load();
+        },
+        color: const Color(0xFF00C896),
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+          itemCount: state.recipes.length,
+          itemBuilder: (ctx, i) {
+            final recipe = state.recipes[i];
+            return _RecipeTile(
+              recipe: recipe,
+              onFavorite: () {
+                ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
+                final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
+                showInfo(context, '"${recipe.name}" $label favoritos');
+              },
+              onDelete: () => _confirmDelete(context, ref, recipe),
+              onTap: () => _showRecipeDetail(context, recipe),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 220),
-            itemCount: state.recipes.length,
-            itemBuilder: (ctx, i) {
-              final recipe = state.recipes[i];
-              return _RecipeTile(
-                recipe: recipe,
-                onFavorite: () {
-                  ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
-                  final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
-                  showInfo(context, '"${recipe.name}" $label favoritos');
+          // Chef IA FAB with label
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Chef IA',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 6),
+              FloatingActionButton(
+                heroTag: 'import_tiktok',
+                backgroundColor: const Color(0xFFFF4D4D),
+                onPressed: () {
+                  context.go('/cocina/import');
                 },
-                onDelete: () => _confirmDelete(context, ref, recipe),
-                onTap: () => _showRecipeDetail(context, recipe),
-              );
-            },
+                child: const Icon(Icons.movie_outlined, color: Colors.white),
+              ),
+            ],
           ),
-          Positioned(
-            right: 16,
-            bottom: 170,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Chef IA',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                FloatingActionButton(
-                  heroTag: 'import_tiktok',
-                  backgroundColor: const Color(0xFFFF4D4D),
-                  onPressed: () {
-                    context.go('/cocina/import');
-                  },
-                  child: const Icon(Icons.movie_outlined, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            right: 16,
-            bottom: 96,
-            child: FloatingActionButton(
-              heroTag: 'add_recipe',
-              backgroundColor: const Color(0xFF00C896),
-              onPressed: () => _showAddRecipeSheet(context, ref),
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
+          const SizedBox(height: 12),
+          // Add recipe FAB
+          FloatingActionButton(
+            heroTag: 'add_recipe',
+            backgroundColor: const Color(0xFF00C896),
+            onPressed: () => _showAddRecipeSheet(context, ref),
+            child: const Icon(Icons.add, color: Colors.white),
           ),
         ],
       ),
