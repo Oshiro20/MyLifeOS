@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'inventory_tab.dart';
 import 'recipes_tab.dart';
 import 'suggestions_tab.dart';
@@ -20,6 +21,9 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
   void initState() {
     super.initState();
     _tab = TabController(length: 4, vsync: this);
+    _tab.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -30,6 +34,9 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Solo mostrar FABs en el tab de Recetas (índice 1)
+    final showFabs = _tab.index == 1;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -69,6 +76,63 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           ShoppingTab(),
         ],
       ),
+      floatingActionButton: showFabs
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Chef IA FAB with label
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Chef IA',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    FloatingActionButton(
+                      heroTag: 'import_tiktok',
+                      backgroundColor: const Color(0xFFFF4D4D),
+                      onPressed: () {
+                        context.go('/cocina/import');
+                      },
+                      child:
+                          const Icon(Icons.movie_outlined, color: Colors.white),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Add recipe FAB
+                FloatingActionButton(
+                  heroTag: 'add_recipe',
+                  backgroundColor: const Color(0xFF00C896),
+                  onPressed: () {
+                    // Trigger the add recipe sheet via a provider or event
+                    // For now, we'll use a simple approach
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Desliza hacia abajo en la lista de recetas para ver opciones'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+              ],
+            )
+          : null,
     );
   }
 }

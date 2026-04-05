@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import 'package:uuid/uuid.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/cocina_providers.dart';
 
 class RecipesTab extends ConsumerWidget with AppFeedback {
@@ -46,72 +45,27 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
       );
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(recipesProvider.notifier).load();
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(recipesProvider.notifier).load();
+      },
+      color: const Color(0xFF00C896),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+        itemCount: state.recipes.length,
+        itemBuilder: (ctx, i) {
+          final recipe = state.recipes[i];
+          return _RecipeTile(
+            recipe: recipe,
+            onFavorite: () {
+              ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
+              final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
+              showInfo(context, '"${recipe.name}" $label favoritos');
+            },
+            onDelete: () => _confirmDelete(context, ref, recipe),
+            onTap: () => _showRecipeDetail(context, recipe),
+          );
         },
-        color: const Color(0xFF00C896),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
-          itemCount: state.recipes.length,
-          itemBuilder: (ctx, i) {
-            final recipe = state.recipes[i];
-            return _RecipeTile(
-              recipe: recipe,
-              onFavorite: () {
-                ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
-                final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
-                showInfo(context, '"${recipe.name}" $label favoritos');
-              },
-              onDelete: () => _confirmDelete(context, ref, recipe),
-              onTap: () => _showRecipeDetail(context, recipe),
-            );
-          },
-        ),
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Chef IA FAB with label
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Chef IA',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(height: 6),
-              FloatingActionButton(
-                heroTag: 'import_tiktok',
-                backgroundColor: const Color(0xFFFF4D4D),
-                onPressed: () {
-                  context.go('/cocina/import');
-                },
-                child: const Icon(Icons.movie_outlined, color: Colors.white),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Add recipe FAB
-          FloatingActionButton(
-            heroTag: 'add_recipe',
-            backgroundColor: const Color(0xFF00C896),
-            onPressed: () => _showAddRecipeSheet(context, ref),
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
-        ],
       ),
     );
   }
