@@ -8,6 +8,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:armario/armario.dart';
 import 'package:cocina/cocina.dart';
 import 'package:foodcoach/foodcoach.dart';
+import '../services/mylifeos_update_service.dart';
+import '../widgets/update_dialog.dart';
 import 'search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -27,24 +29,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _checkOtaUpdates() async {
-    final notifier = MyLifeOSUpdateNotifier(FlutterLocalNotificationsPlugin());
-    final newVersion = await notifier.checkForUpdates();
-    if (newVersion != null && mounted) {
-      setState(() => _newVersion = newVersion);
-      // Mostrar diálogo solo si es la primera vez que se detecta esta versión
-      _showUpdateDialog(newVersion);
-    } else if (mounted) {
-      // Aún así verificar si hay versión pendiente de descarga
-      final prefs = await SharedPreferences.getInstance();
-      final pendingVersion = prefs.getString('mylifeos_last_known_version');
-      if (pendingVersion != null) {
+    final updateService = MyLifeOSUpdateService();
+    final release = await updateService.checkForUpdate();
+
+    if (release != null && mounted) {
+      // Verificar si ya se notificó esta versión
+      final lastNotified = await MyLifeOSUpdateService.getLastNotifiedVersion();
+
+      if (lastNotified != release.tagName) {
+        setState(() => _newVersion = release.tagName);
+
+        // Guardar que ya se notificó
+        await MyLifeOSUpdateService.setLastNotifiedVersion(release.tagName);
+
+        // Mostrar diálogo con descarga automática
+        showMyLifeOSUpdateDialog(
+          context,
+          release,
+          onDismiss: () => setState(() => _newVersion = null),
+        );
+      } else {
+        // Ya se notificó, pero aún mostrar banner si hay actualización pendiente
         final packageInfo = await PackageInfo.fromPlatform();
-        final currentVersion = 'v${packageInfo.version}';
-        if (pendingVersion != currentVersion && mounted) {
-          setState(() => _newVersion = pendingVersion);
+        final currentVersion = packageInfo.version;
+        final latestVersion = release.tagName.replaceAll('v', '');
+
+        if (_isVersionGreater(latestVersion, currentVersion) && mounted) {
+          setState(() => _newVersion = release.tagName);
         }
       }
     }
+  }
+
+  bool _isVersionGreater(String latest, String current) {
+    final latestParts =
+        latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+    final currentParts =
+        current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+
+    for (var i = 0; i < latestParts.length; i++) {
+      if (i >= currentParts.length) return true;
+      if (latestParts[i] > currentParts[i]) return true;
+      if (latestParts[i] < currentParts[i]) return false;
+    }
+    return false;
   }
 
   void _showNotificationsDialog(BuildContext context) {
@@ -671,12 +699,18 @@ class _UpdateBanner extends StatelessWidget {
   final String version;
   const _UpdateBanner({required this.version});
 
+  Future<void> _startUpdate(BuildContext context) async {
+    final updateService = MyLifeOSUpdateService();
+    final release = await updateService.checkForUpdate();
+    if (release != null && context.mounted) {
+      showMyLifeOSUpdateDialog(context, release);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        MyLifeOSUpdateNotifier.launchUpdater();
-      },
+      onTap: () => _startUpdate(context),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),

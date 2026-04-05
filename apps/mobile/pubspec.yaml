@@ -1,7 +1,7 @@
 name: my_life_os
 description: "MyLifeOS — Tu sistema operativo personal."
 publish_to: 'none'
-version: 1.1.5+15
+version: 1.2.0+16
 
 resolution: workspace
 
@@ -53,6 +53,10 @@ dependencies:
   url_launcher: ^6.3.2
   connectivity_plus: ^7.1.0
   image_picker: ^1.2.1
+  dio: ^5.7.0
+  open_filex: ^4.5.0
+  path_provider: ^2.1.5
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
