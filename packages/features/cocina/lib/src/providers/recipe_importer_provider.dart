@@ -39,10 +39,19 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
             'No se pudo resolver la información del video de TikTok.');
       }
 
-      // El endpoint de RapidAPI suele devolver 'play' para el video sin marca de agua
-      final videoUrl = info['data']['play'] ?? info['data']['wmplay'];
+      final data = info['data'] as Map<String, dynamic>;
+      // Try multiple possible keys for video URL
+      final videoUrl = data['play'] ??
+          data['wmplay'] ??
+          data['hdplay'] ??
+          data['no_watermark'] ??
+          data['no_watermark_hd'];
+
+      debugPrint('🔍 Found videoUrl key: ${videoUrl != null ? "YES" : "NO"}');
+
       if (videoUrl == null) {
-        throw Exception('No se encontró URL de descarga del video.');
+        throw Exception(
+            'No se encontró URL de descarga del video. Keys disponibles: ${data.keys}');
       }
 
       currentStatusMessage = 'Descargando video en background...';

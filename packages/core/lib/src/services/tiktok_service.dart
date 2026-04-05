@@ -20,21 +20,24 @@ class TikTokService {
         headers: {
           'x-rapidapi-host': _apiHost,
           'x-rapidapi-key': apiKey,
+          'Content-Type': 'application/json',
         },
       );
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body) as Map<String, dynamic>;
-        // Dependiendo de la estructura de la API, aquí buscaremos la llave del video.
-        // Por lo general puede venir en decoded['data']['play'] o similar.
+        debugPrint('✅ TikTok API Response: ${decoded.keys}');
+        if (decoded.containsKey('data')) {
+          debugPrint('✅ Data keys: ${(decoded['data'] as Map).keys}');
+        }
         return decoded;
       } else {
         debugPrint(
-            'Error consultando TikTok API: \${response.statusCode} - \${response.body}');
+            '❌ Error consultando TikTok API: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
-      debugPrint('Exception en TikTokService: \$e');
+      debugPrint('❌ Exception en TikTokService: $e');
       return null;
     }
   }
