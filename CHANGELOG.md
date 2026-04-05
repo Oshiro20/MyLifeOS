@@ -3,6 +3,16 @@
 Todos los cambios notables en este proyecto serán documentados aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.2.10+26] - 2026-04-05 - RELEASE
+
+### Fixed
+- **TikTok API video URL extraction** - Múltiples keys de respaldo (play, wmplay, hdplay, no_watermark)
+- **TikTok API Content-Type header** - Agregado para compatibilidad
+- **Debug logging** - Para identificar estructura de respuesta de TikTok API
+- **Error messages** - Muestran keys disponibles cuando falla extracción
+
+---
+
 ## [1.2.6+22] - 2026-04-05 - RELEASE (HOTFIX)
 
 ### Fixed
