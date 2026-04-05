@@ -5,8 +5,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 /// Modelo para un release de GitHub
 class GithubRelease {
@@ -69,7 +67,8 @@ class MyLifeOSUpdateService {
         }
       }
     } catch (e) {
-      debugPrint('[MyLifeOSUpdateService] Error al verificar actualización: $e');
+      debugPrint(
+          '[MyLifeOSUpdateService] Error al verificar actualización: $e');
     }
 
     return null;
@@ -77,8 +76,10 @@ class MyLifeOSUpdateService {
 
   /// Compara dos versiones semánticas.
   bool _isVersionGreater(String latest, String current) {
-    final latestParts = latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-    final currentParts = current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+    final latestParts =
+        latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+    final currentParts =
+        current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
 
     for (var i = 0; i < latestParts.length; i++) {
       if (i >= currentParts.length) return true;
@@ -112,7 +113,8 @@ class MyLifeOSUpdateService {
       // Abrir el instalador del sistema
       await OpenFilex.open(savePath);
     } catch (e) {
-      debugPrint('[MyLifeOSUpdateService] Error durante descarga/instalación: $e');
+      debugPrint(
+          '[MyLifeOSUpdateService] Error durante descarga/instalación: $e');
       rethrow;
     }
   }

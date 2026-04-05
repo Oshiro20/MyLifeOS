@@ -19,69 +19,81 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
     }
 
     if (state.recipes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.menu_book_outlined,
-                size: 64, color: Colors.white12),
-            const SizedBox(height: 12),
-            const Text('Sin recetas guardadas',
-                style: TextStyle(color: Colors.white38, fontSize: 17)),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () => _showAddRecipeSheet(context, ref),
-              icon: const Icon(Icons.add, color: Color(0xFF00C896)),
-              label: const Text('Agregar receta',
-                  style: TextStyle(color: Color(0xFF00C896))),
-            ),
-          ],
+      return RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(recipesProvider.notifier).load();
+        },
+        color: const Color(0xFF00C896),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.menu_book_outlined,
+                  size: 64, color: Colors.white12),
+              const SizedBox(height: 12),
+              const Text('Sin recetas guardadas',
+                  style: TextStyle(color: Colors.white38, fontSize: 17)),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => _showAddRecipeSheet(context, ref),
+                icon: const Icon(Icons.add, color: Color(0xFF00C896)),
+                label: const Text('Agregar receta',
+                    style: TextStyle(color: Color(0xFF00C896))),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return Stack(
-      children: [
-        ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: state.recipes.length,
-          itemBuilder: (ctx, i) {
-            final recipe = state.recipes[i];
-            return _RecipeTile(
-              recipe: recipe,
-              onFavorite: () {
-                ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
-                final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
-                showInfo(context, '"${recipe.name}" $label favoritos');
-              },
-              onDelete: () => _confirmDelete(context, ref, recipe),
-              onTap: () => _showRecipeDetail(context, recipe),
-            );
-          },
-        ),
-        Positioned(
-          right: 16,
-          bottom: 80,
-          child: FloatingActionButton(
-            heroTag: 'import_tiktok',
-            backgroundColor: const Color(0xFFFF4D4D),
-            onPressed: () {
-              context.go('/cocina/import');
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(recipesProvider.notifier).load();
+      },
+      color: const Color(0xFF00C896),
+      child: Stack(
+        children: [
+          ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: state.recipes.length,
+            itemBuilder: (ctx, i) {
+              final recipe = state.recipes[i];
+              return _RecipeTile(
+                recipe: recipe,
+                onFavorite: () {
+                  ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
+                  final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
+                  showInfo(context, '"${recipe.name}" $label favoritos');
+                },
+                onDelete: () => _confirmDelete(context, ref, recipe),
+                onTap: () => _showRecipeDetail(context, recipe),
+              );
             },
-            child: const Icon(Icons.movie_outlined, color: Colors.white),
           ),
-        ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton(
-            heroTag: 'add_recipe',
-            backgroundColor: const Color(0xFF00C896),
-            onPressed: () => _showAddRecipeSheet(context, ref),
-            child: const Icon(Icons.add, color: Colors.white),
+          Positioned(
+            right: 16,
+            bottom: 80,
+            child: FloatingActionButton(
+              heroTag: 'import_tiktok',
+              backgroundColor: const Color(0xFFFF4D4D),
+              onPressed: () {
+                context.go('/cocina/import');
+              },
+              child: const Icon(Icons.movie_outlined, color: Colors.white),
+            ),
           ),
-        ),
-      ],
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              heroTag: 'add_recipe',
+              backgroundColor: const Color(0xFF00C896),
+              onPressed: () => _showAddRecipeSheet(context, ref),
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

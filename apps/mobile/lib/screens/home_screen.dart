@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:core/core.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:armario/armario.dart';
 import 'package:cocina/cocina.dart';
 import 'package:foodcoach/foodcoach.dart';
@@ -43,11 +41,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         await MyLifeOSUpdateService.setLastNotifiedVersion(release.tagName);
 
         // Mostrar diálogo con descarga automática
-        showMyLifeOSUpdateDialog(
-          context,
-          release,
-          onDismiss: () => setState(() => _newVersion = null),
-        );
+        if (mounted) {
+          showMyLifeOSUpdateDialog(
+            context,
+            release,
+            onDismiss: () => setState(() => _newVersion = null),
+          );
+        }
       } else {
         // Ya se notificó, pero aún mostrar banner si hay actualización pendiente
         final packageInfo = await PackageInfo.fromPlatform();
@@ -91,40 +91,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cerrar',
                 style: TextStyle(color: Color(0xFF00C896))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showUpdateDialog(String version) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF152019),
-        title: const Text('✨ Actualización disponible',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Se ha encontrado la versión $version de MyLifeOS. Te recomendamos descargarla e instalarla para obtener las últimas novedades.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Más tarde',
-                style: TextStyle(color: Colors.white38)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00C896)),
-            onPressed: () {
-              Navigator.pop(ctx);
-              MyLifeOSUpdateNotifier.launchUpdater();
-            },
-            child: const Text('Descargar',
-                style: TextStyle(
-                    color: Color(0xFF0A0F0D), fontWeight: FontWeight.bold)),
           ),
         ],
       ),

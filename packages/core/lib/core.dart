@@ -19,3 +19,5 @@ export 'src/services/connectivity_service.dart';
 export 'src/services/ai_chat_service.dart';
 export 'src/services/ai_finance_service.dart';
 export 'src/services/home_widget_service.dart';
+// Utils
+export 'src/utils/image_compression_util.dart';

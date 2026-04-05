@@ -310,7 +310,7 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
           side: const BorderSide(color: Color(0xFF00A37A), width: 0.5),
         ),
         // Ensure dialogs and alerts have proper light mode text
-        dialogBackgroundColor: const Color(0xFFFFFFFF),
+        dialogTheme: const DialogThemeData(backgroundColor: Color(0xFFFFFFFF)),
         listTileTheme: const ListTileThemeData(
           textColor: Color(0xFF0A1F16),
           iconColor: Color(0xFF4A7A65),

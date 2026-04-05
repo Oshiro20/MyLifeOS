@@ -7,7 +7,6 @@ import '../providers/backup_provider.dart';
 import '../providers/theme_provider.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});

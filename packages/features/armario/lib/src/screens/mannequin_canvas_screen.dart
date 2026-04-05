@@ -327,10 +327,12 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
       ),
     );
 
-    if (saved == true && mounted) {
+    if (saved == true) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('¡Outfit guardado con éxito! ✅'),
           backgroundColor: Color(0xFF4CAF50)));
+      if (!mounted) return;
       Navigator.pop(context); // Volver al armario
     }
   }
@@ -387,8 +389,8 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   alignment: Alignment.center,
                   transform: Matrix4.identity()
                     ..rotateZ(item.rotation)
-                    // ignore: deprecated_member_use
-                    ..scale(item.scale),
+                    ..multiply(
+                        Matrix4.diagonal3Values(item.scale, item.scale, 1.0)),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [

@@ -12,7 +12,6 @@ class FinanzasScreen extends StatefulWidget {
 
 class _FinanzasScreenState extends State<FinanzasScreen> {
   WalletSummary? _summary;
-  bool _loading = true;
 
   @override
   void initState() {
@@ -23,10 +22,7 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
   Future<void> _loadSummary() async {
     final summary = await WalletSummaryReader.read();
     if (mounted) {
-      setState(() {
-        _summary = summary;
-        _loading = false;
-      });
+      setState(() => _summary = summary);
     }
   }
 
@@ -35,71 +31,73 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // ── AppBar ────────────────────────────────────────────────────────
-          SliverAppBar(
-            floating: true,
-            snap: true,
-            title: const Text('Finanzas',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.link),
-                tooltip: 'Conexión con WalletAI',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const WalletAIConnectionSettingsScreen(),
-                    ),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Actualizar datos',
-                onPressed: () {
-                  setState(() => _loading = true);
-                  _loadSummary();
-                },
-              ),
-            ],
-          ),
-
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // ── WalletAI resumen ────────────────────────────────────────
-                const WalletAiSummaryCard(),
-                const SizedBox(height: 20),
-
-                // ── Gráfico semanal ─────────────────────────────────────────
-                const _SectionTitle(
-                    title: 'Actividad semanal', trailing: 'Basado en WalletAI'),
-                const SizedBox(height: 10),
-                _WeeklyChart(isDark: isDark, summary: _summary),
-                const SizedBox(height: 20),
-
-                // ── Categorías ──────────────────────────────────────────────
-                const _SectionTitle(
-                    title: 'Resumen del mes', trailing: 'WalletAI'),
-                const SizedBox(height: 10),
-                _CategorySummary(isDark: isDark, summary: _summary),
-                const SizedBox(height: 20),
-
-                // ── Transacciones recientes ─────────────────────────────────
-                const _SectionTitle(
-                  title: 'Información',
-                  trailing: 'Administrar en WalletAI',
+      body: RefreshIndicator(
+        onRefresh: _loadSummary,
+        color: const Color(0xFF00C896),
+        child: CustomScrollView(
+          slivers: [
+            // ── AppBar ────────────────────────────────────────────────────────
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              title: const Text('Finanzas',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.link),
+                  tooltip: 'Conexión con WalletAI',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const WalletAIConnectionSettingsScreen(),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 10),
-                _WalletAIGuidance(isDark: isDark),
-              ]),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Actualizar datos',
+                  onPressed: _loadSummary,
+                ),
+              ],
             ),
-          ),
-        ],
+
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // ── WalletAI resumen ────────────────────────────────────────
+                  const WalletAiSummaryCard(),
+                  const SizedBox(height: 20),
+
+                  // ── Gráfico semanal ─────────────────────────────────────────
+                  const _SectionTitle(
+                      title: 'Actividad semanal',
+                      trailing: 'Basado en WalletAI'),
+                  const SizedBox(height: 10),
+                  _WeeklyChart(isDark: isDark, summary: _summary),
+                  const SizedBox(height: 20),
+
+                  // ── Categorías ──────────────────────────────────────────────
+                  const _SectionTitle(
+                      title: 'Resumen del mes', trailing: 'WalletAI'),
+                  const SizedBox(height: 10),
+                  _CategorySummary(isDark: isDark, summary: _summary),
+                  const SizedBox(height: 20),
+
+                  // ── Transacciones recientes ─────────────────────────────────
+                  const _SectionTitle(
+                    title: 'Información',
+                    trailing: 'Administrar en WalletAI',
+                  ),
+                  const SizedBox(height: 10),
+                  _WalletAIGuidance(isDark: isDark),
+                ]),
+              ),
+            ),
+          ],
+        ),
       ),
 
       // ── FAB ───────────────────────────────────────────────────────────────
@@ -118,13 +116,11 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
 class _SectionTitle extends StatelessWidget {
   final String title;
   final String? trailing;
-  final VoidCallback? onTrailingTap;
 
-  const _SectionTitle({required this.title, this.trailing, this.onTrailingTap});
+  const _SectionTitle({required this.title, this.trailing});
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
         Text(title,
@@ -132,14 +128,11 @@ class _SectionTitle extends StatelessWidget {
         const Spacer(),
         if (trailing != null)
           GestureDetector(
-            onTap: onTrailingTap,
+            onTap: () {},
             child: Text(trailing!,
-                style: TextStyle(
-                  color: onTrailingTap != null ? primary : Colors.grey,
+                style: const TextStyle(
+                  color: Colors.grey,
                   fontSize: 12,
-                  fontWeight: onTrailingTap != null
-                      ? FontWeight.w600
-                      : FontWeight.normal,
                 )),
           ),
       ],

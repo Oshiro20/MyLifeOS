@@ -65,7 +65,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     // Conditions based on season and randomness
     final conditions = _getWeatherCondition(month, rand);
 
-    return "$conditions, ${temp}°C";
+    return '$conditions, $temp°C';
   }
 
   String _getWeatherCondition(int month, Random rand) {
