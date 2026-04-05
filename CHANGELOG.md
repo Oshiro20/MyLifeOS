@@ -3,7 +3,16 @@
 Todos los cambios notables en este proyecto serán documentados aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
-## [1.2.5+21] - 2026-04-05 - RELEASE
+## [1.2.6+22] - 2026-04-05 - RELEASE (HOTFIX)
+
+### Fixed
+- **Chef IA FAB visibility** - Agregada etiqueta "Chef IA" sobre el FAB rojo
+- **ListView bottom padding** - Aumentado a 220px para evitar que el contenido cubra los FABs
+- **FAB positioning** - Chef IA en `bottom: 170` con label, Agregar receta en `bottom: 96`
+
+---
+
+## [1.2.5+21] - 2026-04-05
 
 ### Added
 - **Navegación desde Sugeridas a Detalle de Receta** - Tap en tarjeta abre vista completa
