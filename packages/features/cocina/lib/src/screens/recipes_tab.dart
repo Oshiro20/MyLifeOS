@@ -54,7 +54,7 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
       child: Stack(
         children: [
           ListView.builder(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 220),
             itemCount: state.recipes.length,
             itemBuilder: (ctx, i) {
               final recipe = state.recipes[i];
@@ -72,14 +72,35 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
           ),
           Positioned(
             right: 16,
-            bottom: 160,
-            child: FloatingActionButton(
-              heroTag: 'import_tiktok',
-              backgroundColor: const Color(0xFFFF4D4D),
-              onPressed: () {
-                context.go('/cocina/import');
-              },
-              child: const Icon(Icons.movie_outlined, color: Colors.white),
+            bottom: 170,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'Chef IA',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                FloatingActionButton(
+                  heroTag: 'import_tiktok',
+                  backgroundColor: const Color(0xFFFF4D4D),
+                  onPressed: () {
+                    context.go('/cocina/import');
+                  },
+                  child: const Icon(Icons.movie_outlined, color: Colors.white),
+                ),
+              ],
             ),
           ),
           Positioned(
