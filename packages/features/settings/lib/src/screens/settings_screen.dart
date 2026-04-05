@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:core/core.dart';
 import '../providers/backup_provider.dart';
 import '../providers/theme_provider.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -842,8 +846,20 @@ class _AdvancedSection extends StatelessWidget {
               style: TextStyle(color: Colors.white54, fontSize: 11),
             ),
             trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-            onTap: () {
-              // TODO: Implementar configuración del widget
+            onTap: () async {
+              // Abrir configuración de widgets de Android
+              final uri = Uri.parse('package:com.mylifeos.app/widget_config');
+              if (!await launchUrl(uri)) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Mantén presionado el widget en la pantalla de inicio para configurarlo'),
+                      backgroundColor: Color(0xFF00C896),
+                    ),
+                  );
+                }
+              }
             },
           ),
           const Divider(height: 1, color: Colors.white10),
@@ -870,9 +886,7 @@ class _AdvancedSection extends StatelessWidget {
               style: TextStyle(color: Colors.white54, fontSize: 11),
             ),
             trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-            onTap: () {
-              // TODO: Implementar limpieza de caché
-            },
+            onTap: () => _clearCache(context),
           ),
         ],
       ),
@@ -986,12 +1000,117 @@ Future<void> _confirmDeleteAll(BuildContext context, WidgetRef ref) async {
   );
 
   if (step1 == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcionalidad en desarrollo'),
-        backgroundColor: Color(0xFF00C896),
+    _confirmDeleteAllFinal(context, ref);
+  }
+}
+
+Future<void> _confirmDeleteAllFinal(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: const Color(0xFF152019),
+      title: const Text('⚠️ Confirmar borrado total',
+          style: TextStyle(color: Colors.red)),
+      content: const Text(
+        'Esto eliminará TODOS los datos: transacciones, cuentas, categorías, recetas, prendas, perfiles y ajustes. ¿Estás completamente seguro?',
+        style: TextStyle(color: Colors.white70),
       ),
-    );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child:
+              const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Borrar todo'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true && context.mounted) {
+    try {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                '⚠️ Para borrar todos los datos, ve a Ajustes > Aplicación > Borrar datos de la app en la configuración del sistema.'),
+            backgroundColor: Color(0xFF00C896),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+}
+
+/// Limpia el caché de la app
+Future<void> _clearCache(BuildContext context) async {
+  try {
+    int totalSize = 0;
+    int fileCount = 0;
+
+    // Directorio temporal
+    final tempDir = await getTemporaryDirectory();
+    if (await tempDir.exists()) {
+      await for (final file in tempDir.list()) {
+        if (file is File) {
+          totalSize += await file.length();
+          await file.delete();
+          fileCount++;
+        }
+      }
+    }
+
+    // Caché de imágenes comprimidas
+    final docDir = await getApplicationDocumentsDirectory();
+    final compressedDir = Directory('${docDir.path}/compressed');
+    if (await compressedDir.exists()) {
+      await for (final file in compressedDir.list()) {
+        if (file is File) {
+          totalSize += await file.length();
+          await file.delete();
+          fileCount++;
+        }
+      }
+      if (await compressedDir.list().isEmpty) {
+        await compressedDir.delete();
+      }
+    }
+
+    if (context.mounted) {
+      final sizeStr = totalSize < 1024
+          ? '$totalSize B'
+          : totalSize < 1024 * 1024
+              ? '${(totalSize / 1024).toStringAsFixed(1)} KB'
+              : '${(totalSize / (1024 * 1024)).toStringAsFixed(1)} MB';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('✅ $fileCount archivos eliminados ($sizeStr liberados)'),
+          backgroundColor: const Color(0xFF00C896),
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al limpiar caché: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 }
 

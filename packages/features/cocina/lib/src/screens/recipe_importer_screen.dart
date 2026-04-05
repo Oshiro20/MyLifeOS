@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/recipe_importer_provider.dart';
@@ -28,6 +29,22 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
     final url = _urlController.text.trim();
     if (url.isNotEmpty) {
       ref.read(recipeImportProvider.notifier).importFromTikTokUrl(url);
+    }
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
+      _urlController.text = clipboardData.text!;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Enlace pegado desde el portapapeles'),
+            backgroundColor: Color(0xFF00E676),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
     }
   }
 
@@ -254,6 +271,11 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                       hintStyle: const TextStyle(color: Colors.white38),
                       prefixIcon:
                           const Icon(Icons.link, color: Color(0xFF00F0FF)),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.paste, color: Color(0xFF00E676)),
+                        tooltip: 'Pegar desde portapapeles',
+                        onPressed: _pasteFromClipboard,
+                      ),
                       filled: true,
                       fillColor: Colors.black26,
                       border: OutlineInputBorder(

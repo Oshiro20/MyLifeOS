@@ -47,6 +47,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  void _showNotificationsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF152019),
+        title: const Text('🔔 Notificaciones',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'No hay notificaciones nuevas.\n\nLas notificaciones de actualizaciones y recordatorios aparecerán aquí.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar',
+                style: TextStyle(color: Color(0xFF00C896))),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showUpdateDialog(String version) {
     showDialog(
       context: context,
@@ -151,7 +173,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.notifications_outlined),
-                        onPressed: () {},
+                        tooltip: 'Notificaciones',
+                        onPressed: () => _showNotificationsDialog(context),
                       ),
                     ],
                   ),

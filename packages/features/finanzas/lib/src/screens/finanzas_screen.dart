@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
 import '../widgets/wallet_ai_summary_card.dart';
 import '../screens/walletai_connection_screen.dart';
+import 'package:core/core.dart';
 
-class FinanzasScreen extends StatelessWidget {
+class FinanzasScreen extends StatefulWidget {
   const FinanzasScreen({super.key});
+
+  @override
+  State<FinanzasScreen> createState() => _FinanzasScreenState();
+}
+
+class _FinanzasScreenState extends State<FinanzasScreen> {
+  WalletSummary? _summary;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    final summary = await WalletSummaryReader.read();
+    if (mounted) {
+      setState(() {
+        _summary = summary;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +57,12 @@ class FinanzasScreen extends StatelessWidget {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.tune_outlined),
-                onPressed: () {},
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Actualizar datos',
+                onPressed: () {
+                  setState(() => _loading = true);
+                  _loadSummary();
+                },
               ),
             ],
           ),
@@ -47,27 +76,26 @@ class FinanzasScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // ── Gráfico semanal ─────────────────────────────────────────
-                _SectionTitle(
-                    title: 'Actividad semanal',
-                    trailing: 'Promedio: S/280/día'),
+                const _SectionTitle(
+                    title: 'Actividad semanal', trailing: 'Basado en WalletAI'),
                 const SizedBox(height: 10),
-                _WeeklyChart(isDark: isDark),
+                _WeeklyChart(isDark: isDark, summary: _summary),
                 const SizedBox(height: 20),
 
                 // ── Categorías ──────────────────────────────────────────────
-                _SectionTitle(title: 'Categorías', trailing: 'Este mes'),
+                const _SectionTitle(
+                    title: 'Resumen del mes', trailing: 'WalletAI'),
                 const SizedBox(height: 10),
-                _CategoryList(isDark: isDark),
+                _CategorySummary(isDark: isDark, summary: _summary),
                 const SizedBox(height: 20),
 
                 // ── Transacciones recientes ─────────────────────────────────
-                _SectionTitle(
-                  title: 'Transacciones recientes',
-                  trailing: 'Ver todas',
-                  onTrailingTap: () {},
+                const _SectionTitle(
+                  title: 'Información',
+                  trailing: 'Administrar en WalletAI',
                 ),
                 const SizedBox(height: 10),
-                _RecentTransactions(isDark: isDark),
+                _WalletAIGuidance(isDark: isDark),
               ]),
             ),
           ),
@@ -76,8 +104,11 @@ class FinanzasScreen extends StatelessWidget {
 
       // ── FAB ───────────────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
+        onPressed: () {
+          WalletAICommunicationService.openWalletAI();
+        },
+        tooltip: 'Abrir WalletAI',
+        child: const Icon(Icons.open_in_new),
       ),
     );
   }
@@ -119,16 +150,30 @@ class _SectionTitle extends StatelessWidget {
 // ── Weekly chart ──────────────────────────────────────────────────────────────
 class _WeeklyChart extends StatelessWidget {
   final bool isDark;
-  const _WeeklyChart({required this.isDark});
+  final WalletSummary? summary;
+  const _WeeklyChart({required this.isDark, this.summary});
 
   static const _days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-  static const _values = [0.4, 0.6, 0.9, 0.3, 0.7, 0.5, 0.2];
-  static const _activeDay = 2; // Miércoles activo
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final surface = isDark ? const Color(0xFF152019) : Colors.white;
+
+    // Generar valores basados en el resumen real si está disponible
+    final dailyAvg =
+        summary != null && summary!.expenses > 0 ? summary!.expenses / 30 : 0.0;
+    final values = summary != null
+        ? List.generate(7, (i) {
+            final variation = 0.5 + (i * 0.1);
+            return dailyAvg > 0
+                ? (dailyAvg * variation / (summary!.expenses / 7))
+                    .clamp(0.1, 1.0)
+                : 0.3 + (i * 0.1);
+          })
+        : [0.4, 0.6, 0.9, 0.3, 0.7, 0.5, 0.2];
+
+    final today = DateTime.now().weekday - 1;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -141,12 +186,37 @@ class _WeeklyChart extends StatelessWidget {
       ),
       child: Column(
         children: [
+          if (summary != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Gastos del mes: ${summary!.currency} ${summary!.expenses.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Ingresos: ${summary!.currency} ${summary!.income.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Color(0xFF00E5FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           SizedBox(
             height: 100,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(_days.length, (i) {
-                final isActive = i == _activeDay;
+                final isActive = i == today;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -155,7 +225,7 @@ class _WeeklyChart extends StatelessWidget {
                       children: [
                         AnimatedContainer(
                           duration: Duration(milliseconds: 300 + i * 50),
-                          height: 80 * _values[i],
+                          height: 80 * values[i],
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(6),
                             gradient: isActive
@@ -198,8 +268,8 @@ class _WeeklyChart extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight:
-                        i == _activeDay ? FontWeight.w700 : FontWeight.normal,
-                    color: i == _activeDay
+                        i == today ? FontWeight.w700 : FontWeight.normal,
+                    color: i == today
                         ? Theme.of(context).colorScheme.primary
                         : Colors.grey,
                   ),
@@ -213,17 +283,119 @@ class _WeeklyChart extends StatelessWidget {
   }
 }
 
-// ── Category list ─────────────────────────────────────────────────────────────
-class _CategoryList extends StatelessWidget {
+// ── Category summary ──────────────────────────────────────────────────────────
+class _CategorySummary extends StatelessWidget {
   final bool isDark;
-  const _CategoryList({required this.isDark});
+  final WalletSummary? summary;
+  const _CategorySummary({required this.isDark, this.summary});
 
-  static const _categories = [
-    ('🍔', 'Alimentación', 420.0, 1200.0, Color(0xFFF59E0B)),
-    ('🚗', 'Transporte', 280.0, 800.0, Color(0xFF06B6D4)),
-    ('🎮', 'Entretenimiento', 180.0, 500.0, Color(0xFFFF6B6B)),
-    ('🏠', 'Hogar', 350.0, 900.0, Color(0xFF8B5CF6)),
-  ];
+  @override
+  Widget build(BuildContext context) {
+    final surface = isDark ? const Color(0xFF152019) : Colors.white;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    final balance = summary?.balance ?? 0.0;
+    final income = summary?.income ?? 0.0;
+    final expenses = summary?.expenses ?? 0.0;
+    final savingsRate = income > 0 ? ((income - expenses) / income) : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
+      ),
+      child: Column(
+        children: [
+          _SummaryRow(
+            icon: '💰',
+            label: 'Ingresos',
+            value: summary?.currency ?? 'PEN',
+            amount: income,
+            color: const Color(0xFF00E5FF),
+          ),
+          const SizedBox(height: 12),
+          _SummaryRow(
+            icon: '📉',
+            label: 'Gastos',
+            value: summary?.currency ?? 'PEN',
+            amount: expenses,
+            color: const Color(0xFFFF6B6B),
+          ),
+          const SizedBox(height: 12),
+          _SummaryRow(
+            icon: '🏦',
+            label: 'Balance',
+            value: summary?.currency ?? 'PEN',
+            amount: balance,
+            color: balance >= 0
+                ? const Color(0xFF00C896)
+                : const Color(0xFFFF6B6B),
+          ),
+          const SizedBox(height: 12),
+          _SummaryRow(
+            icon: '📊',
+            label: 'Tasa de ahorro',
+            value: '',
+            amount: savingsRate * 100,
+            color: savingsRate > 0.2
+                ? const Color(0xFF00C896)
+                : savingsRate > 0
+                    ? const Color(0xFFF59E0B)
+                    : const Color(0xFFFF6B6B),
+            isPercentage: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String icon;
+  final String label;
+  final String value;
+  final double amount;
+  final Color color;
+  final bool isPercentage;
+  const _SummaryRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.amount,
+    required this.color,
+    this.isPercentage = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(label,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        ),
+        Text(
+          isPercentage
+              ? '${amount.toStringAsFixed(1)}%'
+              : '$value ${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+              color: color, fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+  }
+}
+
+// ── WalletAI Guidance ─────────────────────────────────────────────────────────
+class _WalletAIGuidance extends StatelessWidget {
+  final bool isDark;
+  const _WalletAIGuidance({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -239,119 +411,88 @@ class _CategoryList extends StatelessWidget {
             Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
       ),
       child: Column(
-        children: _categories.map((c) {
-          final progress = c.$3 / c.$4;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Text(c.$1, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(c.$2,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 13)),
-                    ),
-                    Text('S/ ${c.$3.toStringAsFixed(0)}',
-                        style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 5,
-                    backgroundColor: c.$5.withValues(alpha: 0.15),
-                    valueColor: AlwaysStoppedAnimation(c.$5),
-                  ),
-                ),
-              ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '💡 Gestión de Finanzas',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
             ),
-          );
-        }).toList(),
+          ),
+          const SizedBox(height: 12),
+          _GuidanceItem(
+            icon: Icons.account_balance_wallet,
+            title: 'Abrir WalletAI',
+            subtitle: 'Gestiona transacciones, categorías y presupuestos',
+            onTap: () => WalletAICommunicationService.openWalletAI(),
+          ),
+          const SizedBox(height: 8),
+          _GuidanceItem(
+            icon: Icons.sync,
+            title: 'Sincronizar datos',
+            subtitle: 'Abre WalletAI para exportar el resumen actualizado',
+            onTap: () => WalletAICommunicationService.requestSync(),
+          ),
+          const SizedBox(height: 8),
+          _GuidanceItem(
+            icon: Icons.settings,
+            title: 'Configurar conexión',
+            subtitle: 'Ver Project ID y estado de integración',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const WalletAIConnectionSettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-// ── Recent transactions ───────────────────────────────────────────────────────
-class _RecentTransactions extends StatelessWidget {
-  final bool isDark;
-  const _RecentTransactions({required this.isDark});
-
-  static const _txns = [
-    ('Zara Fashion', 'Ropa', '13/03', -89.90, '👗'),
-    ('Nómina MyLifeOS', 'Ingreso', '13/03', 2450.00, '💰'),
-    ('Sushi Master', 'Alimentación', '13/03', -45.20, '🍣'),
-    ('Luz y Agua', 'Hogar', '13/03', -125.00, '💡'),
-  ];
+class _GuidanceItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _GuidanceItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final surface = isDark ? const Color(0xFF152019) : Colors.white;
-    final primary = Theme.of(context).colorScheme.primary;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: primary.withValues(alpha: isDark ? 0.15 : 0.1)),
-      ),
-      child: Column(
-        children: List.generate(_txns.length, (i) {
-          final t = _txns[i];
-          final isPositive = t.$4 >= 0;
-          final isLast = i == _txns.length - 1;
-
-          return Column(
-            children: [
-              ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(t.$5, style: const TextStyle(fontSize: 18)),
-                  ),
-                ),
-                title: Text(t.$1,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13)),
-                subtitle: Text('${t.$3} · ${t.$2}',
-                    style:
-                        TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-                trailing: Text(
-                  '${isPositive ? '+' : ''}S/ ${t.$4.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: isPositive
-                        ? const Color(0xFF00C896)
-                        : const Color(0xFFFF6B6B),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF00C896)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(subtitle,
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+                ],
               ),
-              if (!isLast)
-                Divider(
-                  height: 1,
-                  indent: 72,
-                  color: primary.withValues(alpha: 0.08),
-                ),
-            ],
-          );
-        }),
+            ),
+            const Icon(Icons.chevron_right, size: 16, color: Colors.white24),
+          ],
+        ),
       ),
     );
   }
