@@ -253,7 +253,7 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
               decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12)),
-              child: Text('Error: \${notifier.errorMessage}',
+              child: Text('Error: ${notifier.errorMessage}',
                   style: const TextStyle(color: Colors.redAccent)),
             ),
             const SizedBox(height: 24),
