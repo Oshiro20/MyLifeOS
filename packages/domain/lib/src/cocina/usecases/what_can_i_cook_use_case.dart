@@ -113,40 +113,42 @@ ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
 
       // Debug: log raw response
       debugPrint('📄 WhatCanICook raw response (${jsonString.length} chars)');
-      if (jsonString.length < 2000) {
+      if (jsonString.length < 1000) {
         debugPrint('📄 Full: $jsonString');
       } else {
         debugPrint('📄 First 1000: ${jsonString.substring(0, 1000)}');
       }
 
-      // Robust JSON cleaning - prioritize arrays since we expect a list
-      final cleanJson = _extractJsonFromResponse(jsonString, expectList: true);
-
-      debugPrint(
-          '🧹 Cleaned JSON (${cleanJson.length} chars): ${cleanJson.substring(0, cleanJson.length > 200 ? 200 : cleanJson.length)}');
-
+      // Try multiple extraction strategies in order of preference
       dynamic decoded;
-      try {
-        decoded = jsonDecode(cleanJson);
-      } catch (e) {
-        debugPrint('❌ Failed to decode JSON: $cleanJson');
-        // Try one more time with a more aggressive cleanup
-        final aggressiveClean = _aggressiveJsonClean(jsonString);
-        final previewLen =
-            aggressiveClean.length > 200 ? 200 : aggressiveClean.length;
+      List<String> extractionAttempts = [
+        _extractJsonFromResponse(jsonString, expectList: true),
+        _aggressiveJsonClean(jsonString),
+        _bruteForceJsonExtract(jsonString),
+      ];
+
+      bool parseSuccess = false;
+      for (int i = 0; i < extractionAttempts.length; i++) {
+        final attempt = extractionAttempts[i];
+        if (attempt.isEmpty || attempt.length < 2) continue;
+
         debugPrint(
-            '🔧 Aggressive clean: ${aggressiveClean.substring(0, previewLen)}');
+            '🧹 Attempt ${i + 1} (${attempt.length} chars): ${attempt.substring(0, attempt.length > 100 ? 100 : attempt.length)}');
         try {
-          decoded = jsonDecode(aggressiveClean);
-          debugPrint('✅ Aggressive clean worked!');
-        } catch (e2) {
-          final errStr = e2.toString();
-          final errPreview =
-              errStr.length > 100 ? errStr.substring(0, 100) : errStr;
-          throw Exception(
-            'La IA devolvió un formato inválido. Intenta de nuevo.\n\nError: $errPreview',
-          );
+          decoded = jsonDecode(attempt);
+          debugPrint('✅ Parse succeeded on attempt ${i + 1}');
+          parseSuccess = true;
+          break;
+        } catch (e) {
+          debugPrint('❌ Attempt ${i + 1} failed: $e');
         }
+      }
+
+      if (!parseSuccess) {
+        throw Exception(
+          'La IA devolvió un formato inválido. Intenta de nuevo.\n\n'
+          'Tip: Asegúrate de tener al menos 3-5 ingredientes en tu despensa para mejores resultados.',
+        );
       }
 
       // Handle both List and single Map (wrap in list if single)
@@ -342,9 +344,82 @@ ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
 
     return text;
   }
+
+  /// Brute force: finds the outermost matching bracket/brace pair
+  String _bruteForceJsonExtract(String text) {
+    // Remove markdown
+    text = text.replaceAll(RegExp(r'```[\s\S]*?```'), '');
+    text = text.replaceAll(RegExp(r'```json\s*'), '');
+    text = text.replaceAll(RegExp(r'```\s*'), '');
+
+    // Try to find matching brackets for arrays
+    for (int start = 0; start < text.length; start++) {
+      if (text[start] == '[') {
+        int depth = 0;
+        bool inString = false;
+        bool escaped = false;
+        for (int end = start; end < text.length; end++) {
+          final char = text[end];
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (char == '\\') {
+            escaped = true;
+            continue;
+          }
+          if (char == '"') {
+            inString = !inString;
+            continue;
+          }
+          if (inString) continue;
+          if (char == '[') depth++;
+          if (char == ']') {
+            depth--;
+            if (depth == 0) {
+              return text.substring(start, end + 1);
+            }
+          }
+        }
+      }
+    }
+
+    // Try to find matching braces for objects
+    for (int start = 0; start < text.length; start++) {
+      if (text[start] == '{') {
+        int depth = 0;
+        bool inString = false;
+        bool escaped = false;
+        for (int end = start; end < text.length; end++) {
+          final char = text[end];
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (char == '\\') {
+            escaped = true;
+            continue;
+          }
+          if (char == '"') {
+            inString = !inString;
+            continue;
+          }
+          if (inString) continue;
+          if (char == '{') depth++;
+          if (char == '}') {
+            depth--;
+            if (depth == 0) {
+              return text.substring(start, end + 1);
+            }
+          }
+        }
+      }
+    }
+
+    return text;
+  }
 }
 
-/// Represents a recipe suggestion with match information
 class RecipeSuggestion {
   final Recipe recipe;
   final int matchPercentage; // 0-100

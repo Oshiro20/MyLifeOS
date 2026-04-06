@@ -7,13 +7,51 @@ import '../providers/user_food_preferences_provider.dart';
 
 enum WhatCanICookState { initial, loading, success, error }
 
+/// Determines current meal period based on time of day
+String _getCurrentMealPeriod() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'desayuno';
+  if (hour < 17) return 'almuerzo';
+  return 'cena';
+}
+
 class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
+  String? _lastMealPeriod;
+  DateTime? _lastRefreshTime;
 
   @override
   WhatCanICookState build() {
     return WhatCanICookState.initial;
+  }
+
+  /// Checks if a refresh is needed based on meal period change or manual refresh
+  bool get needsRefresh {
+    final currentPeriod = _getCurrentMealPeriod();
+    // Refresh if it's a new meal period or if it's been more than 2 hours
+    if (_lastMealPeriod == null) return true;
+    if (_lastMealPeriod != currentPeriod) return true;
+    if (_lastRefreshTime != null &&
+        DateTime.now().difference(_lastRefreshTime!).inHours > 2) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Returns current meal period label with emoji
+  String get currentMealLabel {
+    final period = _getCurrentMealPeriod();
+    switch (period) {
+      case 'desayuno':
+        return '🌅 Desayuno';
+      case 'almuerzo':
+        return '🍛 Almuerzo';
+      case 'cena':
+        return '🌙 Cena';
+      default:
+        return '🍽️ Recetas';
+    }
   }
 
   Future<void> generateSuggestions() async {
@@ -47,6 +85,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       );
 
       state = WhatCanICookState.success;
+      _lastMealPeriod = _getCurrentMealPeriod();
+      _lastRefreshTime = DateTime.now();
     } catch (e) {
       errorMessage = e.toString();
       state = WhatCanICookState.error;

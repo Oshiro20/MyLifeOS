@@ -23,14 +23,13 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   @override
   void initState() {
     super.initState();
-    // Auto-load Chef IA suggestions when entering the tab
+    // Auto-load Chef IA suggestions only if needed (meal period change or first time)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final invState = ref.read(inventoryProvider);
-      final aiState = ref.read(whatCanICookProvider);
-      // Only auto-load if we have ingredients and not already loaded
-      if (invState.ingredients.isNotEmpty &&
-          aiState == WhatCanICookState.initial) {
-        ref.read(whatCanICookProvider.notifier).generateSuggestions();
+      final aiNotifier = ref.read(whatCanICookProvider.notifier);
+      // Only auto-load if we have ingredients and it's needed
+      if (invState.ingredients.isNotEmpty && aiNotifier.needsRefresh) {
+        aiNotifier.generateSuggestions();
       }
     });
   }
@@ -172,14 +171,21 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                 const Icon(Icons.restaurant_menu,
                     color: Color(0xFFFF9800), size: 18),
                 const SizedBox(width: 4),
-                const Text(
-                  'Sugerencias del Chef IA',
-                  style: TextStyle(
+                Text(
+                  'Sugerencias: ${aiNotifier.currentMealLabel}',
+                  style: const TextStyle(
                       color: Color(0xFFFF9800),
                       fontWeight: FontWeight.bold,
                       fontSize: 14),
                 ),
                 const Spacer(),
+                // Refresh button
+                IconButton(
+                  icon: const Icon(Icons.refresh,
+                      size: 18, color: Color(0xFFFF9800)),
+                  onPressed: () => aiNotifier.generateSuggestions(),
+                  tooltip: 'Obtener nuevas sugerencias',
+                ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () => aiNotifier.reset(),

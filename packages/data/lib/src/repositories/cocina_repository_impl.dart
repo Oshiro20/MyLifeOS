@@ -292,14 +292,83 @@ class CocinaRepository implements ICocinaRepository {
       'porcion',
       'porciones'
     };
+
+    // Common grocery item packaging mapping
+    // Key: ingredient name pattern -> suggested shopping unit
+    final packagingMap = {
+      'aceite': 'botella',
+      'mayonesa': 'frasco',
+      'ketchup': 'botella',
+      'mostaza': 'botella',
+      'soya': 'botella',
+      'vinagre': 'botella',
+      'leche': 'cartón',
+      'crema': 'envase',
+      'yogur': 'envase',
+      'yogurt': 'envase',
+      'mantequilla': 'paquete',
+      'margarina': 'paquete',
+      'arroz': 'paquete',
+      'fideos': 'paquete',
+      'tallarín': 'paquete',
+      'tallarines': 'paquete',
+      'spaghetti': 'paquete',
+      'harina': 'paquete',
+      'azúcar': 'paquete',
+      'sal': 'paquete',
+      'atún': 'lata',
+      'sardina': 'lata',
+      'arveja': 'lata',
+      'choclo': 'lata',
+      'champignones': 'lata',
+      'jugo': 'botella',
+      'gaseosa': 'botella',
+      'refresco': 'botella',
+    };
+
     // Shopping unit mapping
-    String toShoppingUnit(String recipeUnit, double qty) {
-      if (recipeUnits.contains(recipeUnit.toLowerCase())) {
-        // Small quantities → suggest buying 1 unit/bottle/package
-        if (qty <= 10) return 'unidades';
-        if (qty <= 500) return 'gramos';
-        return 'kilos';
+    String toShoppingUnit(
+        String recipeUnit, double qty, String ingredientName) {
+      final lower = recipeUnit.toLowerCase();
+      final ingLower = ingredientName.toLowerCase();
+
+      // Check if it's a recipe-only unit
+      if (recipeUnits.contains(lower)) {
+        // Check packaging map for this ingredient
+        for (final entry in packagingMap.entries) {
+          if (ingLower.contains(entry.key)) {
+            return entry.value; // Use packaging unit
+          }
+        }
+        // Fallback: suggest 1 unit of something
+        return 'unidades';
       }
+
+      // Already practical units
+      if ([
+        'unidades',
+        'paquete',
+        'paquetes',
+        'lata',
+        'latas',
+        'botella',
+        'botellas',
+        'frasco',
+        'frascos',
+        'envase',
+        'envases',
+        'cartón',
+        'cartones'
+      ].contains(lower)) {
+        return lower;
+      }
+
+      // Weight/volume units - keep as is for produce
+      if (['gramos', 'kilos', 'litros', 'mililitros'].contains(lower)) {
+        return lower;
+      }
+
+      // Default: keep original unit
       return recipeUnit;
     }
 
@@ -311,13 +380,23 @@ class CocinaRepository implements ICocinaRepository {
 
         if (pantryData == null) {
           // Don't have this ingredient at all → need to buy
-          final shoppingUnit = toShoppingUnit(ri.unit, ri.quantity);
+          final shoppingUnit =
+              toShoppingUnit(ri.unit, ri.quantity, ri.ingredientName);
           if (needed.containsKey(key)) {
             final existing = needed[key]!;
             // Sum quantities, use the more practical unit
             needed[key] = (existing.$1 + ri.quantity, existing.$2);
           } else {
-            needed[key] = (ri.quantity, shoppingUnit);
+            // For packaging units, always suggest 1
+            final isPackaging = [
+              'botella',
+              'frasco',
+              'lata',
+              'paquete',
+              'envase',
+              'cartón'
+            ].contains(shoppingUnit);
+            needed[key] = (isPackaging ? 1.0 : ri.quantity, shoppingUnit);
           }
         }
         // If we have it in pantry, skip it (already have it)
