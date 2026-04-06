@@ -95,12 +95,48 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
         throw Exception('La IA no pudo generar sugerencias');
       }
 
-      // Robust JSON cleaning
-      final cleanJson = _extractJsonFromResponse(jsonString);
-      final decoded = jsonDecode(cleanJson) as List<dynamic>;
+      // Debug: log raw response
+      debugPrint('📄 WhatCanICook raw response (${jsonString.length} chars)');
+      if (jsonString.length < 1000) {
+        debugPrint('📄 Full: $jsonString');
+      } else {
+        debugPrint('📄 First 500: ${jsonString.substring(0, 500)}');
+      }
+
+      // Robust JSON cleaning - prioritize arrays since we expect a list
+      final cleanJson = _extractJsonFromResponse(jsonString, expectList: true);
+
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(cleanJson);
+      } catch (e) {
+        debugPrint('❌ Failed to decode JSON: $cleanJson');
+        throw Exception(
+            'La IA devolvió un formato inválido. Intenta de nuevo.');
+      }
+
+      // Handle both List and single Map (wrap in list if single)
+      List<dynamic> recipeList;
+      if (decoded is List) {
+        recipeList = decoded;
+      } else if (decoded is Map<String, dynamic>) {
+        debugPrint('⚠️ Gemini returned a single object, wrapping in list');
+        recipeList = [decoded];
+      } else {
+        throw Exception(
+          'Formato inesperado de la IA (tipo: ${decoded.runtimeType}). '
+          'Intenta de nuevo.',
+        );
+      }
+
+      if (recipeList.isEmpty) {
+        throw Exception(
+            'La IA no encontró recetas con tus ingredientes actuales.');
+      }
+
       final suggestions = <RecipeSuggestion>[];
 
-      for (final recipeData in decoded) {
+      for (final recipeData in recipeList) {
         if (recipeData is! Map<String, dynamic>) continue;
 
         final name = recipeData['nombre_receta'] as String? ?? 'Receta';
@@ -199,7 +235,7 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
   }
 
   /// Robustly extracts JSON from a response string
-  String _extractJsonFromResponse(String response) {
+  String _extractJsonFromResponse(String response, {bool expectList = false}) {
     String text = response.trim();
 
     if (text.contains('```')) {
@@ -208,6 +244,19 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
       text = text.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
     }
 
+    // If we expect a list, look for brackets first
+    if (expectList) {
+      final firstBracket = text.indexOf('[');
+      final lastBracket = text.lastIndexOf(']');
+
+      if (firstBracket != -1 &&
+          lastBracket != -1 &&
+          lastBracket > firstBracket) {
+        return text.substring(firstBracket, lastBracket + 1);
+      }
+    }
+
+    // Fallback to braces (object)
     final firstBrace = text.indexOf('{');
     final lastBrace = text.lastIndexOf('}');
 
@@ -215,6 +264,7 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
       return text.substring(firstBrace, lastBrace + 1);
     }
 
+    // Last resort: try brackets anyway
     final firstBracket = text.indexOf('[');
     final lastBracket = text.lastIndexOf(']');
 
