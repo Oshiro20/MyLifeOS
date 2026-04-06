@@ -40,9 +40,9 @@ class GeminiService {
       return null;
     }
 
-    // Choose model based on requirements
-    // Using stable model ID as recommended for production
-    final modelName = 'gemini-2.0-flash';
+    // Updated model: gemini-2.0-flash was deprecated in Feb 2026
+    // Using gemini-2.5-flash as the new default (supports vision, video, free tier)
+    final modelName = 'gemini-2.5-flash';
     return GenerativeModel(model: modelName, apiKey: apiKey);
   }
 
