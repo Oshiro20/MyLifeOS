@@ -174,7 +174,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             ),
           ),
           SizedBox(
-            height: 280,
+            height: 350,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -184,6 +184,10 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                 return _AISuggestionCard(
                   suggestion: suggestion,
                   onTap: () => _showRecipeDetail(context, suggestion.recipe),
+                  onSave: () =>
+                      _saveAISuggestion(context, ref, aiNotifier, suggestion),
+                  onCook: () =>
+                      _cookAISuggestion(context, ref, aiNotifier, suggestion),
                 );
               },
             ),
@@ -263,6 +267,71 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _saveAISuggestion(
+    BuildContext context,
+    WidgetRef ref,
+    WhatCanICookNotifier notifier,
+    RecipeSuggestion suggestion,
+  ) async {
+    final saved = await notifier.saveSuggestion(suggestion);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(saved
+              ? '✅ "${suggestion.recipe.name}" guardada en tu recetario'
+              : '❌ Error al guardar la receta'),
+          backgroundColor: saved ? const Color(0xFF00E676) : Colors.redAccent,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      // Reload recipes if saved
+      if (saved) {
+        ref.read(recipesProvider.notifier).load();
+      }
+    }
+  }
+
+  Future<void> _cookAISuggestion(
+    BuildContext context,
+    WidgetRef ref,
+    WhatCanICookNotifier notifier,
+    RecipeSuggestion suggestion,
+  ) async {
+    final result = await notifier.cookSuggestion(suggestion);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(result.success ? '🍳 ¡Cocinando!' : '⚠️ Advertencia'),
+              if (result.deducted.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Descontados: ${result.deducted.join(", ")}',
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ],
+            ],
+          ),
+          backgroundColor:
+              result.success ? const Color(0xFFFF9800) : Colors.redAccent,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+      // Reload inventory if ingredients were deducted
+      if (result.success && result.deducted.isNotEmpty) {
+        ref.read(inventoryProvider.notifier).load();
+      }
+    }
   }
 
   String _greeting() {
@@ -780,106 +849,171 @@ class _Chip extends StatelessWidget {
 class _AISuggestionCard extends StatelessWidget {
   final RecipeSuggestion suggestion;
   final VoidCallback onTap;
+  final VoidCallback onSave;
+  final VoidCallback onCook;
   const _AISuggestionCard({
     required this.suggestion,
     required this.onTap,
+    required this.onSave,
+    required this.onCook,
   });
 
   @override
   Widget build(BuildContext context) {
     final recipe = suggestion.recipe;
     final matchPercent = suggestion.matchPercentage;
+    final mealType = recipe.tipoComida;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 260,
-        margin: const EdgeInsets.only(right: 12, bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2A1F0D), Color(0xFF1F1709)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Container(
+      width: 280,
+      margin: const EdgeInsets.only(right: 12, bottom: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2A1F0D), Color(0xFF1F1709)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: const Color(0xFFFF9800).withAlpha(60), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header with meal type badge
+          GestureDetector(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (mealType != null)
+                        Text(
+                          mealType.emoji,
+                          style: const TextStyle(fontSize: 22),
+                        )
+                      else
+                        const Text('🍽️', style: TextStyle(fontSize: 22)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          recipe.name,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF9800).withAlpha(40),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$matchPercent%',
+                          style: const TextStyle(
+                              color: Color(0xFFFF9800),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      _Chip('⏱ ${recipe.durationMinutes} min'),
+                      _Chip('👥 ${recipe.servings}'),
+                      if (mealType != null)
+                        _Chip('${mealType.emoji} ${mealType.label}'),
+                    ],
+                  ),
+                  if (recipe.description.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      recipe.description,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  if (suggestion.missingIngredients > 0)
+                    Text(
+                      '🛒 Faltan ${suggestion.missingIngredients}',
+                      style: const TextStyle(
+                          color: Colors.orangeAccent,
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic),
+                    )
+                  else
+                    const Text(
+                      '✅ Tienes todo',
+                      style: TextStyle(
+                          color: Color(0xFF66BB6A),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600),
+                    ),
+                ],
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: const Color(0xFFFF9800).withAlpha(60), width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+          // Action buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+            child: Row(
               children: [
+                // Save button
                 Expanded(
-                  child: Text(
-                    recipe.name,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: ElevatedButton.icon(
+                    onPressed: onSave,
+                    icon: const Icon(Icons.save_outlined, size: 14),
+                    label:
+                        const Text('Guardar', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E676),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: const Size(0, 30),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF9800).withAlpha(40),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '$matchPercent%',
-                    style: const TextStyle(
-                        color: Color(0xFFFF9800),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700),
+                const SizedBox(width: 6),
+                // Cook button
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onCook,
+                    icon: const Icon(Icons.whatshot, size: 14),
+                    label:
+                        const Text('Cocinar', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9800),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: const Size(0, 30),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                _Chip('⏱ ${recipe.durationMinutes} min'),
-                _Chip('👥 ${recipe.servings}'),
-              ],
-            ),
-            if (recipe.description.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                recipe.description,
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            if (suggestion.missingIngredients > 0) ...[
-              const SizedBox(height: 6),
-              Text(
-                '🛒 Faltan ${suggestion.missingIngredients} ingrediente${suggestion.missingIngredients > 1 ? "s" : ""}',
-                style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic),
-              ),
-            ] else ...[
-              const SizedBox(height: 6),
-              const Text(
-                '✅ Tienes todos los ingredientes',
-                style: TextStyle(
-                    color: Color(0xFF66BB6A),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600),
-              ),
-            ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

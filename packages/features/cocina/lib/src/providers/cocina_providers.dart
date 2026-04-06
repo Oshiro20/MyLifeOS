@@ -112,6 +112,55 @@ class InventoryNotifier extends Notifier<InventoryState> {
     }
   }
 
+  /// Deduct recipe ingredients from pantry
+  /// Returns list of ingredients that were deducted (for feedback)
+  Future<List<String>> deductRecipeIngredients(
+      List<RecipeIngredient> recipeIngredients) async {
+    final deducted = <String>[];
+    final updatedIngredients =
+        List<InventoryIngredient>.from(state.ingredients);
+
+    for (final recipeIng in recipeIngredients) {
+      // Find matching pantry item (case-insensitive name match)
+      final matchIndex = updatedIngredients.indexWhere((pantryItem) =>
+          pantryItem.name.toLowerCase() ==
+          recipeIng.ingredientName.toLowerCase());
+
+      if (matchIndex != -1) {
+        final pantryItem = updatedIngredients[matchIndex];
+        // Convert recipe quantity to same unit if possible (simplified: assume same unit)
+        final newQty = pantryItem.quantity - recipeIng.quantity;
+
+        if (newQty <= 0) {
+          // Remove from pantry
+          updatedIngredients.removeAt(matchIndex);
+          deducted.add(recipeIng.ingredientName);
+        } else {
+          // Update quantity - create new instance since InventoryIngredient is immutable
+          updatedIngredients[matchIndex] = InventoryIngredient(
+            id: pantryItem.id,
+            name: pantryItem.name,
+            primaryCategory: pantryItem.primaryCategory,
+            subCategory: pantryItem.subCategory,
+            preparation: pantryItem.preparation,
+            quantity: newQty,
+            unit: pantryItem.unit,
+            expirationDate: pantryItem.expirationDate,
+            imageAssetId: pantryItem.imageAssetId,
+            storageArea: pantryItem.storageArea,
+          );
+          deducted.add(recipeIng.ingredientName);
+        }
+      }
+    }
+
+    if (deducted.isNotEmpty) {
+      state = state.copyWith(ingredients: updatedIngredients);
+    }
+
+    return deducted;
+  }
+
   void clearError() => state = state.copyWith(error: null);
 }
 

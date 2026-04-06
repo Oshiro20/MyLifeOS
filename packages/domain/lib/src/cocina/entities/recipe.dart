@@ -2,6 +2,26 @@ import 'package:equatable/equatable.dart';
 
 enum NutritionGoal { loseWeight, maintain, gainMuscle, other }
 
+/// Tipos de comida soportados por la app
+enum MealType {
+  desayuno('Desayuno', '🌅'),
+  almuerzo('Almuerzo', '🍛'),
+  cena('Cena', '🌙'),
+  entrada('Entrada', '🥗'),
+  sopa('Sopa', '🍲'),
+  seco('Seco', '🥘'),
+  postre('Postre', '🍰'),
+  mazamorra('Mazamorra', '🍮'),
+  bebida('Bebida', '🥤'),
+  snack('Snack', '🍿'),
+  jugo('Jugo', '🧃'),
+  otro('Otro', '🍽️');
+
+  final String label;
+  final String emoji;
+  const MealType(this.label, this.emoji);
+}
+
 class Recipe extends Equatable {
   final String id;
   final String name;
@@ -26,6 +46,7 @@ class Recipe extends Equatable {
   final List<String> utensilios;
   final int? caloriasAproximadas;
   final List<String> ingredientesInferidos;
+  final MealType? tipoComida;
 
   const Recipe({
     required this.id,
@@ -49,6 +70,7 @@ class Recipe extends Equatable {
     this.utensilios = const [],
     this.caloriasAproximadas,
     this.ingredientesInferidos = const [],
+    this.tipoComida,
   });
 
   Recipe copyWith({
@@ -73,6 +95,7 @@ class Recipe extends Equatable {
     List<String>? utensilios,
     int? caloriasAproximadas,
     List<String>? ingredientesInferidos,
+    MealType? tipoComida,
   }) =>
       Recipe(
         id: id ?? this.id,
@@ -97,6 +120,7 @@ class Recipe extends Equatable {
         caloriasAproximadas: caloriasAproximadas ?? this.caloriasAproximadas,
         ingredientesInferidos:
             ingredientesInferidos ?? this.ingredientesInferidos,
+        tipoComida: tipoComida ?? this.tipoComida,
       );
 
   @override
@@ -122,6 +146,7 @@ class Recipe extends Equatable {
         utensilios,
         caloriasAproximadas,
         ingredientesInferidos,
+        tipoComida,
       ];
 }
 

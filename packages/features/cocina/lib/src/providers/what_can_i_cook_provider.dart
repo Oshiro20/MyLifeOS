@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
@@ -52,6 +53,61 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     suggestions = [];
     errorMessage = null;
   }
+
+  /// Save a suggested recipe to the database
+  Future<bool> saveSuggestion(RecipeSuggestion suggestion) async {
+    try {
+      final recipesNotifier = ref.read(recipesProvider.notifier);
+      await recipesNotifier.saveRecipe(suggestion.recipe);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error saving suggestion: $e');
+      return false;
+    }
+  }
+
+  /// Cook a suggested recipe (deduct ingredients from pantry)
+  Future<CookResult> cookSuggestion(RecipeSuggestion suggestion) async {
+    try {
+      final inventoryNotifier = ref.read(inventoryProvider.notifier);
+      final deducted = await inventoryNotifier
+          .deductRecipeIngredients(suggestion.recipe.ingredients);
+
+      if (deducted.isEmpty) {
+        return const CookResult(
+          success: false,
+          message: 'No tienes ingredientes coincidentes en tu despensa.',
+          deducted: [],
+        );
+      }
+
+      return CookResult(
+        success: true,
+        message:
+            '🍳 ¡Cocinando ${suggestion.recipe.name}! Ingredientes descontados.',
+        deducted: deducted,
+      );
+    } catch (e) {
+      return CookResult(
+        success: false,
+        message: 'Error al descontar ingredientes: $e',
+        deducted: [],
+      );
+    }
+  }
+}
+
+/// Result of cooking a recipe
+class CookResult {
+  final bool success;
+  final String message;
+  final List<String> deducted;
+
+  const CookResult({
+    required this.success,
+    required this.message,
+    required this.deducted,
+  });
 }
 
 final whatCanICookProvider =

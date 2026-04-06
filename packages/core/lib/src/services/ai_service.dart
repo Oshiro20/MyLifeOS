@@ -441,7 +441,15 @@ PASO 5 - DETECTA UTENSILIOS
 
 PASO 6 - CLASIFICACIÓN
 • Dificultad: "Fácil" (≤5 pasos), "Media" (6-10), "Difícil" (>10)
-• Tipo de comida: Desayuno | Almuerzo | Cena | Snack | Postre | Bebida
+• Tipo de comida: Debes usar EXACTAMENTE uno de estos valores:
+  "Desayuno" | "Almuerzo" | "Cena" | "Entrada" | "Sopa" | "Seco" | "Postre" | "Mazamorra" | "Bebida" | "Snack"
+  - Postre: tartas, flanes, alfajores, etc.
+  - Mazamorra: mazamorras, gelatinas, puddings
+  - Entrada: ceviches, causa, tiradito, etc.
+  - Sopa: caldos, cremas, aguaditos, etc.
+  - Seco: platos fuertes con salsa espesa
+  - Bebida: jugos, chicha, limonada, emoliente
+  - Snack: botanas, pasabocas
 • Cocina: según estilo (peruana, italiana, asiática, etc.)
 • Tags: 3-5 tags relevantes
 
