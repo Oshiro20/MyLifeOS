@@ -16,27 +16,69 @@ class ExtractRecipeUseCase {
     if (jsonString == null || jsonString.isEmpty) return null;
 
     try {
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+      // Clean markdown if present
+      String cleanJson = jsonString.trim();
+      if (cleanJson.startsWith('```')) {
+        cleanJson =
+            cleanJson.replaceAll('```json', '').replaceAll('```', '').trim();
+      }
 
-      final name = decoded['name'] ?? 'Receta Importada';
-      final description = decoded['description'] ?? '';
-      final durationMinutes = decoded['durationMinutes'] as int? ?? 30;
-      final servings = decoded['servings'] as int? ?? 2;
+      final decoded = jsonDecode(cleanJson) as Map<String, dynamic>;
 
-      final rawIngredients = decoded['ingredients'] as List<dynamic>? ?? [];
+      // Support BOTH old and new JSON formats
+      final name =
+          decoded['name'] ?? decoded['nombre_receta'] ?? 'Receta Importada';
+      final description =
+          decoded['description'] ?? decoded['descripcion'] ?? '';
+
+      // Support both formats for time
+      int durationMinutes;
+      if (decoded['durationMinutes'] != null) {
+        durationMinutes = decoded['durationMinutes'] as int;
+      } else if (decoded['tiempo_total_min'] != null) {
+        durationMinutes = decoded['tiempo_total_min'] as int;
+      } else {
+        durationMinutes = 30;
+      }
+
+      // Support both formats for servings
+      final servings = decoded['servings'] ?? decoded['porciones'];
+      final servingsInt =
+          servings is int ? servings : (servings is num ? servings.toInt() : 2);
+
+      // Support both ingredient formats
+      List<dynamic> rawIngredients = [];
+      if (decoded['ingredients'] != null) {
+        rawIngredients = decoded['ingredients'] as List<dynamic>;
+      } else if (decoded['ingredientes'] != null) {
+        rawIngredients = decoded['ingredientes'] as List<dynamic>;
+      }
+
       final List<RecipeIngredient> ingredients = [];
-
       final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
 
       for (int i = 0; i < rawIngredients.length; i++) {
         final item = rawIngredients[i] as Map<String, dynamic>;
 
-        final ingName = item['ingredientName'] ?? 'Ingrediente \$i';
-        final qty = (item['quantity'] as num?)?.toDouble() ?? 1.0;
-        final rawUnit = item['unit'] as String? ?? 'unidades';
+        // Support both ingredient field names
+        final ingName =
+            item['ingredientName'] ?? item['nombre'] ?? 'Ingrediente $i';
+
+        // Support both quantity formats (number or string)
+        double qty;
+        final rawQty = item['quantity'] ?? item['cantidad'];
+        if (rawQty is num) {
+          qty = rawQty.toDouble();
+        } else if (rawQty is String) {
+          qty = double.tryParse(rawQty) ?? 1.0;
+        } else {
+          qty = 1.0;
+        }
+
+        final rawUnit = item['unit'] ?? item['unidad'] ?? 'unidades';
 
         ingredients.add(RecipeIngredient(
-          id: '\${recipeId}_ing_\$i',
+          id: '${recipeId}_ing_$i',
           recipeId: recipeId,
           ingredientName: ingName,
           quantity: qty,
@@ -44,9 +86,27 @@ class ExtractRecipeUseCase {
         ));
       }
 
-      final rawInstructions = decoded['instructions'] as List<dynamic>? ?? [];
+      // Support both instruction formats
+      List<dynamic> rawInstructions = [];
+      if (decoded['instructions'] != null) {
+        rawInstructions = decoded['instructions'] as List<dynamic>;
+      } else if (decoded['pasos'] != null) {
+        // New format: pasos is a list of objects with numero and descripcion
+        final pasosList = decoded['pasos'] as List<dynamic>;
+        // Sort by numero if available
+        pasosList.sort((a, b) {
+          final numA = (a as Map)['numero'] as int? ?? 0;
+          final numB = (b as Map)['numero'] as int? ?? 0;
+          return numA.compareTo(numB);
+        });
+        // Extract description from each paso
+        rawInstructions = pasosList
+            .map((p) => (p as Map)['descripcion'] ?? p.toString())
+            .toList();
+      }
       final instructions = rawInstructions.map((e) => e.toString()).toList();
 
+      // Support both tag formats
       final rawTags = decoded['tags'] as List<dynamic>? ?? [];
       final tags = rawTags.map((e) => e.toString()).toList();
 
@@ -55,14 +115,17 @@ class ExtractRecipeUseCase {
         name: name,
         description: description,
         durationMinutes: durationMinutes,
-        servings: servings,
+        servings: servingsInt,
         instructions: instructions,
         ingredients: ingredients,
         tags: tags,
         createdAt: DateTime.now(),
       );
-    } catch (e) {
-      throw Exception('Error al parsear receta desde IA: \$e');
+    } catch (e, stackTrace) {
+      print('Error parsing recipe JSON: $e');
+      print('Raw JSON was: $jsonString');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al parsear receta desde IA: $e');
     }
   }
 }
