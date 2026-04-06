@@ -267,24 +267,60 @@ class CocinaRepository implements ICocinaRepository {
     List<Recipe> recipes,
     List<InventoryIngredient> inventory,
   ) async {
-    final availableMap = {
-      for (final i in inventory) i.name.toLowerCase(): i.quantity
+    // Build pantry inventory map: name -> (quantity, unit)
+    final pantryMap = <String, (double, String)>{};
+    for (final item in inventory) {
+      final key = item.name.toLowerCase();
+      if (pantryMap.containsKey(key)) {
+        // Sum quantities for same item
+        final existing = pantryMap[key]!;
+        // Use the unit of the existing item
+        pantryMap[key] = (existing.$1 + item.quantity, existing.$2);
+      } else {
+        pantryMap[key] = (item.quantity, item.unit);
+      }
+    }
+
+    // Units that are impractical for shopping (need conversion)
+    const recipeUnits = {
+      'cucharadas',
+      'cucharadita',
+      'cucharaditas',
+      'pizca',
+      'pizcas',
+      'al gusto',
+      'porcion',
+      'porciones'
     };
+    // Shopping unit mapping
+    String toShoppingUnit(String recipeUnit, double qty) {
+      if (recipeUnits.contains(recipeUnit.toLowerCase())) {
+        // Small quantities → suggest buying 1 unit/bottle/package
+        if (qty <= 10) return 'unidades';
+        if (qty <= 500) return 'gramos';
+        return 'kilos';
+      }
+      return recipeUnit;
+    }
 
     final needed = <String, (double, String)>{};
     for (final recipe in recipes) {
       for (final ri in recipe.ingredients) {
         final key = ri.ingredientName.toLowerCase();
-        final have = availableMap[key] ?? 0.0;
-        final deficit = ri.quantity - have;
-        if (deficit > 0) {
+        final pantryData = pantryMap[key];
+
+        if (pantryData == null) {
+          // Don't have this ingredient at all → need to buy
+          final shoppingUnit = toShoppingUnit(ri.unit, ri.quantity);
           if (needed.containsKey(key)) {
             final existing = needed[key]!;
-            needed[key] = (existing.$1 + deficit, existing.$2);
+            // Sum quantities, use the more practical unit
+            needed[key] = (existing.$1 + ri.quantity, existing.$2);
           } else {
-            needed[key] = (deficit, ri.unit);
+            needed[key] = (ri.quantity, shoppingUnit);
           }
         }
+        // If we have it in pantry, skip it (already have it)
       }
     }
 

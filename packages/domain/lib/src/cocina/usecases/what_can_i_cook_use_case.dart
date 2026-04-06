@@ -14,6 +14,7 @@ class WhatCanICookUseCase {
   Future<List<RecipeSuggestion>> execute({
     required List<InventoryIngredient> inventory,
     int maxSuggestions = 5,
+    List<String>? dislikedIngredients,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -24,6 +25,18 @@ class WhatCanICookUseCase {
     final inventoryDescription = inventory.map((item) {
       return '- ${item.name}: ${item.quantity} ${item.unit}${item.preparation.isNotEmpty ? ' (${item.preparation})' : ''}';
     }).join('\n');
+
+    // Build disliked ingredients warning
+    String dislikedWarning = '';
+    if (dislikedIngredients != null && dislikedIngredients.isNotEmpty) {
+      dislikedWarning = '''
+⛔ INGREDIENTES QUE EL USUARIO NO LE GUSTAN (NO USAR EN LAS RECETAS):
+${dislikedIngredients.map((e) => '- $e').join('\n')}
+
+Si una receta normalmente usa estos ingredientes, SUSTITUYELOS por algo similar que el usuario sí quiera.
+Ejemplo: si no le gusta la cebolla, usa cebollín o ajo en su lugar.
+''';
+    }
 
     final prompt = '''
 👨‍🍳 ERES UN CHEF PROFESIONAL ESPECIALIZADO EN COCINA DE APROVECHAMIENTO.
@@ -82,6 +95,9 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 7. Mínimo 3 ingredientes, 3 pasos por receta.
 8. "tiempo_total_min" realista: 15-180 minutos.
 9. "porciones" entero: 1-12.
+10. NO uses ingredientes que el usuario no le gustan. Si son esenciales, sustitúyelos.
+
+${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
 
 🍳 AHORA SUGIERE LAS RECETAS BASADO EN EL INVENTARIO DEL USUARIO.''';
 
@@ -116,14 +132,19 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
         debugPrint('❌ Failed to decode JSON: $cleanJson');
         // Try one more time with a more aggressive cleanup
         final aggressiveClean = _aggressiveJsonClean(jsonString);
+        final previewLen =
+            aggressiveClean.length > 200 ? 200 : aggressiveClean.length;
         debugPrint(
-            '🔧 Aggressive clean: ${aggressiveClean.substring(0, aggressiveClean.length > 200 ? 200 : aggressiveClean.length)}');
+            '🔧 Aggressive clean: ${aggressiveClean.substring(0, previewLen)}');
         try {
           decoded = jsonDecode(aggressiveClean);
           debugPrint('✅ Aggressive clean worked!');
         } catch (e2) {
+          final errStr = e2.toString();
+          final errPreview =
+              errStr.length > 100 ? errStr.substring(0, 100) : errStr;
           throw Exception(
-            'La IA devolvió un formato inválido. Intenta de nuevo.\n\nError: ${e2.toString().substring(0, 100)}',
+            'La IA devolvió un formato inválido. Intenta de nuevo.\n\nError: $errPreview',
           );
         }
       }

@@ -7,6 +7,7 @@ import 'package:data/data.dart';
 import 'package:uuid/uuid.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/user_food_preferences_provider.dart';
 
 class InventoryTab extends ConsumerWidget with AppFeedback {
   const InventoryTab({super.key});
@@ -14,6 +15,8 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(inventoryProvider);
+    final foodPrefs = ref.watch(userFoodPreferencesProvider);
+    final foodPrefsNotifier = ref.read(userFoodPreferencesProvider.notifier);
 
     if (state.isLoading) {
       return const Center(
@@ -21,6 +24,78 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
     }
 
     final List<Widget> listChildren = [];
+
+    // Disliked ingredients section
+    listChildren.add(Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.block, color: Colors.redAccent, size: 18),
+              const SizedBox(width: 6),
+              const Text(
+                'Ingredientes que NO te gustan',
+                style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () =>
+                    _showAddDislikedDialog(context, foodPrefsNotifier),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Agregar', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          if (foodPrefs.dislikedIngredients.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Agrega ingredientes que no te gustan para que el Chef IA los evite.',
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: foodPrefs.dislikedIngredients.map((ing) {
+                return Chip(
+                  label: Text(ing,
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 11)),
+                  deleteIcon: const Icon(Icons.close,
+                      size: 14, color: Colors.redAccent),
+                  onDeleted: () =>
+                      foodPrefsNotifier.removeDislikedIngredient(ing),
+                  backgroundColor: Colors.red.withValues(alpha: 0.2),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: EdgeInsets.zero,
+                  labelPadding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    ));
 
     final Set<String> categories =
         state.ingredients.map((i) => i.primaryCategory).toSet();
@@ -127,6 +202,47 @@ class InventoryTab extends ConsumerWidget with AppFeedback {
     if (context.mounted) {
       showSuccess(context, '"$name" eliminado de la despensa.');
     }
+  }
+
+  Future<void> _showAddDislikedDialog(
+      BuildContext context, UserFoodPreferencesNotifier notifier) async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF152019),
+        title: const Text('🚫 Ingrediente que NO te gusta',
+            style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Ej: cebolla, cilantro, pescado...',
+            hintStyle: TextStyle(color: Colors.white54),
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isNotEmpty) {
+                notifier.addDislikedIngredient(text);
+                Navigator.pop(ctx);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddDialog(BuildContext ctx, WidgetRef ref) {

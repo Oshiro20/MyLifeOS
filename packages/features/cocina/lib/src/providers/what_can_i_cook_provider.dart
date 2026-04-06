@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/user_food_preferences_provider.dart';
 
 enum WhatCanICookState { initial, loading, success, error }
 
@@ -32,6 +33,9 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         );
       }
 
+      // Get disliked ingredients
+      final prefsState = ref.read(userFoodPreferencesProvider);
+
       // Create the use case with Gemini adapter
       final gemini = ref.read(geminiServiceProvider);
       final useCase = WhatCanICookUseCase(_GeminiAdapter(gemini));
@@ -39,6 +43,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       suggestions = await useCase.execute(
         inventory: inventoryState.ingredients,
         maxSuggestions: 5,
+        dislikedIngredients: prefsState.dislikedIngredients,
       );
 
       state = WhatCanICookState.success;
