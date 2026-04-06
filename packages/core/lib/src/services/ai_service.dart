@@ -420,11 +420,20 @@ PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN
 • Mínimo 3 pasos, máximo 15 pasos
 • Separa acciones importantes (no mezcles pasos)
 
-PASO 4 - ESTIMA TIEMPOS Y PORCIONES
-• ⏱️ TIEMPO PREPARACIÓN: minutos de corte/mezcla/preparación
-• 🔥 TIEMPO COCCIÓN: minutos de fuego/horno/etc.
+PASO 4 - ESTIMA TIEMPOS Y PORCIONES (¡CRÍTICO!)
+• ⏱️ TIEMPO PREPARACIÓN: minutos de corte/mezcla/preparación (NUNCA 0, mínimo 1)
+• 🔥 TIEMPO COCCIÓN: minutos de fuego/horno/etc. (NUNCA 0, mínimo 1)
 • ⏱️ TIEMPO TOTAL: preparación + cocción (en minutos, realista: 15-180)
+  - NO pongas 30 por defecto. CALCULA basándote en lo que ves.
+  - Si ves que corta vegetales → prep ~5-10 min
+  - Si ves que fríe/hornea → cocción ~10-45 min
 • 👥 PORCIONES: para cuántas personas alcanza (entero: 1-12)
+  - OBSERVA cuántos platos/porciones se sirven en el video
+  - Si no se ve claro, INFIERE según la cantidad de ingredientes:
+    * 1-2 tazas de arroz → 2-3 porciones
+    * 1 pollo entero → 4-6 porciones
+    * Postre individual → 1 porción
+  - NO pongas 4 por defecto. CALCULA o INFIERE lógicamente.
 
 PASO 5 - DETECTA UTENSILIOS
 • Observa qué herramientas usa: sartén, olla, horno, licuadora, etc.
@@ -485,9 +494,10 @@ PASO 7 - ESTIMA CALORÍAS
 4. "pasos" debe tener AL MENOS 3 pasos claros y detallados.
 5. "cantidad" debe ser un NÚMERO (float), no texto. Ejemplo: 2.0, 0.5, 1.0
 6. "unidad" en ESPAÑOL: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "litros", "al gusto"
-7. "tiempo_total_min" debe ser realista: entre 15 y 180 minutos.
-8. "porciones" debe ser entero: 1 a 12.
-9. "nivel_confianza":
+7. "tiempo_total_min" debe ser realista: entre 15 y 180 minutos. NO uses valores por defecto.
+8. "porciones" debe ser entero: 1 a 12. CALCULA o INFIERE, no uses 4 por defecto.
+9. "tiempo_preparacion_min" y "tiempo_coccion_min" deben ser >= 1. NUNCA 0.
+10. "nivel_confianza":
    - "Alto" → video claro, ingredientes visibles, pasos completos
    - "Medio" → video resumido, algunas inferencias necesarias
    - "Bajo" → video muy corto, muchas suposiciones
@@ -558,7 +568,19 @@ Usa esta información como referencia adicional.
           );
         },
       );
-      return response.text;
+      final result = response.text;
+
+      // Debug logging to see what Gemini returns
+      if (result != null && result.isNotEmpty) {
+        debugPrint('✅ Gemini response length: ${result.length} chars');
+        if (result.length < 2000) {
+          debugPrint('📄 Full response: $result');
+        } else {
+          debugPrint('📄 First 500 chars: ${result.substring(0, 500)}');
+        }
+      }
+
+      return result;
     } catch (e) {
       if (e is TimeoutException) {
         throw Exception(e.message ?? 'Timeout al extraer la receta');

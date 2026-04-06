@@ -17,12 +17,8 @@ class ExtractRecipeUseCase {
     if (jsonString == null || jsonString.isEmpty) return null;
 
     try {
-      // Clean markdown if present
-      String cleanJson = jsonString.trim();
-      if (cleanJson.startsWith('```')) {
-        cleanJson =
-            cleanJson.replaceAll('```json', '').replaceAll('```', '').trim();
-      }
+      // Robust JSON cleaning - handle markdown, extra text, etc.
+      String cleanJson = _extractJsonFromResponse(jsonString);
 
       final decoded = jsonDecode(cleanJson) as Map<String, dynamic>;
 
@@ -215,5 +211,38 @@ class ExtractRecipeUseCase {
       debugPrint('📋 Stack trace: $stackTrace');
       throw Exception('Error al parsear receta desde IA: $e');
     }
+  }
+
+  /// Robustly extracts JSON from a response string that may contain markdown, extra text, etc.
+  String _extractJsonFromResponse(String response) {
+    String text = response.trim();
+
+    // Remove markdown code blocks
+    if (text.contains('```')) {
+      // Remove ```json or ``` at start
+      text = text.replaceAll(RegExp(r'^```json\s*', multiLine: true), '');
+      text = text.replaceAll(RegExp(r'^```\s*', multiLine: true), '');
+      // Remove ``` at end
+      text = text.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
+    }
+
+    // Try to find JSON object by looking for the first { and last }
+    final firstBrace = text.indexOf('{');
+    final lastBrace = text.lastIndexOf('}');
+
+    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1);
+    }
+
+    // If no braces found, try to find array
+    final firstBracket = text.indexOf('[');
+    final lastBracket = text.lastIndexOf(']');
+
+    if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
+      return text.substring(firstBracket, lastBracket + 1);
+    }
+
+    // Fallback: return trimmed text (will fail on parse, but at least we tried)
+    return text;
   }
 }

@@ -16,7 +16,8 @@ class WhatCanICookUseCase {
     int maxSuggestions = 5,
   }) async {
     if (inventory.isEmpty) {
-      throw Exception('No tienes ingredientes en tu inventario. Agrega algunos primero.');
+      throw Exception(
+          'No tienes ingredientes en tu inventario. Agrega algunos primero.');
     }
 
     // Build inventory description for AI
@@ -94,15 +95,8 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
         throw Exception('La IA no pudo generar sugerencias');
       }
 
-      // Clean markdown if present
-      String cleanJson = jsonString.trim();
-      if (cleanJson.startsWith('```')) {
-        cleanJson = cleanJson
-            .replaceAll('```json', '')
-            .replaceAll('```', '')
-            .trim();
-      }
-
+      // Robust JSON cleaning
+      final cleanJson = _extractJsonFromResponse(jsonString);
       final decoded = jsonDecode(cleanJson) as List<dynamic>;
       final suggestions = <RecipeSuggestion>[];
 
@@ -121,7 +115,8 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
         // Parse ingredients
         final ingredients = <RecipeIngredient>[];
         final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
-        final rawIngredients = recipeData['ingredientes'] as List<dynamic>? ?? [];
+        final rawIngredients =
+            recipeData['ingredientes'] as List<dynamic>? ?? [];
 
         for (int i = 0; i < rawIngredients.length; i++) {
           final item = rawIngredients[i] as Map<String, dynamic>;
@@ -166,9 +161,9 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
             [];
         final ingredientesInferidos =
             (recipeData['ingredientes_inferidos'] as List<dynamic>?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [];
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                [];
         final caloriasAproximadas = recipeData['calorias_aproximadas'] as int?;
 
         final recipe = Recipe(
@@ -201,6 +196,33 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
       debugPrint('📋 Stack trace: $stackTrace');
       throw Exception('Error al generar sugerencias con IA: $e');
     }
+  }
+
+  /// Robustly extracts JSON from a response string
+  String _extractJsonFromResponse(String response) {
+    String text = response.trim();
+
+    if (text.contains('```')) {
+      text = text.replaceAll(RegExp(r'^```json\s*', multiLine: true), '');
+      text = text.replaceAll(RegExp(r'^```\s*', multiLine: true), '');
+      text = text.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
+    }
+
+    final firstBrace = text.indexOf('{');
+    final lastBrace = text.lastIndexOf('}');
+
+    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1);
+    }
+
+    final firstBracket = text.indexOf('[');
+    final lastBracket = text.lastIndexOf(']');
+
+    if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
+      return text.substring(firstBracket, lastBracket + 1);
+    }
+
+    return text;
   }
 }
 
