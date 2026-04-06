@@ -338,35 +338,49 @@ Ejemplo de salida válida:
     if (model == null) return null;
 
     final prompt = '''
-Eres un chef experto y analista gastronómico. Tu objetivo es extraer la receta exacta que se muestra o se describe en el contenido proporcionado.
-Extrae la receta y devuélvela EXACTAMENTE como un objeto JSON estructurado, sin usar Markdown ni backticks (```json).
+Eres un chef experto y analista gastronómico especializado en recetas de videos de TikTok y redes sociales.
 
-El formato del JSON debe ser rigurosamente el siguiente:
+TU TAREA:
+Analiza CUIDADOSAMENTE el video/imagen proporcionado y extrae TODA la información posible sobre la receta que se muestra.
+
+⚠️ IMPORTANTE PARA VIDEOS DE COCINA:
+1. Observa TODOS los ingredientes que se usan en el video
+2. Cuenta las cantidades aproximadas (si no dicen exactas, infiere por tamaño/porción)
+3. Detecta el orden de los pasos de preparación
+4. Estima el tiempo total de preparación
+5. Calcula las porciones según lo que se muestra
+
+FORMATO DE RESPUESTA (JSON PURO, sin markdown ni backticks):
 {
-  "name": "Nombre descriptivo de la receta",
-  "description": "Una breve descripción de 1 a 2 oraciones de la receta y qué la hace especial.",
-  "durationMinutes": <entero estimado de minutos totales de preparación y cocción, ej: 45>,
-  "servings": <entero estimado de porciones, asume 2 si no es claro>,
+  "name": "Nombre atractivo de la receta en español",
+  "description": "Descripción corta de 2-3 líneas explicando qué es y por qué es deliciosa",
+  "durationMinutes": 30,
+  "servings": 2,
   "ingredients": [
     {
-      "ingredientName": "Nombre claro del ingrediente (ej. Pollo, Cebolla, Sal)",
-      "quantity": <número flotante, ej. 1.0, 500.0, 0.5. Si dicen "una pizca", pon 1.0>,
-      "unit": "unidades" | "gramos" | "kilos" | "litros" | "mililitros" | "tazas" | "cucharadas" | "cucharaditas" | "pizca" | "al gusto"
+      "ingredientName": "Nombre del ingrediente",
+      "quantity": 1.0,
+      "unit": "unidades"
     }
   ],
   "instructions": [
-    "Paso 1 preciso...",
-    "Paso 2 preciso...",
-    "Paso 3 preciso..."
+    "Paso 1: descripción clara del primer paso",
+    "Paso 2: descripción clara del segundo paso"
   ],
-  "tags": ["Fácil", "Desayuno", "Vegetariano"] // 2 a 4 tags relevantes
+  "tags": ["tag1", "tag2", "tag3"]
 }
 
-Instrucciones adicionales:
-1. Si falta información como el tiempo o porciones, infiérelos con sentido común.
-2. Si el texto o video está en otro idioma, TRADÚCELO todo al ESPAÑOL en tu respuesta JSON.
-3. Si la orden no tiene ninguna referencia a una receta o ingredientes, devuelve el JSON con valores por defecto pero con "description" indicando "No se detectó una receta válida".
-${textContext != null && textContext.isNotEmpty ? '\nEl usuario ha proporcionado el siguiente texto o enlace como contexto inicial:\n"$textContext"' : ''}
+REGLAS CRÍTICAS:
+- Devuelve SOLO el JSON, NADA MÁS (sin ```json, sin texto antes o después)
+- TODOS los campos son OBLIGATORIOS
+- ingredients debe tener AL MENOS 2 ingredientes
+- instructions debe tener AL MENOS 3 pasos
+- Usa unidades en ESPAÑOL: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "al gusto"
+- Si no puedes determinar algo con certeza, INFIÉRELO lógicamente pero NO dejes campos vacíos
+- Traduce TODO al español si el contenido está en otro idioma
+
+${textContext != null && textContext.isNotEmpty ? '📝 TEXTO/ENLACE PROPORCIONADO POR EL USUARIO:\n"$textContext"\n\nUsa este texto como contexto adicional para entender mejor la receta.' : ''}
+${mediaPath != null ? '\n🎥 ANALIZA EL VIDEO/IMAGEN ADJUNTO y extrae la receta completa.' : ''}
 ''';
 
     final content = <Content>[];
@@ -401,8 +415,7 @@ ${textContext != null && textContext.isNotEmpty ? '\nEl usuario ha proporcionado
     final model = await _getModel();
     if (model == null) return null;
     try {
-      final response =
-          await model.generateContent([Content.text(prompt)]);
+      final response = await model.generateContent([Content.text(prompt)]);
       return response.text;
     } catch (e) {
       throw Exception('Error en Gemini generateText: $e');
