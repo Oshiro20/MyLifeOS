@@ -41,12 +41,15 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       final data = info['data'] as Map<String, dynamic>;
-      // Try multiple possible keys for video URL
-      final videoUrl = data['play'] ??
+      // Try ALL possible keys for video URL, including video_link_nwm (the correct one)
+      final videoUrl = data['video_link_nwm'] ??
+          data['play'] ??
           data['wmplay'] ??
           data['hdplay'] ??
           data['no_watermark'] ??
-          data['no_watermark_hd'];
+          data['no_watermark_hd'] ??
+          data['video_url'] ??
+          data['url'];
 
       debugPrint('🔍 Found videoUrl key: ${videoUrl != null ? "YES" : "NO"}');
 
