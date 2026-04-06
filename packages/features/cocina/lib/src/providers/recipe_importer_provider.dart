@@ -1,8 +1,5 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
@@ -66,7 +63,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     try {
       // Extract thumbnail from video first frame
       final thumbnailPath = '${filePath}_thumb.jpg';
-      final thumbnailBytes = await VideoThumbnail.thumbnailFile(
+      await VideoThumbnail.thumbnailFile(
         video: filePath,
         thumbnailPath: thumbnailPath,
         imageFormat: ImageFormat.JPEG,
@@ -74,7 +71,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         quality: 80,
       );
 
-      final imagePath = thumbnailPath ?? filePath;
+      final imagePath = thumbnailPath;
 
       debugPrint('📸 Video thumbnail: $imagePath');
 

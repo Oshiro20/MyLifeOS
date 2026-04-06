@@ -328,7 +328,7 @@ Ejemplo de salida válida:
   }
 
   /// Extracts a recipe from a given text (caption/URL) or a media file (video/image).
-  /// Instructs Gemini to act as a chef and return a structured JSON representing the Recipe.
+  /// Instructs Gemini to act as a professional chef and return structured JSON.
   Future<String?> extractRecipe({
     String? textContext,
     String? mediaPath,
@@ -338,75 +338,125 @@ Ejemplo de salida válida:
     if (model == null) return null;
 
     final prompt = '''
-👨‍🍳 ERES UN CHEF PROFESIONAL EXPERTO EN ANÁLISIS DE RECETAS DE COCINA.
+👨‍🍳 ROL DEL SISTEMA
 
-📋 TU MISIÓN:
-Analiza DETENIDAMENTE el video/imagen de cocina proporcionado y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
+Actúa como un Chef Profesional + Analista de Video de Cocina.
 
-🔍 INSTRUCCIONES DE ANÁLISIS (SIGUE CADA PASO):
+Tu especialidad:
+• análisis de videos de cocina (TikTok, YouTube, Reels, Facebook, Instagram)
+• interpretación de recetas implícitas
+• inferencia culinaria profesional
+• estandarización de recetas para apps
 
-PASO 1 - IDENTIFICA EL PLATO:
-- ¿Qué tipo de plato es? (entrada, sopa, plato fuerte, postre, mazamorra, ensalada, etc.)
-- ¿Cuál es el nombre de la receta?
+-----------------------------------------------------
 
-PASO 2 - DETECTA TODOS LOS INGREDIENTES:
-- Observa CADA ingrediente que aparece en el video
-- Identifica: NOMBRE exacto, CANTIDAD (número), UNIDAD de medida
-- Si no dicen la cantidad exacta, INFIERE una cantidad razonable basada en lo que ves
-- Ejemplos de unidades válidas: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "litros", "al gusto"
-- NO inventes ingredientes que no aparecen
-- Pero SÍ estima cantidades cuando no sean explícitas
+📋 TU MISIÓN
 
-PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN:
-- Identifica el ORDEN EXACTO de cada paso
-- Describe cada paso de forma CLARA y DETALLADA
-- Incluye: qué se hace, con qué ingrediente, a qué temperatura, por cuánto tiempo
-- Mínimo 3 pasos, máximo 15 pasos
+Analiza DETENIDAMENTE el video de cocina proporcionado y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
 
-PASO 4 - ESTIMA TIEMPO Y PORCIONES:
-- ⏱️ TIEMPO TOTAL: suma preparación + cocción + reposo (en minutos)
-- 👥 PORCIONES: calcula para cuántas personas alcanza el plato
+🔍 PASOS DE ANÁLISIS (SIGUE CADA UNO):
 
-PASO 5 - TAGS/CATEGORÍAS:
-- Agrega 3-5 tags relevantes: tipo de plato, dificultad, tipo de cocina, ocasión, etc.
+PASO 1 - IDENTIFICA EL PLATO
+• ¿Qué tipo de plato es? (desayuno, almuerzo, cena, snack, postre, mazamorra, bebida)
+• ¿Cuál es la cocina? (peruana, italiana, asiática, etc.)
+• ¿Cuál es el nombre de la receta?
+
+PASO 2 - DETECTA TODOS LOS INGREDIENTES
+• Observa CADA ingrediente que aparece en el video
+• Para CADA ingrediente identifica:
+  - NOMBRE exacto (en español)
+  - CANTIDAD como número (si dicen "una", pon 1; si no es claro, infiere)
+  - UNIDAD de medida válida
+• Si no dicen cantidad exacta → INFIÉRELA lógicamente según porción/tamaño
+• NO inventes ingredientes que no aparecen
+• SÍ estima cantidades cuando no sean explícitas
+• Si hacen arroz chaufa pero no mencionan aceite → agrega aceite como ingrediente inferido
+
+PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN
+• Identifica el ORDEN EXACTO de cada paso
+• Describe cada paso de forma CLARA y DETALLADA
+• Incluye: qué se hace, con qué ingrediente, a qué temperatura, por cuánto tiempo
+• Mínimo 3 pasos, máximo 15 pasos
+• Separa acciones importantes (no mezcles pasos)
+
+PASO 4 - ESTIMA TIEMPOS Y PORCIONES
+• ⏱️ TIEMPO PREPARACIÓN: minutos de corte/mezcla/preparación
+• 🔥 TIEMPO COCCIÓN: minutos de fuego/horno/etc.
+• ⏱️ TIEMPO TOTAL: preparación + cocción (en minutos, realista: 15-180)
+• 👥 PORCIONES: para cuántas personas alcanza (entero: 1-12)
+
+PASO 5 - DETECTA UTENSILIOS
+• Observa qué herramientas usa: sartén, olla, horno, licuadora, etc.
+• Agrega 2-5 utensilios principales
+
+PASO 6 - CLASIFICACIÓN
+• Dificultad: "Fácil" (≤5 pasos), "Media" (6-10), "Difícil" (>10)
+• Tipo de comida: Desayuno | Almuerzo | Cena | Snack | Postre | Bebida
+• Cocina: según estilo (peruana, italiana, asiática, etc.)
+• Tags: 3-5 tags relevantes
+
+PASO 7 - ESTIMA CALORÍAS
+• Calcula calorías aproximadas por porción según ingredientes
+
+-----------------------------------------------------
 
 📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
+
 {
-  "name": "Nombre completo del plato/postre",
-  "description": "Descripción atractiva de 2-3 oraciones explicando qué es este plato y qué lo hace especial",
-  "durationMinutes": 45,
-  "servings": 4,
-  "ingredients": [
+  "nombre_receta": "Nombre completo del plato",
+  "descripcion": "Descripción atractiva de 2-3 oraciones",
+  "porciones": 4,
+  "tiempo_preparacion_min": 15,
+  "tiempo_coccion_min": 30,
+  "tiempo_total_min": 45,
+  "dificultad": "Fácil",
+  "tipo_comida": "Postre",
+  "cocina": "Peruana",
+  "ingredientes": [
     {
-      "ingredientName": "Nombre del ingrediente en español",
-      "quantity": 500.0,
-      "unit": "gramos"
+      "nombre": "Arroz",
+      "cantidad": 2.0,
+      "unidad": "tazas"
     }
   ],
-  "instructions": [
-    "Paso 1: Descripción detallada del primer paso incluyendo qué se hace y con qué",
-    "Paso 2: Descripción detallada del segundo paso",
-    "Paso 3: Descripción detallada del tercer paso"
+  "pasos": [
+    {
+      "numero": 1,
+      "descripcion": "Descripción detallada del paso"
+    }
   ],
-  "tags": ["postre", "fácil", "peruano"]
+  "utensilios": ["sartén", "cuchara de madera"],
+  "calorias_aproximadas": 350,
+  "tags": ["fácil", "rápido", "peruano"],
+  "observaciones": "Los tiempos fueron inferidos según ingredientes.",
+  "nivel_confianza": "Alto"
 }
 
+-----------------------------------------------------
+
 ⚠️ REGLAS OBLIGATORIAS:
+
 1. Devuelve ÚNICAMENTE el JSON. NADA de texto antes o después. Sin markdown. Sin backticks.
 2. TODOS los campos son obligatorios.
-3. "ingredients" debe tener AL MENOS 2 ingredientes reales del video.
-4. "instructions" debe tener AL MENOS 3 pasos claros y detallados.
-5. "durationMinutes" debe ser un número entero realista (15-180 min).
-6. "servings" debe ser un número entero (1-12).
-7. Usa unidades en ESPAÑOL exclusivamente.
-8. Si ves texto en el video (nombres de ingredientes, cantidades), ÚSALO.
-9. Si el video muestra un postre/mazamorra/plato dulce, adáptalo accordingly.
-10. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
+3. "ingredientes" debe tener AL MENOS 2 ingredientes reales.
+4. "pasos" debe tener AL MENOS 3 pasos claros y detallados.
+5. "cantidad" debe ser un NÚMERO (float), no texto. Ejemplo: 2.0, 0.5, 1.0
+6. "unidad" en ESPAÑOL: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "litros", "al gusto"
+7. "tiempo_total_min" debe ser realista: entre 15 y 180 minutos.
+8. "porciones" debe ser entero: 1 a 12.
+9. "nivel_confianza":
+   - "Alto" → todo claro en video
+   - "Medio" → algunas inferencias necesarias
+   - "Bajo" → muchas suposiciones
+10. "observaciones" → indica qué datos fueron inferidos vs visibles
+11. Si ves texto en el video (nombres, cantidades), ÚSALO.
+12. Si el video muestra postre/mazamorra/plato dulce, adáptalo accordingly.
+13. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
 
 ${textContext != null && textContext.isNotEmpty ? '''
 📌 CONTEXTO ADICIONAL DEL USUARIO:
 "$textContext"
-Usa esta información como referencia adicional para entender mejor la receta.
+Usa esta información como referencia adicional.
 ''' : ''}
 
 🎥 AHORA ANALIZA EL VIDEO/IMAGEN ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
@@ -417,7 +467,6 @@ Usa esta información como referencia adicional para entender mejor la receta.
       if (file.existsSync()) {
         final bytes = await file.readAsBytes();
         final mimeType = _getMimeType(mediaPath);
-        // Gemini supports video/mp4, image/jpeg, etc.
         content.add(Content.multi([
           TextPart(prompt),
           DataPart(mimeType, bytes),
@@ -434,6 +483,112 @@ Usa esta información como referencia adicional para entender mejor la receta.
       return response.text;
     } catch (e) {
       throw Exception('Error en Gemini al extraer la receta: $e');
+    }
+  }
+
+  /// Optimizes an existing recipe with better wording, nutrition info, and suggestions.
+  /// Returns an improved version of the recipe as structured JSON.
+  Future<String?> optimizeRecipe(String recipeJson) async {
+    final model = await _getModel();
+    if (model == null) return null;
+
+    final prompt = '''
+👨‍🍳 ERES UN CHEF PROFESIONAL + NUTRICIONISTA + EXPERTO EN REDACCIÓN CULINARIA.
+
+📋 TU MISIÓN:
+Recibe una receta existente y OPTIMÍZALA profesionalmente.
+
+Debes:
+1. ✅ Mejorar la redacción de la receta (más clara, atractiva y profesional)
+2. ✅ Agregar información nutricional estimada (proteínas, carbohidratos, grasas, fibra)
+3. ✅ Sugerir sustitutos de ingredientes (para alergias, preferencias dietéticas)
+4. ✅ Proponer tips del chef para mejorar el resultado
+5. ✅ Sugerir maridajes o acompañamientos ideales
+6. ✅ Proponer variaciones de la receta (versión light, versión vegana, etc.)
+7. ✅ Detectar alérgenos comunes presentes
+8. ✅ Mantener la esencia original de la receta
+
+📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
+
+{
+  "nombre_receta": "Nombre optimizado",
+  "descripcion": "Descripción mejorada y más atractiva",
+  "porciones": 4,
+  "tiempo_preparacion_min": 15,
+  "tiempo_coccion_min": 30,
+  "tiempo_total_min": 45,
+  "dificultad": "Fácil",
+  "tipo_comida": "Almuerzo",
+  "cocina": "Peruana",
+  "ingredientes": [
+    {
+      "nombre": "Arroz",
+      "cantidad": 2.0,
+      "unidad": "tazas"
+    }
+  ],
+  "pasos": [
+    {
+      "numero": 1,
+      "descripcion": "Paso redactado de forma clara y profesional"
+    }
+  ],
+  "utensilios": ["sartén"],
+  "calorias_aproximadas": 350,
+  "tags": ["fácil", "peruano"],
+  "observaciones": "Receta optimizada con mejor redacción y tips.",
+  "nivel_confianza": "Alto",
+  "nutricion": {
+    "proteinas_g": 15,
+    "carbohidratos_g": 45,
+    "grasas_g": 12,
+    "fibra_g": 3
+  },
+  "alergenos": ["gluten", "lactosa"],
+  "sustitutos": [
+    {
+      "original": "Leche entera",
+      "sustituto": "Leche de almendras",
+      "nota": "Para versión sin lactosa"
+    }
+  ],
+  "tips_chef": [
+    "Deja reposar el arroz 5 minutos antes de servir para mejor textura",
+    "Usa arroz del día anterior para mejor resultado"
+  ],
+  "maridaje": "Acompaña con ensalada fresca y limón",
+  "variaciones": [
+    {
+      "nombre": "Versión Light",
+      "cambios": "Usa menos aceite y agrega más vegetales"
+    },
+    {
+      "nombre": "Versión Vegana",
+      "cambios": "Sustituye proteína animal por tofu o legumbres"
+    }
+  ]
+}
+
+⚠️ REGLAS OBLIGATORIAS:
+1. Devuelve ÚNICAMENTE el JSON. Sin markdown, sin backticks.
+2. TODOS los campos son obligatorios (incluyendo los nuevos: nutricion, alergenos, sustitutos, tips_chef, maridaje, variaciones).
+3. "cantidad" debe ser un NÚMERO (float), no texto.
+4. "unidad" en ESPAÑOL exclusivamente.
+5. Mejora la receta original, NO la cambies completamente.
+6. Los sustitutos deben ser realistas y accesibles.
+7. Los tips deben ser prácticos y útiles.
+8. Las variaciones deben mantener la esencia del plato original.
+
+📝 RECETA ORIGINAL A OPTIMIZAR:
+$recipeJson
+
+AHORA OPTIMIZA ESTA RECETA Y DEVUELVE EL JSON MEJORADO.''';
+
+    try {
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text;
+    } catch (e) {
+      throw Exception('Error en Gemini al optimizar la receta: $e');
     }
   }
 
