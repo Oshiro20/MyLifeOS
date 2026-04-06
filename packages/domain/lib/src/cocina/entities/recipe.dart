@@ -16,6 +16,17 @@ class Recipe extends Equatable {
   final bool isFavorite;
   final DateTime createdAt;
 
+  // Campos adicionales de Gemini (optimizeRecipe y extractRecipe)
+  final NutritionInfo? nutrition;
+  final List<String> alergenos;
+  final List<IngredientSubstitute> sustitutos;
+  final List<String> tipsChef;
+  final String? maridaje;
+  final List<RecipeVariation> variaciones;
+  final List<String> utensilios;
+  final int? caloriasAproximadas;
+  final List<String> ingredientesInferidos;
+
   const Recipe({
     required this.id,
     required this.name,
@@ -29,6 +40,15 @@ class Recipe extends Equatable {
     this.goal = NutritionGoal.maintain,
     this.isFavorite = false,
     required this.createdAt,
+    this.nutrition,
+    this.alergenos = const [],
+    this.sustitutos = const [],
+    this.tipsChef = const [],
+    this.maridaje,
+    this.variaciones = const [],
+    this.utensilios = const [],
+    this.caloriasAproximadas,
+    this.ingredientesInferidos = const [],
   });
 
   Recipe copyWith({
@@ -44,6 +64,15 @@ class Recipe extends Equatable {
     NutritionGoal? goal,
     bool? isFavorite,
     DateTime? createdAt,
+    NutritionInfo? nutrition,
+    List<String>? alergenos,
+    List<IngredientSubstitute>? sustitutos,
+    List<String>? tipsChef,
+    String? maridaje,
+    List<RecipeVariation>? variaciones,
+    List<String>? utensilios,
+    int? caloriasAproximadas,
+    List<String>? ingredientesInferidos,
   }) =>
       Recipe(
         id: id ?? this.id,
@@ -58,6 +87,16 @@ class Recipe extends Equatable {
         goal: goal ?? this.goal,
         isFavorite: isFavorite ?? this.isFavorite,
         createdAt: createdAt ?? this.createdAt,
+        nutrition: nutrition ?? this.nutrition,
+        alergenos: alergenos ?? this.alergenos,
+        sustitutos: sustitutos ?? this.sustitutos,
+        tipsChef: tipsChef ?? this.tipsChef,
+        maridaje: maridaje ?? this.maridaje,
+        variaciones: variaciones ?? this.variaciones,
+        utensilios: utensilios ?? this.utensilios,
+        caloriasAproximadas: caloriasAproximadas ?? this.caloriasAproximadas,
+        ingredientesInferidos:
+            ingredientesInferidos ?? this.ingredientesInferidos,
       );
 
   @override
@@ -73,7 +112,16 @@ class Recipe extends Equatable {
         imageAssetId,
         goal,
         isFavorite,
-        createdAt
+        createdAt,
+        nutrition,
+        alergenos,
+        sustitutos,
+        tipsChef,
+        maridaje,
+        variaciones,
+        utensilios,
+        caloriasAproximadas,
+        ingredientesInferidos,
       ];
 }
 
@@ -94,4 +142,65 @@ class RecipeIngredient extends Equatable {
 
   @override
   List<Object?> get props => [id, recipeId, ingredientName, quantity, unit];
+}
+
+/// Información nutricional de la receta
+class NutritionInfo extends Equatable {
+  final double proteinasG;
+  final double carbohidratosG;
+  final double grasasG;
+  final double fibraG;
+
+  const NutritionInfo({
+    this.proteinasG = 0,
+    this.carbohidratosG = 0,
+    this.grasasG = 0,
+    this.fibraG = 0,
+  });
+
+  NutritionInfo copyWith({
+    double? proteinasG,
+    double? carbohidratosG,
+    double? grasasG,
+    double? fibraG,
+  }) =>
+      NutritionInfo(
+        proteinasG: proteinasG ?? this.proteinasG,
+        carbohidratosG: carbohidratosG ?? this.carbohidratosG,
+        grasasG: grasasG ?? this.grasasG,
+        fibraG: fibraG ?? this.fibraG,
+      );
+
+  @override
+  List<Object?> get props => [proteinasG, carbohidratosG, grasasG, fibraG];
+}
+
+/// Sustituto de ingrediente
+class IngredientSubstitute extends Equatable {
+  final String original;
+  final String sustituto;
+  final String? nota;
+
+  const IngredientSubstitute({
+    required this.original,
+    required this.sustituto,
+    this.nota,
+  });
+
+  @override
+  List<Object?> get props => [original, sustituto, nota];
+}
+
+/// Variación de receta
+class RecipeVariation extends Equatable {
+  final String nombre;
+  final String cambios;
+
+  const RecipeVariation({
+    required this.nombre,
+    required this.cambios,
+  });
+
+  @override
+  List<Object?> get props => [nombre, cambios];
 }

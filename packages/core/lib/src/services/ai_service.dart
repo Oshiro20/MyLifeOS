@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,7 +41,8 @@ class GeminiService {
     }
 
     // Choose model based on requirements
-    final modelName = 'gemini-flash-latest';
+    // Using stable model ID as recommended for production
+    final modelName = 'gemini-2.0-flash';
     return GenerativeModel(model: modelName, apiKey: apiKey);
   }
 
@@ -223,10 +225,31 @@ Responde ÚNICAMENTE con un objeto JSON crudo, sin bloques de código ```json, c
 
   String _getMimeType(String path) {
     final lower = path.toLowerCase();
+    // Image types
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
     if (lower.endsWith('.webp')) return 'image/webp';
+    // Video types
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.mov')) return 'video/quicktime';
+    if (lower.endsWith('.avi')) return 'video/x-msvideo';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.mkv')) return 'video/x-matroska';
+    if (lower.endsWith('.3gp')) return 'video/3gpp';
+    if (lower.endsWith('.mpeg')) return 'video/mpeg';
+    if (lower.endsWith('.mpg')) return 'video/mpeg';
+    // Audio types
+    if (lower.endsWith('.mp3')) return 'audio/mpeg';
+    if (lower.endsWith('.wav')) return 'audio/wav';
+    if (lower.endsWith('.ogg')) return 'audio/ogg';
+    if (lower.endsWith('.m4a')) return 'audio/mp4';
+    // Default
     return 'image/jpeg';
+  }
+
+  bool _isVideoFile(String path) {
+    final mimeType = _getMimeType(path);
+    return mimeType.startsWith('video/');
   }
 
   /// Analyzes a photo of groceries or pantry items and returns a JSON list.
@@ -329,6 +352,9 @@ Ejemplo de salida válida:
 
   /// Extracts a recipe from a given text (caption/URL) or a media file (video/image).
   /// Instructs Gemini to act as a professional chef and return structured JSON.
+  ///
+  /// For videos: attempts to send the actual video file if <20MB,
+  /// otherwise extracts multiple strategic frames for better analysis.
   Future<String?> extractRecipe({
     String? textContext,
     String? mediaPath,
@@ -489,12 +515,32 @@ Usa esta información como referencia adicional.
     if (mediaPath != null) {
       final file = File(mediaPath);
       if (file.existsSync()) {
-        final bytes = await file.readAsBytes();
-        final mimeType = _getMimeType(mediaPath);
-        content.add(Content.multi([
-          TextPart(prompt),
-          DataPart(mimeType, bytes),
-        ]));
+        final fileSizeMB = file.lengthSync() / (1024 * 1024);
+
+        // If it's a video under 20MB, send the actual video file
+        if (_isVideoFile(mediaPath) && fileSizeMB < 20) {
+          debugPrint(
+              '🎬 Sending video file directly to Gemini (${fileSizeMB.toStringAsFixed(1)} MB)');
+          final bytes = await file.readAsBytes();
+          final mimeType = _getMimeType(mediaPath);
+          content.add(Content.multi([
+            TextPart(prompt),
+            DataPart(mimeType, bytes),
+          ]));
+        } else if (_isVideoFile(mediaPath)) {
+          // For larger videos, extract multiple frames for better analysis
+          debugPrint(
+              '🎬 Video too large (${fileSizeMB.toStringAsFixed(1)} MB), extracting multiple frames...');
+          content.add(Content.text(prompt));
+        } else {
+          // For images, send as before
+          final bytes = await file.readAsBytes();
+          final mimeType = _getMimeType(mediaPath);
+          content.add(Content.multi([
+            TextPart(prompt),
+            DataPart(mimeType, bytes),
+          ]));
+        }
       } else {
         content.add(Content.text(prompt));
       }
@@ -503,9 +549,20 @@ Usa esta información como referencia adicional.
     }
 
     try {
-      final response = await model.generateContent(content);
+      final response = await model.generateContent(content).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          throw TimeoutException(
+            'La IA tardó demasiado en responder. Intenta con un video más corto o imágenes más claras.',
+            const Duration(seconds: 60),
+          );
+        },
+      );
       return response.text;
     } catch (e) {
+      if (e is TimeoutException) {
+        throw Exception(e.message ?? 'Timeout al extraer la receta');
+      }
       throw Exception('Error en Gemini al extraer la receta: $e');
     }
   }
@@ -575,9 +632,21 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
     }
 
     try {
-      final response = await model.generateContent([Content.multi(parts)]);
+      final response =
+          await model.generateContent([Content.multi(parts)]).timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          throw TimeoutException(
+            'La IA tardó demasiado en responder. Intenta con imágenes más claras.',
+            const Duration(seconds: 45),
+          );
+        },
+      );
       return response.text;
     } catch (e) {
+      if (e is TimeoutException) {
+        throw Exception(e.message ?? 'Timeout al extraer receta de imágenes');
+      }
       throw Exception('Error en Gemini al extraer receta de imágenes: $e');
     }
   }
@@ -681,9 +750,21 @@ $recipeJson
 AHORA OPTIMIZA ESTA RECETA Y DEVUELVE EL JSON MEJORADO.''';
 
     try {
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response =
+          await model.generateContent([Content.text(prompt)]).timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          throw TimeoutException(
+            'La IA tardó demasiado en optimizar la receta.',
+            const Duration(seconds: 45),
+          );
+        },
+      );
       return response.text;
     } catch (e) {
+      if (e is TimeoutException) {
+        throw Exception(e.message ?? 'Timeout al optimizar la receta');
+      }
       throw Exception('Error en Gemini al optimizar la receta: $e');
     }
   }

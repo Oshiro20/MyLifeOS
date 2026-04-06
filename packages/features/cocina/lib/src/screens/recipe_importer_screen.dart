@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:core/core.dart';
 import '../providers/recipe_importer_provider.dart';
 import '../providers/cocina_providers.dart';
 
@@ -19,6 +20,55 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
   final _urlController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
+  List<String> _importHistory = [];
+  bool _showHistory = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+    // Clear error when user types in URL field
+    _urlController.addListener(() {
+      final notifier = ref.read(recipeImportProvider.notifier);
+      if (notifier.errorMessage != null) {
+        notifier.errorMessage = null;
+      }
+    });
+  }
+
+  Future<void> _loadHistory() async {
+    final historyService = ImportHistoryService();
+    final history = await historyService.getHistory();
+    if (mounted) {
+      setState(() => _importHistory = history);
+    }
+  }
+
+  void _selectHistoryUrl(String url) {
+    _urlController.text = url;
+    setState(() => _showHistory = false);
+  }
+
+  Future<void> _clearHistory() async {
+    final historyService = ImportHistoryService();
+    await historyService.clearHistory();
+    await _loadHistory();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Historial borrado'),
+          backgroundColor: Color(0xFF00E676),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickVideo() async {
     final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
@@ -55,9 +105,25 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
 
   void _importUrl() {
     final url = _urlController.text.trim();
-    if (url.isNotEmpty) {
-      ref.read(recipeImportProvider.notifier).importFromTikTokUrl(url);
+    if (url.isEmpty) return;
+
+    // Validate URL format before processing
+    if (!RecipeImportNotifier.isValidRecipeUrl(url)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Por favor ingresa una URL válida de TikTok, Instagram o YouTube'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
     }
+
+    // Clear error state before submitting
+    ref.read(recipeImportProvider.notifier).errorMessage = null;
+    ref.read(recipeImportProvider.notifier).importFromTikTokUrl(url);
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -207,9 +273,46 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                     ...recipe.ingredients.map((ing) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Text(
-                              '- \${ing.quantity} \${ing.unit} de \${ing.ingredientName}',
+                              '- ${ing.quantity} ${ing.unit} de ${ing.ingredientName}',
                               style: const TextStyle(color: Colors.white70)),
                         )),
+                    if (recipe.ingredientesInferidos.isNotEmpty) ...[
+                      const Divider(color: Colors.white24, height: 32),
+                      Row(
+                        children: [
+                          const Icon(Icons.auto_fix_high,
+                              color: Color(0xFFFF9800), size: 16),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Ingredientes inferidos (esenciales):',
+                            style: TextStyle(
+                                color: Color(0xFFFF9800),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ...recipe.ingredientesInferidos.map((ing) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2.0),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.lightbulb_outline,
+                                    color: Color(0xFFFF9800), size: 14),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    ing,
+                                    style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ],
                   ],
                 ),
               ),
@@ -333,6 +436,80 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                       ],
                     ),
                   ),
+                  // Import History Section
+                  if (_importHistory.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _showHistory = !_showHistory),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _showHistory
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                color: Colors.white54,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'Historial reciente',
+                                style: TextStyle(
+                                    color: Colors.white54, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              size: 16, color: Colors.redAccent),
+                          onPressed: _clearHistory,
+                          tooltip: 'Borrar historial',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    if (_showHistory) ...[
+                      const SizedBox(height: 8),
+                      ..._importHistory.map((url) => GestureDetector(
+                            onTap: () => _selectHistoryUrl(url),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.1)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.history,
+                                      size: 14, color: Color(0xFF00F0FF)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      url.length > 50
+                                          ? '${url.substring(0, 50)}...'
+                                          : url,
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Icon(Icons.north_west,
+                                      size: 12, color: Colors.white38),
+                                ],
+                              ),
+                            ),
+                          )),
+                    ],
+                  ],
                 ],
               ),
             ),

@@ -27,7 +27,27 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     return RecipeImportState.initial;
   }
 
+  /// Validates if the URL is a valid TikTok, Instagram, or YouTube URL
+  static bool isValidRecipeUrl(String url) {
+    // Check if it's a valid URL format
+    final urlPattern = RegExp(
+      r'^(https?:\/\/)?' // optional http/https
+      r'(www\.|vm\.|m\.)?' // optional subdomains
+      r'(tiktok\.com|instagram\.com|instagr\.am|youtube\.com|youtu\.be|facebook\.com|fb\.watch)'
+      r'(\/.*)?$',
+      caseSensitive: false,
+    );
+    return urlPattern.hasMatch(url);
+  }
+
   Future<void> importFromTikTokUrl(String url) async {
+    // Validate URL before processing
+    if (!isValidRecipeUrl(url)) {
+      errorMessage = 'URL no válida. Usa URLs de TikTok, Instagram o YouTube.';
+      state = RecipeImportState.error;
+      return;
+    }
+
     state = RecipeImportState.downloadingVideo;
     currentStatusMessage = 'Conectando con TikTok...';
     errorMessage = null;
@@ -64,6 +84,12 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       debugPrint('✅ Video downloaded: ${tempFile.path}');
 
       await importFromVideoFile(tempFile.path);
+
+      // Save to history on success
+      if (state == RecipeImportState.success) {
+        final historyService = ImportHistoryService();
+        await historyService.saveImport(url);
+      }
 
       if (tempFile.existsSync()) tempFile.deleteSync();
     } catch (e) {
@@ -170,6 +196,69 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       final rawTags = decoded['tags'] as List<dynamic>? ?? [];
       final tags = rawTags.map((e) => e.toString()).toList();
 
+      // Campos adicionales
+      final utensilios = (decoded['utensilios'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+      final ingredientesInferidos =
+          (decoded['ingredientes_inferidos'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              [];
+      final caloriasAproximadas = decoded['calorias_aproximadas'] as int?;
+
+      // Nutricion
+      NutritionInfo? nutrition;
+      if (decoded['nutricion'] != null) {
+        final nutriData = decoded['nutricion'] as Map<String, dynamic>;
+        nutrition = NutritionInfo(
+          proteinasG: (nutriData['proteinas_g'] as num?)?.toDouble() ?? 0,
+          carbohidratosG:
+              (nutriData['carbohidratos_g'] as num?)?.toDouble() ?? 0,
+          grasasG: (nutriData['grasas_g'] as num?)?.toDouble() ?? 0,
+          fibraG: (nutriData['fibra_g'] as num?)?.toDouble() ?? 0,
+        );
+      }
+
+      final alergenos = (decoded['alergenos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+
+      final sustitutos = <IngredientSubstitute>[];
+      if (decoded['sustitutos'] != null) {
+        final sustitutosData = decoded['sustitutos'] as List<dynamic>;
+        for (final sust in sustitutosData) {
+          if (sust is Map<String, dynamic>) {
+            sustitutos.add(IngredientSubstitute(
+              original: sust['original'] as String? ?? '',
+              sustituto: sust['sustituto'] as String? ?? '',
+              nota: sust['nota'] as String?,
+            ));
+          }
+        }
+      }
+
+      final tipsChef = (decoded['tips_chef'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+      final maridaje = decoded['maridaje'] as String?;
+
+      final variaciones = <RecipeVariation>[];
+      if (decoded['variaciones'] != null) {
+        final variacionesData = decoded['variaciones'] as List<dynamic>;
+        for (final varData in variacionesData) {
+          if (varData is Map<String, dynamic>) {
+            variaciones.add(RecipeVariation(
+              nombre: varData['nombre'] as String? ?? '',
+              cambios: varData['cambios'] as String? ?? '',
+            ));
+          }
+        }
+      }
+
       importedRecipe = Recipe(
         id: recipeId,
         name: name,
@@ -180,6 +269,15 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         ingredients: ingredients,
         tags: tags,
         createdAt: DateTime.now(),
+        utensilios: utensilios,
+        ingredientesInferidos: ingredientesInferidos,
+        caloriasAproximadas: caloriasAproximadas,
+        nutrition: nutrition,
+        alergenos: alergenos,
+        sustitutos: sustitutos,
+        tipsChef: tipsChef,
+        maridaje: maridaje,
+        variaciones: variaciones,
       );
 
       currentStatusMessage = '¡Receta encontrada!';
@@ -201,11 +299,26 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         throw Exception('El archivo de video no existe: $filePath');
       }
 
-      debugPrint(
-          '📹 Video file size: ${(file.lengthSync() / 1024 / 1024).toStringAsFixed(1)} MB');
+      final fileSizeMB = file.lengthSync() / (1024 * 1024);
+      debugPrint('📹 Video file size: ${fileSizeMB.toStringAsFixed(1)} MB');
+
+      // Check video size limit (100 MB)
+      if (fileSizeMB > 100) {
+        throw Exception(
+          'El video es demasiado grande (${fileSizeMB.toStringAsFixed(0)} MB). '
+          'El tamaño máximo permitido es 100 MB. '
+          'Por favor, usa un video más corto o de menor calidad.',
+        );
+      }
+
+      // Warn if video is very large but still under limit
+      if (fileSizeMB > 50) {
+        currentStatusMessage =
+            'Video grande detectado (${fileSizeMB.toStringAsFixed(0)} MB). Esto puede tardar un poco...';
+      }
 
       // Try to extract thumbnail, fallback to video file itself
-      String imagePath = filePath;
+      String mediaPath = filePath;
       try {
         final thumbnailPath = await VideoThumbnail.thumbnailFile(
           video: filePath,
@@ -217,8 +330,16 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         );
 
         if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
-          imagePath = thumbnailPath;
-          debugPrint('✅ Thumbnail extracted: ${imagePath}');
+          // For videos under 20MB, we'll send the actual video file
+          // For larger videos, use the thumbnail as fallback
+          if (fileSizeMB < 20) {
+            mediaPath = filePath; // Send actual video
+            debugPrint(
+                '🎬 Using video file directly (${fileSizeMB.toStringAsFixed(1)} MB)');
+          } else {
+            mediaPath = thumbnailPath; // Use thumbnail
+            debugPrint('✅ Using thumbnail: $mediaPath');
+          }
         } else {
           debugPrint(
               '⚠️ Thumbnail extraction returned null, using original video');
@@ -228,9 +349,9 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      debugPrint('🔍 Sending to AI: $imagePath');
+      debugPrint('🔍 Sending to AI: $mediaPath');
 
-      final recipe = await extractUseCase.execute(mediaPath: imagePath);
+      final recipe = await extractUseCase.execute(mediaPath: mediaPath);
 
       if (recipe != null) {
         importedRecipe = recipe;

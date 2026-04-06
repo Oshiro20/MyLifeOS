@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../entities/recipe.dart';
 import '../repositories/i_ai_recipe_extractor.dart';
 
@@ -104,10 +105,10 @@ class ExtractRecipeUseCase {
 
       // VALIDATION AUTOMÁTICA: Verificar que la receta tenga contenido mínimo
       if (rawIngredients.length < 2) {
-        print('⚠️ Validation: Less than 2 ingredients detected');
+        debugPrint('⚠️ Validation: Less than 2 ingredients detected');
       }
       if (rawInstructions.length < 3) {
-        print('⚠️ Validation: Less than 3 steps detected');
+        debugPrint('⚠️ Validation: Less than 3 steps detected');
       }
 
       final instructions = rawInstructions.map((e) => e.toString()).toList();
@@ -115,6 +116,77 @@ class ExtractRecipeUseCase {
       // Support both tag formats
       final rawTags = decoded['tags'] as List<dynamic>? ?? [];
       final tags = rawTags.map((e) => e.toString()).toList();
+
+      // Parsear campos adicionales si existen
+      final utensilios = (decoded['utensilios'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+
+      final ingredientesInferidos =
+          (decoded['ingredientes_inferidos'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              [];
+
+      final caloriasAproximadas = decoded['calorias_aproximadas'] as int?;
+
+      // Parsear información nutricional
+      NutritionInfo? nutrition;
+      if (decoded['nutricion'] != null) {
+        final nutriData = decoded['nutricion'] as Map<String, dynamic>;
+        nutrition = NutritionInfo(
+          proteinasG: (nutriData['proteinas_g'] as num?)?.toDouble() ?? 0,
+          carbohidratosG:
+              (nutriData['carbohidratos_g'] as num?)?.toDouble() ?? 0,
+          grasasG: (nutriData['grasas_g'] as num?)?.toDouble() ?? 0,
+          fibraG: (nutriData['fibra_g'] as num?)?.toDouble() ?? 0,
+        );
+      }
+
+      // Parsear alérgenos
+      final alergenos = (decoded['alergenos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+
+      // Parsear sustitutos
+      final sustitutos = <IngredientSubstitute>[];
+      if (decoded['sustitutos'] != null) {
+        final sustitutosData = decoded['sustitutos'] as List<dynamic>;
+        for (final sust in sustitutosData) {
+          if (sust is Map<String, dynamic>) {
+            sustitutos.add(IngredientSubstitute(
+              original: sust['original'] as String? ?? '',
+              sustituto: sust['sustituto'] as String? ?? '',
+              nota: sust['nota'] as String?,
+            ));
+          }
+        }
+      }
+
+      // Parsear tips del chef
+      final tipsChef = (decoded['tips_chef'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+
+      // Parsear maridaje
+      final maridaje = decoded['maridaje'] as String?;
+
+      // Parsear variaciones
+      final variaciones = <RecipeVariation>[];
+      if (decoded['variaciones'] != null) {
+        final variacionesData = decoded['variaciones'] as List<dynamic>;
+        for (final varData in variacionesData) {
+          if (varData is Map<String, dynamic>) {
+            variaciones.add(RecipeVariation(
+              nombre: varData['nombre'] as String? ?? '',
+              cambios: varData['cambios'] as String? ?? '',
+            ));
+          }
+        }
+      }
 
       return Recipe(
         id: recipeId,
@@ -126,12 +198,21 @@ class ExtractRecipeUseCase {
         ingredients: ingredients,
         tags: tags,
         createdAt: DateTime.now(),
+        utensilios: utensilios,
+        ingredientesInferidos: ingredientesInferidos,
+        caloriasAproximadas: caloriasAproximadas,
+        nutrition: nutrition,
+        alergenos: alergenos,
+        sustitutos: sustitutos,
+        tipsChef: tipsChef,
+        maridaje: maridaje,
+        variaciones: variaciones,
       );
     } catch (e, stackTrace) {
-      print('❌ Error parsing recipe JSON: $e');
-      print(
+      debugPrint('❌ Error parsing recipe JSON: $e');
+      debugPrint(
           '📄 Raw JSON was: ${jsonString.substring(0, jsonString.length > 500 ? 500 : jsonString.length)}...');
-      print('📋 Stack trace: $stackTrace');
+      debugPrint('📋 Stack trace: $stackTrace');
       throw Exception('Error al parsear receta desde IA: $e');
     }
   }
