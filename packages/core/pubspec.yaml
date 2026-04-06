@@ -79,5 +79,4 @@ flutter:
   #         weight: 700
   #
   # For details regarding fonts in packages, see
-  # https://flutter.dev/to/font-from-package
-"  video_thumbnail: ^0.5.3" 
+  # https://flutter.dev/to/font-from-package 
