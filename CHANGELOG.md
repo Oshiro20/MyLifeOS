@@ -3,6 +3,16 @@
 Todos los cambios notables en este proyecto serán documentados aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [1.2.19+34] - 2026-04-05 - RELEASE
+
+### Fixed
+- **Recetas vacías al importar desde Chef IA** - Parser actualizado para soportar formato JSON nuevo
+- **Limpieza automática de markdown** en respuesta de Gemini
+- **Parseo flexible de cantidades** (acepta números y strings)
+- **Ordenamiento de pasos** por campo numero
+
+---
+
 ## [1.2.10+26] - 2026-04-05 - RELEASE
 
 ### Fixed
