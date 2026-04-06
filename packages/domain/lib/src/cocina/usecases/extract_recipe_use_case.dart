@@ -91,19 +91,25 @@ class ExtractRecipeUseCase {
       if (decoded['instructions'] != null) {
         rawInstructions = decoded['instructions'] as List<dynamic>;
       } else if (decoded['pasos'] != null) {
-        // New format: pasos is a list of objects with numero and descripcion
         final pasosList = decoded['pasos'] as List<dynamic>;
-        // Sort by numero if available
         pasosList.sort((a, b) {
           final numA = (a as Map)['numero'] as int? ?? 0;
           final numB = (b as Map)['numero'] as int? ?? 0;
           return numA.compareTo(numB);
         });
-        // Extract description from each paso
         rawInstructions = pasosList
             .map((p) => (p as Map)['descripcion'] ?? p.toString())
             .toList();
       }
+
+      // VALIDATION AUTOMÁTICA: Verificar que la receta tenga contenido mínimo
+      if (rawIngredients.length < 2) {
+        print('⚠️ Validation: Less than 2 ingredients detected');
+      }
+      if (rawInstructions.length < 3) {
+        print('⚠️ Validation: Less than 3 steps detected');
+      }
+
       final instructions = rawInstructions.map((e) => e.toString()).toList();
 
       // Support both tag formats
@@ -122,9 +128,10 @@ class ExtractRecipeUseCase {
         createdAt: DateTime.now(),
       );
     } catch (e, stackTrace) {
-      print('Error parsing recipe JSON: $e');
-      print('Raw JSON was: $jsonString');
-      print('Stack trace: $stackTrace');
+      print('❌ Error parsing recipe JSON: $e');
+      print(
+          '📄 Raw JSON was: ${jsonString.substring(0, jsonString.length > 500 ? 500 : jsonString.length)}...');
+      print('📋 Stack trace: $stackTrace');
       throw Exception('Error al parsear receta desde IA: $e');
     }
   }

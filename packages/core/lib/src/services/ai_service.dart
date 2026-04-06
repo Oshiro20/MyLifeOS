@@ -356,6 +356,20 @@ Analiza DETENIDAMENTE el video de cocina proporcionado y extrae UNA RECETA COMPL
 
 🔍 PASOS DE ANÁLISIS (SIGUE CADA UNO):
 
+PASO 0 - CONTEXTO DEL VIDEO
+
+Antes de extraer, determina:
+• ¿El video está completo, acelerado, resumido o es un timelapse?
+• ¿Hay cortes rápidos entre pasos?
+• ¿Los ingredientes son visibles o solo se mencionan brevemente?
+
+Si el video está RESUMIDO o ACELERADO:
+→ Reconstruye los pasos faltantes con lógica culinaria
+→ Infiere ingredientes ocultos pero esenciales para la receta
+→ Estima tiempos realistas basados en la técnica
+
+-----------------------------------------------------
+
 PASO 1 - IDENTIFICA EL PLATO
 • ¿Qué tipo de plato es? (desayuno, almuerzo, cena, snack, postre, mazamorra, bebida)
 • ¿Cuál es la cocina? (peruana, italiana, asiática, etc.)
@@ -367,10 +381,11 @@ PASO 2 - DETECTA TODOS LOS INGREDIENTES
   - NOMBRE exacto (en español)
   - CANTIDAD como número (si dicen "una", pon 1; si no es claro, infiere)
   - UNIDAD de medida válida
+  - PREPARACIÓN si es visible (entero, licuado, picado, molido, fresco, etc.)
 • Si no dicen cantidad exacta → INFIÉRELA lógicamente según porción/tamaño
-• NO inventes ingredientes que no aparecen
+• NO inventes ingredientes que no aparecen EXCEPTO los esenciales
+• Si hacen arroz chaufa pero no mencionan aceite → agrega aceite como ingrediente INFERIDO
 • SÍ estima cantidades cuando no sean explícitas
-• Si hacen arroz chaufa pero no mencionan aceite → agrega aceite como ingrediente inferido
 
 PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN
 • Identifica el ORDEN EXACTO de cada paso
@@ -419,6 +434,7 @@ PASO 7 - ESTIMA CALORÍAS
       "unidad": "tazas"
     }
   ],
+  "ingredientes_inferidos": ["aceite", "sal", "pimienta"],
   "pasos": [
     {
       "numero": 1,
@@ -428,6 +444,7 @@ PASO 7 - ESTIMA CALORÍAS
   "utensilios": ["sartén", "cuchara de madera"],
   "calorias_aproximadas": 350,
   "tags": ["fácil", "rápido", "peruano"],
+  "video_context": "resumido",
   "observaciones": "Los tiempos fueron inferidos según ingredientes.",
   "nivel_confianza": "Alto"
 }
@@ -437,7 +454,7 @@ PASO 7 - ESTIMA CALORÍAS
 ⚠️ REGLAS OBLIGATORIAS:
 
 1. Devuelve ÚNICAMENTE el JSON. NADA de texto antes o después. Sin markdown. Sin backticks.
-2. TODOS los campos son obligatorios.
+2. TODOS los campos son obligatorios incluyendo "ingredientes_inferidos" y "video_context".
 3. "ingredientes" debe tener AL MENOS 2 ingredientes reales.
 4. "pasos" debe tener AL MENOS 3 pasos claros y detallados.
 5. "cantidad" debe ser un NÚMERO (float), no texto. Ejemplo: 2.0, 0.5, 1.0
@@ -445,13 +462,20 @@ PASO 7 - ESTIMA CALORÍAS
 7. "tiempo_total_min" debe ser realista: entre 15 y 180 minutos.
 8. "porciones" debe ser entero: 1 a 12.
 9. "nivel_confianza":
-   - "Alto" → todo claro en video
-   - "Medio" → algunas inferencias necesarias
-   - "Bajo" → muchas suposiciones
-10. "observaciones" → indica qué datos fueron inferidos vs visibles
-11. Si ves texto en el video (nombres, cantidades), ÚSALO.
-12. Si el video muestra postre/mazamorra/plato dulce, adáptalo accordingly.
-13. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
+   - "Alto" → video claro, ingredientes visibles, pasos completos
+   - "Medio" → video resumido, algunas inferencias necesarias
+   - "Bajo" → video muy corto, muchas suposiciones
+10. "video_context":
+    - "completo" → video muestra toda la preparación
+    - "resumido" → video acelerado o con cortes
+    - "timelapse" → video muy rápido tipo timelapse
+    - "solo_resultado" → solo muestra el plato final
+11. "observaciones" → indica qué datos fueron inferidos vs visibles y qué ingredientes esenciales se agregaron
+12. "ingredientes_inferidos" → lista de ingredientes esenciales que NO aparecen en el video pero son necesarios (aceite, sal, pimienta, agua, etc.)
+13. Si ves texto en el video (nombres, cantidades), ÚSALO.
+14. Si el video muestra postre/mazamorra/plato dulce, adáptalo accordingly.
+15. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
+16. Si el video está resumido → reconstruye pasos faltantes con lógica culinaria.
 
 ${textContext != null && textContext.isNotEmpty ? '''
 📌 CONTEXTO ADICIONAL DEL USUARIO:
