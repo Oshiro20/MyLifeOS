@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
@@ -25,32 +28,46 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
   Future<void> importFromTikTokUrl(String url) async {
     state = RecipeImportState.downloadingVideo;
+    currentStatusMessage = 'Conectando con TikTok...';
     errorMessage = null;
 
     try {
-      String platform = 'TikTok';
-      if (url.contains('facebook.com') || url.contains('fb.watch')) {
-        platform = 'Facebook';
-        currentStatusMessage = 'Conectando con Facebook...';
-      } else if (url.contains('instagram.com')) {
-        platform = 'Instagram';
-        currentStatusMessage = 'Conectando con Instagram...';
-      } else {
-        currentStatusMessage = 'Conectando con TikTok...';
+      final tikTokService = ref.read(tikTokServiceProvider);
+      final info = await tikTokService.getTikTokVideoInfo(url);
+      if (info == null || !info.containsKey('data')) {
+        throw Exception(
+            'No se pudo resolver la información del video de TikTok.');
       }
 
-      // For now, we'll pass the URL as context to Gemini with the video/image
-      // The AI will analyze whatever media is provided plus the URL context
-      // Direct video download from FB/IG requires different APIs
-      debugPrint('🌐 Detected platform: $platform');
-      debugPrint('🔗 URL: $url');
+      final data = info['data'] as Map<String, dynamic>;
+      final videoUrl = data['video_link_nwm'] ??
+          data['play'] ??
+          data['wmplay'] ??
+          data['hdplay'];
 
-      // Pass URL as text context - Gemini can sometimes extract info from URLs
-      // User can also upload video manually which will be processed
-      throw Exception(
-          'Para videos de $platform, por favor usa la opción "Subir video desde Galería".\n\nDescarga el video de $platform y súbelo aquí para que el Chef IA lo analice.');
+      if (videoUrl == null) {
+        throw Exception(
+            'No se encontró URL de descarga del video. Keys: ${data.keys}');
+      }
+
+      debugPrint('🎬 Video URL found: $videoUrl');
+      currentStatusMessage = 'Descargando video...';
+      final tempFile = File(
+          '${(await getTemporaryDirectory()).path}/tiktok_${DateTime.now().millisecondsSinceEpoch}.mp4');
+
+      final response = await http.get(Uri.parse(videoUrl));
+      if (response.statusCode != 200) {
+        throw Exception('Fallo al descargar el video.');
+      }
+      await tempFile.writeAsBytes(response.bodyBytes);
+      debugPrint('✅ Video downloaded: ${tempFile.path}');
+
+      await importFromVideoFile(tempFile.path);
+
+      if (tempFile.existsSync()) tempFile.deleteSync();
     } catch (e) {
       errorMessage = e.toString();
+      debugPrint('❌ TikTok import error: $e');
       state = RecipeImportState.error;
     }
   }
@@ -61,21 +78,40 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     errorMessage = null;
 
     try {
-      // Extract thumbnail from video first frame
-      final thumbnailPath = '${filePath}_thumb.jpg';
-      await VideoThumbnail.thumbnailFile(
-        video: filePath,
-        thumbnailPath: thumbnailPath,
-        imageFormat: ImageFormat.JPEG,
-        maxHeight: 1080,
-        quality: 80,
-      );
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        throw Exception('El archivo de video no existe: $filePath');
+      }
 
-      final imagePath = thumbnailPath;
+      debugPrint(
+          '📹 Video file size: ${(file.lengthSync() / 1024 / 1024).toStringAsFixed(1)} MB');
 
-      debugPrint('📸 Video thumbnail: $imagePath');
+      // Try to extract thumbnail, fallback to video file itself
+      String imagePath = filePath;
+      try {
+        final thumbnailPath = await VideoThumbnail.thumbnailFile(
+          video: filePath,
+          thumbnailPath:
+              '${(await getTemporaryDirectory()).path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          imageFormat: ImageFormat.JPEG,
+          maxHeight: 1080,
+          quality: 85,
+        );
+
+        if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
+          imagePath = thumbnailPath;
+          debugPrint('✅ Thumbnail extracted: ${imagePath}');
+        } else {
+          debugPrint(
+              '⚠️ Thumbnail extraction returned null, using original video');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Thumbnail extraction failed: $e, using original video');
+      }
 
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
+      debugPrint('🔍 Sending to AI: $imagePath');
+
       final recipe = await extractUseCase.execute(mediaPath: imagePath);
 
       if (recipe != null) {
@@ -84,7 +120,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         state = RecipeImportState.success;
       } else {
         throw Exception(
-            'La IA no pudo estructurar la receta o el formato no es válido.');
+            'La IA no pudo estructurar la receta. Intenta con otro video más claro.');
       }
     } catch (e) {
       errorMessage = e.toString();
