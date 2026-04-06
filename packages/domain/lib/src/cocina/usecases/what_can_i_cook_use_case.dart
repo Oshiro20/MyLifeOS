@@ -97,22 +97,35 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 
       // Debug: log raw response
       debugPrint('📄 WhatCanICook raw response (${jsonString.length} chars)');
-      if (jsonString.length < 1000) {
+      if (jsonString.length < 2000) {
         debugPrint('📄 Full: $jsonString');
       } else {
-        debugPrint('📄 First 500: ${jsonString.substring(0, 500)}');
+        debugPrint('📄 First 1000: ${jsonString.substring(0, 1000)}');
       }
 
       // Robust JSON cleaning - prioritize arrays since we expect a list
       final cleanJson = _extractJsonFromResponse(jsonString, expectList: true);
+
+      debugPrint(
+          '🧹 Cleaned JSON (${cleanJson.length} chars): ${cleanJson.substring(0, cleanJson.length > 200 ? 200 : cleanJson.length)}');
 
       dynamic decoded;
       try {
         decoded = jsonDecode(cleanJson);
       } catch (e) {
         debugPrint('❌ Failed to decode JSON: $cleanJson');
-        throw Exception(
-            'La IA devolvió un formato inválido. Intenta de nuevo.');
+        // Try one more time with a more aggressive cleanup
+        final aggressiveClean = _aggressiveJsonClean(jsonString);
+        debugPrint(
+            '🔧 Aggressive clean: ${aggressiveClean.substring(0, aggressiveClean.length > 200 ? 200 : aggressiveClean.length)}');
+        try {
+          decoded = jsonDecode(aggressiveClean);
+          debugPrint('✅ Aggressive clean worked!');
+        } catch (e2) {
+          throw Exception(
+            'La IA devolvió un formato inválido. Intenta de nuevo.\n\nError: ${e2.toString().substring(0, 100)}',
+          );
+        }
       }
 
       // Handle both List and single Map (wrap in list if single)
@@ -270,6 +283,40 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 
     if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
       return text.substring(firstBracket, lastBracket + 1);
+    }
+
+    return text;
+  }
+
+  /// Aggressive JSON cleaning for when normal extraction fails
+  String _aggressiveJsonClean(String response) {
+    String text = response.trim();
+
+    // Remove ALL markdown code blocks completely
+    text = text.replaceAll(RegExp(r'```[\s\S]*?```'), '');
+    text = text.replaceAll(RegExp(r'```json\s*'), '');
+    text = text.replaceAll(RegExp(r'```\s*'), '');
+
+    // Find the first [ and last ] that could be a valid JSON array
+    final firstBracket = text.indexOf('[');
+    final lastBracket = text.lastIndexOf(']');
+
+    if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
+      var candidate = text.substring(firstBracket, lastBracket + 1);
+      // Remove any trailing text after ]
+      final trailingNewline = candidate.indexOf('\n]');
+      if (trailingNewline != -1) {
+        candidate = candidate.substring(0, candidate.lastIndexOf(']') + 1);
+      }
+      return candidate;
+    }
+
+    // Try braces as fallback
+    final firstBrace = text.indexOf('{');
+    final lastBrace = text.lastIndexOf('}');
+
+    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1);
     }
 
     return text;

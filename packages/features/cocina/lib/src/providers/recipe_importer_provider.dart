@@ -29,15 +29,29 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
   /// Validates if the URL is a valid TikTok, Instagram, or YouTube URL
   static bool isValidRecipeUrl(String url) {
-    // Check if it's a valid URL format
+    // Check if it's a valid URL format - supports short URLs too
     final urlPattern = RegExp(
       r'^(https?:\/\/)?' // optional http/https
-      r'(www\.|vm\.|m\.)?' // optional subdomains
-      r'(tiktok\.com|instagram\.com|instagr\.am|youtube\.com|youtu\.be|facebook\.com|fb\.watch)'
-      r'(\/.*)?$',
+      r'((www\.|m\.)?' // optional www/m subdomain
+      r'(tiktok\.com|instagram\.com|instagr\.am|youtube\.com|youtu\.be|facebook\.com|fb\.watch)' // main domains
+      r'|vm\.tiktok\.com' // TikTok short URL
+      r'|instagr\.am' // Instagram short URL
+      r'|fb\.watch' // Facebook short URL
+      r')'
+      r'(\/.*)?$', // optional path
       caseSensitive: false,
     );
-    return urlPattern.hasMatch(url);
+
+    // Also accept any URL that looks like it could be a video URL
+    if (urlPattern.hasMatch(url)) return true;
+
+    // Relaxed check: just look for known domain patterns anywhere in the URL
+    final relaxedPattern = RegExp(
+      r'(tiktok\.com|instagram\.com|youtube\.com|youtu\.be|facebook\.com|fb\.watch|vm\.tiktok)',
+      caseSensitive: false,
+    );
+
+    return relaxedPattern.hasMatch(url);
   }
 
   Future<void> importFromTikTokUrl(String url) async {

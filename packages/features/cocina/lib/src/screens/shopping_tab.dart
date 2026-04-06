@@ -108,7 +108,25 @@ class ShoppingTab extends ConsumerWidget {
             label: const Text('Generar lista',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.w700)),
-            onPressed: () => notifier.generateShoppingList(state.suggestions),
+            onPressed: () {
+              // Use suggestions if available, otherwise use all recipes
+              final recipesToUse = state.suggestions.isNotEmpty
+                  ? state.suggestions
+                  : state.recipes;
+
+              if (recipesToUse.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'No hay recetas disponibles. Agrega recetas primero.'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              notifier.generateShoppingList(recipesToUse);
+            },
           ),
         ),
       ],

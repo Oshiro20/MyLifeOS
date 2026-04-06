@@ -21,6 +21,21 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-load Chef IA suggestions when entering the tab
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final invState = ref.read(inventoryProvider);
+      final aiState = ref.read(whatCanICookProvider);
+      // Only auto-load if we have ingredients and not already loaded
+      if (invState.ingredients.isNotEmpty &&
+          aiState == WhatCanICookState.initial) {
+        ref.read(whatCanICookProvider.notifier).generateSuggestions();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(recipesProvider);
     final invState = ref.watch(inventoryProvider);
@@ -775,6 +790,37 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                       ),
                     );
                   }),
+                  const SizedBox(height: 24),
+                  // Botón Cocinar
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _cookRecipeFromDetail(context),
+                      icon: const Icon(Icons.whatshot, color: Colors.black),
+                      label: const Text(
+                        '🍳 ¡Cocinar esta receta!',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF9800),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '💡 Al cocinar, se descontarán los ingredientes de tu despensa',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -782,6 +828,48 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
         );
       },
     );
+  }
+
+  Future<void> _cookRecipeFromDetail(BuildContext context) async {
+    final container = ProviderScope.containerOf(context);
+    final inventoryNotifier = container.read(inventoryProvider.notifier);
+    final deducted = await inventoryNotifier
+        .deductRecipeIngredients(widget.recipe.ingredients);
+
+    if (context.mounted) {
+      if (deducted.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
+                const SizedBox(height: 4),
+                Text(
+                  deducted.join(', '),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFFF9800),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        // Reload inventory
+        inventoryNotifier.load();
+        // Close the sheet
+        Navigator.of(context).pop();
+      }
+    }
   }
 }
 
