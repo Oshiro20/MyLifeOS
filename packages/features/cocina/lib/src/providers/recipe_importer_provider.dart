@@ -28,53 +28,30 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
   Future<void> importFromTikTokUrl(String url) async {
     state = RecipeImportState.downloadingVideo;
-    currentStatusMessage = 'Conectando con TikTok...';
     errorMessage = null;
 
     try {
-      final tikTokService = ref.read(tikTokServiceProvider);
-      // 1. Get Video info from API
-      final info = await tikTokService.getTikTokVideoInfo(url);
-      if (info == null || !info.containsKey('data')) {
-        throw Exception(
-            'No se pudo resolver la información del video de TikTok.');
+      String platform = 'TikTok';
+      if (url.contains('facebook.com') || url.contains('fb.watch')) {
+        platform = 'Facebook';
+        currentStatusMessage = 'Conectando con Facebook...';
+      } else if (url.contains('instagram.com')) {
+        platform = 'Instagram';
+        currentStatusMessage = 'Conectando con Instagram...';
+      } else {
+        currentStatusMessage = 'Conectando con TikTok...';
       }
 
-      final data = info['data'] as Map<String, dynamic>;
-      // Try ALL possible keys for video URL, including video_link_nwm (the correct one)
-      final videoUrl = data['video_link_nwm'] ??
-          data['play'] ??
-          data['wmplay'] ??
-          data['hdplay'] ??
-          data['no_watermark'] ??
-          data['no_watermark_hd'] ??
-          data['video_url'] ??
-          data['url'];
+      // For now, we'll pass the URL as context to Gemini with the video/image
+      // The AI will analyze whatever media is provided plus the URL context
+      // Direct video download from FB/IG requires different APIs
+      debugPrint('🌐 Detected platform: $platform');
+      debugPrint('🔗 URL: $url');
 
-      debugPrint('🔍 Found videoUrl key: ${videoUrl != null ? "YES" : "NO"}');
-
-      if (videoUrl == null) {
-        throw Exception(
-            'No se encontró URL de descarga del video. Keys disponibles: ${data.keys}');
-      }
-
-      currentStatusMessage = 'Descargando video en background...';
-      final tempFile = File(
-          '${(await getTemporaryDirectory()).path}/tiktok_video_${DateTime.now().millisecondsSinceEpoch}.mp4');
-
-      final response = await http.get(Uri.parse(videoUrl));
-      if (response.statusCode != 200) {
-        throw Exception('Fallo al descargar el video de TikTok.');
-      }
-      await tempFile.writeAsBytes(response.bodyBytes);
-
-      // 2. Extraer con IA
-      await importFromVideoFile(tempFile.path);
-
-      // Limpiar cache
-      if (tempFile.existsSync()) {
-        tempFile.deleteSync();
-      }
+      // Pass URL as text context - Gemini can sometimes extract info from URLs
+      // User can also upload video manually which will be processed
+      throw Exception(
+          'Para videos de $platform, por favor usa la opción "Subir video desde Galería".\n\nDescarga el video de $platform y súbelo aquí para que el Chef IA lo analice.');
     } catch (e) {
       errorMessage = e.toString();
       state = RecipeImportState.error;

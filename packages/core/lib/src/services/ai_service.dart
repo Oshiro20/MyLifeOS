@@ -338,50 +338,78 @@ Ejemplo de salida válida:
     if (model == null) return null;
 
     final prompt = '''
-Eres un chef experto y analista gastronómico especializado en recetas de videos de TikTok y redes sociales.
+👨‍🍳 ERES UN CHEF PROFESIONAL EXPERTO EN ANÁLISIS DE RECETAS DE COCINA.
 
-TU TAREA:
-Analiza CUIDADOSAMENTE el video/imagen proporcionado y extrae TODA la información posible sobre la receta que se muestra.
+📋 TU MISIÓN:
+Analiza DETENIDAMENTE el video/imagen de cocina proporcionado y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
 
-⚠️ IMPORTANTE PARA VIDEOS DE COCINA:
-1. Observa TODOS los ingredientes que se usan en el video
-2. Cuenta las cantidades aproximadas (si no dicen exactas, infiere por tamaño/porción)
-3. Detecta el orden de los pasos de preparación
-4. Estima el tiempo total de preparación
-5. Calcula las porciones según lo que se muestra
+🔍 INSTRUCCIONES DE ANÁLISIS (SIGUE CADA PASO):
 
-FORMATO DE RESPUESTA (JSON PURO, sin markdown ni backticks):
+PASO 1 - IDENTIFICA EL PLATO:
+- ¿Qué tipo de plato es? (entrada, sopa, plato fuerte, postre, mazamorra, ensalada, etc.)
+- ¿Cuál es el nombre de la receta?
+
+PASO 2 - DETECTA TODOS LOS INGREDIENTES:
+- Observa CADA ingrediente que aparece en el video
+- Identifica: NOMBRE exacto, CANTIDAD (número), UNIDAD de medida
+- Si no dicen la cantidad exacta, INFIERE una cantidad razonable basada en lo que ves
+- Ejemplos de unidades válidas: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "litros", "al gusto"
+- NO inventes ingredientes que no aparecen
+- Pero SÍ estima cantidades cuando no sean explícitas
+
+PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN:
+- Identifica el ORDEN EXACTO de cada paso
+- Describe cada paso de forma CLARA y DETALLADA
+- Incluye: qué se hace, con qué ingrediente, a qué temperatura, por cuánto tiempo
+- Mínimo 3 pasos, máximo 15 pasos
+
+PASO 4 - ESTIMA TIEMPO Y PORCIONES:
+- ⏱️ TIEMPO TOTAL: suma preparación + cocción + reposo (en minutos)
+- 👥 PORCIONES: calcula para cuántas personas alcanza el plato
+
+PASO 5 - TAGS/CATEGORÍAS:
+- Agrega 3-5 tags relevantes: tipo de plato, dificultad, tipo de cocina, ocasión, etc.
+
+📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
 {
-  "name": "Nombre atractivo de la receta en español",
-  "description": "Descripción corta de 2-3 líneas explicando qué es y por qué es deliciosa",
-  "durationMinutes": 30,
-  "servings": 2,
+  "name": "Nombre completo del plato/postre",
+  "description": "Descripción atractiva de 2-3 oraciones explicando qué es este plato y qué lo hace especial",
+  "durationMinutes": 45,
+  "servings": 4,
   "ingredients": [
     {
-      "ingredientName": "Nombre del ingrediente",
-      "quantity": 1.0,
-      "unit": "unidades"
+      "ingredientName": "Nombre del ingrediente en español",
+      "quantity": 500.0,
+      "unit": "gramos"
     }
   ],
   "instructions": [
-    "Paso 1: descripción clara del primer paso",
-    "Paso 2: descripción clara del segundo paso"
+    "Paso 1: Descripción detallada del primer paso incluyendo qué se hace y con qué",
+    "Paso 2: Descripción detallada del segundo paso",
+    "Paso 3: Descripción detallada del tercer paso"
   ],
-  "tags": ["tag1", "tag2", "tag3"]
+  "tags": ["postre", "fácil", "peruano"]
 }
 
-REGLAS CRÍTICAS:
-- Devuelve SOLO el JSON, NADA MÁS (sin ```json, sin texto antes o después)
-- TODOS los campos son OBLIGATORIOS
-- ingredients debe tener AL MENOS 2 ingredientes
-- instructions debe tener AL MENOS 3 pasos
-- Usa unidades en ESPAÑOL: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "al gusto"
-- Si no puedes determinar algo con certeza, INFIÉRELO lógicamente pero NO dejes campos vacíos
-- Traduce TODO al español si el contenido está en otro idioma
+⚠️ REGLAS OBLIGATORIAS:
+1. Devuelve ÚNICAMENTE el JSON. NADA de texto antes o después. Sin markdown. Sin backticks.
+2. TODOS los campos son obligatorios.
+3. "ingredients" debe tener AL MENOS 2 ingredientes reales del video.
+4. "instructions" debe tener AL MENOS 3 pasos claros y detallados.
+5. "durationMinutes" debe ser un número entero realista (15-180 min).
+6. "servings" debe ser un número entero (1-12).
+7. Usa unidades en ESPAÑOL exclusivamente.
+8. Si ves texto en el video (nombres de ingredientes, cantidades), ÚSALO.
+9. Si el video muestra un postre/mazamorra/plato dulce, adáptalo accordingly.
+10. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
 
-${textContext != null && textContext.isNotEmpty ? '📝 TEXTO/ENLACE PROPORCIONADO POR EL USUARIO:\n"$textContext"\n\nUsa este texto como contexto adicional para entender mejor la receta.' : ''}
-${mediaPath != null ? '\n🎥 ANALIZA EL VIDEO/IMAGEN ADJUNTO y extrae la receta completa.' : ''}
-''';
+${textContext != null && textContext.isNotEmpty ? '''
+📌 CONTEXTO ADICIONAL DEL USUARIO:
+"$textContext"
+Usa esta información como referencia adicional para entender mejor la receta.
+''' : ''}
+
+🎥 AHORA ANALIZA EL VIDEO/IMAGEN ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
 
     final content = <Content>[];
     if (mediaPath != null) {
