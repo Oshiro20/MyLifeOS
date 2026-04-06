@@ -540,7 +540,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       _primaryCategory = _masterCategories.contains(i.primaryCategory)
           ? i.primaryCategory
           : 'Otros';
-      _preparation = i.preparation ?? '';
+      _preparation = i.preparation;
       _subCategoryCtrl.text = i.subCategory ?? '';
       _expiry = i.expirationDate;
       _storageArea = i.storageArea ?? 'Alacena';

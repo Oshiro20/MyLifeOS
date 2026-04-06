@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,12 +18,39 @@ class RecipeImporterScreen extends ConsumerStatefulWidget {
 class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
   final _urlController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+  final List<XFile> _selectedImages = [];
 
   Future<void> _pickVideo() async {
     final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
     if (video != null) {
       ref.read(recipeImportProvider.notifier).importFromVideoFile(video.path);
     }
+  }
+
+  Future<void> _pickImages() async {
+    final images = await _picker.pickMultiImage(imageQuality: 85);
+    if (images.isNotEmpty) {
+      setState(() => _selectedImages.addAll(images));
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final photo =
+        await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (photo != null) {
+      setState(() => _selectedImages.add(photo));
+    }
+  }
+
+  Future<void> _importImages() async {
+    if (_selectedImages.isEmpty) return;
+    ref
+        .read(recipeImportProvider.notifier)
+        .importFromImages(_selectedImages.map((e) => e.path).toList());
+  }
+
+  void _removeImage(int index) {
+    setState(() => _selectedImages.removeAt(index));
   }
 
   void _importUrl() {
@@ -311,9 +339,124 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
           ),
           const SizedBox(height: 24),
           const Center(
-              child: Text('— O —',
+              child: Text('— O sube imágenes de una receta —',
                   style: TextStyle(
                       color: Colors.white54, fontWeight: FontWeight.bold))),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side:
+                        const BorderSide(color: Color(0xFF00F0FF), width: 1.5),
+                    foregroundColor: const Color(0xFF00F0FF),
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Galería', style: TextStyle(fontSize: 14)),
+                  onPressed: _pickImages,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side:
+                        const BorderSide(color: Color(0xFFFF9800), width: 1.5),
+                    foregroundColor: const Color(0xFFFF9800),
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Cámara', style: TextStyle(fontSize: 14)),
+                  onPressed: _takePhoto,
+                ),
+              ),
+            ],
+          ),
+          if (_selectedImages.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFF00E676).withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${_selectedImages.length} imagen(es) seleccionada(s)',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 80,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _selectedImages.length,
+                      itemBuilder: (context, index) {
+                        return Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  File(_selectedImages[index].path),
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () => _removeImage(index),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close,
+                                      size: 14, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E676),
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(double.infinity, 45),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Extraer Receta con IA',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                    onPressed: state == RecipeImportState.extractingAI
+                        ? null
+                        : _importImages,
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:domain/domain.dart';
 import 'inventory_tab.dart';
 import 'recipes_tab.dart';
 import 'suggestions_tab.dart';
 import 'shopping_tab.dart';
+import '../providers/cocina_providers.dart';
 
 class CocinaScreen extends ConsumerStatefulWidget {
   const CocinaScreen({super.key});
@@ -32,10 +34,24 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
     super.dispose();
   }
 
+  void _generateFromPantry() {
+    // Switch to suggestions tab
+    setState(() => _tab.index = 2);
+    // Refresh suggestions
+    ref.read(recipesProvider.notifier).refreshSuggestions();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🍳 Generando recetas desde tu despensa...'),
+        backgroundColor: Color(0xFF00C896),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Solo mostrar FABs en el tab de Recetas (índice 1)
     final showFabs = _tab.index == 1;
+    final showGenerate = _tab.index == 2;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -45,6 +61,65 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           'Cocina 🍳',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
+        actions: [
+          // Nutrition goal selector - always visible
+          PopupMenuButton<NutritionGoal>(
+            icon: const Icon(Icons.fitness_center, color: Color(0xFF00C896)),
+            tooltip: 'Objetivo nutricional',
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: NutritionGoal.loseWeight,
+                child: Row(
+                  children: [
+                    Text('🥗', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('Adelgazar'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: NutritionGoal.maintain,
+                child: Row(
+                  children: [
+                    Text('⚖️', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('Mantener'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: NutritionGoal.gainMuscle,
+                child: Row(
+                  children: [
+                    Text('💪', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('Ganar músculo'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: NutritionGoal.other,
+                child: Row(
+                  children: [
+                    Text('🍽️', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('Otro'),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (goal) {
+              ref.read(recipesProvider.notifier).setGoal(goal);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Objetivo cambiado: ${goal.name}'),
+                  backgroundColor: const Color(0xFF00C896),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tab,
           indicatorColor: const Color(0xFF00C896),
@@ -76,63 +151,71 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           ShoppingTab(),
         ],
       ),
-      floatingActionButton: showFabs
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Chef IA FAB with label
-                Column(
+      floatingActionButton: showGenerate
+          ? FloatingActionButton.extended(
+              heroTag: 'generate_from_pantry',
+              backgroundColor: const Color(0xFF00C896),
+              onPressed: _generateFromPantry,
+              icon: const Icon(Icons.auto_awesome, color: Colors.white),
+              label: const Text('Generar desde Despensa',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            )
+          : showFabs
+              ? Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Chef IA',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600),
-                      ),
+                    // Chef IA FAB with label
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Chef IA',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        FloatingActionButton(
+                          heroTag: 'import_tiktok',
+                          backgroundColor: const Color(0xFFFF4D4D),
+                          onPressed: () {
+                            context.go('/cocina/import');
+                          },
+                          child: const Icon(Icons.movie_outlined,
+                              color: Colors.white),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 12),
+                    // Add recipe FAB
                     FloatingActionButton(
-                      heroTag: 'import_tiktok',
-                      backgroundColor: const Color(0xFFFF4D4D),
+                      heroTag: 'add_recipe',
+                      backgroundColor: const Color(0xFF00C896),
                       onPressed: () {
-                        context.go('/cocina/import');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'Desliza hacia abajo en la lista de recetas para ver opciones'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
                       },
-                      child:
-                          const Icon(Icons.movie_outlined, color: Colors.white),
+                      child: const Icon(Icons.add, color: Colors.white),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                // Add recipe FAB
-                FloatingActionButton(
-                  heroTag: 'add_recipe',
-                  backgroundColor: const Color(0xFF00C896),
-                  onPressed: () {
-                    // Trigger the add recipe sheet via a provider or event
-                    // For now, we'll use a simple approach
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Desliza hacia abajo en la lista de recetas para ver opciones'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              ],
-            )
-          : null,
+                )
+              : null,
     );
   }
 }

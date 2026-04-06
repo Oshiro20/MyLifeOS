@@ -510,6 +510,78 @@ Usa esta información como referencia adicional.
     }
   }
 
+  /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
+  /// Returns structured JSON with the recipe.
+  Future<String?> extractRecipeFromImages(List<String> imagePaths) async {
+    final model = await _getModel(useVision: true);
+    if (model == null) return null;
+
+    final prompt = '''
+👨‍🍳 ERES UN CHEF PROFESIONAL + EXPERTO EN OCR Y ANÁLISIS DE IMÁGENES.
+
+📋 TU MISIÓN:
+Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
+
+🔍 INSTRUCCIONES:
+1. Lee TODO el texto visible en las imágenes (OCR)
+2. Identifica ingredientes, cantidades, unidades y pasos
+3. Si hay múltiples imágenes, combina la información de todas
+4. Si falta información, infiérelo con lógica culinaria
+
+📝 FORMATO JSON:
+{
+  "nombre_receta": "Nombre del plato",
+  "descripcion": "Descripción de 2-3 oraciones",
+  "porciones": 4,
+  "tiempo_preparacion_min": 15,
+  "tiempo_coccion_min": 30,
+  "tiempo_total_min": 45,
+  "dificultad": "Fácil",
+  "tipo_comida": "Almuerzo",
+  "cocina": "Peruana",
+  "ingredientes": [
+    {"nombre": "Arroz", "cantidad": 2.0, "unidad": "tazas"}
+  ],
+  "pasos": [
+    {"numero": 1, "descripcion": "Paso detallado"}
+  ],
+  "utensilios": ["olla", "cuchara"],
+  "calorias_aproximadas": 350,
+  "tags": ["fácil", "peruano"],
+  "observaciones": "Texto extraído de imagen.",
+  "nivel_confianza": "Alto",
+  "ingredientes_inferidos": [],
+  "video_context": "imagen"
+}
+
+⚠️ REGLAS:
+- Devuelve SOLO JSON, sin markdown ni backticks
+- TODOS los campos obligatorios
+- "cantidad" debe ser NÚMERO (float)
+- "unidad" en español
+- Mínimo 2 ingredientes, 3 pasos
+
+📸 ANALIZA LAS IMÁGENES Y DEVUELVE LA RECETA EN JSON.''';
+
+    final parts = <Part>[TextPart(prompt)];
+
+    for (final path in imagePaths) {
+      final file = File(path);
+      if (file.existsSync()) {
+        final bytes = await file.readAsBytes();
+        final mimeType = _getMimeType(path);
+        parts.add(DataPart(mimeType, bytes));
+      }
+    }
+
+    try {
+      final response = await model.generateContent([Content.multi(parts)]);
+      return response.text;
+    } catch (e) {
+      throw Exception('Error en Gemini al extraer receta de imágenes: $e');
+    }
+  }
+
   /// Optimizes an existing recipe with better wording, nutrition info, and suggestions.
   /// Returns an improved version of the recipe as structured JSON.
   Future<String?> optimizeRecipe(String recipeJson) async {

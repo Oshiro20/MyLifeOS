@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,6 +69,123 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('❌ TikTok import error: $e');
+      state = RecipeImportState.error;
+    }
+  }
+
+  Future<void> importFromImages(List<String> imagePaths) async {
+    state = RecipeImportState.extractingAI;
+    currentStatusMessage =
+        'El Chef IA está analizando ${imagePaths.length} imagen(es)...';
+    errorMessage = null;
+
+    try {
+      // Call Gemini with all images
+      final geminiService = ref.read(geminiServiceProvider);
+      final jsonResult =
+          await geminiService.extractRecipeFromImages(imagePaths);
+
+      if (jsonResult == null || jsonResult.isEmpty) {
+        throw Exception(
+            'La IA no pudo extraer la receta. Intenta con imágenes más claras.');
+      }
+
+      debugPrint(
+          '📸 AI extracted recipe from images: ${jsonResult.length} chars');
+
+      // Parse the JSON response
+      importFromJson(jsonResult);
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('❌ Image import error: $e');
+      state = RecipeImportState.error;
+    }
+  }
+
+  void importFromJson(String jsonString) {
+    try {
+      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      // Support both old and new JSON formats
+      final name =
+          decoded['name'] ?? decoded['nombre_receta'] ?? 'Receta Importada';
+      final description =
+          decoded['description'] ?? decoded['descripcion'] ?? '';
+
+      int durationMinutes;
+      if (decoded['durationMinutes'] != null) {
+        durationMinutes = decoded['durationMinutes'] as int;
+      } else if (decoded['tiempo_total_min'] != null) {
+        durationMinutes = decoded['tiempo_total_min'] as int;
+      } else {
+        durationMinutes = 30;
+      }
+
+      final servings = decoded['servings'] ?? decoded['porciones'];
+      final servingsInt =
+          servings is int ? servings : (servings is num ? servings.toInt() : 2);
+
+      // Ingredients
+      List<dynamic> rawIngredients =
+          decoded['ingredients'] ?? decoded['ingredientes'] ?? [];
+      final ingredients = <RecipeIngredient>[];
+      final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      for (int i = 0; i < rawIngredients.length; i++) {
+        final item = rawIngredients[i] as Map<String, dynamic>;
+        final ingName =
+            item['ingredientName'] ?? item['nombre'] ?? 'Ingrediente $i';
+        final rawQty = item['quantity'] ?? item['cantidad'];
+        final qty = rawQty is num
+            ? rawQty.toDouble()
+            : (rawQty is String ? double.tryParse(rawQty) ?? 1.0 : 1.0);
+        final unit = item['unit'] ?? item['unidad'] ?? 'unidades';
+
+        ingredients.add(RecipeIngredient(
+          id: '${recipeId}_ing_$i',
+          recipeId: recipeId,
+          ingredientName: ingName,
+          quantity: qty,
+          unit: unit,
+        ));
+      }
+
+      // Instructions
+      List<dynamic> rawInstructions =
+          decoded['instructions'] ?? decoded['pasos'] ?? [];
+      if (decoded['pasos'] != null) {
+        final pasosList = decoded['pasos'] as List<dynamic>;
+        pasosList.sort((a, b) {
+          final numA = (a as Map)['numero'] as int? ?? 0;
+          final numB = (b as Map)['numero'] as int? ?? 0;
+          return numA.compareTo(numB);
+        });
+        rawInstructions = pasosList
+            .map((p) => (p as Map)['descripcion'] ?? p.toString())
+            .toList();
+      }
+      final instructions = rawInstructions.map((e) => e.toString()).toList();
+
+      // Tags
+      final rawTags = decoded['tags'] as List<dynamic>? ?? [];
+      final tags = rawTags.map((e) => e.toString()).toList();
+
+      importedRecipe = Recipe(
+        id: recipeId,
+        name: name,
+        description: description,
+        durationMinutes: durationMinutes,
+        servings: servingsInt,
+        instructions: instructions,
+        ingredients: ingredients,
+        tags: tags,
+        createdAt: DateTime.now(),
+      );
+
+      currentStatusMessage = '¡Receta encontrada!';
+      state = RecipeImportState.success;
+    } catch (e) {
+      errorMessage = 'Error al procesar la receta: $e';
       state = RecipeImportState.error;
     }
   }
