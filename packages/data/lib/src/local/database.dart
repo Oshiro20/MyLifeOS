@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -112,6 +112,15 @@ class AppDatabase extends _$AppDatabase {
                   inventoryIngredients, inventoryIngredients.storageArea);
             } catch (e) {
               debugPrint('⚠️ [DB v11] Migration failed: $e');
+            }
+          }
+          if (from < 12) {
+            try {
+              debugPrint('🧄 [DB v12] Adding preparation column...');
+              await m.addColumn(
+                  inventoryIngredients, inventoryIngredients.preparation);
+            } catch (e) {
+              debugPrint('⚠️ [DB v12] Migration failed: $e');
             }
           }
 

@@ -6,6 +6,8 @@ class InventoryIngredient extends Equatable {
   final String name;
   final String primaryCategory;
   final String? subCategory;
+  final String
+      preparation; // "entero", "licuado", "molido", "fresco", "picado", etc.
   final double quantity;
   final String unit;
   final DateTime? expirationDate;
@@ -17,12 +19,21 @@ class InventoryIngredient extends Equatable {
     required this.name,
     required this.primaryCategory,
     this.subCategory,
+    this.preparation = '',
     required this.quantity,
     required this.unit,
     this.expirationDate,
     this.imageAssetId,
     this.storageArea,
   });
+
+  /// Display name includes preparation if available
+  String get displayName {
+    if (preparation.isNotEmpty) {
+      return '$name ($preparation)';
+    }
+    return name;
+  }
 
   bool get isExpiringSoon {
     if (expirationDate == null) return false;
@@ -40,6 +51,7 @@ class InventoryIngredient extends Equatable {
         name,
         primaryCategory,
         subCategory,
+        preparation,
         quantity,
         unit,
         expirationDate,

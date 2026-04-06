@@ -402,6 +402,14 @@ class $InventoryIngredientsTable extends InventoryIngredients
   late final GeneratedColumn<String> subCategory = GeneratedColumn<String>(
       'sub_category', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _preparationMeta =
+      const VerificationMeta('preparation');
+  @override
+  late final GeneratedColumn<String> preparation = GeneratedColumn<String>(
+      'preparation', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
   static const VerificationMeta _quantityMeta =
       const VerificationMeta('quantity');
   @override
@@ -437,6 +445,7 @@ class $InventoryIngredientsTable extends InventoryIngredients
         name,
         primaryCategory,
         subCategory,
+        preparation,
         quantity,
         unit,
         expirationDate,
@@ -476,6 +485,12 @@ class $InventoryIngredientsTable extends InventoryIngredients
           _subCategoryMeta,
           subCategory.isAcceptableOrUnknown(
               data['sub_category']!, _subCategoryMeta));
+    }
+    if (data.containsKey('preparation')) {
+      context.handle(
+          _preparationMeta,
+          preparation.isAcceptableOrUnknown(
+              data['preparation']!, _preparationMeta));
     }
     if (data.containsKey('quantity')) {
       context.handle(_quantityMeta,
@@ -525,6 +540,8 @@ class $InventoryIngredientsTable extends InventoryIngredients
           DriftSqlType.string, data['${effectivePrefix}primary_category'])!,
       subCategory: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}sub_category']),
+      preparation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}preparation'])!,
       quantity: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}quantity'])!,
       unit: attachedDatabase.typeMapping
@@ -550,6 +567,7 @@ class InventoryIngredientEntry extends DataClass
   final String name;
   final String primaryCategory;
   final String? subCategory;
+  final String preparation;
   final double quantity;
   final String unit;
   final DateTime? expirationDate;
@@ -560,6 +578,7 @@ class InventoryIngredientEntry extends DataClass
       required this.name,
       required this.primaryCategory,
       this.subCategory,
+      required this.preparation,
       required this.quantity,
       required this.unit,
       this.expirationDate,
@@ -574,6 +593,7 @@ class InventoryIngredientEntry extends DataClass
     if (!nullToAbsent || subCategory != null) {
       map['sub_category'] = Variable<String>(subCategory);
     }
+    map['preparation'] = Variable<String>(preparation);
     map['quantity'] = Variable<double>(quantity);
     map['unit'] = Variable<String>(unit);
     if (!nullToAbsent || expirationDate != null) {
@@ -596,6 +616,7 @@ class InventoryIngredientEntry extends DataClass
       subCategory: subCategory == null && nullToAbsent
           ? const Value.absent()
           : Value(subCategory),
+      preparation: Value(preparation),
       quantity: Value(quantity),
       unit: Value(unit),
       expirationDate: expirationDate == null && nullToAbsent
@@ -618,6 +639,7 @@ class InventoryIngredientEntry extends DataClass
       name: serializer.fromJson<String>(json['name']),
       primaryCategory: serializer.fromJson<String>(json['primaryCategory']),
       subCategory: serializer.fromJson<String?>(json['subCategory']),
+      preparation: serializer.fromJson<String>(json['preparation']),
       quantity: serializer.fromJson<double>(json['quantity']),
       unit: serializer.fromJson<String>(json['unit']),
       expirationDate: serializer.fromJson<DateTime?>(json['expirationDate']),
@@ -633,6 +655,7 @@ class InventoryIngredientEntry extends DataClass
       'name': serializer.toJson<String>(name),
       'primaryCategory': serializer.toJson<String>(primaryCategory),
       'subCategory': serializer.toJson<String?>(subCategory),
+      'preparation': serializer.toJson<String>(preparation),
       'quantity': serializer.toJson<double>(quantity),
       'unit': serializer.toJson<String>(unit),
       'expirationDate': serializer.toJson<DateTime?>(expirationDate),
@@ -646,6 +669,7 @@ class InventoryIngredientEntry extends DataClass
           String? name,
           String? primaryCategory,
           Value<String?> subCategory = const Value.absent(),
+          String? preparation,
           double? quantity,
           String? unit,
           Value<DateTime?> expirationDate = const Value.absent(),
@@ -656,6 +680,7 @@ class InventoryIngredientEntry extends DataClass
         name: name ?? this.name,
         primaryCategory: primaryCategory ?? this.primaryCategory,
         subCategory: subCategory.present ? subCategory.value : this.subCategory,
+        preparation: preparation ?? this.preparation,
         quantity: quantity ?? this.quantity,
         unit: unit ?? this.unit,
         expirationDate:
@@ -674,6 +699,8 @@ class InventoryIngredientEntry extends DataClass
           : this.primaryCategory,
       subCategory:
           data.subCategory.present ? data.subCategory.value : this.subCategory,
+      preparation:
+          data.preparation.present ? data.preparation.value : this.preparation,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unit: data.unit.present ? data.unit.value : this.unit,
       expirationDate: data.expirationDate.present
@@ -694,6 +721,7 @@ class InventoryIngredientEntry extends DataClass
           ..write('name: $name, ')
           ..write('primaryCategory: $primaryCategory, ')
           ..write('subCategory: $subCategory, ')
+          ..write('preparation: $preparation, ')
           ..write('quantity: $quantity, ')
           ..write('unit: $unit, ')
           ..write('expirationDate: $expirationDate, ')
@@ -705,7 +733,7 @@ class InventoryIngredientEntry extends DataClass
 
   @override
   int get hashCode => Object.hash(id, name, primaryCategory, subCategory,
-      quantity, unit, expirationDate, imageAssetId, storageArea);
+      preparation, quantity, unit, expirationDate, imageAssetId, storageArea);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -714,6 +742,7 @@ class InventoryIngredientEntry extends DataClass
           other.name == this.name &&
           other.primaryCategory == this.primaryCategory &&
           other.subCategory == this.subCategory &&
+          other.preparation == this.preparation &&
           other.quantity == this.quantity &&
           other.unit == this.unit &&
           other.expirationDate == this.expirationDate &&
@@ -727,6 +756,7 @@ class InventoryIngredientsCompanion
   final Value<String> name;
   final Value<String> primaryCategory;
   final Value<String?> subCategory;
+  final Value<String> preparation;
   final Value<double> quantity;
   final Value<String> unit;
   final Value<DateTime?> expirationDate;
@@ -738,6 +768,7 @@ class InventoryIngredientsCompanion
     this.name = const Value.absent(),
     this.primaryCategory = const Value.absent(),
     this.subCategory = const Value.absent(),
+    this.preparation = const Value.absent(),
     this.quantity = const Value.absent(),
     this.unit = const Value.absent(),
     this.expirationDate = const Value.absent(),
@@ -750,6 +781,7 @@ class InventoryIngredientsCompanion
     required String name,
     this.primaryCategory = const Value.absent(),
     this.subCategory = const Value.absent(),
+    this.preparation = const Value.absent(),
     required double quantity,
     required String unit,
     this.expirationDate = const Value.absent(),
@@ -765,6 +797,7 @@ class InventoryIngredientsCompanion
     Expression<String>? name,
     Expression<String>? primaryCategory,
     Expression<String>? subCategory,
+    Expression<String>? preparation,
     Expression<double>? quantity,
     Expression<String>? unit,
     Expression<DateTime>? expirationDate,
@@ -777,6 +810,7 @@ class InventoryIngredientsCompanion
       if (name != null) 'name': name,
       if (primaryCategory != null) 'primary_category': primaryCategory,
       if (subCategory != null) 'sub_category': subCategory,
+      if (preparation != null) 'preparation': preparation,
       if (quantity != null) 'quantity': quantity,
       if (unit != null) 'unit': unit,
       if (expirationDate != null) 'expiration_date': expirationDate,
@@ -791,6 +825,7 @@ class InventoryIngredientsCompanion
       Value<String>? name,
       Value<String>? primaryCategory,
       Value<String?>? subCategory,
+      Value<String>? preparation,
       Value<double>? quantity,
       Value<String>? unit,
       Value<DateTime?>? expirationDate,
@@ -802,6 +837,7 @@ class InventoryIngredientsCompanion
       name: name ?? this.name,
       primaryCategory: primaryCategory ?? this.primaryCategory,
       subCategory: subCategory ?? this.subCategory,
+      preparation: preparation ?? this.preparation,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
       expirationDate: expirationDate ?? this.expirationDate,
@@ -825,6 +861,9 @@ class InventoryIngredientsCompanion
     }
     if (subCategory.present) {
       map['sub_category'] = Variable<String>(subCategory.value);
+    }
+    if (preparation.present) {
+      map['preparation'] = Variable<String>(preparation.value);
     }
     if (quantity.present) {
       map['quantity'] = Variable<double>(quantity.value);
@@ -854,6 +893,7 @@ class InventoryIngredientsCompanion
           ..write('name: $name, ')
           ..write('primaryCategory: $primaryCategory, ')
           ..write('subCategory: $subCategory, ')
+          ..write('preparation: $preparation, ')
           ..write('quantity: $quantity, ')
           ..write('unit: $unit, ')
           ..write('expirationDate: $expirationDate, ')
@@ -4341,6 +4381,7 @@ typedef $$InventoryIngredientsTableCreateCompanionBuilder
   required String name,
   Value<String> primaryCategory,
   Value<String?> subCategory,
+  Value<String> preparation,
   required double quantity,
   required String unit,
   Value<DateTime?> expirationDate,
@@ -4354,6 +4395,7 @@ typedef $$InventoryIngredientsTableUpdateCompanionBuilder
   Value<String> name,
   Value<String> primaryCategory,
   Value<String?> subCategory,
+  Value<String> preparation,
   Value<double> quantity,
   Value<String> unit,
   Value<DateTime?> expirationDate,
@@ -4383,6 +4425,9 @@ class $$InventoryIngredientsTableFilterComposer
 
   ColumnFilters<String> get subCategory => $composableBuilder(
       column: $table.subCategory, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get preparation => $composableBuilder(
+      column: $table.preparation, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get quantity => $composableBuilder(
       column: $table.quantity, builder: (column) => ColumnFilters(column));
@@ -4423,6 +4468,9 @@ class $$InventoryIngredientsTableOrderingComposer
   ColumnOrderings<String> get subCategory => $composableBuilder(
       column: $table.subCategory, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get preparation => $composableBuilder(
+      column: $table.preparation, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get quantity => $composableBuilder(
       column: $table.quantity, builder: (column) => ColumnOrderings(column));
 
@@ -4461,6 +4509,9 @@ class $$InventoryIngredientsTableAnnotationComposer
 
   GeneratedColumn<String> get subCategory => $composableBuilder(
       column: $table.subCategory, builder: (column) => column);
+
+  GeneratedColumn<String> get preparation => $composableBuilder(
+      column: $table.preparation, builder: (column) => column);
 
   GeneratedColumn<double> get quantity =>
       $composableBuilder(column: $table.quantity, builder: (column) => column);
@@ -4512,6 +4563,7 @@ class $$InventoryIngredientsTableTableManager extends RootTableManager<
             Value<String> name = const Value.absent(),
             Value<String> primaryCategory = const Value.absent(),
             Value<String?> subCategory = const Value.absent(),
+            Value<String> preparation = const Value.absent(),
             Value<double> quantity = const Value.absent(),
             Value<String> unit = const Value.absent(),
             Value<DateTime?> expirationDate = const Value.absent(),
@@ -4524,6 +4576,7 @@ class $$InventoryIngredientsTableTableManager extends RootTableManager<
             name: name,
             primaryCategory: primaryCategory,
             subCategory: subCategory,
+            preparation: preparation,
             quantity: quantity,
             unit: unit,
             expirationDate: expirationDate,
@@ -4536,6 +4589,7 @@ class $$InventoryIngredientsTableTableManager extends RootTableManager<
             required String name,
             Value<String> primaryCategory = const Value.absent(),
             Value<String?> subCategory = const Value.absent(),
+            Value<String> preparation = const Value.absent(),
             required double quantity,
             required String unit,
             Value<DateTime?> expirationDate = const Value.absent(),
@@ -4548,6 +4602,7 @@ class $$InventoryIngredientsTableTableManager extends RootTableManager<
             name: name,
             primaryCategory: primaryCategory,
             subCategory: subCategory,
+            preparation: preparation,
             quantity: quantity,
             unit: unit,
             expirationDate: expirationDate,

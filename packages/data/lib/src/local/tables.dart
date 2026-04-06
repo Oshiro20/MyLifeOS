@@ -23,6 +23,8 @@ class InventoryIngredients extends Table {
   TextColumn get primaryCategory =>
       text().withDefault(const Constant('Otros'))();
   TextColumn get subCategory => text().nullable()();
+  TextColumn get preparation => text().withDefault(
+      const Constant(''))(); // entero, licuado, molido, fresco, etc.
   RealColumn get quantity => real()();
   TextColumn get unit => text()();
   DateTimeColumn get expirationDate => dateTime().nullable()();

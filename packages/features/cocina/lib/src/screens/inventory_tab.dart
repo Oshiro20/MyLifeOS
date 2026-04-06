@@ -232,7 +232,7 @@ class _IngredientTile extends StatelessWidget {
         onTap: onEdit,
         leading: Text(_getEmojiFor(ingredient.name, ingredient.primaryCategory),
             style: const TextStyle(fontSize: 28)),
-        title: Text(ingredient.name,
+        title: Text(ingredient.displayName,
             style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600)),
@@ -490,11 +490,27 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
   final _subCategoryCtrl = TextEditingController();
   MeasurementUnit _unit = MeasurementUnit.unidades;
   String _primaryCategory = 'Otros';
+  String _preparation =
+      ''; // "entero", "licuado", "molido", "fresco", "picado", etc.
   DateTime? _expiry;
   String? _qtyError;
   String? _nameError;
   bool _saving = false;
   bool _autoDetected = false;
+
+  static const List<String> _preparations = [
+    '',
+    'entero',
+    'licuado',
+    'molido',
+    'picado',
+    'fresco',
+    'en pasta',
+    'en polvo',
+    'en granos',
+    'en rodajas',
+    'desmenuzado',
+  ];
 
   String _storageArea = 'Alacena';
   final List<String> _storageAreas = ['Alacena', 'Refrigerador', 'Congelador'];
@@ -524,6 +540,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       _primaryCategory = _masterCategories.contains(i.primaryCategory)
           ? i.primaryCategory
           : 'Otros';
+      _preparation = i.preparation ?? '';
       _subCategoryCtrl.text = i.subCategory ?? '';
       _expiry = i.expirationDate;
       _storageArea = i.storageArea ?? 'Alacena';
@@ -672,6 +689,27 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                     keyboardType: TextInputType.text),
               ),
             ]),
+            const SizedBox(height: 10),
+
+            // Preparación/Estado
+            DropdownButtonFormField<String>(
+              initialValue:
+                  _preparations.contains(_preparation) ? _preparation : '',
+              dropdownColor: Theme.of(context).cardColor,
+              isExpanded: true,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
+              decoration:
+                  _inputDeco('Preparación (opcional)', Icons.restaurant_menu),
+              items: _preparations
+                  .map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(c.isEmpty ? 'Sin especificar' : c,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface))))
+                  .toList(),
+              onChanged: (v) => setState(() => _preparation = v ?? ''),
+            ),
             const SizedBox(height: 10),
 
             // Lugar de Guardado
@@ -1003,6 +1041,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
           subCategory: _subCategoryCtrl.text.trim().isEmpty
               ? null
               : _subCategoryCtrl.text.trim(),
+          preparation: _preparation,
           quantity: double.parse(_qtyCtrl.text),
           unit: _unit.label,
           expirationDate: _expiry,
