@@ -10,7 +10,7 @@ enum WhatCanICookState { initial, loading, success, error }
 /// Determines current meal period based on time of day
 String _getCurrentMealPeriod() {
   final hour = DateTime.now().hour;
-  if (hour < 12) return 'desayuno';
+  if (hour < 10) return 'desayuno';
   if (hour < 17) return 'almuerzo';
   return 'cena';
 }

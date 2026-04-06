@@ -826,6 +826,49 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                         fontSize: 11,
                         fontStyle: FontStyle.italic),
                   ),
+                  // Fuente/Origen
+                  if (widget.recipe.fuenteUrl != null ||
+                      widget.recipe.fuenteLabel != null) ...[
+                    const SizedBox(height: 16),
+                    const Divider(color: Colors.white24),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.link,
+                            color: Color(0xFF00F0FF), size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Fuente: ${widget.recipe.fuenteLabel ?? 'Desconocida'}',
+                            style: const TextStyle(
+                                color: Color(0xFF00F0FF),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (widget.recipe.fuenteUrl != null) ...[
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('🔗 ${widget.recipe.fuenteUrl}')),
+                          );
+                        },
+                        child: Text(
+                          widget.recipe.fuenteUrl!,
+                          style: const TextStyle(
+                              color: Color(0xFF00F0FF),
+                              fontSize: 12,
+                              decoration: TextDecoration.underline),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
                   const SizedBox(height: 16),
                 ],
               ),

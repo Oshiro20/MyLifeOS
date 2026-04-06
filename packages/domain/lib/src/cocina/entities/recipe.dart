@@ -48,6 +48,12 @@ class Recipe extends Equatable {
   final List<String> ingredientesInferidos;
   final MealType? tipoComida;
 
+  /// Source URL (TikTok, YouTube, website, etc.) - null means AI-generated
+  final String? fuenteUrl;
+
+  /// Source label (e.g. 'TikTok', 'YouTube', 'Chef IA')
+  final String? fuenteLabel;
+
   const Recipe({
     required this.id,
     required this.name,
@@ -71,6 +77,8 @@ class Recipe extends Equatable {
     this.caloriasAproximadas,
     this.ingredientesInferidos = const [],
     this.tipoComida,
+    this.fuenteUrl,
+    this.fuenteLabel,
   });
 
   Recipe copyWith({
@@ -96,6 +104,8 @@ class Recipe extends Equatable {
     int? caloriasAproximadas,
     List<String>? ingredientesInferidos,
     MealType? tipoComida,
+    String? fuenteUrl,
+    String? fuenteLabel,
   }) =>
       Recipe(
         id: id ?? this.id,
@@ -121,6 +131,8 @@ class Recipe extends Equatable {
         ingredientesInferidos:
             ingredientesInferidos ?? this.ingredientesInferidos,
         tipoComida: tipoComida ?? this.tipoComida,
+        fuenteUrl: fuenteUrl ?? this.fuenteUrl,
+        fuenteLabel: fuenteLabel ?? this.fuenteLabel,
       );
 
   @override
@@ -147,6 +159,8 @@ class Recipe extends Equatable {
         caloriasAproximadas,
         ingredientesInferidos,
         tipoComida,
+        fuenteUrl,
+        fuenteLabel,
       ];
 }
 

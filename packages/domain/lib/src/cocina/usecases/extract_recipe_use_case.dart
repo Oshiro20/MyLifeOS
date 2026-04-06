@@ -191,6 +191,12 @@ class ExtractRecipeUseCase {
         tipoComida = _parseMealType(rawTipoComida);
       }
 
+      // Parsear fuente (source URL)
+      final fuenteUrl =
+          decoded['fuente_url'] as String? ?? decoded['url_origen'] as String?;
+      final fuenteLabel = decoded['fuente_label'] as String? ??
+          decoded['tipo_fuente'] as String?;
+
       return Recipe(
         id: recipeId,
         name: name,
@@ -211,6 +217,8 @@ class ExtractRecipeUseCase {
         maridaje: maridaje,
         variaciones: variaciones,
         tipoComida: tipoComida,
+        fuenteUrl: fuenteUrl,
+        fuenteLabel: fuenteLabel ?? 'Chef IA',
       );
     } catch (e, stackTrace) {
       debugPrint('❌ Error parsing recipe JSON: $e');

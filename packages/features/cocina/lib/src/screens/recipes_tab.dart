@@ -303,9 +303,88 @@ class _RecipeDetailSheet extends StatelessWidget {
                       ]),
                 )),
           ],
+          // Botón Cocinar
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _cookRecipe(context, recipe),
+              icon: const Icon(Icons.whatshot, color: Colors.black),
+              label: const Text('🍳 ¡Cocinar esta receta!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF9800),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '💡 Al cocinar, se descontarán los ingredientes de tu despensa',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                fontStyle: FontStyle.italic),
+          ),
+          // Fuente/Origen
+          if (recipe.fuenteUrl != null || recipe.fuenteLabel != null) ...[
+            const SizedBox(height: 20),
+            const Divider(color: Colors.white24),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.link, color: Color(0xFF00F0FF), size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Fuente: ${recipe.fuenteLabel ?? 'Desconocida'}',
+                  style: const TextStyle(
+                      color: Color(0xFF00F0FF),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13),
+                ),
+              ],
+            ),
+            if (recipe.fuenteUrl != null) ...[
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () {
+                  // TODO: Open URL
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('URL: ${recipe.fuenteUrl}')),
+                  );
+                },
+                child: Text(
+                  recipe.fuenteUrl!,
+                  style: const TextStyle(
+                      color: Color(0xFF00F0FF),
+                      fontSize: 12,
+                      decoration: TextDecoration.underline),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ],
+          const SizedBox(height: 20),
         ],
       ),
     );
+  }
+
+  Future<void> _cookRecipe(BuildContext context, Recipe recipe) async {
+    // TODO: Implement deduct ingredients
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🍳 ¡Cocinando "${recipe.name}"!'),
+        backgroundColor: const Color(0xFFFF9800),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    Navigator.of(context).pop();
   }
 
   Widget _chip(BuildContext context, String text) => Container(

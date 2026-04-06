@@ -142,7 +142,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     }
   }
 
-  void importFromJson(String jsonString) {
+  void importFromJson(String jsonString, {String? sourceUrl}) {
     try {
       final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
 
@@ -292,6 +292,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         tipsChef: tipsChef,
         maridaje: maridaje,
         variaciones: variaciones,
+        fuenteUrl: sourceUrl,
+        fuenteLabel: sourceUrl != null ? 'TikTok/Video' : 'Chef IA',
       );
 
       currentStatusMessage = '¡Receta encontrada!';
