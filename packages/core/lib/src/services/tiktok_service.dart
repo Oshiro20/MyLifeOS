@@ -12,33 +12,46 @@ class TikTokService {
   /// Obtiene la información del video de TikTok (incluyendo la URL de descarga sin marca de agua).
   Future<Map<String, dynamic>?> getTikTokVideoInfo(String tiktokUrl) async {
     final encodedUrl = Uri.encodeComponent(tiktokUrl);
-    final uri = Uri.parse('https://$_apiHost/tiktok/info?url=$encodedUrl');
 
-    try {
-      final response = await http.get(
-        uri,
-        headers: {
-          'x-rapidapi-host': _apiHost,
-          'x-rapidapi-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-      );
+    // Try multiple possible endpoints
+    final endpoints = [
+      '/api?url=$encodedUrl',
+      '/tiktok?url=$encodedUrl',
+      '/tiktok/info?url=$encodedUrl',
+    ];
 
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body) as Map<String, dynamic>;
-        debugPrint('✅ TikTok API Response: ${decoded.keys}');
-        if (decoded.containsKey('data')) {
-          debugPrint('✅ Data keys: ${(decoded['data'] as Map).keys}');
+    for (final endpoint in endpoints) {
+      final uri = Uri.parse('https://$_apiHost$endpoint');
+      debugPrint('🔍 Trying endpoint: $endpoint');
+
+      try {
+        final response = await http.get(
+          uri,
+          headers: {
+            'x-rapidapi-host': _apiHost,
+            'x-rapidapi-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+        );
+
+        debugPrint('📡 Response status: ${response.statusCode}');
+        debugPrint('📦 Response body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          final decoded = json.decode(response.body) as Map<String, dynamic>;
+
+          // Check if response has valid data
+          if (decoded.containsKey('data') || decoded.containsKey('url')) {
+            debugPrint('✅ Success with endpoint: $endpoint');
+            return decoded;
+          }
         }
-        return decoded;
-      } else {
-        debugPrint(
-            '❌ Error consultando TikTok API: ${response.statusCode} - ${response.body}');
-        return null;
+      } catch (e) {
+        debugPrint('❌ Exception with endpoint $endpoint: $e');
       }
-    } catch (e) {
-      debugPrint('❌ Exception en TikTokService: $e');
-      return null;
     }
+
+    debugPrint('❌ All endpoints failed');
+    return null;
   }
 }

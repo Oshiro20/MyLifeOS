@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 enum RecipeImportState {
   initial,
@@ -83,8 +84,22 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     errorMessage = null;
 
     try {
+      // Extract thumbnail from video first frame
+      final thumbnailPath = '${filePath}_thumb.jpg';
+      final thumbnailBytes = await VideoThumbnail.thumbnailFile(
+        video: filePath,
+        thumbnailPath: thumbnailPath,
+        imageFormat: ImageFormat.JPEG,
+        maxHeight: 1080,
+        quality: 80,
+      );
+
+      final imagePath = thumbnailPath ?? filePath;
+
+      debugPrint('📸 Video thumbnail: $imagePath');
+
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      final recipe = await extractUseCase.execute(mediaPath: filePath);
+      final recipe = await extractUseCase.execute(mediaPath: imagePath);
 
       if (recipe != null) {
         importedRecipe = recipe;
@@ -96,6 +111,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
     } catch (e) {
       errorMessage = e.toString();
+      debugPrint('❌ Video import error: $e');
       state = RecipeImportState.error;
     }
   }

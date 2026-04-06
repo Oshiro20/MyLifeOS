@@ -35,6 +35,7 @@ dependencies:
   crypto: ^3.0.3
   uuid: ^4.4.0
   flutter_image_compress: ^2.4.0
+  video_thumbnail: ^0.5.6
 
 dev_dependencies:
   flutter_test:
@@ -79,3 +80,4 @@ flutter:
   #
   # For details regarding fonts in packages, see
   # https://flutter.dev/to/font-from-package
+"  video_thumbnail: ^0.5.3" 
