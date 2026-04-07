@@ -23,6 +23,9 @@ abstract interface class ICocinaRepository {
     int limit = 10,
   });
 
+  // Actualizar receta (para rating, etc.)
+  Future<Recipe> updateRecipe(Recipe recipe);
+
   // ── Lista de compras ────────────────────────────────────────────────────────
   Future<List<ShoppingItem>> getShoppingList();
   Future<ShoppingItem> addShoppingItem(ShoppingItem item);

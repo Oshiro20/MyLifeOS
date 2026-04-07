@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
+import '../providers/cooking_session_provider.dart';
 
 /// Tab "Sugeridas" — muestra qué puedes cocinar hoy con lo que tienes.
 class SuggestionsTab extends ConsumerStatefulWidget {
@@ -20,6 +21,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     NutritionGoal.other: '🍽️ Otro',
   };
 
+  // Estado para preferencia culinaria
+  String _selectedCuisine = 'Todas';
+
   @override
   void initState() {
     super.initState();
@@ -29,10 +33,23 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       final aiNotifier = ref.read(whatCanICookProvider.notifier);
       // Only auto-load if we have ingredients and it's needed
       if (invState.ingredients.isNotEmpty && aiNotifier.needsRefresh) {
-        aiNotifier.generateSuggestions();
+        aiNotifier.generateSuggestions(
+            cuisinePreference:
+                _selectedCuisine == 'Todas' ? null : _selectedCuisine);
       }
     });
   }
+
+  // Lista de preferencias culinarias
+  final List<String> _cuisines = [
+    'Todas',
+    'Selvática 🌿',
+    'Serrana 🏔️',
+    'Costeña 🏖️',
+    'Italiana 🇮🇹',
+    'Asiática 🥢',
+    'Mexicana 🇲🇽',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -40,130 +57,218 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final invState = ref.watch(inventoryProvider);
     final aiState = ref.watch(whatCanICookProvider);
     final aiNotifier = ref.read(whatCanICookProvider.notifier);
+    final cookingSession = ref.watch(cookingSessionProvider);
 
     final availableNames =
         invState.ingredients.map((i) => i.name.toLowerCase()).toSet();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Selector de objetivo nutricional
-        Container(
-          height: 52,
-          color: Theme.of(context).appBarTheme.backgroundColor,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            children: NutritionGoal.values.map((goal) {
-              final selected = state.activeGoal == goal;
-              return GestureDetector(
-                onTap: () => ref.read(recipesProvider.notifier).setGoal(goal),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFF00C896)
-                        : const Color(0xFF2A2A40),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _goalLabels[goal]!,
-                    style: TextStyle(
-                      color: selected ? Colors.white : Colors.white54,
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+    return Scaffold(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Cooking Session Banner
+          if (cookingSession != null)
+            _CookingSessionBanner(session: cookingSession),
+          // Selector de objetivo nutricional
+          Container(
+            height: 52,
+            color: Theme.of(context).appBarTheme.backgroundColor,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              children: NutritionGoal.values.map((goal) {
+                final selected = state.activeGoal == goal;
+                return GestureDetector(
+                  onTap: () => ref.read(recipesProvider.notifier).setGoal(goal),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF00C896)
+                          : const Color(0xFF2A2A40),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-
-        // Mensaje motivante + Botón IA
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
                     child: Text(
-                      _greeting(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: aiState == WhatCanICookState.loading
-                        ? null
-                        : () => aiNotifier.generateSuggestions(),
-                    icon: aiState == WhatCanICookState.loading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(aiState == WhatCanICookState.loading
-                        ? 'Pensando...'
-                        : '✨ Chef IA'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF9800),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      _goalLabels[goal]!,
+                      style: TextStyle(
+                        color: selected ? Colors.white : Colors.white54,
+                        fontSize: 13,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w400,
                       ),
                     ),
                   ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Scrollable Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Mensaje motivante + Botón IA + Preferencias
+                  _buildChefIAHeader(context, aiState, aiNotifier),
+
+                  // Preferencias Culinarias
+                  _buildCuisineChips(context),
+
+                  // AI Suggestions Section
+                  _buildAISuggestions(context, aiState, aiNotifier),
+
+                  // Divider
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(child: Divider(color: Colors.white24)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            '📋 Desde tu Despensa',
+                            style:
+                                TextStyle(color: Colors.white38, fontSize: 12),
+                          ),
+                        ),
+                        Expanded(child: Divider(color: Colors.white24)),
+                      ],
+                    ),
+                  ),
+
+                  // Pantry Suggestions (Local Matching)
+                  _buildPantrySuggestions(
+                      context, state, invState, availableNames),
                 ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${invState.ingredients.length} ingredientes en tu despensa · ${state.recipes.length} recetas guardadas',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChefIAHeader(BuildContext context, WhatCanICookState aiState,
+      WhatCanICookNotifier aiNotifier) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              _greeting(),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: aiState == WhatCanICookState.loading
+                ? null
+                : () => aiNotifier.generateSuggestions(
+                      cuisinePreference:
+                          _selectedCuisine == 'Todas' ? null : _selectedCuisine,
+                    ),
+            icon: aiState == WhatCanICookState.loading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome, size: 18),
+            label: Text(aiState == WhatCanICookState.loading
+                ? 'Pensando...'
+                : '✨ Chef IA'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF9800),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCuisineChips(BuildContext context) {
+    return Container(
+      height: 45,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _cuisines.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cuisine = _cuisines[index];
+          final isSelected = _selectedCuisine == cuisine;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedCuisine = cuisine);
+              // Trigger refresh immediately with new preference
+              ref.read(whatCanICookProvider.notifier).generateSuggestions(
+                    cuisinePreference: cuisine == 'Todas' ? null : cuisine,
+                  );
+            },
+            child: Chip(
+              label: Text(
+                cuisine,
                 style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.38),
-                    fontSize: 12),
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              backgroundColor: isSelected
+                  ? const Color(0xFF00E676)
+                  : const Color(0xFF2A2A40),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAISuggestions(BuildContext context, WhatCanICookState aiState,
+      WhatCanICookNotifier aiNotifier) {
+    if (aiState == WhatCanICookState.loading) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Column(
+            children: [
+              CircularProgressIndicator(color: Color(0xFFFF9800)),
+              SizedBox(height: 16),
+              Text(
+                'El Chef IA está analizando tu inventario...',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
+      );
+    }
 
-        // AI Suggestions Section
-        if (aiState == WhatCanICookState.loading)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(
-              child: Column(
-                children: [
-                  CircularProgressIndicator(color: Color(0xFFFF9800)),
-                  SizedBox(height: 16),
-                  Text(
-                    'El Chef IA está analizando tu inventario...',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          )
-        else if (aiState == WhatCanICookState.success &&
-            aiNotifier.suggestions.isNotEmpty) ...[
+    if (aiState == WhatCanICookState.success &&
+        aiNotifier.suggestions.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
@@ -179,11 +284,13 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                       fontSize: 14),
                 ),
                 const Spacer(),
-                // Refresh button
                 IconButton(
                   icon: const Icon(Icons.refresh,
                       size: 18, color: Color(0xFFFF9800)),
-                  onPressed: () => aiNotifier.generateSuggestions(),
+                  onPressed: () => aiNotifier.generateSuggestions(
+                    cuisinePreference:
+                        _selectedCuisine == 'Todas' ? null : _selectedCuisine,
+                  ),
                   tooltip: 'Obtener nuevas sugerencias',
                 ),
                 IconButton(
@@ -195,7 +302,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             ),
           ),
           SizedBox(
-            height: 350,
+            height: 380,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -213,58 +320,67 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               },
             ),
           ),
-        ] else if (aiState == WhatCanICookState.error) ...[
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.redAccent),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    aiNotifier.errorMessage ?? 'Error desconocido',
-                    style:
-                        const TextStyle(color: Colors.redAccent, fontSize: 12),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => aiNotifier.generateSuggestions(),
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ),
-          ),
         ],
+      );
+    }
 
-        // Sugerencias
-        Expanded(
-          child: state.suggestions.isEmpty
-              ? _EmptyState(
-                  hasRecipes: state.recipes.isNotEmpty,
-                  hasIngredients: invState.ingredients.isNotEmpty,
-                )
-              : ListView.builder(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  itemCount: state.suggestions.length,
-                  itemBuilder: (ctx, i) {
-                    final r = state.suggestions[i];
-                    return _SuggestionCard(
-                      recipe: r,
-                      availableNames: availableNames,
-                      onTap: () => _showRecipeDetail(context, r),
-                      onCook: () => _cookRecipe(context, ref, r),
-                    );
-                  },
-                ),
+    if (aiState == WhatCanICookState.error) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
         ),
-      ],
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                aiNotifier.errorMessage ?? 'Error desconocido',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              ),
+            ),
+            TextButton(
+              onPressed: () => aiNotifier.generateSuggestions(
+                cuisinePreference:
+                    _selectedCuisine == 'Todas' ? null : _selectedCuisine,
+              ),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPantrySuggestions(BuildContext context, RecipesState state,
+      InventoryState invState, Set<String> availableNames) {
+    if (state.suggestions.isEmpty) {
+      return _EmptyState(
+        hasRecipes: state.recipes.isNotEmpty,
+        hasIngredients: invState.ingredients.isNotEmpty,
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: state.suggestions.length,
+      itemBuilder: (ctx, i) {
+        final r = state.suggestions[i];
+        return _SuggestionCard(
+          recipe: r,
+          availableNames: availableNames,
+          onTap: () => _showRecipeDetail(context, r),
+          onCook: () => _cookRecipe(context, ref, r),
+        );
+      },
     );
   }
 
@@ -280,14 +396,55 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     );
   }
 
-  void _cookRecipe(BuildContext context, WidgetRef ref, Recipe recipe) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('🍳 ¡Cocinando "${recipe.name}"!'),
-        backgroundColor: const Color(0xFF00C896),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  Future<void> _cookRecipe(
+    BuildContext context,
+    WidgetRef ref,
+    Recipe recipe,
+  ) async {
+    // Start cooking session
+    ref.read(cookingSessionProvider.notifier).startSession(
+          recipeName: recipe.name,
+          recipeId: recipe.id,
+          originalServings: recipe.servings,
+          scaledServings: 1,
+        );
+
+    final inventoryNotifier = ref.read(inventoryProvider.notifier);
+    final deducted =
+        await inventoryNotifier.deductRecipeIngredients(recipe.ingredients);
+
+    if (context.mounted) {
+      if (deducted.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
+                const SizedBox(height: 4),
+                Text(
+                  deducted.join(', '),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFFF9800),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        // Reload inventory
+        inventoryNotifier.load();
+      }
+    }
   }
 
   Future<void> _saveAISuggestion(
@@ -320,6 +477,14 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     WhatCanICookNotifier notifier,
     RecipeSuggestion suggestion,
   ) async {
+    // Start cooking session
+    ref.read(cookingSessionProvider.notifier).startSession(
+          recipeName: suggestion.recipe.name,
+          recipeId: suggestion.recipe.id,
+          originalServings: suggestion.recipe.servings,
+          scaledServings: 1,
+        );
+
     final result = await notifier.cookSuggestion(suggestion);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -357,8 +522,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
 
   String _greeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return '🌅 ¿Qué desayunamos hoy?';
-    if (hour < 17) return '🍳 ¿Qué almorzamos hoy?';
+    if (hour < 10) return '🌅 ¿Qué desayunamos hoy?';
+    if (hour < 17) return '🍛 ¿Qué almorzamos hoy?';
     return '🌙 ¿Qué cenamos hoy?';
   }
 }
@@ -420,12 +585,14 @@ class _SuggestionCard extends StatelessWidget {
   final Set<String> availableNames;
   final VoidCallback onTap;
   final VoidCallback onCook;
+  final ValueChanged<int?>? onRate;
 
   const _SuggestionCard({
     required this.recipe,
     required this.availableNames,
     required this.onTap,
     required this.onCook,
+    this.onRate,
   });
 
   @override
@@ -477,6 +644,28 @@ class _SuggestionCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis),
             ],
+            const SizedBox(height: 8),
+            // Calificación
+            StarRating(
+              rating: recipe.rating,
+              size: 18,
+              onRatingChanged: (rating) {
+                if (rating != null) {
+                  final container = ProviderScope.containerOf(context);
+                  container
+                      .read(recipesProvider.notifier)
+                      .updateRecipeRating(recipe.id, rating);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          '⭐ Calificaste "${recipe.name}" con $rating estrellas'),
+                      backgroundColor: const Color(0xFFFFB300),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
             const SizedBox(height: 10),
             // Chips de info
             Wrap(
@@ -632,6 +821,27 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                             fontSize: 14)),
                   ],
                   const SizedBox(height: 12),
+                  // Calificación
+                  StarRating(
+                    rating: widget.recipe.rating,
+                    size: 24,
+                    onRatingChanged: (rating) {
+                      if (rating != null) {
+                        final container = ProviderScope.containerOf(context);
+                        container
+                            .read(recipesProvider.notifier)
+                            .updateRecipeRating(widget.recipe.id, rating);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                '⭐ Calificaste "${widget.recipe.name}" con $rating estrellas'),
+                            backgroundColor: const Color(0xFFFFB300),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                   // Chips
                   Wrap(
                     spacing: 8,
@@ -882,6 +1092,14 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   Future<void> _cookRecipeFromDetail(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
     final inventoryNotifier = container.read(inventoryProvider.notifier);
+    // Start cooking session
+    container.read(cookingSessionProvider.notifier).startSession(
+          recipeName: widget.recipe.name,
+          recipeId: widget.recipe.id,
+          originalServings: widget.recipe.servings,
+          scaledServings: _scaledServings,
+        );
+
     final deducted = await inventoryNotifier
         .deductRecipeIngredients(widget.recipe.ingredients);
 
@@ -988,11 +1206,14 @@ class _AISuggestionCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onSave;
   final VoidCallback onCook;
+  final ValueChanged<int?>? onRate;
+
   const _AISuggestionCard({
     required this.suggestion,
     required this.onTap,
     required this.onSave,
     required this.onCook,
+    this.onRate,
   });
 
   @override
@@ -1075,6 +1296,15 @@ class _AISuggestionCard extends StatelessWidget {
                         _Chip('${mealType.emoji} ${mealType.label}'),
                     ],
                   ),
+                  // Star Rating
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: StarRating(
+                      rating: recipe.rating,
+                      size: 16,
+                      onRatingChanged: onRate,
+                    ),
+                  ),
                   if (recipe.description.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -1152,6 +1382,93 @@ class _AISuggestionCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Cooking Session Banner ───────────────────────────────────────────────────
+
+class _CookingSessionBanner extends StatelessWidget {
+  final CookingSession session;
+  const _CookingSessionBanner({required this.session});
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ProviderScope.containerOf(context)
+        .read(cookingSessionProvider.notifier);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: const Color(0xFFFF9800),
+      child: Row(
+        children: [
+          const Icon(Icons.restaurant_menu, color: Colors.black),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🔥 Cocinando ahora...',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  session.recipeName,
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.black),
+            onPressed: notifier.endSession,
+            tooltip: 'Terminar sesión',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Star Rating Widget ───────────────────────────────────────────────────────
+
+class StarRating extends StatelessWidget {
+  final int? rating;
+  final ValueChanged<int?>? onRatingChanged;
+  final double size;
+
+  const StarRating({
+    super.key,
+    this.rating,
+    this.onRatingChanged,
+    this.size = 20,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final starValue = index + 1;
+        final isFilled = rating != null && starValue <= rating!;
+        return GestureDetector(
+          onTap: onRatingChanged != null
+              ? () => onRatingChanged!(starValue)
+              : null,
+          child: Icon(
+            isFilled ? Icons.star : Icons.star_border,
+            color: isFilled ? const Color(0xFFFFB300) : Colors.white38,
+            size: size,
+          ),
+        );
+      }),
     );
   }
 }

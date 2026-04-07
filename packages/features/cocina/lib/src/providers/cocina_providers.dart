@@ -230,6 +230,18 @@ class RecipesNotifier extends Notifier<RecipesState> {
     );
   }
 
+  Future<void> updateRecipeRating(String id, int rating) async {
+    final recipe = state.recipes.firstWhere((r) => r.id == id);
+    final updated = recipe.copyWith(rating: rating);
+    await _repo.updateRecipe(updated);
+    state = state.copyWith(
+      recipes: [
+        for (final r in state.recipes)
+          if (r.id == id) updated else r
+      ],
+    );
+  }
+
   void setGoal(NutritionGoal goal) {
     state = state.copyWith(activeGoal: goal);
     refreshSuggestions();

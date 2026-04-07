@@ -188,6 +188,45 @@ class CocinaRepository implements ICocinaRepository {
         .write(RecipesCompanion(isFavorite: Value(!r.isFavorite)));
   }
 
+  @override
+  Future<Recipe> updateRecipe(Recipe recipe) async {
+    final existing = await getRecipeById(recipe.id);
+    if (existing == null) throw Exception('Receta no encontrada');
+
+    // Update recipe details
+    await (_db.update(_db.recipes)..where((t) => t.id.equals(recipe.id)))
+        .write(RecipesCompanion(
+      name: Value(recipe.name),
+      description: Value(recipe.description),
+      durationMinutes: Value(recipe.durationMinutes),
+      servings: Value(recipe.servings),
+      instructionsJson: Value(jsonEncode(recipe.instructions)),
+      tagsCsv: Value(recipe.tags.join(',')),
+      imageAssetId: Value(recipe.imageAssetId),
+      goalIndex: Value(recipe.goal.index),
+      isFavorite: Value(recipe.isFavorite),
+    ));
+
+    // Update ingredients
+    await (_db.delete(_db.recipeIngredients)
+          ..where((t) => t.recipeId.equals(recipe.id)))
+        .go();
+
+    for (final ing in recipe.ingredients) {
+      await _db.into(_db.recipeIngredients).insert(
+            RecipeIngredientsCompanion(
+              id: Value(ing.id),
+              recipeId: Value(recipe.id),
+              ingredientName: Value(ing.ingredientName),
+              quantity: Value(ing.quantity),
+              unit: Value(ing.unit),
+            ),
+          );
+    }
+
+    return recipe;
+  }
+
   // ── Sugerencias ──────────────────────────────────────────────────────────────
   @override
   Future<List<Recipe>> suggestRecipes({
