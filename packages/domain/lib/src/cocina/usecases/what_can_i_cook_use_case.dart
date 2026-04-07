@@ -85,6 +85,15 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 3. Cada receta debe ser diferente y creativa
 4. Prioriza recetas que usen ingredientes que están por vencer
 5. Sé específico con cantidades y pasos
+6. ⚠️ IMPORTANTE: CADA receta DEBE tener AL MENOS 3 ingredientes reales en el array "ingredientes". NO devuelvas recetas vacías o sin ingredientes.
+7. Variedad: Incluye diferentes tipos de plato. DEBES mezclar entre:
+   - Postres (🍰): tortas, flanes, mazamorras, gelatinas
+   - Entradas (🥗): ceviches, ensaladas, causa, tiraditos
+   - Sopas (🍲): caldos, cremas, aguaditos
+   - Platos fuertes (🍛): arroces, tallarines, carnes
+   - Bebidas (🥤): jugos, chicha, limonadas, emolientes
+   - Snacks (🍿): botanas, pasabocas
+8. Para CADA receta incluye "cuisine_style" con el estilo de cocina (ej: "Peruana-sierra", "Italiana", "Selvática")
 
 📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
 
@@ -97,8 +106,9 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
     "tiempo_coccion_min": 30,
     "tiempo_total_min": 45,
     "dificultad": "Fácil",
-    "tipo_comida": "Almuerzo",
+    "tipo_comida": "Postre",
     "cocina": "Peruana",
+    "cuisine_style": "Peruana-costa",
     "ingredientes": [
       {"nombre": "Arroz", "cantidad": 2.0, "unidad": "tazas"}
     ],
@@ -128,6 +138,7 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 9. "porciones" entero: 1-12.
 10. NO uses ingredientes que el usuario no le gustan. Si son esenciales, sustitúyelos.
 11. Incluye "cuisine_style" con el estilo de cocina (ej: "Peruana-sierra", "Italiana", "Selvática").
+12. "tipo_comida" puede ser: Desayuno, Almuerzo, Cena, Entrada, Sopa, Seco, Postre, Mazamorra, Bebida, Snack.
 
 ${cuisineContext.isNotEmpty ? cuisineContext : ''}
 ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
@@ -240,6 +251,13 @@ ${recentlyUsedWarning.isNotEmpty ? recentlyUsedWarning : ''}
             quantity: qty,
             unit: unit,
           ));
+        }
+
+        // Skip empty recipes (no ingredients or too few)
+        if (ingredients.length < 2) {
+          debugPrint(
+              '⚠️ Skipping empty recipe: $name (${ingredients.length} ingredients)');
+          continue;
         }
 
         // Parse steps

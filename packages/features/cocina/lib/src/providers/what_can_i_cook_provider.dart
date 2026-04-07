@@ -19,23 +19,24 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
   String? _lastMealPeriod;
-  DateTime? _lastRefreshTime;
 
   @override
   WhatCanICookState build() {
     return WhatCanICookState.initial;
   }
 
-  /// Checks if a refresh is needed based on meal period change or manual refresh
+  /// Checks if a refresh is needed based on meal period change
+  /// Auto-refresh only 3 times a day at meal transitions:
+  /// - Before 10:00 (breakfast)
+  /// - 10:00-17:00 (lunch)
+  /// - After 17:00 (dinner)
   bool get needsRefresh {
     final currentPeriod = _getCurrentMealPeriod();
-    // Refresh if it's a new meal period or if it's been more than 2 hours
+    // First time ever - load
     if (_lastMealPeriod == null) return true;
+    // Only refresh when meal period changes (3 times a day max)
     if (_lastMealPeriod != currentPeriod) return true;
-    if (_lastRefreshTime != null &&
-        DateTime.now().difference(_lastRefreshTime!).inHours > 2) {
-      return true;
-    }
+    // Don't auto-refresh otherwise - user can manually refresh
     return false;
   }
 
@@ -92,7 +93,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
 
       state = WhatCanICookState.success;
       _lastMealPeriod = _getCurrentMealPeriod();
-      _lastRefreshTime = DateTime.now();
     } catch (e) {
       errorMessage = e.toString();
       state = WhatCanICookState.error;

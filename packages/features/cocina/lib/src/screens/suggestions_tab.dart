@@ -784,6 +784,12 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final isScaled = _scaledServings != widget.recipe.servings;
+    final scaleRatio = _scaledServings / widget.recipe.servings;
+    final scaleLabel = scaleRatio > 1
+        ? 'x${scaleRatio.toStringAsFixed(1)} (aumentado)'
+        : scaleRatio < 1
+            ? 'x${scaleRatio.toStringAsFixed(1)} (reducido)'
+            : '(original)';
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -925,7 +931,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                   if (isScaled) ...[
                     const SizedBox(height: 8),
                     Text(
-                      '📏 Cantidades escaladas (original: ${widget.recipe.servings} porciones)',
+                      '📏 Cantidades escaladas: $scaleLabel',
                       style: const TextStyle(
                           color: Color(0xFFFF9800),
                           fontSize: 11,
