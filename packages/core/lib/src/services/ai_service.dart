@@ -22,10 +22,14 @@ class GeminiService {
   Future<void> saveApiKey(String key) async {}
 
   Future<String?> getApiKey() async {
-    // HOTFIX v2.6.4: Hardcoded key to bypass .env caching issue
-    // Previous versions cached the old expired key in the asset bundle.
-    // We force the new key here to ensure it works immediately.
-    return 'AIzaSyC_xOPUwpv-XAGu01_gj2qB_OkZEagTqrc';
+    // Securely read from .env asset (bundled in APK, but ignored in Git)
+    final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    if (envKey.isNotEmpty) {
+      return envKey;
+    }
+    // No hardcoded fallbacks to prevent leaks
+    debugPrint('⚠️ WARNING: GEMINI_API_KEY not found in .env');
+    return null;
   }
 
   Future<void> removeApiKey() async {}
