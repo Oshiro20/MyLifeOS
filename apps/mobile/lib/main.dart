@@ -51,6 +51,10 @@ final _router = GoRouter(
               path: 'import',
               builder: (context, state) => const RecipeImporterScreen(),
             ),
+            GoRoute(
+              path: 'weekly-plan',
+              builder: (context, state) => const WeeklyPlanScreen(),
+            ),
           ],
         ),
         GoRoute(

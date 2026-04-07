@@ -62,10 +62,10 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(recipesProvider);
     final invState = ref.watch(inventoryProvider);
-    final aiState = ref.watch(whatCanICookProvider);
-    final aiNotifier = ref.read(whatCanICookProvider.notifier);
     final hybridSuggestionsAsync = ref.watch(hybridSuggestionsProvider);
     final cookingSession = ref.watch(cookingSessionProvider);
+    final aiState = ref.watch(whatCanICookProvider);
+    final aiNotifier = ref.read(whatCanICookProvider.notifier);
 
     final availableNames =
         invState.ingredients.map((i) => i.name.toLowerCase()).toSet();
@@ -614,7 +614,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _RecipeDetailSheet(recipe: recipe),
+      builder: (_) => RecipeDetailSheet(recipe: recipe),
     );
   }
 
@@ -960,15 +960,15 @@ class _SuggestionCard extends StatelessWidget {
 
 // ── Recipe Detail Sheet (reutilizado de recipes_tab) ─────────────────────────
 
-class _RecipeDetailSheet extends StatefulWidget {
+class RecipeDetailSheet extends StatefulWidget {
   final Recipe recipe;
-  const _RecipeDetailSheet({required this.recipe});
+  const RecipeDetailSheet({required this.recipe, super.key});
 
   @override
-  State<_RecipeDetailSheet> createState() => _RecipeDetailSheetState();
+  State<RecipeDetailSheet> createState() => _RecipeDetailSheetState();
 }
 
-class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
+class _RecipeDetailSheetState extends State<RecipeDetailSheet> {
   int _scaledServings = 0;
 
   @override

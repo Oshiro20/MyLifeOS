@@ -313,3 +313,39 @@ final hybridSuggestionsProvider =
     minMatchPercentage: 0.40,
   );
 });
+
+// ── Weekly Menu Provider ──────────────────────────────────────────────────────
+class WeeklyMenuState {}
+
+class WeeklyMenuInitial extends WeeklyMenuState {}
+
+class WeeklyMenuLoading extends WeeklyMenuState {}
+
+class WeeklyMenuLoaded extends WeeklyMenuState {
+  final List<dynamic> entries; // Use dynamic
+  WeeklyMenuLoaded(this.entries);
+}
+
+class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
+  ICocinaRepository get _repo => ref.read(cocinaRepositoryProvider);
+
+  @override
+  WeeklyMenuState build() => WeeklyMenuInitial();
+
+  Future<void> load() async {
+    state = WeeklyMenuLoading();
+    final entries = await _repo.getWeeklyMenu();
+    state = WeeklyMenuLoaded(entries);
+  }
+
+  Future<void> generate() async {
+    state = WeeklyMenuLoading();
+    final useCase = GenerateWeeklyMenuUseCase(repository: _repo);
+    await useCase.execute();
+    await load();
+  }
+}
+
+final weeklyMenuProvider =
+    NotifierProvider<WeeklyMenuNotifier, WeeklyMenuState>(
+        WeeklyMenuNotifier.new);

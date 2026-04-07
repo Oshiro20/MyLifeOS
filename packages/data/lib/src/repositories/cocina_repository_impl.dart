@@ -456,6 +456,38 @@ class CocinaRepository implements ICocinaRepository {
     }
     return items;
   }
+
+  // ── Menú Semanal ────────────────────────────────────────────────────────────
+
+  @override
+  Future<List<WeeklyMenuEntry>> getWeeklyMenu() async {
+    final rows = await (_db.select(_db.weeklyMenuEntries)
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.dayOfWeek),
+            (t) => OrderingTerm.asc(t.mealType)
+          ]))
+        .get();
+    return rows;
+  }
+
+  @override
+  Future<void> saveWeeklyMenuEntry(WeeklyMenuEntry entry) async {
+    await _db.into(_db.weeklyMenuEntries).insert(
+          WeeklyMenuEntriesCompanion(
+            id: Value(entry.id),
+            dayOfWeek: Value(entry.dayOfWeek),
+            mealType: Value(entry.mealType),
+            recipeId: Value(entry.recipeId),
+            isCustom: Value(entry.isCustom),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  @override
+  Future<void> clearWeeklyMenu() async {
+    await _db.delete(_db.weeklyMenuEntries).go();
+  }
 }
 
 // ── Extensión para copyWith ───────────────────────────────────────────────────

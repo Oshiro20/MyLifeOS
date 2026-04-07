@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
-import '../providers/what_can_i_cook_provider.dart';
+import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/cooking_session_provider.dart';
+import 'suggestions_tab.dart';
 
-/// "Antojos" tab - Shows only cravings (postres, snacks, bebidas)
-/// This is a wrapper around SuggestionsTab pre-configured for cravings mode
+/// "Antojos" tab - Shows Cravings (Desserts, Snacks) instantly using API
 class AntojosTab extends ConsumerStatefulWidget {
   const AntojosTab({super.key});
 
@@ -14,24 +15,59 @@ class AntojosTab extends ConsumerStatefulWidget {
 }
 
 class _AntojosTabState extends ConsumerState<AntojosTab> {
+  List<Recipe> _cravings = [];
+  bool _loading = false;
+
   @override
   void initState() {
     super.initState();
-    // Auto-load cravings on first entry
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final invState = ref.read(inventoryProvider);
-      final aiNotifier = ref.read(whatCanICookProvider.notifier);
-      if (invState.ingredients.isNotEmpty && aiNotifier.needsRefresh) {
-        aiNotifier.generateSuggestions(mode: SuggestionMode.cravings);
-      }
+    _loadCravings();
+  }
+
+  Future<void> _loadCravings() async {
+    setState(() => _loading = true);
+    final apiService = TheMealDBService();
+
+    // Fetch Desserts and Starters/Sides which work as snacks
+    final desserts = await apiService.searchByCategory('Dessert');
+    final sides = await apiService.searchByCategory('Side');
+
+    setState(() {
+      _cravings = [...desserts, ...sides].take(15).toList();
+      _loading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final invState = ref.watch(inventoryProvider);
-    final aiState = ref.watch(whatCanICookProvider);
-    final aiNotifier = ref.read(whatCanICookProvider.notifier);
+    if (_loading) {
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFFFF9800)));
+    }
+
+    if (_cravings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cookie, size: 64, color: Colors.white24),
+            const SizedBox(height: 12),
+            const Text(
+              'No se encontraron antojos.',
+              style: TextStyle(color: Colors.white38),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadCravings,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9800)),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -44,84 +80,11 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFFFF9800)),
-            onPressed: aiState == WhatCanICookState.loading
-                ? null
-                : () => aiNotifier.generateSuggestions(
-                      mode: SuggestionMode.cravings,
-                    ),
-            tooltip: 'Obtener nuevos antojos',
+            onPressed: _loadCravings,
           ),
         ],
       ),
-      body: invState.ingredients.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.no_food, size: 64, color: Colors.white24),
-                  SizedBox(height: 12),
-                  Text(
-                    'Agrega ingredientes a tu despensa\npara ver sugerencias de antojos.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white38, fontSize: 14),
-                  ),
-                ],
-              ),
-            )
-          : _AntojosContent(
-              aiState: aiState,
-              aiNotifier: aiNotifier,
-              onShowDetail: (recipe) => _showRecipeDetail(context, recipe),
-            ),
-    );
-  }
-
-  void _showRecipeDetail(BuildContext context, dynamic recipe) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _RecipeDetailSheet(recipe: recipe),
-    );
-  }
-}
-
-class _AntojosContent extends StatelessWidget {
-  final WhatCanICookState aiState;
-  final WhatCanICookNotifier aiNotifier;
-  final Function(dynamic) onShowDetail;
-
-  const _AntojosContent({
-    required this.aiState,
-    required this.aiNotifier,
-    required this.onShowDetail,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (aiState == WhatCanICookState.loading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: Color(0xFFFF9800)),
-            SizedBox(height: 16),
-            Text(
-              'El Chef IA está pensando en antojos...',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (aiState == WhatCanICookState.success &&
-        aiNotifier.visibleSuggestions.isNotEmpty) {
-      return Padding(
+      body: Padding(
         padding: const EdgeInsets.all(12),
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -130,128 +93,68 @@ class _AntojosContent extends StatelessWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 0.85,
           ),
-          itemCount: aiNotifier.visibleSuggestions.length,
+          itemCount: _cravings.length,
           itemBuilder: (ctx, i) {
-            final suggestion = aiNotifier.visibleSuggestions[i];
+            final recipe = _cravings[i];
             return _AntojoCard(
-              suggestion: suggestion,
-              onTap: () => onShowDetail(suggestion.recipe),
-              onSave: () => _saveSuggestion(context, aiNotifier, suggestion),
-              onCook: () => _cookSuggestion(context, aiNotifier, suggestion),
+              recipe: recipe,
+              onTap: () => _showRecipeDetail(context, recipe),
+              onSave: () => _saveRecipe(context, recipe),
+              onCook: () => _cookRecipe(context, recipe),
             );
           },
         ),
-      );
-    }
-
-    if (aiState == WhatCanICookState.error) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
-            const SizedBox(height: 12),
-            Text(
-              aiNotifier.errorMessage ?? 'Error desconocido',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => aiNotifier.generateSuggestions(
-                mode: SuggestionMode.cravings,
-              ),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9800),
-                foregroundColor: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Initial state - show prompt to load
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cookie, size: 64, color: Colors.white24),
-          const SizedBox(height: 12),
-          const Text(
-            '¿Qué se te antoja hoy?',
-            style: TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Postres, snacks, bebidas y más...',
-            style: TextStyle(color: Colors.white54, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => aiNotifier.generateSuggestions(
-              mode: SuggestionMode.cravings,
-            ),
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Generar Antojos'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF9800),
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  Future<void> _saveSuggestion(
-    BuildContext context,
-    WhatCanICookNotifier notifier,
-    dynamic suggestion,
-  ) async {
-    final saved = await notifier.saveSuggestion(suggestion);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(saved
-              ? '✅ "${suggestion.recipe.name}" guardada'
-              : '❌ Error al guardar'),
-          backgroundColor: saved ? const Color(0xFF00E676) : Colors.redAccent,
-        ),
-      );
-    }
+  void _showRecipeDetail(BuildContext context, Recipe recipe) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => RecipeDetailSheet(recipe: recipe),
+    );
   }
 
-  Future<void> _cookSuggestion(
-    BuildContext context,
-    WhatCanICookNotifier notifier,
-    dynamic suggestion,
-  ) async {
-    final result = await notifier.cookSuggestion(suggestion);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor:
-              result.success ? const Color(0xFFFF9800) : Colors.redAccent,
-        ),
-      );
-    }
+  void _saveRecipe(BuildContext context, Recipe recipe) {
+    ref.read(recipesProvider.notifier).saveRecipe(recipe).then((_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Receta guardada'),
+              backgroundColor: Color(0xFF00E676)),
+        );
+      }
+    });
+  }
+
+  void _cookRecipe(BuildContext context, Recipe recipe) {
+    ref.read(cookingSessionProvider.notifier).startSession(
+          recipeName: recipe.name,
+          recipeId: recipe.id,
+          originalServings: recipe.servings,
+        );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🍳 ¡Cocinando ${recipe.name}!'),
+        backgroundColor: const Color(0xFFFF9800),
+      ),
+    );
   }
 }
 
 class _AntojoCard extends StatelessWidget {
-  final dynamic suggestion;
+  final Recipe recipe;
   final VoidCallback onTap;
   final VoidCallback onSave;
   final VoidCallback onCook;
 
   const _AntojoCard({
-    required this.suggestion,
+    required this.recipe,
     required this.onTap,
     required this.onSave,
     required this.onCook,
@@ -259,8 +162,7 @@ class _AntojoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recipe = suggestion.recipe;
-    final mealType = recipe.tipoComida;
+    final mealType = recipe.tipoComida ?? MealType.postre;
 
     return GestureDetector(
       onTap: onTap,
@@ -278,7 +180,6 @@ class _AntojoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with emoji
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -286,26 +187,12 @@ class _AntojoCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        mealType?.emoji ?? '🍫',
-                        style: const TextStyle(fontSize: 28),
-                      ),
+                      Text(mealType.emoji,
+                          style: const TextStyle(fontSize: 24)),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF9800).withAlpha(40),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${suggestion.matchPercentage}%',
+                      Text('${recipe.durationMinutes} min',
                           style: const TextStyle(
-                              color: Color(0xFFFF9800),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ),
+                              color: Color(0xFF00E676), fontSize: 10)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -318,11 +205,24 @@ class _AntojoCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 4),
+                  if (recipe.ingredients.isNotEmpty)
+                    Text(
+                      recipe.ingredients
+                              .take(2)
+                              .map((e) => e.ingredientName)
+                              .join(', ') +
+                          (recipe.ingredients.length > 2 ? '...' : ''),
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),
             const Spacer(),
-            // Action buttons
             Padding(
               padding: const EdgeInsets.all(8),
               child: Row(
@@ -364,19 +264,6 @@ class _AntojoCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// Stub for recipe detail - will be replaced with actual implementation
-class _RecipeDetailSheet extends StatelessWidget {
-  final dynamic recipe;
-  const _RecipeDetailSheet({required this.recipe});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Recipe detail not implemented')),
     );
   }
 }

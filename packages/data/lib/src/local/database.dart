@@ -14,12 +14,14 @@ part 'database.g.dart';
   InventoryIngredients, Recipes, RecipeIngredients, Appliances, ShoppingItems,
   // v4 Armario
   WardrobeGarments, Outfits, UserProfile,
+  // v5 Menú Semanal
+  WeeklyMenuEntries,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +124,11 @@ class AppDatabase extends _$AppDatabase {
             } catch (e) {
               debugPrint('⚠️ [DB v12] Migration failed: $e');
             }
+          }
+          if (from < 13) {
+            debugPrint('📅 [DB v13] Creating weekly menu table...');
+            await m.createTable(weeklyMenuEntries);
+            debugPrint('✅ [DB v13] Weekly menu table created');
           }
 
           debugPrint('✅ [DB] Migration completed from v$from to v$to');

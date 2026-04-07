@@ -8,7 +8,7 @@ class TheMealDBService {
   final String _baseUrl = 'https://www.themealdb.com/api/json/v1/1';
   final _uuid = const Uuid();
 
-  /// Filter by main ingredient
+  /// Filter by main ingredient (Optimized: Parallel requests)
   Future<List<Recipe>> searchByIngredient(String ingredient) async {
     final url = Uri.parse('$_baseUrl/filter.php?i=$ingredient');
     final response = await http.get(url);
@@ -17,21 +17,24 @@ class TheMealDBService {
       final data = json.decode(response.body);
       final meals = data['meals'] as List<dynamic>? ?? [];
 
-      // Fetch full details for first 5 results to keep it fast
-      List<Recipe> recipes = [];
-      for (var meal in meals.take(5)) {
-        final id = meal['idMeal'];
+      // Fetch full details for first 3 results IN PARALLEL to keep it fast
+      final idsToFetch = meals.take(3).map((meal) => meal['idMeal']).toList();
+
+      final futures = idsToFetch.map((id) async {
         final detailUrl = Uri.parse('$_baseUrl/lookup.php?i=$id');
         final detailResponse = await http.get(detailUrl);
         if (detailResponse.statusCode == 200) {
           final detailData = json.decode(detailResponse.body);
           final details = detailData['meals']?.first;
           if (details != null) {
-            recipes.add(_parseMeal(details));
+            return _parseMeal(details);
           }
         }
-      }
-      return recipes;
+        return null;
+      });
+
+      final results = await Future.wait(futures);
+      return results.whereType<Recipe>().toList();
     }
     return [];
   }
@@ -39,6 +42,19 @@ class TheMealDBService {
   /// Filter by Area (e.g., Peruvian, Italian)
   Future<List<Recipe>> searchByArea(String area) async {
     final url = Uri.parse('$_baseUrl/filter.php?a=$area');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final meals = data['meals'] as List<dynamic>? ?? [];
+      return meals.take(10).map((meal) => _parseMeal(meal)).toList();
+    }
+    return [];
+  }
+
+  /// Filter by Category (e.g., Dessert, Starter, Side, Snack)
+  Future<List<Recipe>> searchByCategory(String category) async {
+    final url = Uri.parse('$_baseUrl/filter.php?c=$category');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {

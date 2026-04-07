@@ -16,6 +16,28 @@ class MealLogs extends Table {
 
 // ───────────────────────── COCINA ────────────────────────────────────────────
 
+@DataClassName('WeeklyMenuEntry')
+class WeeklyMenuEntries extends Table {
+  TextColumn get id => text()();
+  // 1=Mon, 2=Tue, ..., 7=Sun
+  IntColumn get dayOfWeek => integer()();
+  // 0=Breakfast, 1=Lunch, 2=Dinner
+  IntColumn get mealType => integer()();
+  // Reference to the recipe
+  TextColumn get recipeId => text().references(Recipes, #id)();
+  BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<TableIndex> get indexes => [
+        TableIndex(
+            name: 'idx_menu_day_type',
+            columns: {dayOfWeek, mealType},
+            unique: true),
+      ];
+}
+
 @DataClassName('InventoryIngredientEntry')
 class InventoryIngredients extends Table {
   TextColumn get id => text()();

@@ -1,3 +1,4 @@
+import 'package:data/data.dart';
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
 
@@ -35,4 +36,9 @@ abstract interface class ICocinaRepository {
     List<Recipe> recipes,
     List<InventoryIngredient> inventory,
   );
+
+  // ── Menú Semanal ────────────────────────────────────────────────────────────
+  Future<List<WeeklyMenuEntry>> getWeeklyMenu();
+  Future<void> saveWeeklyMenuEntry(WeeklyMenuEntry entry);
+  Future<void> clearWeeklyMenu();
 }
