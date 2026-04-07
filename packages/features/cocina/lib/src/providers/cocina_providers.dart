@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
+import 'package:core/core.dart';
 
 // ── Estados ───────────────────────────────────────────────────────────────────
 class InventoryState {
@@ -292,3 +293,23 @@ final inventoryProvider =
 
 final recipesProvider =
     NotifierProvider<RecipesNotifier, RecipesState>(RecipesNotifier.new);
+
+// ── Hybrid Suggestion Provider (Fast Local + API) ───────────────────────────
+final hybridSuggestionsProvider =
+    FutureProvider<List<RecipeSuggestion>>((ref) async {
+  final invState = ref.watch(inventoryProvider);
+  final repo = ref.watch(cocinaRepositoryProvider);
+
+  if (invState.ingredients.isEmpty) return [];
+
+  final useCase = HybridSuggestionUseCase(
+    repository: repo,
+    apiService: TheMealDBService(),
+  );
+
+  return useCase.execute(
+    inventory: invState.ingredients,
+    limit: 15,
+    minMatchPercentage: 0.40,
+  );
+});

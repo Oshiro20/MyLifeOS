@@ -55,8 +55,23 @@ class Recipes extends Table {
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
 
+  // Hybrid System Columns (v2.7.0)
+  // 0 = Local/Curated, 1 = API (TheMealDB), 2 = AI Generated
+  IntColumn get sourceIndex => integer().withDefault(const Constant(0))();
+  // Region for local recipes (e.g., Costa, Sierra, Selva, Internacional)
+  TextColumn get region => text().withDefault(const Constant(''))();
+  // Difficulty (Fácil, Media, Difícil)
+  TextColumn get difficulty => text().withDefault(const Constant('Media'))();
+  // External URL for attribution (API source)
+  TextColumn get sourceUrl => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
+
+  List<TableIndex> get indexes => [
+        TableIndex(name: 'idx_recipes_source', columns: {sourceIndex}),
+        TableIndex(name: 'idx_recipes_region', columns: {region}),
+      ];
 }
 
 @DataClassName('RecipeIngredientEntry')

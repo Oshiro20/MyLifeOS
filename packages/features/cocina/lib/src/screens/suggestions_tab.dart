@@ -64,6 +64,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final invState = ref.watch(inventoryProvider);
     final aiState = ref.watch(whatCanICookProvider);
     final aiNotifier = ref.read(whatCanICookProvider.notifier);
+    final hybridSuggestionsAsync = ref.watch(hybridSuggestionsProvider);
     final cookingSession = ref.watch(cookingSessionProvider);
 
     final availableNames =
@@ -151,9 +152,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     ),
                   ),
 
-                  // Pantry Suggestions (Local Matching)
-                  _buildPantrySuggestions(
-                      context, state, invState, availableNames),
+                  // Pantry Suggestions (Hybrid: Local + API)
+                  _buildHybridPantrySuggestions(
+                      context, hybridSuggestionsAsync, availableNames),
                 ],
               ),
             ),
@@ -534,29 +535,74 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildPantrySuggestions(BuildContext context, RecipesState state,
-      InventoryState invState, Set<String> availableNames) {
-    if (state.suggestions.isEmpty) {
-      return _EmptyState(
-        hasRecipes: state.recipes.isNotEmpty,
-        hasIngredients: invState.ingredients.isNotEmpty,
-      );
-    }
+  Widget _buildHybridPantrySuggestions(
+      BuildContext context,
+      AsyncValue<List<RecipeSuggestion>> suggestionsAsync,
+      Set<String> availableNames) {
+    return suggestionsAsync.when(
+      data: (suggestions) {
+        if (suggestions.isEmpty) {
+          return _EmptyState(
+            hasRecipes: ref.read(recipesProvider).recipes.isNotEmpty,
+            hasIngredients: ref.read(inventoryProvider).ingredients.isNotEmpty,
+          );
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: state.suggestions.length,
-      itemBuilder: (ctx, i) {
-        final r = state.suggestions[i];
-        return _SuggestionCard(
-          recipe: r,
-          availableNames: availableNames,
-          onTap: () => _showRecipeDetail(context, r),
-          onCook: () => _cookRecipe(context, ref, r),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.flash_on,
+                      color: Color(0xFFFF9800), size: 20),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Rápidas: Tienes la mayoría de ingredientes',
+                    style: TextStyle(
+                        color: Color(0xFFFF9800),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+            ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: suggestions.length,
+              itemBuilder: (ctx, i) {
+                final s = suggestions[i];
+                return _SuggestionCard(
+                  recipe: s.recipe,
+                  availableNames: availableNames,
+                  onTap: () => _showRecipeDetail(context, s.recipe),
+                  onCook: () => _cookRecipe(context, ref, s.recipe),
+                );
+              },
+            ),
+          ],
         );
       },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            children: [
+              CircularProgressIndicator(color: Color(0xFF00E676)),
+              SizedBox(height: 8),
+              Text('Buscando recetas...',
+                  style: TextStyle(color: Colors.white54)),
+            ],
+          ),
+        ),
+      ),
+      error: (e, _) => Center(
+        child: Text('Error al buscar recetas: $e',
+            style: const TextStyle(color: Colors.redAccent)),
+      ),
     );
   }
 

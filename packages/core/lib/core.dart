@@ -8,10 +8,12 @@ export 'src/backup/auto_backup_service.dart';
 export 'src/services/ai_service.dart';
 export 'src/services/background_remover_service.dart';
 export 'src/services/tiktok_service.dart';
+export 'src/services/the_meal_db_service.dart';
 export 'src/services/import_history_service.dart';
 export 'src/services/wallet_summary_reader.dart';
 export 'src/services/wallet_update_notifier.dart';
 export 'src/services/mylifeos_update_notifier.dart';
+export 'src/usecases/hybrid_suggestion_use_case.dart';
 export 'src/services/shared_identity_service.dart';
 export 'src/services/walletai_communication_service.dart';
 // Fase 1 — Infraestructura
