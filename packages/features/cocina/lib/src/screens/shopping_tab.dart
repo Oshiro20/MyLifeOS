@@ -425,19 +425,29 @@ class ShoppingTab extends ConsumerWidget {
     final lower = name.toLowerCase();
     if (lower.contains('pollo') ||
         lower.contains('carne') ||
-        lower.contains('pescado')) return 'Proteínas animales';
+        lower.contains('pescado')) {
+      return 'Proteínas animales';
+    }
     if (lower.contains('leche') ||
         lower.contains('queso') ||
-        lower.contains('yogur')) return 'Lácteos';
+        lower.contains('yogur')) {
+      return 'Lácteos';
+    }
     if (lower.contains('cebolla') ||
         lower.contains('tomate') ||
-        lower.contains('papa')) return 'Verduras';
+        lower.contains('papa')) {
+      return 'Verduras';
+    }
     if (lower.contains('arroz') ||
         lower.contains('harina') ||
-        lower.contains('fideo')) return 'Cereales y granos';
+        lower.contains('fideo')) {
+      return 'Cereales y granos';
+    }
     if (lower.contains('aceite') ||
         lower.contains('sal') ||
-        lower.contains('pimienta')) return 'Condimentos y especias';
+        lower.contains('pimienta')) {
+      return 'Condimentos y especias';
+    }
     return 'Otros';
   }
 
@@ -534,7 +544,7 @@ class ShoppingTab extends ConsumerWidget {
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<String>(
-                      value: selectedUnit,
+                      initialValue: selectedUnit,
                       dropdownColor: const Color(0xFF152019),
                       items: units.map((u) {
                         return DropdownMenuItem(

@@ -769,14 +769,12 @@ class _SuggestionCard extends StatelessWidget {
   final Set<String> availableNames;
   final VoidCallback onTap;
   final VoidCallback onCook;
-  final ValueChanged<int?>? onRate;
 
   const _SuggestionCard({
     required this.recipe,
     required this.availableNames,
     required this.onTap,
     required this.onCook,
-    this.onRate,
   });
 
   @override
@@ -1396,7 +1394,6 @@ class _AISuggestionCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onSave;
   final VoidCallback onCook;
-  final ValueChanged<int?>? onRate;
   final VoidCallback? onDismiss;
 
   const _AISuggestionCard({
@@ -1404,7 +1401,6 @@ class _AISuggestionCard extends StatelessWidget {
     required this.onTap,
     required this.onSave,
     required this.onCook,
-    this.onRate,
     this.onDismiss,
   });
 
@@ -1487,15 +1483,6 @@ class _AISuggestionCard extends StatelessWidget {
                       if (mealType != null)
                         _Chip('${mealType.emoji} ${mealType.label}'),
                     ],
-                  ),
-                  // Star Rating
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: StarRating(
-                      rating: recipe.rating,
-                      size: 16,
-                      onRatingChanged: onRate,
-                    ),
                   ),
                   if (recipe.description.isNotEmpty) ...[
                     const SizedBox(height: 4),

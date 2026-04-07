@@ -265,28 +265,45 @@ class ExtractRecipeUseCase {
   /// Parses a meal type string from Gemini response to MealType enum
   MealType? _parseMealType(String value) {
     final lower = value.toLowerCase().trim();
-    if (lower.contains('desayun')) return MealType.desayuno;
-    if (lower.contains('almuerz')) return MealType.almuerzo;
-    if (lower.contains('cen')) return MealType.cena;
-    if (lower.contains('entrad') || lower.contains('aperitivo'))
+    if (lower.contains('desayun')) {
+      return MealType.desayuno;
+    }
+    if (lower.contains('almuerz')) {
+      return MealType.almuerzo;
+    }
+    if (lower.contains('cen')) {
+      return MealType.cena;
+    }
+    if (lower.contains('entrad') || lower.contains('aperitivo')) {
       return MealType.entrada;
+    }
     if (lower.contains('sop') ||
         lower.contains('caldo') ||
-        lower.contains('crem')) return MealType.sopa;
-    if (lower.contains('sec')) return MealType.seco;
-    if (lower.contains('postre') || lower.contains('dulc'))
+        lower.contains('crem')) {
+      return MealType.sopa;
+    }
+    if (lower.contains('sec')) {
+      return MealType.seco;
+    }
+    if (lower.contains('postre') || lower.contains('dulc')) {
       return MealType.postre;
-    if (lower.contains('mazamorr') || lower.contains('gelatin'))
+    }
+    if (lower.contains('mazamorr') || lower.contains('gelatin')) {
       return MealType.mazamorra;
+    }
     if (lower.contains('bebida') ||
         lower.contains('jugo') ||
         lower.contains('zumo') ||
         lower.contains('limonad') ||
         lower.contains('chicha') ||
-        lower.contains('emolient')) return MealType.bebida;
+        lower.contains('emolient')) {
+      return MealType.bebida;
+    }
     if (lower.contains('snack') ||
         lower.contains('botan') ||
-        lower.contains('pasabol')) return MealType.snack;
+        lower.contains('pasabol')) {
+      return MealType.snack;
+    }
     return null;
   }
 }
