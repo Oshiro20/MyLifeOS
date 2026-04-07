@@ -218,64 +218,56 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             ],
           ),
         ),
-        // Mode selector buttons
+        // Mode selector buttons (Antojos has its own tab now)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
-            children: SuggestionMode.values.map((mode) {
-              final isSelected = _selectedMode == mode;
-              final colors = {
-                SuggestionMode.now: const Color(0xFF00E676),
-                SuggestionMode.menu: const Color(0xFF00F0FF),
-                SuggestionMode.cravings: const Color(0xFFFF9800),
-              };
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: ElevatedButton(
-                    onPressed: aiState == WhatCanICookState.loading
-                        ? null
-                        : () {
-                            setState(() => _selectedMode = mode);
-                            ref
-                                .read(whatCanICookProvider.notifier)
-                                .generateSuggestions(
-                                  mode: mode,
-                                  cuisinePreference: _selectedCuisine == 'Todas'
-                                      ? null
-                                      : _selectedCuisine,
-                                );
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isSelected ? colors[mode] : const Color(0xFF2A2A40),
-                      foregroundColor:
-                          isSelected ? Colors.black : Colors.white70,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          mode == SuggestionMode.now
-                              ? '🎯 Ahora'
-                              : mode == SuggestionMode.menu
-                                  ? '📋 Menú'
-                                  : '🍫 Antojos',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 11),
-                          textAlign: TextAlign.center,
+            children: [
+              // Only show Ahora and Menú modes
+              for (final mode in [SuggestionMode.now, SuggestionMode.menu])
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ElevatedButton(
+                      onPressed: aiState == WhatCanICookState.loading
+                          ? null
+                          : () {
+                              setState(() => _selectedMode = mode);
+                              ref
+                                  .read(whatCanICookProvider.notifier)
+                                  .generateSuggestions(
+                                    mode: mode,
+                                    cuisinePreference:
+                                        _selectedCuisine == 'Todas'
+                                            ? null
+                                            : _selectedCuisine,
+                                  );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedMode == mode
+                            ? (mode == SuggestionMode.now
+                                ? const Color(0xFF00E676)
+                                : const Color(0xFF00F0FF))
+                            : const Color(0xFF2A2A40),
+                        foregroundColor: _selectedMode == mode
+                            ? Colors.black
+                            : Colors.white70,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ],
+                      ),
+                      child: Text(
+                        mode == SuggestionMode.now ? '🎯 Ahora' : '📋 Menú',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 11),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+            ],
           ),
         ),
       ],

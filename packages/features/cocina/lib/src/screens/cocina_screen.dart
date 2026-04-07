@@ -5,6 +5,7 @@ import 'package:domain/domain.dart';
 import 'inventory_tab.dart';
 import 'recipes_tab.dart';
 import 'suggestions_tab.dart';
+import 'antojos_tab.dart';
 import 'shopping_tab.dart';
 import '../providers/cocina_providers.dart';
 
@@ -136,6 +137,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
             Tab(
                 icon: Icon(Icons.lightbulb_outline, size: 20),
                 text: 'Sugeridas'),
+            Tab(icon: Icon(Icons.cookie, size: 20), text: 'Antojos'),
             Tab(
                 icon: Icon(Icons.shopping_cart_outlined, size: 20),
                 text: 'Lista'),
@@ -148,6 +150,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           InventoryTab(),
           RecipesTab(),
           SuggestionsTab(),
+          AntojosTab(),
           ShoppingTab(),
         ],
       ),

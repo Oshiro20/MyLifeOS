@@ -22,14 +22,15 @@ class GeminiService {
   Future<void> saveApiKey(String key) async {}
 
   Future<String?> getApiKey() async {
-    // Primero intentar con variable de entorno
+    // Only use environment variable - no hardcoded fallback for security
     final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
     if (envKey.isNotEmpty) {
       return envKey;
     }
-    // Fallback a hardcode (solo para desarrollo)
+    // No fallback - return null to indicate missing key
     debugPrint('⚠️ WARNING: GEMINI_API_KEY not set in .env file');
-    return 'AIzaSyDxCMDUQMKg4Y3GcUV872rG85NvgUS0xS8';
+    debugPrint('Please add GEMINI_API_KEY=your_key to your .env file');
+    return null;
   }
 
   Future<void> removeApiKey() async {}
