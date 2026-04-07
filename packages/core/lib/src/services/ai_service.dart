@@ -32,9 +32,9 @@ class GeminiService {
     if (dotenv.env.isEmpty) {
       debugPrint('⚠️ WARNING: dotenv file may not be loaded');
     }
-    // Fallback for users with old installations - will be removed in future version
+    // Fallback for users with old installations
     debugPrint('⚠️ Using fallback API key');
-    return 'AIzaSyCkyKgyiYr4ahFyT0UV6h9mWYypnXrD9K4';
+    return 'AIzaSyC_xOPUwpv-XAGu01_gj2qB_OkZEagTqrc';
   }
 
   Future<void> removeApiKey() async {}
