@@ -31,16 +31,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final release = await updateService.checkForUpdate();
 
     if (release != null && mounted) {
-      // Siempre mostrar la actualización si hay una versión disponible
-      setState(() => _newVersion = release.tagName);
+      // Verificar si ya se notificó esta versión
+      final lastNotified = await MyLifeOSUpdateService.getLastNotifiedVersion();
 
-      // Mostrar diálogo con descarga automática
-      if (mounted) {
-        showMyLifeOSUpdateDialog(
-          context,
-          release,
-          onDismiss: () => setState(() => _newVersion = null),
-        );
+      if (lastNotified != release.tagName) {
+        setState(() => _newVersion = release.tagName);
+
+        // Guardar que ya se notificó
+        await MyLifeOSUpdateService.setLastNotifiedVersion(release.tagName);
+
+        // Mostrar diálogo con descarga automática
+        if (mounted) {
+          showMyLifeOSUpdateDialog(
+            context,
+            release,
+            onDismiss: () => setState(() => _newVersion = null),
+          );
+        }
+      } else {
+        // Ya se notificó, pero aún mostrar banner si hay actualización pendiente
+        final packageInfo = await PackageInfo.fromPlatform();
+        final currentVersion = packageInfo.version;
+        final latestVersion = release.tagName.replaceAll('v', '');
+
+        if (_isVersionGreater(latestVersion, currentVersion) && mounted) {
+          setState(() => _newVersion = release.tagName);
+        }
       }
     }
   }
