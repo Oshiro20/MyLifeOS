@@ -2,7 +2,23 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
+import '../entities/chef_preferences.dart';
 import '../repositories/i_ai_recipe_extractor.dart';
+
+/// Suggestion mode: what type of recipes to suggest
+enum SuggestionMode {
+  /// Quick suggestions - mix of everything based on inventory
+  now('¿Qué como ahora?'),
+
+  /// Full menu - suggests multiple courses
+  menu('Armar Menú'),
+
+  /// Just cravings - snacks, desserts, drinks (time-independent)
+  cravings('Antojos');
+
+  final String label;
+  const SuggestionMode(this.label);
+}
 
 /// Use case that uses Gemini AI to suggest recipes based on available inventory
 /// Returns a list of recipe suggestions with full details
@@ -18,6 +34,8 @@ class WhatCanICookUseCase {
     List<String>? preferredCuisines,
     String? cuisinePreference,
     List<String>? recentlyUsedRecipeNames, // Recipes used in last 7 days
+    SuggestionMode mode = SuggestionMode.now,
+    ChefPreferences? userPreferences,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -67,6 +85,71 @@ ${recentlyUsedRecipeNames.map((e) => '- $e').join('\n')}
 ⚠️ IMPORTANTE: NO sugieras estas recetas nuevamente esta semana. El usuario quiere variedad.
 Sugiere recetas DIFERENTES y CREÁTIVAS que no estén en esta lista.
 ''';
+    }
+
+    // Build mode-specific instructions
+    String modeContext = '';
+    switch (mode) {
+      case SuggestionMode.now:
+        modeContext = '''
+🎯 MODO: "¿Qué como ahora?"
+Sugiere $maxSuggestions recetas VARIADAS mezclando diferentes tipos de plato.
+Incluye: platos fuertes, sopas, entradas, postres, bebidas, snacks.
+El usuario quiere ver opciones diversas para decidir qué cocinar AHORA.
+''';
+      case SuggestionMode.menu:
+        modeContext = '''
+📋 MODO: "Armar Menú"
+Sugiere un MENÚ COMPLETO con:
+1. Una ENTRADA o ensalada
+2. Una SOPA o caldo
+3. Un PLATO FUERTE (segundo)
+4. Una BEBIDA
+Cada plato debe usar los ingredientes disponibles.
+''';
+      case SuggestionMode.cravings:
+        modeContext = '''
+🍫 MODO: "Antojos"
+Sugiere $maxSuggestions recetas SOLO de estos tipos:
+- Postres (🍰): tortas, flanes, mazamorras, gelatinas
+- Snacks/Botanas (🍿): canchas, papas rellenas, tequeños, empanadas
+- Bebidas (🥤): jugos, chicha, limonadas, emoliente, smoothies
+- Acompañamientos: sarsa criolla, guacamole, etc.
+NO sugieras platos fuertes, sopas ni entradas en este modo.
+Estos antojos son INDEPENDIENTES de la hora del día.
+''';
+    }
+
+    // Build user preferences context (optional)
+    String userPrefsContext = '';
+    if (userPreferences != null && userPreferences.hasAnyPreferences) {
+      final prefsParts = <String>[];
+      if (userPreferences.favoriteCategories.isNotEmpty) {
+        prefsParts.add(
+            'Categorías favoritas: ${userPreferences.favoriteCategories.join(", ")}');
+      }
+      if (userPreferences.spiceLevel != null) {
+        prefsParts.add('Nivel de picante: ${userPreferences.spiceLevel}');
+      }
+      if (userPreferences.portionSize != null) {
+        prefsParts.add('Tamaño de porción: ${userPreferences.portionSize}');
+      }
+      if (userPreferences.typicalServings != null) {
+        prefsParts.add(
+            'Porciones típicas: ${userPreferences.typicalServings} personas');
+      }
+      if (userPreferences.dietaryRestrictions.isNotEmpty) {
+        prefsParts.add(
+            'Restricciones: ${userPreferences.dietaryRestrictions.join(", ")}');
+      }
+      if (prefsParts.isNotEmpty) {
+        userPrefsContext = '''
+👤 PREFERENCIAS PERSONALES DEL USUARIO:
+${prefsParts.join('\n')}
+
+Adapta las sugerencias a estas preferencias.
+''';
+      }
     }
 
     final prompt = '''
@@ -143,6 +226,8 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 ${cuisineContext.isNotEmpty ? cuisineContext : ''}
 ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
 ${recentlyUsedWarning.isNotEmpty ? recentlyUsedWarning : ''}
+${modeContext.isNotEmpty ? modeContext : ''}
+${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
 
 🍳 AHORA SUGIERE LAS RECETAS BASADO EN EL INVENTARIO DEL USUARIO.''';
 

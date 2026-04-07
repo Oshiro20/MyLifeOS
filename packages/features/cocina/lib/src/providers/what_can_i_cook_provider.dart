@@ -4,6 +4,7 @@ import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/user_food_preferences_provider.dart';
+import '../providers/chef_preferences_provider.dart';
 
 enum WhatCanICookState { initial, loading, success, error }
 
@@ -19,6 +20,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
   String? _lastMealPeriod;
+  SuggestionMode _currentMode = SuggestionMode.now;
 
   @override
   WhatCanICookState build() {
@@ -55,8 +57,16 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     }
   }
 
+  /// Current suggestion mode
+  SuggestionMode get currentMode => _currentMode;
+
   /// Refresh suggestions with optional cuisine preference
-  Future<void> generateSuggestions({String? cuisinePreference}) async {
+  Future<void> generateSuggestions({
+    String? cuisinePreference,
+    SuggestionMode? mode,
+  }) async {
+    if (mode != null) _currentMode = mode;
+
     state = WhatCanICookState.loading;
     errorMessage = null;
 
@@ -76,6 +86,9 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       // Get disliked ingredients
       final prefsState = ref.read(userFoodPreferencesProvider);
 
+      // Get chef preferences (optional user profile)
+      final chefPrefs = ref.read(chefPreferencesProvider);
+
       // Get recently used recipes (last 7 days) for week variety
       final recentlyUsed = _getRecentlyUsedRecipes();
 
@@ -85,10 +98,12 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
 
       suggestions = await useCase.execute(
         inventory: inventoryState.ingredients,
-        maxSuggestions: 5,
+        maxSuggestions: _currentMode == SuggestionMode.menu ? 4 : 5,
         dislikedIngredients: prefsState.dislikedIngredients,
         cuisinePreference: cuisinePreference,
         recentlyUsedRecipeNames: recentlyUsed,
+        mode: _currentMode,
+        userPreferences: chefPrefs,
       );
 
       state = WhatCanICookState.success;
