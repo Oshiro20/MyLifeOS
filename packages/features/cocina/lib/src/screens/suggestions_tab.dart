@@ -27,6 +27,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   // Estado para modo de sugerencia
   SuggestionMode _selectedMode = SuggestionMode.now;
 
+  // Estado para filtro de categoría
+  MealType? _selectedCategory;
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +125,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
 
                   // Preferencias Culinarias
                   _buildCuisineChips(context),
+
+                  // Category Filter Chips
+                  _buildCategoryChips(context),
 
                   // AI Suggestions Section
                   _buildAISuggestions(context, aiState, aiNotifier),
@@ -316,6 +322,68 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     );
   }
 
+  Widget _buildCategoryChips(BuildContext context) {
+    // Get categories relevant to the current mode
+    final categories = _selectedMode == SuggestionMode.cravings
+        ? [
+            MealType.postre,
+            MealType.snack,
+            MealType.bebida,
+            MealType.mazamorra,
+            MealType.jugo
+          ]
+        : MealType.values.where((t) => t != MealType.otro).toList();
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length + 1, // +1 for "Todos"
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // "Todos" chip
+            final isSelected = _selectedCategory == null;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedCategory = null),
+              child: Chip(
+                label: const Text('Todos', style: TextStyle(fontSize: 11)),
+                backgroundColor: isSelected
+                    ? const Color(0xFF00E676)
+                    : const Color(0xFF2A2A40),
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.black : Colors.white70,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+            );
+          }
+          final mealType = categories[index - 1];
+          final isSelected = _selectedCategory == mealType;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedCategory = mealType),
+            child: Chip(
+              label: Text('${mealType.emoji} ${mealType.label}',
+                  style: const TextStyle(fontSize: 11)),
+              backgroundColor: isSelected
+                  ? const Color(0xFFFF9800)
+                  : const Color(0xFF2A2A40),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.black : Colors.white70,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildAISuggestions(BuildContext context, WhatCanICookState aiState,
       WhatCanICookNotifier aiNotifier) {
     final modeLabel = _selectedMode == SuggestionMode.now
@@ -323,6 +391,14 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
         : _selectedMode == SuggestionMode.menu
             ? '📋 Armar Menú'
             : '🍫 Antojos';
+
+    // Get visible suggestions filtered by category
+    var visibleSuggestions = aiNotifier.visibleSuggestions;
+    if (_selectedCategory != null) {
+      visibleSuggestions = visibleSuggestions
+          .where((s) => s.recipe.tipoComida == _selectedCategory)
+          .toList();
+    }
 
     if (aiState == WhatCanICookState.loading) {
       return const Padding(
@@ -386,22 +462,47 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
           ),
           SizedBox(
             height: 380,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              itemCount: aiNotifier.suggestions.length,
-              itemBuilder: (ctx, i) {
-                final suggestion = aiNotifier.suggestions[i];
-                return _AISuggestionCard(
-                  suggestion: suggestion,
-                  onTap: () => _showRecipeDetail(context, suggestion.recipe),
-                  onSave: () =>
-                      _saveAISuggestion(context, ref, aiNotifier, suggestion),
-                  onCook: () =>
-                      _cookAISuggestion(context, ref, aiNotifier, suggestion),
-                );
-              },
-            ),
+            child: visibleSuggestions.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.filter_list_off,
+                          size: 48,
+                          color: Colors.white24,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _selectedCategory != null
+                              ? 'No hay recetas de ${_selectedCategory!.label}'
+                              : 'No hay sugerencias disponibles',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    itemCount: visibleSuggestions.length,
+                    itemBuilder: (ctx, i) {
+                      final suggestion = visibleSuggestions[i];
+                      return _AISuggestionCard(
+                        suggestion: suggestion,
+                        onTap: () =>
+                            _showRecipeDetail(context, suggestion.recipe),
+                        onSave: () => _saveAISuggestion(
+                            context, ref, aiNotifier, suggestion),
+                        onCook: () => _cookAISuggestion(
+                            context, ref, aiNotifier, suggestion),
+                        onDismiss: () =>
+                            aiNotifier.dismissRecipe(suggestion.recipe.id),
+                      );
+                    },
+                  ),
           ),
         ],
       );
@@ -1296,6 +1397,7 @@ class _AISuggestionCard extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onCook;
   final ValueChanged<int?>? onRate;
+  final VoidCallback? onDismiss;
 
   const _AISuggestionCard({
     required this.suggestion,
@@ -1303,6 +1405,7 @@ class _AISuggestionCard extends StatelessWidget {
     required this.onSave,
     required this.onCook,
     this.onRate,
+    this.onDismiss,
   });
 
   @override
@@ -1448,7 +1551,7 @@ class _AISuggestionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 // Cook button
                 Expanded(
                   child: ElevatedButton.icon(
@@ -1466,6 +1569,19 @@ class _AISuggestionCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(width: 4),
+                // Dismiss button
+                if (onDismiss != null)
+                  IconButton(
+                    onPressed: onDismiss,
+                    icon: const Icon(Icons.close, size: 16),
+                    tooltip: 'No me interesa',
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5252).withAlpha(40),
+                      foregroundColor: const Color(0xFFFF5252),
+                      padding: const EdgeInsets.all(6),
+                    ),
+                  ),
               ],
             ),
           ),

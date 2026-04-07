@@ -22,6 +22,37 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   String? _lastMealPeriod;
   SuggestionMode _currentMode = SuggestionMode.now;
 
+  // Dismissed recipe IDs (user doesn't want to see these)
+  final Set<String> _dismissedIds = {};
+
+  // Cooked recipe IDs (history)
+  final Set<String> _cookedIds = {};
+
+  /// Get currently visible suggestions (excluding dismissed)
+  List<RecipeSuggestion> get visibleSuggestions =>
+      suggestions.where((s) => !_dismissedIds.contains(s.recipe.id)).toList();
+
+  /// Dismiss a recipe (user doesn't want to see it)
+  void dismissRecipe(String recipeId) {
+    _dismissedIds.add(recipeId);
+    // Trigger UI update
+    state = state;
+  }
+
+  /// Mark a recipe as cooked
+  void markAsCooked(String recipeId) {
+    _cookedIds.add(recipeId);
+  }
+
+  /// Get list of recently cooked recipe names (for variety)
+  List<String> getCookedRecipeNames() {
+    // In a real app, we would fetch names from a history store
+    // For now, return empty list (the useCase will handle this)
+    return [];
+  }
+
+  /// Get current suggestion mode
+
   @override
   WhatCanICookState build() {
     return WhatCanICookState.initial;
