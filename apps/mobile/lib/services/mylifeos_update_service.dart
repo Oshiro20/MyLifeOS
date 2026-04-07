@@ -50,21 +50,30 @@ class MyLifeOSUpdateService {
   /// Retorna el release si hay una versión más reciente, null si ya estamos actualizados.
   Future<GithubRelease?> checkForUpdate() async {
     try {
+      // Obtener TODOS los releases, no solo el último
       final response = await _dio.get(
-        'https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest',
+        'https://api.github.com/repos/$_repoOwner/$_repoName/releases',
         options: Options(headers: {'Accept': 'application/vnd.github+json'}),
       );
 
       if (response.statusCode == 200) {
-        final release = GithubRelease.fromJson(response.data);
         final packageInfo = await PackageInfo.fromPlatform();
-
-        final latestVersion = release.tagName.replaceAll('v', '');
         final currentVersion = packageInfo.version;
 
-        if (_isVersionGreater(latestVersion, currentVersion)) {
-          return release;
+        // Buscar el release más reciente que sea mayor a la versión actual
+        for (final releaseData in response.data) {
+          final release = GithubRelease.fromJson(releaseData);
+          final latestVersion = release.tagName.replaceAll('v', '');
+
+          if (_isVersionGreater(latestVersion, currentVersion)) {
+            debugPrint(
+                '[MyLifeOSUpdateService] Update found: $currentVersion -> ${release.tagName}');
+            return release;
+          }
         }
+
+        debugPrint(
+            '[MyLifeOSUpdateService] Already up to date: $currentVersion');
       }
     } catch (e) {
       debugPrint(
