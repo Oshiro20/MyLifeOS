@@ -22,18 +22,9 @@ class GeminiService {
   Future<void> saveApiKey(String key) async {}
 
   Future<String?> getApiKey() async {
-    // Try to read from .env file (bundled as asset)
-    final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
-    if (envKey.isNotEmpty) {
-      debugPrint('✅ GEMINI_API_KEY loaded from .env');
-      return envKey;
-    }
-    // Debug: check if dotenv is loaded at all
-    if (dotenv.env.isEmpty) {
-      debugPrint('⚠️ WARNING: dotenv file may not be loaded');
-    }
-    // Fallback for users with old installations
-    debugPrint('⚠️ Using fallback API key');
+    // HOTFIX v2.6.4: Hardcoded key to bypass .env caching issue
+    // Previous versions cached the old expired key in the asset bundle.
+    // We force the new key here to ensure it works immediately.
     return 'AIzaSyC_xOPUwpv-XAGu01_gj2qB_OkZEagTqrc';
   }
 
