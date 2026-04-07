@@ -29,12 +29,11 @@ class GeminiService {
       return envKey;
     }
     // Debug: check if dotenv is loaded at all
-    if (!dotenv.isEveryVariableLoaded) {
+    if (dotenv.env.isEmpty) {
       debugPrint('⚠️ WARNING: dotenv file may not be loaded');
-      debugPrint('Available env vars: ${dotenv.env.keys.join(", ")}');
     }
     // Fallback for users with old installations - will be removed in future version
-    debugPrint('⚠️ Using fallback API key - please update your .env file');
+    debugPrint('⚠️ Using fallback API key');
     return 'AIzaSyCkyKgyiYr4ahFyT0UV6h9mWYypnXrD9K4';
   }
 
