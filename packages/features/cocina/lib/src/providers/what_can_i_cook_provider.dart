@@ -75,6 +75,9 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       // Get disliked ingredients
       final prefsState = ref.read(userFoodPreferencesProvider);
 
+      // Get recently used recipes (last 7 days) for week variety
+      final recentlyUsed = _getRecentlyUsedRecipes();
+
       // Create the use case with Gemini adapter
       final gemini = ref.read(geminiServiceProvider);
       final useCase = WhatCanICookUseCase(_GeminiAdapter(gemini));
@@ -84,6 +87,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         maxSuggestions: 5,
         dislikedIngredients: prefsState.dislikedIngredients,
         cuisinePreference: cuisinePreference,
+        recentlyUsedRecipeNames: recentlyUsed,
       );
 
       state = WhatCanICookState.success;
@@ -93,6 +97,14 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       errorMessage = e.toString();
       state = WhatCanICookState.error;
     }
+  }
+
+  /// Get recipes used in the last 7 days (from local storage or cooking history)
+  List<String> _getRecentlyUsedRecipes() {
+    // TODO: Implement persistent storage of cooking history
+    // For now, this returns an empty list
+    // In the future, this should read from a SQLite table or SharedPreferences
+    return [];
   }
 
   void reset() {

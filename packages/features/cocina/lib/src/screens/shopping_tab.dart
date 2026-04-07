@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
-import '../providers/shopping_list_provider.dart';
 
 class ShoppingTab extends ConsumerWidget {
   const ShoppingTab({super.key});
@@ -259,27 +258,128 @@ class ShoppingTab extends ConsumerWidget {
 
     final buffer = StringBuffer();
     buffer.writeln('🛒 *Lista de Compras - MyLifeOS*');
+    buffer.writeln('📅 ${DateTime.now().toString().split(' ')[0]}');
     buffer.writeln('');
     for (final entry in grouped.entries) {
       buffer.writeln('📦 ${entry.key.toUpperCase()}');
       for (final item in entry.value) {
-        buffer.writeln('  ☐ ${item.name} (${item.quantity} ${item.unit})');
+        final check = item.bought ? '✅' : '☐';
+        buffer.writeln('  $check ${item.name} (${item.quantity} ${item.unit})');
       }
       buffer.writeln('');
     }
+    buffer.writeln('📊 Total: ${pending.length} productos');
     buffer.writeln('📱 Generado por MyLifeOS');
 
     final text = buffer.toString();
 
-    // Copy to clipboard
+    // Show sharing options dialog
+    if (context.mounted) {
+      _showShareOptionsDialog(context, text);
+    }
+  }
+
+  Future<void> _showShareOptionsDialog(
+      BuildContext context, String text) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF152019),
+        title: const Text('📤 Compartir lista',
+            style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '¿Cómo quieres compartir tu lista?',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            // WhatsApp button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _shareToWhatsApp(context, text);
+                },
+                icon: const Icon(Icons.share, color: Colors.white),
+                label: const Text('Compartir por WhatsApp',
+                    style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Copy to clipboard button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _copyToClipboard(context, text);
+                },
+                icon: const Icon(Icons.copy, color: Color(0xFF00C896)),
+                label: const Text('Copiar al portapapeles',
+                    style: TextStyle(color: Color(0xFF00C896))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF00C896)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shareToWhatsApp(BuildContext context, String text) async {
+    // Copy to clipboard first
     await Clipboard.setData(ClipboardData(text: text));
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            '📋 Lista copiada. Abre WhatsApp y pega la lista.',
+          ),
+          backgroundColor: const Color(0xFF25D366),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _copyToClipboard(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('📋 Lista copiada al portapapeles. Pégala en WhatsApp.'),
+          content: Text('📋 Lista copiada al portapapeles'),
           backgroundColor: Color(0xFF00E676),
-          duration: Duration(seconds: 3),
+          duration: Duration(seconds: 2),
         ),
       );
     }

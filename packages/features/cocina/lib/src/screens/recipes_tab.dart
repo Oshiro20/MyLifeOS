@@ -4,6 +4,7 @@ import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/cooking_session_provider.dart';
 
 class RecipesTab extends ConsumerWidget with AppFeedback {
   const RecipesTab({super.key});
@@ -190,12 +191,35 @@ class _RecipeTile extends StatelessWidget {
 
 // ── Detalle de receta ────────────────────────────────────────────────────────
 
-class _RecipeDetailSheet extends StatelessWidget {
+class _RecipeDetailSheet extends StatefulWidget {
   final Recipe recipe;
   const _RecipeDetailSheet({required this.recipe});
 
   @override
+  State<_RecipeDetailSheet> createState() => _RecipeDetailSheetState();
+}
+
+class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
+  int _scaledServings = 1; // Current scaled servings (default 1 person)
+
+  /// Get scaled quantity for an ingredient
+  double _getScaledQuantity(double originalQuantity) {
+    final scale = _scaledServings / widget.recipe.servings;
+    final result = originalQuantity * scale;
+    return (result * 100).round() / 100; // Round to 2 decimal places
+  }
+
+  /// Toggle between 1 person and original servings
+  void _toggleScaling() {
+    setState(() {
+      _scaledServings = _scaledServings == 1 ? widget.recipe.servings : 1;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isScaled = _scaledServings != widget.recipe.servings;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       maxChildSize: 0.9,
@@ -213,14 +237,14 @@ class _RecipeDetailSheet extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(2)))),
-          Text(recipe.name,
+          Text(widget.recipe.name,
               style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 20,
                   fontWeight: FontWeight.w700)),
-          if (recipe.description.isNotEmpty) ...[
+          if (widget.recipe.description.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(recipe.description,
+            Text(widget.recipe.description,
                 style: TextStyle(
                     color: Theme.of(context)
                         .colorScheme
@@ -230,20 +254,83 @@ class _RecipeDetailSheet extends StatelessWidget {
           ],
           const SizedBox(height: 14),
           Wrap(spacing: 8, children: [
-            _chip(context, '⏱ ${recipe.durationMinutes} min'),
-            _chip(context, '👥 ${recipe.servings} porciones'),
-            _chip(context, '🍳 ${recipe.ingredients.length} ingredientes'),
+            _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
+            _chip(
+                context, '👥 $_scaledServings/${widget.recipe.servings} porc.'),
+            _chip(
+                context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
+            // Scale button
+            GestureDetector(
+              onTap: _toggleScaling,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isScaled
+                      ? const Color(0xFFFF9800)
+                      : const Color(0xFF2A2A40),
+                  borderRadius: BorderRadius.circular(8),
+                  border: isScaled
+                      ? Border.all(color: const Color(0xFFFF9800), width: 2)
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isScaled ? Icons.person : Icons.person_outline,
+                      size: 14,
+                      color: isScaled ? Colors.black : Colors.white54,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isScaled ? '1 persona' : 'Escalar',
+                      style: TextStyle(
+                        color: isScaled ? Colors.black : Colors.white54,
+                        fontSize: 12,
+                        fontWeight:
+                            isScaled ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ]),
-          if (recipe.ingredients.isNotEmpty) ...[
+          if (widget.recipe.ingredients.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text('INGREDIENTES',
-                style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5)),
+            Row(
+              children: [
+                const Text('INGREDIENTES',
+                    style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5)),
+                if (isScaled) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9800),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Escalado a $_scaledServings persona${_scaledServings == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
             const SizedBox(height: 8),
-            ...recipe.ingredients.map((ing) => Padding(
+            ...widget.recipe.ingredients.map((ing) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Row(children: [
                     const Icon(Icons.fiber_manual_record,
@@ -254,17 +341,23 @@ class _RecipeDetailSheet extends StatelessWidget {
                             color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 14)),
                     const Spacer(),
-                    Text('${ing.quantity} ${ing.unit}',
-                        style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.38),
-                            fontSize: 12)),
+                    Text(
+                      '${_getScaledQuantity(ing.quantity)} ${ing.unit}',
+                      style: TextStyle(
+                          color: isScaled
+                              ? const Color(0xFFFF9800)
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.38),
+                          fontSize: 12,
+                          fontWeight:
+                              isScaled ? FontWeight.w700 : FontWeight.w400),
+                    ),
                   ]),
                 )),
           ],
-          if (recipe.instructions.isNotEmpty) ...[
+          if (widget.recipe.instructions.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text('INSTRUCCIONES',
                 style: TextStyle(
@@ -273,7 +366,7 @@ class _RecipeDetailSheet extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.5)),
             const SizedBox(height: 8),
-            ...recipe.instructions.asMap().entries.map((e) => Padding(
+            ...widget.recipe.instructions.asMap().entries.map((e) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,7 +401,8 @@ class _RecipeDetailSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _cookRecipe(context, recipe),
+              onPressed: () =>
+                  _cookRecipe(context, widget.recipe, _scaledServings),
               icon: const Icon(Icons.whatshot, color: Colors.black),
               label: const Text('🍳 ¡Cocinar esta receta!',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -331,7 +425,8 @@ class _RecipeDetailSheet extends StatelessWidget {
                 fontStyle: FontStyle.italic),
           ),
           // Fuente/Origen
-          if (recipe.fuenteUrl != null || recipe.fuenteLabel != null) ...[
+          if (widget.recipe.fuenteUrl != null ||
+              widget.recipe.fuenteLabel != null) ...[
             const SizedBox(height: 20),
             const Divider(color: Colors.white24),
             const SizedBox(height: 8),
@@ -340,7 +435,7 @@ class _RecipeDetailSheet extends StatelessWidget {
                 const Icon(Icons.link, color: Color(0xFF00F0FF), size: 16),
                 const SizedBox(width: 6),
                 Text(
-                  'Fuente: ${recipe.fuenteLabel ?? 'Desconocida'}',
+                  'Fuente: ${widget.recipe.fuenteLabel ?? 'Desconocida'}',
                   style: const TextStyle(
                       color: Color(0xFF00F0FF),
                       fontWeight: FontWeight.bold,
@@ -348,17 +443,17 @@ class _RecipeDetailSheet extends StatelessWidget {
                 ),
               ],
             ),
-            if (recipe.fuenteUrl != null) ...[
+            if (widget.recipe.fuenteUrl != null) ...[
               const SizedBox(height: 4),
               InkWell(
                 onTap: () {
                   // TODO: Open URL
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('URL: ${recipe.fuenteUrl}')),
+                    SnackBar(content: Text('URL: ${widget.recipe.fuenteUrl}')),
                   );
                 },
                 child: Text(
-                  recipe.fuenteUrl!,
+                  widget.recipe.fuenteUrl!,
                   style: const TextStyle(
                       color: Color(0xFF00F0FF),
                       fontSize: 12,
@@ -375,11 +470,22 @@ class _RecipeDetailSheet extends StatelessWidget {
     );
   }
 
-  Future<void> _cookRecipe(BuildContext context, Recipe recipe) async {
-    // TODO: Implement deduct ingredients
+  Future<void> _cookRecipe(
+      BuildContext context, Recipe recipe, int scaledServings) async {
+    // Start cooking session with scaled servings
+    final container = ProviderScope.containerOf(context);
+    container.read(cookingSessionProvider.notifier).startSession(
+          recipeName: recipe.name,
+          recipeId: recipe.id,
+          originalServings: recipe.servings,
+          scaledServings: scaledServings,
+        );
+
+    // TODO: Implement deduct ingredients with scaling
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('🍳 ¡Cocinando "${recipe.name}"!'),
+        content: Text(
+            '🍳 ¡Cocinando "${recipe.name}" para $scaledServings persona${scaledServings == 1 ? '' : 's'}!'),
         backgroundColor: const Color(0xFFFF9800),
         duration: const Duration(seconds: 2),
       ),

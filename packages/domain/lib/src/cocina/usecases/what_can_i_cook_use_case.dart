@@ -17,6 +17,7 @@ class WhatCanICookUseCase {
     List<String>? dislikedIngredients,
     List<String>? preferredCuisines,
     String? cuisinePreference,
+    List<String>? recentlyUsedRecipeNames, // Recipes used in last 7 days
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -53,6 +54,18 @@ Ejemplos: Peruana-sierra, Peruana-selva, Peruana-costa, Italiana, Mexicana, Asi�
 🌍 ESTILOS DE COCINA PREFERIDOS DEL USUARIO:
 ${preferredCuisines.map((e) => '- $e').join('\n')}
 Prioriza estos estilos culinarios en las sugerencias.
+''';
+    }
+
+    // Build recently used recipes warning (week variety)
+    String recentlyUsedWarning = '';
+    if (recentlyUsedRecipeNames != null && recentlyUsedRecipeNames.isNotEmpty) {
+      recentlyUsedWarning = '''
+📅 RECETAS USADAS RECIENTEMENTE (últimos 7 días) - NO REPETIR:
+${recentlyUsedRecipeNames.map((e) => '- $e').join('\n')}
+
+⚠️ IMPORTANTE: NO sugieras estas recetas nuevamente esta semana. El usuario quiere variedad.
+Sugiere recetas DIFERENTES y CREÁTIVAS que no estén en esta lista.
 ''';
     }
 
@@ -118,6 +131,7 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 
 ${cuisineContext.isNotEmpty ? cuisineContext : ''}
 ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
+${recentlyUsedWarning.isNotEmpty ? recentlyUsedWarning : ''}
 
 🍳 AHORA SUGIERE LAS RECETAS BASADO EN EL INVENTARIO DEL USUARIO.''';
 
