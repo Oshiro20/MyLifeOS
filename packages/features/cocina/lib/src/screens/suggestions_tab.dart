@@ -24,6 +24,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   // Estado para preferencia culinaria
   String _selectedCuisine = 'Todas';
 
+  // Estado para modo de sugerencia
+  SuggestionMode _selectedMode = SuggestionMode.now;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +37,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       // Only auto-load if we have ingredients and it's needed
       if (invState.ingredients.isNotEmpty && aiNotifier.needsRefresh) {
         aiNotifier.generateSuggestions(
+            mode: _selectedMode,
             cuisinePreference:
                 _selectedCuisine == 'Todas' ? null : _selectedCuisine);
       }
@@ -155,51 +159,120 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
 
   Widget _buildChefIAHeader(BuildContext context, WhatCanICookState aiState,
       WhatCanICookNotifier aiNotifier) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              _greeting(),
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: aiState == WhatCanICookState.loading
-                ? null
-                : () => aiNotifier.generateSuggestions(
-                      cuisinePreference:
-                          _selectedCuisine == 'Todas' ? null : _selectedCuisine,
-                    ),
-            icon: aiState == WhatCanICookState.loading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Greeting + Refresh button
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  _greeting(),
+                  style: const TextStyle(
                       color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.auto_awesome, size: 18),
-            label: Text(aiState == WhatCanICookState.loading
-                ? 'Pensando...'
-                : '✨ Chef IA'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF9800),
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700),
+                ),
               ),
-            ),
+              ElevatedButton.icon(
+                onPressed: aiState == WhatCanICookState.loading
+                    ? null
+                    : () => aiNotifier.generateSuggestions(
+                          mode: _selectedMode,
+                          cuisinePreference: _selectedCuisine == 'Todas'
+                              ? null
+                              : _selectedCuisine,
+                        ),
+                icon: aiState == WhatCanICookState.loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.refresh, size: 18),
+                label: Text(aiState == WhatCanICookState.loading
+                    ? 'Pensando...'
+                    : 'Refrescar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9800),
+                  foregroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        // Mode selector buttons
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: SuggestionMode.values.map((mode) {
+              final isSelected = _selectedMode == mode;
+              final colors = {
+                SuggestionMode.now: const Color(0xFF00E676),
+                SuggestionMode.menu: const Color(0xFF00F0FF),
+                SuggestionMode.cravings: const Color(0xFFFF9800),
+              };
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ElevatedButton(
+                    onPressed: aiState == WhatCanICookState.loading
+                        ? null
+                        : () {
+                            setState(() => _selectedMode = mode);
+                            ref
+                                .read(whatCanICookProvider.notifier)
+                                .generateSuggestions(
+                                  mode: mode,
+                                  cuisinePreference: _selectedCuisine == 'Todas'
+                                      ? null
+                                      : _selectedCuisine,
+                                );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isSelected ? colors[mode] : const Color(0xFF2A2A40),
+                      foregroundColor:
+                          isSelected ? Colors.black : Colors.white70,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          mode == SuggestionMode.now
+                              ? '🎯 Ahora'
+                              : mode == SuggestionMode.menu
+                                  ? '📋 Menú'
+                                  : '🍫 Antojos',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -245,6 +318,12 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
 
   Widget _buildAISuggestions(BuildContext context, WhatCanICookState aiState,
       WhatCanICookNotifier aiNotifier) {
+    final modeLabel = _selectedMode == SuggestionMode.now
+        ? '🎯 ¿Qué como ahora?'
+        : _selectedMode == SuggestionMode.menu
+            ? '📋 Armar Menú'
+            : '🍫 Antojos';
+
     if (aiState == WhatCanICookState.loading) {
       return const Padding(
         padding: EdgeInsets.all(24),
@@ -254,7 +333,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               CircularProgressIndicator(color: Color(0xFFFF9800)),
               SizedBox(height: 16),
               Text(
-                'El Chef IA está analizando tu inventario...',
+                'El Chef IA está pensando...',
                 style: TextStyle(color: Colors.white70, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -276,18 +355,22 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                 const Icon(Icons.restaurant_menu,
                     color: Color(0xFFFF9800), size: 18),
                 const SizedBox(width: 4),
-                Text(
-                  'Sugerencias: ${aiNotifier.currentMealLabel}',
-                  style: const TextStyle(
-                      color: Color(0xFFFF9800),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14),
+                Expanded(
+                  child: Text(
+                    modeLabel,
+                    style: const TextStyle(
+                        color: Color(0xFFFF9800),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh,
                       size: 18, color: Color(0xFFFF9800)),
                   onPressed: () => aiNotifier.generateSuggestions(
+                    mode: _selectedMode,
                     cuisinePreference:
                         _selectedCuisine == 'Todas' ? null : _selectedCuisine,
                   ),
