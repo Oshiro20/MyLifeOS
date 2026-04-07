@@ -22,15 +22,20 @@ class GeminiService {
   Future<void> saveApiKey(String key) async {}
 
   Future<String?> getApiKey() async {
-    // Only use environment variable - no hardcoded fallback for security
+    // Try to read from .env file (bundled as asset)
     final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
     if (envKey.isNotEmpty) {
+      debugPrint('✅ GEMINI_API_KEY loaded from .env');
       return envKey;
     }
-    // No fallback - return null to indicate missing key
-    debugPrint('⚠️ WARNING: GEMINI_API_KEY not set in .env file');
-    debugPrint('Please add GEMINI_API_KEY=your_key to your .env file');
-    return null;
+    // Debug: check if dotenv is loaded at all
+    if (!dotenv.isEveryVariableLoaded) {
+      debugPrint('⚠️ WARNING: dotenv file may not be loaded');
+      debugPrint('Available env vars: ${dotenv.env.keys.join(", ")}');
+    }
+    // Fallback for users with old installations - will be removed in future version
+    debugPrint('⚠️ Using fallback API key - please update your .env file');
+    return 'AIzaSyCkyKgyiYr4ahFyT0UV6h9mWYypnXrD9K4';
   }
 
   Future<void> removeApiKey() async {}
