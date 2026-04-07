@@ -54,6 +54,15 @@ class Recipe extends Equatable {
   /// Source label (e.g. 'TikTok', 'YouTube', 'Chef IA')
   final String? fuenteLabel;
 
+  /// User rating (1-5 stars)
+  final int? rating;
+
+  /// Cuisine style (Peruana-sierra, Peruana-selva, Italiana, etc.)
+  final String? cuisineStyle;
+
+  /// Active cooking session identifier
+  final String? cookingSessionId;
+
   const Recipe({
     required this.id,
     required this.name,
@@ -79,6 +88,9 @@ class Recipe extends Equatable {
     this.tipoComida,
     this.fuenteUrl,
     this.fuenteLabel,
+    this.rating,
+    this.cuisineStyle,
+    this.cookingSessionId,
   });
 
   Recipe copyWith({
@@ -106,6 +118,9 @@ class Recipe extends Equatable {
     MealType? tipoComida,
     String? fuenteUrl,
     String? fuenteLabel,
+    int? rating,
+    String? cuisineStyle,
+    String? cookingSessionId,
   }) =>
       Recipe(
         id: id ?? this.id,
@@ -133,6 +148,9 @@ class Recipe extends Equatable {
         tipoComida: tipoComida ?? this.tipoComida,
         fuenteUrl: fuenteUrl ?? this.fuenteUrl,
         fuenteLabel: fuenteLabel ?? this.fuenteLabel,
+        rating: rating ?? this.rating,
+        cuisineStyle: cuisineStyle ?? this.cuisineStyle,
+        cookingSessionId: cookingSessionId ?? this.cookingSessionId,
       );
 
   @override
@@ -161,6 +179,9 @@ class Recipe extends Equatable {
         tipoComida,
         fuenteUrl,
         fuenteLabel,
+        rating,
+        cuisineStyle,
+        cookingSessionId,
       ];
 }
 

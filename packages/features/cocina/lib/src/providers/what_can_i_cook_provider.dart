@@ -54,7 +54,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     }
   }
 
-  Future<void> generateSuggestions() async {
+  /// Refresh suggestions with optional cuisine preference
+  Future<void> generateSuggestions({String? cuisinePreference}) async {
     state = WhatCanICookState.loading;
     errorMessage = null;
 
@@ -82,6 +83,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         inventory: inventoryState.ingredients,
         maxSuggestions: 5,
         dislikedIngredients: prefsState.dislikedIngredients,
+        cuisinePreference: cuisinePreference,
       );
 
       state = WhatCanICookState.success;

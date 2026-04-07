@@ -15,6 +15,8 @@ class WhatCanICookUseCase {
     required List<InventoryIngredient> inventory,
     int maxSuggestions = 5,
     List<String>? dislikedIngredients,
+    List<String>? preferredCuisines,
+    String? cuisinePreference,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -35,6 +37,22 @@ ${dislikedIngredients.map((e) => '- $e').join('\n')}
 
 Si una receta normalmente usa estos ingredientes, SUSTITUYELOS por algo similar que el usuario sí quiera.
 Ejemplo: si no le gusta la cebolla, usa cebollín o ajo en su lugar.
+''';
+    }
+
+    // Build cuisine preference
+    String cuisineContext = '';
+    if (cuisinePreference != null && cuisinePreference.isNotEmpty) {
+      cuisineContext = '''
+🌍 PREFERENCIA CULINARIA DEL USUARIO: "$cuisinePreference"
+El usuario quiere probar comida de este estilo. Prioriza recetas de esta cocina.
+Ejemplos: Peruana-sierra, Peruana-selva, Peruana-costa, Italiana, Mexicana, Asiática, etc.
+''';
+    } else if (preferredCuisines != null && preferredCuisines.isNotEmpty) {
+      cuisineContext = '''
+🌍 ESTILOS DE COCINA PREFERIDOS DEL USUARIO:
+${preferredCuisines.map((e) => '- $e').join('\n')}
+Prioriza estos estilos culinarios en las sugerencias.
 ''';
     }
 
@@ -96,7 +114,9 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 8. "tiempo_total_min" realista: 15-180 minutos.
 9. "porciones" entero: 1-12.
 10. NO uses ingredientes que el usuario no le gustan. Si son esenciales, sustitúyelos.
+11. Incluye "cuisine_style" con el estilo de cocina (ej: "Peruana-sierra", "Italiana", "Selvática").
 
+${cuisineContext.isNotEmpty ? cuisineContext : ''}
 ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
 
 🍳 AHORA SUGIERE LAS RECETAS BASADO EN EL INVENTARIO DEL USUARIO.''';
