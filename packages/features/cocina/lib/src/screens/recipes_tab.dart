@@ -568,11 +568,11 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             if (widget.recipe.fuenteUrl != null) ...[
               const SizedBox(height: 4),
               InkWell(
-                onTap: () {
-                  // TODO: Open URL
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('URL: ${widget.recipe.fuenteUrl}')),
-                  );
+                onTap: () async {
+                  final url = Uri.parse(widget.recipe.fuenteUrl!);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
                 },
                 child: Text(
                   widget.recipe.fuenteUrl!,
@@ -603,15 +603,50 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           scaledServings: scaledServings,
         );
 
-    // TODO: Implement deduct ingredients with scaling
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            '🍳 ¡Cocinando "${recipe.name}" para $scaledServings persona${scaledServings == 1 ? '' : 's'}!'),
-        backgroundColor: const Color(0xFFFF9800),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Deduct ingredients with scaling
+    final scaleRatio = scaledServings / recipe.servings;
+    final scaledIngredients = recipe.ingredients.map((ing) {
+      return RecipeIngredient(
+        id: ing.id,
+        recipeId: ing.recipeId,
+        ingredientName: ing.ingredientName,
+        quantity: ing.quantity * scaleRatio,
+        unit: ing.unit,
+      );
+    }).toList();
+
+    final inventoryNotifier = container.read(inventoryProvider.notifier);
+    final deducted =
+        await inventoryNotifier.deductRecipeIngredients(scaledIngredients);
+
+    if (!context.mounted) return;
+    if (deducted.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  '🍳 ¡Cocinando "${recipe.name}" para $scaledServings persona${scaledServings == 1 ? '' : 's'}!'),
+              const SizedBox(height: 4),
+              Text(
+                'Descontados: ${deducted.join(", ")}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFFF9800),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     Navigator.of(context).pop();
   }
 

@@ -1,5 +1,6 @@
 name: domain
-description: "A new Flutter package project."
+description: "Domain entities and use cases for MyLifeOS."
+publish_to: none
 version: 0.0.1
 
 resolution: workspace

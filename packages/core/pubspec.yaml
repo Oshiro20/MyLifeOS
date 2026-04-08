@@ -1,5 +1,6 @@
 name: core
-description: "A new Flutter package project."
+description: "Core utilities and services for MyLifeOS."
+publish_to: none
 version: 0.0.1
 
 resolution: workspace

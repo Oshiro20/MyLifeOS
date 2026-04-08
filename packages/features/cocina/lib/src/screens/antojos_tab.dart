@@ -6,7 +6,7 @@ import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
 import 'suggestions_tab.dart';
 
-/// "Antojos" tab - Shows Cravings (Desserts, Snacks) instantly using API
+/// "Antojos" tab - Shows Cravings (Desserts, Snacks) from LOCAL Spanish recipes
 class AntojosTab extends ConsumerStatefulWidget {
   const AntojosTab({super.key});
 
@@ -26,16 +26,22 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
 
   Future<void> _loadCravings() async {
     setState(() => _loading = true);
-    final apiService = TheMealDBService();
+    try {
+      final localDb = LocalRecipeDatabaseService();
+      // Fetch desserts and snacks from local Spanish database
+      final desserts = await localDb.searchByType(MealType.postre, limit: 20);
+      final snacks = await localDb.searchByType(MealType.snack, limit: 10);
+      final bebidas = await localDb.searchByType(MealType.bebida, limit: 10);
 
-    // Fetch Desserts and Starters/Sides which work as snacks
-    final desserts = await apiService.searchByCategory('Dessert');
-    final sides = await apiService.searchByCategory('Side');
-
-    setState(() {
-      _cravings = [...desserts, ...sides].take(15).toList();
-      _loading = false;
-    });
+      // Combine and shuffle
+      final all = [...desserts, ...snacks, ...bebidas]..shuffle();
+      setState(() {
+        _cravings = all.take(15).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
 
   @override

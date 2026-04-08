@@ -397,7 +397,6 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   Future<void> checkForDuplicates(List<Recipe> existingRecipes,
       {double threshold = 0.70}) async {
     if (importedRecipe == null) return;
-    final checker = RecipeDuplicateChecker();
     duplicateMatches = RecipeDuplicateChecker.findDuplicates(
         importedRecipe!, existingRecipes,
         threshold: threshold);
