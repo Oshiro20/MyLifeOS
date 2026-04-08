@@ -15,8 +15,10 @@ class AntojosTab extends ConsumerStatefulWidget {
 }
 
 class _AntojosTabState extends ConsumerState<AntojosTab> {
+  List<Recipe> _allCravings = [];
   List<Recipe> _cravings = [];
   bool _loading = false;
+  MealType? _selectedCategory;
 
   @override
   void initState() {
@@ -29,18 +31,28 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
     try {
       final localDb = LocalRecipeDatabaseService();
       // Fetch desserts and snacks from local Spanish database
-      final desserts = await localDb.searchByType(MealType.postre, limit: 20);
-      final snacks = await localDb.searchByType(MealType.snack, limit: 10);
-      final bebidas = await localDb.searchByType(MealType.bebida, limit: 10);
+      final desserts = await localDb.searchByType(MealType.postre, limit: 25);
+      final snacks = await localDb.searchByType(MealType.snack, limit: 15);
+      final bebidas = await localDb.searchByType(MealType.bebida, limit: 15);
 
       // Combine and shuffle
       final all = [...desserts, ...snacks, ...bebidas]..shuffle();
       setState(() {
-        _cravings = all.take(15).toList();
+        _allCravings = all;
+        _applyFilter();
         _loading = false;
       });
     } catch (e) {
       setState(() => _loading = false);
+    }
+  }
+
+  void _applyFilter() {
+    if (_selectedCategory == null) {
+      _cravings = _allCravings.take(15).toList();
+    } else {
+      _cravings =
+          _allCravings.where((r) => r.tipoComida == _selectedCategory).toList();
     }
   }
 
@@ -51,7 +63,7 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           child: CircularProgressIndicator(color: Color(0xFFFF9800)));
     }
 
-    if (_cravings.isEmpty) {
+    if (_cravings.isEmpty && _allCravings.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -75,6 +87,13 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
       );
     }
 
+    final categories = [
+      null,
+      MealType.postre,
+      MealType.snack,
+      MealType.bebida,
+    ];
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -90,26 +109,82 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+      body: Column(
+        children: [
+          // Category filter chips
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (context, index) {
+                  final type = categories[index];
+                  final isSelected = _selectedCategory == type;
+                  return FilterChip(
+                    label: Text(
+                        type == null ? 'Todos' : '${type.emoji} ${type.label}',
+                        style: const TextStyle(fontSize: 12)),
+                    selected: isSelected,
+                    onSelected: (v) {
+                      setState(() {
+                        _selectedCategory = v ? type : null;
+                        _applyFilter();
+                      });
+                    },
+                    backgroundColor: const Color(0xFF2A2A40),
+                    selectedColor: const Color(0xFFFF9800).withAlpha(60),
+                    checkmarkColor: const Color(0xFFFF9800),
+                  );
+                },
+              ),
+            ),
           ),
-          itemCount: _cravings.length,
-          itemBuilder: (ctx, i) {
-            final recipe = _cravings[i];
-            return _AntojoCard(
-              recipe: recipe,
-              onTap: () => _showRecipeDetail(context, recipe),
-              onSave: () => _saveRecipe(context, recipe),
-              onCook: () => _cookRecipe(context, recipe),
-            );
-          },
-        ),
+          // Recipe count
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                Text(
+                  '${_cravings.length} receta${_cravings.length != 1 ? 's' : ''}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          // Grid
+          Expanded(
+            child: _cravings.isEmpty
+                ? const Center(
+                    child: Text('No hay antojos en esta categoría',
+                        style: TextStyle(color: Colors.white38)),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: _cravings.length,
+                      itemBuilder: (ctx, i) {
+                        final recipe = _cravings[i];
+                        return _AntojoCard(
+                          recipe: recipe,
+                          onTap: () => _showRecipeDetail(context, recipe),
+                          onSave: () => _saveRecipe(context, recipe),
+                          onCook: () => _cookRecipe(context, recipe),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }

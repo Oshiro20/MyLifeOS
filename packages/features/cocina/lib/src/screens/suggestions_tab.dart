@@ -170,9 +170,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Greeting + Refresh button
+        // Compact greeting + refresh icon
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -181,11 +181,11 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                   _greeting(),
                   style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700),
                 ),
               ),
-              ElevatedButton.icon(
+              IconButton(
                 onPressed: aiState == WhatCanICookState.loading
                     ? null
                     : () => aiNotifier.generateSuggestions(
@@ -196,42 +196,31 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                         ),
                 icon: aiState == WhatCanICookState.loading
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: Color(0xFFFF9800),
                         ),
                       )
-                    : const Icon(Icons.refresh, size: 18),
-                label: Text(aiState == WhatCanICookState.loading
-                    ? 'Pensando...'
-                    : 'Refrescar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF9800),
-                  foregroundColor: Colors.black,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                    : const Icon(Icons.refresh,
+                        color: Color(0xFFFF9800), size: 24),
+                tooltip: 'Nuevas sugerencias',
               ),
             ],
           ),
         ),
-        // Mode selector buttons (Antojos has its own tab now)
+        // Compact mode selector
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             children: [
-              // Only show Ahora and Menú modes
               for (final mode in [SuggestionMode.now, SuggestionMode.menu])
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(right: 6),
-                    child: ElevatedButton(
-                      onPressed: aiState == WhatCanICookState.loading
+                    child: GestureDetector(
+                      onTap: aiState == WhatCanICookState.loading
                           ? null
                           : () {
                               setState(() => _selectedMode = mode);
@@ -245,26 +234,26 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                                             : _selectedCuisine,
                                   );
                             },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _selectedMode == mode
-                            ? (mode == SuggestionMode.now
-                                ? const Color(0xFF00E676)
-                                : const Color(0xFF00F0FF))
-                            : const Color(0xFF2A2A40),
-                        foregroundColor: _selectedMode == mode
-                            ? Colors.black
-                            : Colors.white70,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 4),
-                        shape: RoundedRectangleBorder(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _selectedMode == mode
+                              ? (mode == SuggestionMode.now
+                                  ? const Color(0xFF00E676)
+                                  : const Color(0xFF00F0FF))
+                              : const Color(0xFF2A2A40),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                      ),
-                      child: Text(
-                        mode == SuggestionMode.now ? '🎯 Ahora' : '📋 Menú',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 11),
-                        textAlign: TextAlign.center,
+                        child: Text(
+                          mode == SuggestionMode.now ? '🎯 Ahora' : '📋 Menú',
+                          style: TextStyle(
+                              color: _selectedMode == mode
+                                  ? Colors.black
+                                  : Colors.white70,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ),

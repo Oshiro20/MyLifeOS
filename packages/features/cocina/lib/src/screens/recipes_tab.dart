@@ -259,6 +259,10 @@ class _RecipeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typeLabel = recipe.tipoComida != null
+        ? '${recipe.tipoComida!.emoji} ${recipe.tipoComida!.label}'
+        : null;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -278,14 +282,26 @@ class _RecipeTile extends StatelessWidget {
               style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600)),
-          subtitle: Text(
-            '${recipe.durationMinutes} min · ${recipe.servings} porciones · ${recipe.ingredients.length} ingredientes',
-            style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.38),
-                fontSize: 12),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (typeLabel != null)
+                Text(typeLabel,
+                    style: const TextStyle(
+                        color: Color(0xFFFF9800),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500)),
+              const SizedBox(height: 2),
+              Text(
+                '${recipe.durationMinutes} min · ${recipe.servings} porciones · ${recipe.ingredients.length} ingredientes',
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.38),
+                    fontSize: 12),
+              ),
+            ],
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
