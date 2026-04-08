@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import 'package:uuid/uuid.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
 
@@ -623,7 +624,8 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
     if (deducted.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+          content:
+              Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -647,6 +649,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           duration: const Duration(seconds: 3),
         ),
       );
+    }
     Navigator.of(context).pop();
   }
 
