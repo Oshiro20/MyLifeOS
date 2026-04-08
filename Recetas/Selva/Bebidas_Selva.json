@@ -1,0 +1,439 @@
+{
+  "region": "Selva",
+  "categoria": "Bebidas",
+  "recetas": [
+    {
+      "id": "SEL-BEB-001",
+      "nombre": "Aguajina Tradicional",
+      "tiempo_preparacion": "40 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "La bebida más emblemática de la selva peruana, elaborada con la pulpa del aguaje. Es rica en fitoestrógenos y vitaminas.",
+      "ingredientes": [
+        "1 kg de frutos de aguaje maduros (de cáscara roja oscura)",
+        "2.5 litros de agua hervida fría",
+        "200g de azúcar rubia o blanca",
+        "Cubos de hielo al gusto"
+      ],
+      "pasos": [
+        "Lavar bien los frutos de aguaje para eliminar cualquier resto de tierra.",
+        "Remojar los aguajes en agua tibia (que no queme al tacto) durante 20 a 30 minutos. Esto suaviza la cáscara y la pulpa.",
+        "Retirar la cáscara externa con los dedos y luego, en un bol con un poco de agua, frotar la pulpa con las manos para separarla de la semilla.",
+        "Colar el líquido espeso obtenido para eliminar fibras y restos de cáscara.",
+        "Añadir el resto del agua y el azúcar, mezclando enérgicamente.",
+        "Servir bien frío con abundante hielo. Debe tener una consistencia ligeramente densa y un color naranja vibrante."
+      ]
+    },
+    {
+      "id": "SEL-BEB-002",
+      "nombre": "Refresco de Camu Camu",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cítrica y refrescante conocida mundialmente por ser la fruta con mayor concentración de Vitamina C del planeta.",
+      "ingredientes": [
+        "500g de camu camu fresco",
+        "2 litros de agua fría",
+        "150g de azúcar",
+        "Hielo al gusto"
+      ],
+      "pasos": [
+        "Lavar los frutos de camu camu y retirar los pequeños tallos verdes.",
+        "Colocar los frutos en una licuadora con un litro de agua.",
+        "Licuar por solo 3 a 5 segundos a velocidad baja. Es vital no triturar las semillas, ya que estas aportan un sabor amargo y astringente a la bebida.",
+        "Colar la preparación sobre una jarra grande.",
+        "Añadir el agua restante y el azúcar. Remover hasta disolver por completo.",
+        "Servir inmediatamente para evitar la oxidación de la vitamina C."
+      ]
+    },
+    {
+      "id": "SEL-BEB-003",
+      "nombre": "Masato de Yuca (Versión Hogareña)",
+      "tiempo_preparacion": "3 días (fermentación)",
+      "porciones": 10,
+      "dificultad": "Media",
+      "descripcion": "Bebida ancestral fermentada. En esta versión moderna se utiliza azúcar para acelerar el proceso de fermentación natural.",
+      "ingredientes": [
+        "3 kg de yuca amarilla pelada",
+        "500g de azúcar",
+        "2 litros de agua hervida fría",
+        "1 rama de canela (opcional)"
+      ],
+      "pasos": [
+        "Sancochar la yuca en abundante agua con la canela hasta que esté muy suave, casi deshaciéndose.",
+        "Escurrir la yuca y retirar la fibra central (pabilo).",
+        "Machacar la yuca en un mazo o batán hasta obtener un puré fino y elástico.",
+        "Mezclar el puré con el azúcar y colocarlo en una vasija de barro o un recipiente de vidrio grande.",
+        "Tapar con una tela limpia y dejar fermentar en un lugar fresco y oscuro por 2 o 3 días.",
+        "Para servir, tomar una porción de la masa fermentada y licuarla con agua fría y más azúcar si es necesario.",
+        "Servir bien helado."
+      ]
+    },
+    {
+      "id": "SEL-BEB-004",
+      "nombre": "Chapo de Plátano Maduro",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida densa y nutritiva que se consume fría o tibia. Es el sustituto tradicional de la leche en muchas zonas rurales de la selva.",
+      "ingredientes": [
+        "5 plátanos bellacos muy maduros (piel negra)",
+        "1.5 litros de agua",
+        "2 ramas de canela",
+        "Azúcar al gusto (opcional, el plátano maduro ya es dulce)"
+      ],
+      "pasos": [
+        "Pelar los plátanos y cortarlos en trozos medianos.",
+        "Poner a hervir el agua con la canela.",
+        "Agregar los plátanos y cocinar a fuego medio por 20 minutos hasta que estén muy suaves.",
+        "Retirar las ramas de canela y licuar los plátanos con el agua de la misma cocción.",
+        "Colar si se desea una textura más fina, aunque lo tradicional es beberlo espeso.",
+        "Servir frío en el almuerzo o tibio en el desayuno."
+      ]
+    },
+    {
+      "id": "SEL-BEB-005",
+      "nombre": "Refresco de Cocona Hervida",
+      "tiempo_preparacion": "30 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cítrica con un aroma tropical único. Al hervirse, la cocona suelta mejor sus aceites esenciales y fragancia.",
+      "ingredientes": [
+        "3 coconas grandes maduras",
+        "2 litros de agua",
+        "2 ramas de canela y 3 clavos de olor",
+        "Azúcar al gusto"
+      ],
+      "pasos": [
+        "Lavar las coconas y cortarlas en cuatro trozos cada una (con cáscara).",
+        "Poner a hervir el agua con la canela y el clavo.",
+        "Añadir la cocona y cocinar por 15 a 20 minutos hasta que la pulpa esté blanda.",
+        "Retirar del fuego y dejar enfriar. Quitar las especias.",
+        "Licuar la cocona cocida con el agua de la cocción y colar.",
+        "Endulzar al gusto y refrigerar antes de servir."
+      ]
+    },
+    {
+      "id": "SEL-BEB-006",
+      "nombre": "Uvachado Amazónico",
+      "tiempo_preparacion": "30 días (macerado)",
+      "porciones": 15,
+      "dificultad": "Media",
+      "descripcion": "Licor dulce y potente obtenido de la maceración de uvas borgoña en aguardiente de caña y miel.",
+      "ingredientes": [
+        "1 kg de uva borgoña (uva negra regional)",
+        "1 litro de aguardiente de caña (cañazo) o Pisco",
+        "250g de miel de abeja regional",
+        "1 rama de canela"
+      ],
+      "pasos": [
+        "Lavar bien las uvas, retirar los tallos y secarlas completamente (la humedad puede arruinar el macerado).",
+        "Colocar las uvas en un frasco de vidrio de boca ancha esterilizado.",
+        "Añadir la miel de abeja y la rama de canela.",
+        "Verter el aguardiente hasta cubrir las uvas por completo.",
+        "Cerrar herméticamente y guardar en un lugar oscuro y fresco por un mínimo de 30 días.",
+        "Agitar el frasco suavemente una vez por semana.",
+        "Colar y servir en copas pequeñas como aperitivo."
+      ]
+    },
+    {
+      "id": "SEL-BEB-007",
+      "nombre": "Refresco de Carambola (Fruta Estrella)",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Jugo refrescante de sabor agridulce y forma decorativa, ideal para los días calurosos de la Amazonía.",
+      "ingredientes": [
+        "6 carambolas maduras (color amarillo intenso)",
+        "1.5 litros de agua fría",
+        "Azúcar o miel al gusto",
+        "Gotas de limón (opcional)"
+      ],
+      "pasos": [
+        "Lavar las carambolas y retirar los bordes marrones de las aristas si los tuvieran.",
+        "Cortar en trozos (guardar una en rodajas de estrella para decorar).",
+        "Licuar la fruta con el agua y el azúcar.",
+        "Colar para retirar los restos de fibra.",
+        "Añadir unas gotas de limón si se desea resaltar la acidez.",
+        "Servir con hielo y decorar con las estrellas de fruta."
+      ]
+    },
+    {
+      "id": "SEL-BEB-008",
+      "nombre": "Siete Raíces (Macerado Tónico)",
+      "tiempo_preparacion": "30 días (macerado)",
+      "porciones": 20,
+      "dificultad": "Alta",
+      "descripcion": "Bebida espirituosa preparada con cortezas de árboles amazónicos. Se le atribuyen propiedades curativas y afrodisíacas.",
+      "ingredientes": [
+        "Mezcla de cortezas (100g total): Chuchuwasi, Uña de Gato, Murare, Icuto, Fierro Chupa, Tahuari y Clavo Huasca.",
+        "1 litro de aguardiente de caña",
+        "1/2 taza de miel de abeja",
+        "2 hojas de higo"
+      ],
+      "pasos": [
+        "Limpiar las cortezas con un paño seco.",
+        "Colocar las raíces y cortezas en un envase de vidrio grande.",
+        "Añadir la miel de abeja y las hojas de higo.",
+        "Verter el aguardiente y sellar el envase.",
+        "Dejar macerar en un lugar oscuro. En la selva, a veces se entierra el frasco para mantener una temperatura constante.",
+        "El tiempo mínimo es un mes, pero mientras más tiempo pase, más suave y concentrado será el sabor.",
+        "Filtrar antes de consumir."
+      ]
+    },
+    {
+      "id": "SEL-BEB-009",
+      "nombre": "Refresco de Ungurahui",
+      "tiempo_preparacion": "50 min",
+      "porciones": 5,
+      "dificultad": "Media",
+      "descripcion": "Bebida espesa de color morado oscuro y sabor similar al chocolate con nueces. Muy nutritiva por sus aceites naturales.",
+      "ingredientes": [
+        "1 kg de frutos de ungurahui",
+        "2 litros de agua hervida fría",
+        "Azúcar al gusto"
+      ],
+      "pasos": [
+        "Remojar los frutos de ungurahui en agua caliente (sin que hierva) para ablandar la pulpa durante 30 minutos.",
+        "Frotar los frutos entre sí dentro del agua para desprender la pulpa morada de la semilla.",
+        "Colar el líquido espeso para separar las semillas y las cáscaras.",
+        "Diluir con el agua fría restante.",
+        "Endulzar al gusto. Esta bebida no suele llevar hielo para no opacar su textura oleosa característica.",
+        "Servir bien fresco."
+      ]
+    },
+    {
+      "id": "SEL-BEB-010",
+      "nombre": "Refresco de Taperiba (Mango Ciruelo)",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida elaborada con una fruta cítrica de pulpa amarilla intensa y aroma muy penetrante y agradable.",
+      "ingredientes": [
+        "10 taperibas maduras",
+        "1.5 litros de agua",
+        "Azúcar al gusto",
+        "Hielo"
+      ],
+      "pasos": [
+        "Lavar y pelar las taperibas (se puede usar un pelador de papas).",
+        "Retirar la pulpa de la semilla (la semilla es fibrosa y grande).",
+        "Licuar la pulpa con el agua y el azúcar.",
+        "Colar para eliminar cualquier fibra restante.",
+        "Servir bien helado. Es ideal para acompañar platos grasos como el tacacho."
+      ]
+    },
+    {
+      "id": "SEL-BEB-011",
+      "nombre": "Refresco de Copoazú",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cremosa y de aroma floral intenso hecha con la pulpa blanca del copoazú, pariente cercano del cacao.",
+      "ingredientes": [
+        "500g de pulpa de copoazú fresca",
+        "1.5 litros de agua hervida fría",
+        "1/2 taza de azúcar blanca",
+        "Cubos de hielo"
+      ],
+      "pasos": [
+        "Colocar la pulpa de copoazú (sin semillas) en la licuadora.",
+        "Añadir el agua y el azúcar.",
+        "Licuar a velocidad media hasta que la mezcla esté espumosa y homogénea.",
+        "Colar para retirar cualquier fibra restante del fruto.",
+        "Servir en vasos largos con abundante hielo para resaltar su frescura."
+      ]
+    },
+    {
+      "id": "SEL-BEB-012",
+      "nombre": "Indanochado (Macerado de Indano)",
+      "tiempo_preparacion": "30 días (macerado)",
+      "porciones": 12,
+      "dificultad": "Media",
+      "descripcion": "Licor tradicional dulce elaborado con indano, un fruto pequeño y amarillo de sabor muy particular.",
+      "ingredientes": [
+        "500g de indano maduro",
+        "750ml de aguardiente de caña (cañazo)",
+        "200g de miel de abeja regional",
+        "1 rama de canela"
+      ],
+      "pasos": [
+        "Lavar y secar bien los frutos de indano.",
+        "Colocar los frutos enteros en un frasco de vidrio esterilizado.",
+        "Añadir la miel y la rama de canela.",
+        "Cubrir con el aguardiente y sellar herméticamente.",
+        "Dejar macerar por un mes en un lugar fresco y oscuro, agitando suavemente cada tres días.",
+        "Filtrar y servir en copas pequeñas como bajativo."
+      ]
+    },
+    {
+      "id": "SEL-BEB-013",
+      "nombre": "Leche de Monja",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Cóctel potente y cremoso típico de las fiestas selváticas, hecho a base de aguardiente, huevo y leche.",
+      "ingredientes": [
+        "1 taza de aguardiente de caña",
+        "1 lata de leche condensada",
+        "2 huevos frescos",
+        "Jugo de 4 limones regionales",
+        "Canela molida para decorar"
+      ],
+      "pasos": [
+        "Colocar en la licuadora los huevos enteros, la leche condensada y el aguardiente.",
+        "Licuar a velocidad alta por 1 minuto hasta que esté muy espumoso.",
+        "Añadir el jugo de limón poco a poco mientras se sigue licuando (esto 'corta' el sabor del huevo).",
+        "Servir inmediatamente en copas frías.",
+        "Decorar con una pizca de canela molida encima."
+      ]
+    },
+    {
+      "id": "SEL-BEB-014",
+      "nombre": "Refresco de Pijuayo",
+      "tiempo_preparacion": "60 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Bebida espesa y nutritiva hecha de la pulpa del pijuayo cocido, muy consumida por su alto valor energético.",
+      "ingredientes": [
+        "1 kg de pijuayos maduros",
+        "2 litros de agua",
+        "Azúcar o miel al gusto",
+        "1 rama de canela"
+      ],
+      "pasos": [
+        "Sancochar los pijuayos en agua con sal por 45 minutos hasta que estén suaves.",
+        "Pelar los pijuayos y retirar la semilla.",
+        "Licuar la pulpa con el agua hervida y la canela.",
+        "Colar si se desea una textura más líquida, aunque lo ideal es que quede espesito.",
+        "Endulzar al gusto y servir frío o a temperatura ambiente."
+      ]
+    },
+    {
+      "id": "SEL-BEB-015",
+      "nombre": "RC (Rompe Calzón)",
+      "tiempo_preparacion": "60 días (macerado)",
+      "porciones": 20,
+      "dificultad": "Alta",
+      "descripcion": "El macerado afrodisíaco más famoso de la selva, compuesto por una mezcla compleja de cortezas y miel.",
+      "ingredientes": [
+        "Cortezas de: Chuchuwasi, Uña de Gato, Fierro Chupa y Clavo Huasca",
+        "1 litro de aguardiente de caña puro",
+        "1/2 taza de miel de abeja silvestre",
+        "Piel de una naranja seca"
+      ],
+      "pasos": [
+        "Colocar las cortezas limpias y secas en un botellón de vidrio.",
+        "Añadir la piel de naranja y la miel.",
+        "Completar con el aguardiente.",
+        "Macerar por 2 meses. Es tradicional decir que 'mientras más viejo, mejor'.",
+        "Servir en shots pequeños antes de las comidas o en celebraciones."
+      ]
+    },
+    {
+      "id": "SEL-BEB-016",
+      "nombre": "Refresco de Guayaba",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida aromática y rosada, muy cremosa debido a la pectina natural de la guayaba amazónica.",
+      "ingredientes": [
+        "6 guayabas maduras medianas",
+        "1.5 litros de agua fría",
+        "Azúcar al gusto",
+        "Hielo"
+      ],
+      "pasos": [
+        "Lavar bien las guayabas y retirar los extremos.",
+        "Picar la fruta (con piel y semillas) y colocarla en la licuadora con el agua.",
+        "Licuar por 30 segundos.",
+        "Colar dos veces para retirar todas las semillas pequeñas y duras.",
+        "Endulzar al gusto y servir con hielo abundante."
+      ]
+    },
+    {
+      "id": "SEL-BEB-017",
+      "nombre": "Guarapo de Caña",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Jugo extraído directamente de la caña de azúcar mediante un trapiche, servido con mucho limón regional.",
+      "ingredientes": [
+        "4 trozos de caña de azúcar de 50cm",
+        "Jugo de 4 limones regionales",
+        "Hielo picado"
+      ],
+      "pasos": [
+        "Pasar los trozos de caña por el trapiche (molino manual o eléctrico) para extraer el jugo.",
+        "Filtrar el jugo obtenido con una tela fina o colador de malla muy delgada.",
+        "Añadir el jugo de limón inmediatamente para evitar que el guarapo se oxide y cambie de color.",
+        "Servir en vasos grandes con hielo picado."
+      ]
+    },
+    {
+      "id": "SEL-BEB-018",
+      "nombre": "Camu Camu Sour",
+      "tiempo_preparacion": "10 min",
+      "porciones": 1,
+      "dificultad": "Media",
+      "descripcion": "Versión amazónica del Pisco Sour, sustituyendo el limón por el potente zumo de camu camu.",
+      "ingredientes": [
+        "3 oz de Pisco Acholado",
+        "1.5 oz de jugo concentrado de camu camu",
+        "1 oz de jarabe de goma",
+        "1 clara de huevo",
+        "4 cubos de hielo",
+        "Gotas de amargo de angostura"
+      ],
+      "pasos": [
+        "En una coctelera, colocar el pisco, el jugo de camu camu y el jarabe.",
+        "Añadir el hielo y la clara de huevo.",
+        "Batir enérgicamente por 15 segundos hasta que se forme una espuma firme.",
+        "Servir en una copa fría.",
+        "Decorar con 2 gotas de amargo de angostura."
+      ]
+    },
+    {
+      "id": "SEL-BEB-019",
+      "nombre": "Refresco de Piña y Albahaca de Monte",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Combinación refrescante y digestiva que utiliza la albahaca silvestre para dar un toque herbal a la piña madura.",
+      "ingredientes": [
+        "1 piña roja regional madura",
+        "1 puñado de hojas de albahaca de monte fresca",
+        "2 litros de agua",
+        "Miel de abeja para endulzar"
+      ],
+      "pasos": [
+        "Pelar la piña y picarla en trozos.",
+        "Licuar la piña con la albahaca y el agua.",
+        "Colar la preparación.",
+        "Endulzar con miel de abeja al gusto.",
+        "Servir bien frío, ideal para acompañar almuerzos pesados."
+      ]
+    },
+    {
+      "id": "SEL-BEB-020",
+      "nombre": "Pur Pur (Refresco de Granadilla Silvestre)",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Bebida dulce y suave hecha con la granadilla silvestre de la selva alta, conocida localmente como Pur Pur.",
+      "ingredientes": [
+        "6 granadillas Pur Pur",
+        "1 litro de agua hervida fría",
+        "Azúcar rubia",
+        "Hielo"
+      ],
+      "pasos": [
+        "Extraer la pulpa con semillas de las granadillas.",
+        "Licuar a velocidad mínima por solo 2 segundos (solo para desprender la pulpa de la semilla).",
+        "Colar inmediatamente.",
+        "Mezclar con el agua y endulzar.",
+        "Servir bien helado."
+      ]
+    }
+  ]
+}

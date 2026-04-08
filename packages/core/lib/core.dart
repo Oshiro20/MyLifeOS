@@ -14,6 +14,8 @@ export 'src/services/wallet_summary_reader.dart';
 export 'src/services/wallet_update_notifier.dart';
 export 'src/services/mylifeos_update_notifier.dart';
 export 'src/usecases/hybrid_suggestion_use_case.dart';
+export 'src/services/local_recipe_database_service.dart';
+export 'src/services/recipe_duplicate_checker.dart';
 export 'src/services/shared_identity_service.dart';
 export 'src/services/walletai_communication_service.dart';
 // Fase 1 — Infraestructura

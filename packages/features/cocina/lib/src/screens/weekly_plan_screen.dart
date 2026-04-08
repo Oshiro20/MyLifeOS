@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
 import 'suggestions_tab.dart';
 
@@ -23,6 +24,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(weeklyMenuProvider);
+    final recipesState = ref.watch(recipesProvider);
     final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     final meals = [
       {'type': 0, 'label': 'Desayuno', 'icon': '🌅'},
@@ -58,6 +60,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                       dayLabel: days[i],
                       meals: meals,
                       entries: state.entries,
+                      recipes: recipesState.recipes,
                       day: day,
                       onTapRecipe: (entry) => _showRecipeDetail(context, entry),
                     );
@@ -95,13 +98,23 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(weeklyMenuProvider.notifier).generate();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('✅ Menú semanal generado'),
-              backgroundColor: Color(0xFF00E676)),
-        );
+      try {
+        await ref.read(weeklyMenuProvider.notifier).generate();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('✅ Menú semanal generado'),
+                backgroundColor: Color(0xFF00E676)),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Error al generar menú: $e'),
+                backgroundColor: Colors.redAccent),
+          );
+        }
       }
     }
   }
@@ -122,7 +135,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
 class _DaySection extends StatelessWidget {
   final String dayLabel;
   final List<Map<String, dynamic>> meals;
-  final List<dynamic> entries; // Use dynamic to avoid type issues
+  final List<dynamic> entries;
+  final List<Recipe> recipes;
   final int day;
   final Function(dynamic recipe) onTapRecipe;
 
@@ -130,9 +144,20 @@ class _DaySection extends StatelessWidget {
     required this.dayLabel,
     required this.meals,
     required this.entries,
+    required this.recipes,
     required this.day,
     required this.onTapRecipe,
   });
+
+  String? _getRecipeName(String? recipeId) {
+    if (recipeId == null || recipeId.isEmpty) return null;
+    try {
+      final recipe = recipes.firstWhere((r) => r.id == recipeId);
+      return recipe.name;
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +175,6 @@ class _DaySection extends StatelessWidget {
                   fontWeight: FontWeight.bold)),
         ),
         ...meals.map((m) {
-          // Find entry safely
           dynamic entry;
           try {
             entry = dayEntries.firstWhere((e) => e.mealType == m['type']);
@@ -158,12 +182,17 @@ class _DaySection extends StatelessWidget {
             entry = null;
           }
 
+          final recipeName = entry != null && entry.recipeId.isNotEmpty
+              ? _getRecipeName(entry.recipeId)
+              : null;
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _MealTile(
               mealLabel: m['label'],
               icon: m['icon'],
               recipeId: entry?.recipeId,
+              recipeName: recipeName,
               onTap: entry != null && entry.recipeId.isNotEmpty
                   ? () => onTapRecipe(entry)
                   : null,
@@ -179,30 +208,31 @@ class _MealTile extends StatelessWidget {
   final String mealLabel;
   final String icon;
   final String? recipeId;
+  final String? recipeName;
   final VoidCallback? onTap;
 
   const _MealTile({
     required this.mealLabel,
     required this.icon,
     required this.recipeId,
+    this.recipeName,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasRecipe = recipeId != null && recipeId!.isNotEmpty;
     return GestureDetector(
-      onTap: onTap,
+      onTap: hasRecipe ? onTap : null,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: recipeId != null && recipeId!.isNotEmpty
+          color: hasRecipe
               ? const Color(0xFF152019)
               : const Color(0xFF2A2A40).withAlpha(100),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: recipeId != null && recipeId!.isNotEmpty
-                  ? const Color(0xFF00E676)
-                  : Colors.transparent),
+              color: hasRecipe ? const Color(0xFF00E676) : Colors.transparent),
         ),
         child: Row(
           children: [
@@ -219,24 +249,20 @@ class _MealTile extends StatelessWidget {
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
-                      recipeId != null && recipeId!.isNotEmpty
-                          ? 'Receta asignada'
-                          : 'Sin planificar',
+                      recipeName ??
+                          (hasRecipe ? 'Receta asignada' : 'Sin planificar'),
                       style: TextStyle(
-                          color: recipeId != null && recipeId!.isNotEmpty
-                              ? Colors.white
-                              : Colors.white38,
-                          fontSize: 14)),
+                          color: hasRecipe ? Colors.white : Colors.white38,
+                          fontSize: 14,
+                          fontWeight:
+                              hasRecipe ? FontWeight.w500 : FontWeight.normal),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
-            Icon(
-                recipeId != null && recipeId!.isNotEmpty
-                    ? Icons.check_circle
-                    : Icons.add_circle_outline,
-                color: recipeId != null && recipeId!.isNotEmpty
-                    ? const Color(0xFF00E676)
-                    : Colors.white24),
+            Icon(hasRecipe ? Icons.check_circle : Icons.add_circle_outline,
+                color: hasRecipe ? const Color(0xFF00E676) : Colors.white24),
           ],
         ),
       ),

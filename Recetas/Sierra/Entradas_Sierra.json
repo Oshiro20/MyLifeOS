@@ -1,0 +1,471 @@
+{
+  "region": "Sierra",
+  "categoria": "Entradas",
+  "recetas": [
+    {
+      "id": "SIE-ENT-001",
+      "nombre": "Papa a la Huancaína Tradicional",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Aunque su nombre evoca a Huancayo, es la entrada reina de los Andes centrales. Se diferencia por el uso de papa amarilla arenosa y un batán (opcional) para la crema.",
+      "ingredientes": [
+        "1 kg de papa amarilla sancochada y pelada",
+        "5 ajíes amarillos (sin venas ni pepas, blanqueados)",
+        "300g de queso fresco serrano (salado)",
+        "1/2 taza de leche evaporada",
+        "4 galletas de soda",
+        "2 cucharadas de aceite vegetal",
+        "Decoración: 2 huevos duros, aceitunas de botija y hojas de lechuga"
+      ],
+      "pasos": [
+        "Licuar (o moler en batán) el ají amarillo con el aceite hasta formar una pasta.",
+        "Añadir el queso fresco en trozos y la leche evaporada. Seguir licuando.",
+        "Incorporar las galletas de soda una a una para dar el espesor deseado. La crema debe ser untuosa, no líquida.",
+        "Probar el punto de sal (el queso serrano suele ser salado, así que cuidado).",
+        "Disponer las papas amarillas cortadas en mitades sobre hojas de lechuga.",
+        "Bañar generosamente con la crema.",
+        "Decorar con medio huevo duro y una aceituna por plato."
+      ]
+    },
+    {
+      "id": "SIE-ENT-002",
+      "nombre": "Ocopa Arequipeña",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "La prima hermana de la huancaína, pero con el toque inconfundible y aromático del huacatay y el toque dulce de la galleta de vainilla.",
+      "ingredientes": [
+        "8 papas blancas o amarillas sancochadas",
+        "1/2 taza de hojas de huacatay fresco",
+        "4 ajíes amarillos salteados",
+        "200g de queso fresco",
+        "1/2 taza de maní tostado",
+        "1 cebolla pequeña y 1 diente de ajo salteados",
+        "3 galletas de vainilla",
+        "1/2 taza de leche evaporada"
+      ],
+      "pasos": [
+        "En una sartén con poco aceite, saltear la cebolla, el ajo, el ají amarillo y las hojas de huacatay hasta que suelten su aroma.",
+        "Llevar este salteado a la licuadora.",
+        "Añadir el queso, el maní tostado, las galletas de vainilla y la leche.",
+        "Licuar hasta obtener una crema verde brillante y homogénea.",
+        "Servir sobre rodajas de papa sancochada.",
+        "Acompañar con huevo duro y una aceituna."
+      ]
+    },
+    {
+      "id": "SIE-ENT-003",
+      "nombre": "Solterito Arequipeño",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Ensalada fresca, colorida y saludable de los valles arequipeños, ideal para abrir el apetito.",
+      "ingredientes": [
+        "2 tazas de habas verdes sancochadas y peladas",
+        "200g de queso fresco en cubitos",
+        "1 taza de choclo desgranado sancochado",
+        "1 cebolla roja picada en cuadritos",
+        "1 tomate grande picado",
+        "1/2 taza de aceitunas negras picadas",
+        "Aliño: Vinagre blanco, aceite de oliva, sal, pimienta y perejil picado"
+      ],
+      "pasos": [
+        "En un bol grande, mezclar la cebolla con el vinagre y dejar reposar 5 minutos.",
+        "Añadir el tomate, el choclo y las habas.",
+        "Incorporar el queso fresco y las aceitunas.",
+        "Aliñar con aceite de oliva, sal y pimienta al gusto.",
+        "Espolvorear perejil picado finamente.",
+        "Servir frío como entrada ligera."
+      ]
+    },
+    {
+      "id": "SIE-ENT-004",
+      "nombre": "Choclo con Queso Serrano",
+      "tiempo_preparacion": "25 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "La simplicidad hecha delicia. El secreto está en el anís y el azúcar al sancochar el maíz para resaltar su dulzor.",
+      "ingredientes": [
+        "2 choclos serranos grandes (grano grande y harinoso)",
+        "200g de queso fresco serrano tipo paria o mantecoso",
+        "1 cucharada de azúcar",
+        "1 cucharadita de granos de anís",
+        "1 rodaja de limón"
+      ],
+      "pasos": [
+        "Poner a hervir abundante agua en una olla.",
+        "Añadir el azúcar, el anís y la rodaja de limón (el limón mantiene el grano blanco).",
+        "Colocar los choclos y cocinar por 15-20 minutos hasta que los granos estén tiernos.",
+        "Escurrir y servir el choclo entero o desgranado.",
+        "Acompañar con una tajada gruesa de queso fresco serrano.",
+        "Opcional: Acompañar con una punta de ají huacatay."
+      ]
+    },
+    {
+      "id": "SIE-ENT-005",
+      "nombre": "Escribano Arequipeño",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada rústica que se preparaba antiguamente para los jueces y escribanos que llegaban tarde a almorzar.",
+      "ingredientes": [
+        "4 papas blancas grandes sancochadas",
+        "1 tomate grande picado en cubitos",
+        "1/2 rocoto picado finamente (sin pepas)",
+        "Vinagre blanco, aceite vegetal y sal",
+        "Perejil picado"
+      ],
+      "pasos": [
+        "Pelar las papas aún calientes y trocearlas groseramente con un tenedor (no debe ser puré).",
+        "Añadir el tomate picado y el rocoto.",
+        "Aliñar generosamente con vinagre, sal y un chorrito de aceite.",
+        "Mezclar con cuidado para que la papa absorba los líquidos.",
+        "Decorar con perejil y servir de inmediato."
+      ]
+    },
+    {
+      "id": "SIE-ENT-006",
+      "nombre": "Tamal Serrano de Maíz Blanco",
+      "tiempo_preparacion": "120 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "A diferencia del costeño, este tamal es más denso, blanco y suele estar envuelto en panca de choclo seca.",
+      "ingredientes": [
+        "1 kg de maíz blanco molido",
+        "200g de manteca de cerdo",
+        "1 taza de caldo de carne",
+        "200g de carne de cerdo o pollo cocida",
+        "Pancas de choclo secas (remojadas)",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Batir la manteca de cerdo hasta que esté cremosa.",
+        "Añadir poco a poco el maíz molido alternando con el caldo.",
+        "Sazonar con sal. La masa debe ser suave pero firme.",
+        "Colocar una porción de masa en la panca.",
+        "Poner un trozo de carne en el centro.",
+        "Cerrar formando un paquete rectangular y amarrar con tiras de panca.",
+        "Cocinar al vapor durante 1 hora y media.",
+        "Servir con una salsa de cebolla picante."
+      ]
+    },
+    {
+      "id": "SIE-ENT-007",
+      "nombre": "Sarza de Patitas",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Entrada fría de textura cartilaginosa y sabor avinagrado, muy popular en las picanterías de la sierra sur.",
+      "ingredientes": [
+        "500g de patitas de cerdo cocidas y picadas en tiras",
+        "2 cebollas rojas grandes en pluma",
+        "1/2 rocoto picado en tiras",
+        "1 cucharadita de ajo molido",
+        "Vinagre tinto, sal, pimienta y orégano",
+        "Perejil picado"
+      ],
+      "pasos": [
+        "En un bol, colocar las patitas ya frías.",
+        "Añadir la cebolla lavada, el rocoto y el ajo.",
+        "Aliñar con abundante vinagre tinto, sal, pimienta y orégano seco.",
+        "Dejar macerar por 15 minutos para que las patitas tomen el sabor del vinagre.",
+        "Espolvorear perejil y servir con una rodaja de papa sancochada."
+      ]
+    },
+    {
+      "id": "SIE-ENT-008",
+      "nombre": "Humitas de Queso (Saladas)",
+      "tiempo_preparacion": "60 min",
+      "porciones": 8,
+      "dificultad": "Media",
+      "descripcion": "Masa de choclo fresco con un corazón de queso derretido, cocidas al vapor en su propia hoja.",
+      "ingredientes": [
+        "6 choclos grandes molidos",
+        "100g de manteca de cerdo caliente",
+        "200g de queso fresco en bastones",
+        "Sal al gusto",
+        "Pancas de choclo frescas"
+      ],
+      "pasos": [
+        "Mezclar el choclo molido con la manteca y la sal hasta integrar bien.",
+        "Colocar una cucharada grande de masa en dos pancas superpuestas.",
+        "Poner un bastón de queso en el medio.",
+        "Envolver y doblar la panca. Amarrar con una tira de la misma hoja.",
+        "Cocinar al vapor en una olla con paja o pancas al fondo por 45 minutos.",
+        "Servir calientes."
+      ]
+    },
+    {
+      "id": "SIE-ENT-009",
+      "nombre": "Habas Tostadas con Queso",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "El snack andino por excelencia. Simple, nutritivo y lleno de sabor rústico.",
+      "ingredientes": [
+        "500g de habas secas",
+        "200g de queso fresco serrano",
+        "Sal al gusto",
+        "Aceite vegetal (opcional)"
+      ],
+      "pasos": [
+        "Tostar las habas secas en una sartén de hierro o barro sin aceite (o con un chorrito) a fuego medio.",
+        "Mover constantemente para que se doren parejo y no se quemen.",
+        "Cuando estén crocantes y la cáscara se abra, retirar del fuego.",
+        "Espolvorear sal mientras están calientes.",
+        "Servir acompañadas de trozos de queso fresco salado."
+      ]
+    },
+    {
+      "id": "SIE-ENT-010",
+      "nombre": "Cebiche de Chocho (Tarwi)",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada típica de Ancash. El chocho es una legumbre de altura con altísimo valor proteico, preparada como un ceviche vegetal.",
+      "ingredientes": [
+        "500g de chocho (tarwi) cocido y desamargado",
+        "Jugo de 6 limones",
+        "1 cebolla roja picada en cuadritos",
+        "1 tomate picado",
+        "Culantro picado",
+        "Sal, pimienta y ají al gusto",
+        "Cancha serrana para acompañar"
+      ],
+      "pasos": [
+        "En un bol, colocar el chocho bien lavado.",
+        "Añadir la cebolla, el tomate y el culantro.",
+        "Verter el jugo de limón y sazonar con sal y pimienta.",
+        "Mezclar bien y dejar reposar 2 minutos.",
+        "Servir en platos hondos acompañado de maíz tostado (cancha)."
+      ]
+    },
+    {
+      "id": "SIE-ENT-011",
+      "nombre": "Rocoto Relleno Arequipeño",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Plato emblemático de Arequipa. Rocoto hervido para reducir el picor, relleno de un guiso de carne picada, especias y cubierto con queso fundido.",
+      "ingredientes": [
+        "4 rocotos grandes y parejos",
+        "300g de carne de res picada a cuchillo",
+        "1 cebolla picada, 1 cucharada de ají panca",
+        "50g de pasas y maní tostado",
+        "2 huevos duros picados",
+        "4 tajadas de queso paria o fresco",
+        "Agua, azúcar y vinagre (para hervir el rocoto)",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Cortar la tapa del rocoto y retirar venas y pepas. Hervir 3 veces en agua con azúcar y vinagre, cambiando el agua cada vez para quitar el picor.",
+        "Preparar el relleno sofriendo la cebolla con ajo y ají panca. Añadir la carne y cocinar.",
+        "Incorporar el maní, las pasas, el huevo duro y sazonar.",
+        "Rellenar los rocotos, colocar una lámina de queso y taparlos.",
+        "Hornear a 180°C por 15 minutos hasta que el queso gratine.",
+        "Servir caliente, tradicionalmente con Pastel de Papa."
+      ]
+    },
+    {
+      "id": "SIE-ENT-012",
+      "nombre": "Pastel de Papa Serrano",
+      "tiempo_preparacion": "60 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Acompañante obligado del rocoto relleno. Capas de papa blanca unidas por un ligue de leche, huevos y abundante queso.",
+      "ingredientes": [
+        "1.5 kg de papa blanca pelada y en rodajas finas",
+        "300g de queso paria o serrano tajado",
+        "3 huevos",
+        "1 taza de leche evaporada",
+        "1 cucharada de anís en grano",
+        "Mantequilla y sal"
+      ],
+      "pasos": [
+        "Enmantequillar un molde. Colocar capas de rodajas de papa intercaladas con tajadas de queso.",
+        "Batir los huevos con la leche y la sal.",
+        "Verter la mezcla de leche sobre las papas. Espolvorear el anís.",
+        "Colocar trocitos de mantequilla en la superficie.",
+        "Hornear a 180°C durante 45 a 50 minutos hasta que la papa esté cocida y la superficie dorada.",
+        "Cortar en cuadrados y servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-ENT-013",
+      "nombre": "Torrejas de Quinua",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bocadillos nutritivos hechos a base de quinua cocida, verduras y queso, fritos hasta quedar dorados.",
+      "ingredientes": [
+        "2 tazas de quinua cocida",
+        "2 huevos",
+        "1/2 taza de queso fresco rallado",
+        "1/2 taza de harina de trigo",
+        "1 cebolla pequeña y un poco de perejil picado",
+        "Sal, pimienta y aceite para freír"
+      ],
+      "pasos": [
+        "En un bol, mezclar la quinua cocida con los huevos batidos.",
+        "Añadir la cebolla, el perejil, el queso y la harina. Salpimentar.",
+        "Formar una masa homogénea.",
+        "Calentar aceite en una sartén. Echar porciones de la mezcla con una cuchara.",
+        "Freír por ambos lados hasta que estén doradas y crocantes.",
+        "Servir como entrada con una ensalada de tomate."
+      ]
+    },
+    {
+      "id": "SIE-ENT-014",
+      "nombre": "Kapchi de Habas",
+      "tiempo_preparacion": "35 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Guiso ligero de habas frescas típico del Cusco, servido usualmente como entrada caliente.",
+      "ingredientes": [
+        "500g de habas verdes peladas",
+        "2 papas blancas en cubos",
+        "1 cebolla picada, 1 cucharada de ají amarillo",
+        "1/2 taza de leche evaporada",
+        "150g de queso fresco en cubos",
+        "Huacatay picado y sal"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir las habas y las papas con un poco de agua.",
+        "Cocinar hasta que las verduras estén tiernas.",
+        "Añadir la leche, el queso fresco y el huacatay.",
+        "Mover suavemente y apagar el fuego.",
+        "Servir en plato hondo pequeño."
+      ]
+    },
+    {
+      "id": "SIE-ENT-015",
+      "nombre": "Japchi de Ayacucho",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada ayacuchana similar a una ensalada cremosa de papas con una salsa de queso y rocoto.",
+      "ingredientes": [
+        "1 kg de papa amarilla sancochada",
+        "200g de queso fresco",
+        "1/2 rocoto (sin pepas)",
+        "2 cucharadas de aceite",
+        "Huacatay o perejil",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Pelar las papas sancochadas y cortarlas en mitades o trozos grandes.",
+        "Licuar el queso fresco con el rocoto, aceite y sal hasta formar una crema espesa.",
+        "Añadir el huacatay picado a la crema.",
+        "Bañar las papas con la salsa de queso.",
+        "Servir como abreboca."
+      ]
+    },
+    {
+      "id": "SIE-ENT-016",
+      "nombre": "Queso Frito Cajamarquino",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Tajadas de queso fresco serrano selladas a la plancha hasta formar una costra dorada. Simple y delicioso.",
+      "ingredientes": [
+        "4 tajadas gruesas de queso fresco (tipo Cajamarca)",
+        "Harina de trigo (para pasar el queso)",
+        "Aceite vegetal o mantequilla",
+        "Papa sancochada o choclo para acompañar"
+      ],
+      "pasos": [
+        "Pasar las tajadas de queso ligeramente por harina (esto ayuda a que no se pegue y dore mejor).",
+        "Calentar una sartén con un poquito de aceite o mantequilla.",
+        "Colocar el queso y dorar por ambos lados hasta que esté crocante por fuera y suave por dentro.",
+        "Servir inmediatamente con papa o choclo."
+      ]
+    },
+    {
+      "id": "SIE-ENT-017",
+      "nombre": "Ensalada de Berros y Papas Nativas",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Ensalada silvestre de altura que aprovecha el picor natural del berro de río y la textura de las papas de colores.",
+      "ingredientes": [
+        "1 manojo de berros frescos",
+        "4 papas nativas de diferentes colores sancochadas",
+        "100g de queso fresco desmenuzado",
+        "Aliño: Limón, aceite de oliva, sal y pimienta"
+      ],
+      "pasos": [
+        "Lavar bien los berros y retirar los tallos más duros.",
+        "Cortar las papas nativas en rodajas con su cáscara.",
+        "En un plato, colocar una cama de berros y encima las papas.",
+        "Espolvorear el queso fresco.",
+        "Bañar con el aliño justo antes de servir."
+      ]
+    },
+    {
+      "id": "SIE-ENT-018",
+      "nombre": "Pastel de Choclo Salado",
+      "tiempo_preparacion": "60 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Versión salada del pastel de maíz, relleno de carne o simplemente puro, típico de los valles interandinos.",
+      "ingredientes": [
+        "6 choclos molidos",
+        "3 huevos",
+        "100g de mantequilla derretida",
+        "1/2 taza de leche",
+        "Sal, pimienta y anís en grano"
+      ],
+      "pasos": [
+        "Mezclar el choclo molido con la mantequilla, yemas, leche y sal.",
+        "Batir las claras a punto de nieve e incorporarlas suavemente.",
+        "Verter en un molde engrasado.",
+        "Hornear a 180°C por 45 minutos.",
+        "Servir como entrada caliente."
+      ]
+    },
+    {
+      "id": "SIE-ENT-019",
+      "nombre": "Sarza de Sencca",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Entrada arequipeña hecha a base de hocico de res (sencca) cocido y marinado en vinagre y especias.",
+      "ingredientes": [
+        "500g de hocico de res cocido y picado",
+        "2 cebollas rojas en pluma",
+        "1 tomate picado",
+        "Vinagre tinto, aceite, sal y pimienta",
+        "Perejil picado"
+      ],
+      "pasos": [
+        "Sancochar el hocico hasta que esté tierno y cortarlo en láminas finas.",
+        "Mezclar con la cebolla, tomate y perejil.",
+        "Aliñar con abundante vinagre, aceite y sal.",
+        "Dejar reposar 10 minutos para que el sabor penetre.",
+        "Servir frío."
+      ]
+    },
+    {
+      "id": "SIE-ENT-020",
+      "nombre": "Chicharrón de Cuy (Entrada)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Trozos de cuy fritos hasta quedar crocantes, servidos en porción pequeña como abreboca.",
+      "ingredientes": [
+        "1 cuy limpio cortado en cuartos",
+        "Harina de maíz o de trigo",
+        "Ajo molido, sal y pimienta",
+        "Aceite abundante"
+      ],
+      "pasos": [
+        "Sazonar el cuy con ajo, sal y pimienta.",
+        "Pasar por harina sacudiendo el exceso.",
+        "Freír en abundante aceite caliente hasta que la piel esté bien crocante.",
+        "Servir una pieza por persona acompañada de una papa dorada."
+      ]
+    }
+  ]
+}

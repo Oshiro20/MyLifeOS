@@ -1,0 +1,498 @@
+{
+  "region": "Selva",
+  "categoria": "Sopas",
+  "recetas": [
+    {
+      "id": "SEL-SOP-001",
+      "nombre": "Inchicapi de Gallina de Chacra",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "La sopa más emblemática de la Amazonía peruana, espesada con maní y maíz, con el aroma inconfundible del sacha culantro.",
+      "ingredientes": [
+        "1 gallina de chacra (aprox. 2 kg) cortada en presas",
+        "250g de maní pelado y tostado",
+        "150g de harina de maíz suave (maíz amarillo)",
+        "2 yucas medianas cortadas en trozos",
+        "10 hojas de sacha culantro (culantro de monte)",
+        "2 dientes de ajo molidos",
+        "1 cebolla roja pequeña picada",
+        "1 cucharadita de palillo (cúrcuma fresca) rallado",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Sancochar las presas de gallina en una olla grande con 3 litros de agua y sal hasta que estén tiernas (la gallina de chacra es dura, puede tardar 1 hora).",
+        "Licuar el maní tostado con la harina de maíz, las hojas de sacha culantro, la cebolla, el ajo y el palillo, usando un poco del caldo de la cocción.",
+        "Añadir los trozos de yuca a la olla de la gallina.",
+        "Verter la mezcla licuada en la olla poco a poco, moviendo constantemente con una cuchara de palo para evitar que se formen grumos o se pegue al fondo.",
+        "Dejar cocinar a fuego lento por unos 20 a 30 minutos más hasta que la sopa espese y el maní esté bien cocido.",
+        "Rectificar la sal y servir muy caliente, asegurándose de que cada plato tenga una presa y trozos de yuca."
+      ]
+    },
+    {
+      "id": "SEL-SOP-002",
+      "nombre": "Sopa de Carachama",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Caldo concentrado hecho con un pez prehistórico de río. Es famoso por ser un potente reconstituyente físico.",
+      "ingredientes": [
+        "4 carachamas grandes bien lavadas",
+        "2 litros de agua",
+        "2 yucas grandes peladas y troceadas",
+        "6 hojas de sacha culantro",
+        "1 trozo de kion (jengibre) machacado",
+        "2 dientes de ajo machacados",
+        "Sal al gusto",
+        "Ají charapita para acompañar"
+      ],
+      "pasos": [
+        "En una olla grande, poner a hervir el agua con el ajo, el kion y la sal.",
+        "Cuando el agua esté hirviendo, añadir las yucas y cocinar por 10 minutos.",
+        "Incorporar las carachamas enteras. Cocinar a fuego medio por 20 minutos.",
+        "Unos 5 minutos antes de apagar el fuego, añadir las hojas de sacha culantro enteras o picadas.",
+        "Servir en platos hondos, colocando una carachama entera y yuca en cada plato.",
+        "Acompañar con un pocillo de ají charapita con limón."
+      ]
+    },
+    {
+      "id": "SEL-SOP-003",
+      "nombre": "Timbuche de Pescado Menudo",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Caldo ligero y transparente conocido como 'levanta muertos'. Es la sopa más rápida y sencilla de la selva.",
+      "ingredientes": [
+        "1 kg de pescados pequeños de río (boquichico, palometa o mojarra)",
+        "2 litros de agua",
+        "5 hojas de sacha culantro",
+        "1 cebolla pequeña cortada en mitades",
+        "2 dientes de ajo",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Hervir el agua con la cebolla y el ajo por 5 minutos.",
+        "Añadir los pescados enteros (previamente limpios).",
+        "Cocinar por solo 10 a 12 minutos a fuego medio para que el pescado no se deshaga.",
+        "Añadir el sacha culantro picado y apagar el fuego inmediatamente.",
+        "Servir el caldo caliente. Es tradicional beberlo directamente del cuenco."
+      ]
+    },
+    {
+      "id": "SEL-SOP-004",
+      "nombre": "Zarapatera (Sopa de Motelo)",
+      "tiempo_preparacion": "180 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Sopa densa preparada con carne de tortuga terrestre (motelo) y plátano verde rallado.",
+      "ingredientes": [
+        "1 kg de carne de motelo picada en cubos pequeños",
+        "4 plátanos verdes (bellaco)",
+        "1/2 taza de maní molido",
+        "2 cucharadas de ajo molido",
+        "1 cebolla roja picada",
+        "1 cucharada de palillo fresco rallado",
+        "8 hojas de sacha culantro",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Sancochar la carne de motelo en agua con sal hasta que esté muy suave (puede tardar 2 horas).",
+        "Rallar los plátanos verdes por el lado fino del rallador.",
+        "En una olla grande, hacer un aderezo con aceite, cebolla, ajo y palillo.",
+        "Añadir el caldo de la carne de motelo al aderezo.",
+        "Disolver el plátano rallado en un poco de agua fría y añadirlo a la olla hirviendo, moviendo constantemente para que no se pegue.",
+        "Añadir la carne cocida y el maní molido.",
+        "Cocinar por 30 minutos a fuego lento hasta que espese.",
+        "Finalizar con sacha culantro picado finamente."
+      ]
+    },
+    {
+      "id": "SEL-SOP-005",
+      "nombre": "Caldo de Gallina de Chacra al Estilo Selvático",
+      "tiempo_preparacion": "100 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Caldo amarillo y potente, diferenciado por el uso de yuca y el aroma de hierbas del monte.",
+      "ingredientes": [
+        "4 presas grandes de gallina de chacra",
+        "2.5 litros de agua",
+        "1/2 kg de yuca sancochada",
+        "4 huevos duros",
+        "1 trozo grande de kion machacado",
+        "2 tallos de cebollita china picada",
+        "Sal y comino"
+      ],
+      "pasos": [
+        "Colocar la gallina en una olla con el agua fría y el kion.",
+        "Cocinar a fuego alto hasta que hierva, luego bajar a fuego medio y cocinar por 1 hora y media hasta que la gallina esté suave.",
+        "Retirar la espuma que suba a la superficie para que el caldo quede limpio.",
+        "Añadir la yuca 20 minutos antes de terminar.",
+        "Servir en platos grandes con una presa, un trozo de yuca y un huevo duro.",
+        "Decorar con cebollita china picada."
+      ]
+    },
+    {
+      "id": "SEL-SOP-006",
+      "nombre": "Sopa de Bolas de Plátano (Bellaco)",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Sopa consistente con esferas de plátano verde rellenas de carne, en un caldo de verduras.",
+      "ingredientes": [
+        "4 plátanos verdes",
+        "200g de carne de res picada",
+        "1 cebolla picada",
+        "1 zanahoria y 1 choclo en rodajas",
+        "2 cucharadas de maní molido",
+        "Ajo, sal y sacha culantro"
+      ],
+      "pasos": [
+        "Rallar 2 plátanos crudos y sancochar los otros 2 para hacer un puré. Mezclar ambos plátanos con un poco de sal hasta formar una masa.",
+        "Preparar un relleno sofriendo la carne con cebolla, ajo y maní.",
+        "Formar bolas de masa de plátano, rellenarlas con la carne y cerrarlas bien.",
+        "Hacer un caldo con el choclo, zanahoria y agua.",
+        "Cuando el agua hierva, echar las bolas de plátano con cuidado.",
+        "Cocinar por 20 minutos hasta que las bolas floten y estén cocidas.",
+        "Añadir sacha culantro al final."
+      ]
+    },
+    {
+      "id": "SEL-SOP-007",
+      "nombre": "Chupe de Camarones de Río (Estilo Amazónico)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa cremosa de camarones gigantes de río, con el toque dulce del ají dulce selvático.",
+      "ingredientes": [
+        "1 kg de camarones de río limpios",
+        "1/2 taza de arroz",
+        "1 taza de leche evaporada",
+        "2 huevos",
+        "2 cucharadas de pasta de ají dulce",
+        "1 cebolla picada",
+        "Sal, pimienta y sacha culantro"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo y ají dulce.",
+        "Añadir 1.5 litros de agua y el arroz. Cocinar hasta que el arroz esté casi listo.",
+        "Incorporar los camarones enteros y cocinar por 5 minutos hasta que se vuelvan rojos.",
+        "Batir los huevos y echarlos en forma de hilo mientras se mueve suavemente.",
+        "Añadir la leche evaporada y el sacha culantro picado.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SEL-SOP-008",
+      "nombre": "Inchicapi de Carne de Res",
+      "tiempo_preparacion": "70 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Variante del Inchicapi tradicional donde la carne de res aporta un sabor más denso y oscuro al caldo de maní.",
+      "ingredientes": [
+        "1/2 kg de carne de res (pecho o falda) en trozos",
+        "200g de maní tostado y licuado",
+        "100g de harina de maíz",
+        "2 yucas",
+        "Cebolla, ajo y palillo",
+        "Sacha culantro"
+      ],
+      "pasos": [
+        "Cocinar la carne de res en agua con sal hasta que esté blanda.",
+        "Seguir el proceso del Inchicapi tradicional: añadir la yuca.",
+        "Incorporar el licuado de maní, harina de maíz y hierbas.",
+        "Cocinar a fuego lento hasta que espese y la carne esté muy tierna.",
+        "Servir con sacha culantro picado."
+      ]
+    },
+    {
+      "id": "SEL-SOP-009",
+      "nombre": "Caldo de Pescado con Yuca y Sacha Culantro",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa clara y refrescante, ideal para climas calurosos por su ligereza.",
+      "ingredientes": [
+        "800g de filete de Doncella o Dorado en trozos",
+        "2 yucas sancochadas",
+        "1.5 litros de agua",
+        "1 ají dulce picado",
+        "6 hojas de sacha culantro",
+        "Sal y limón"
+      ],
+      "pasos": [
+        "Hervir el agua con el ají dulce y la sal.",
+        "Añadir el pescado en trozos grandes.",
+        "Cocinar por 8 minutos.",
+        "Añadir las yucas ya sancochadas para que tomen sabor.",
+        "Apagar el fuego y añadir el sacha culantro picado.",
+        "Servir con abundante limón."
+      ]
+    },
+    {
+      "id": "SEL-SOP-010",
+      "nombre": "Caldo de Tucunaré",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Sopa hecha con el Tucunaré, un pez de escamas muy apreciado por su carne fina y sabor elegante.",
+      "ingredientes": [
+        "1 Tucunaré mediano",
+        "1.5 litros de agua",
+        "1 tomate y 1 cebolla picados",
+        "1 cucharadita de ajo",
+        "Hierba buena y sacha culantro",
+        "Sal"
+      ],
+      "pasos": [
+        "Hacer un sofrito ligero con cebolla, tomate y ajo.",
+        "Añadir el agua y dejar hervir.",
+        "Poner el pescado entero o en mitades.",
+        "Cocinar por 15 minutos.",
+        "Añadir las hierbas aromáticas al final.",
+        "Servir caliente. El Tucunaré suelta una grasa natural muy sabrosa."
+      ]
+    },
+    {
+      "id": "SEL-SOP-011",
+      "nombre": "Aguadito de Motelo",
+      "tiempo_preparacion": "150 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Sopa espesa y verdosa a base de culantro y arroz, preparada con la nutritiva carne de tortuga terrestre (motelo).",
+      "ingredientes": [
+        "1 kg de carne de motelo picada en trozos",
+        "1 taza de arroz de grano largo",
+        "1 taza de culantro licuado",
+        "1/2 taza de arvejas frescas",
+        "1 zanahoria cortada en cubos",
+        "2 cucharadas de pasta de ají amarillo",
+        "1 cebolla roja picada",
+        "Sal, pimienta y comino al gusto"
+      ],
+      "pasos": [
+        "Sancochar la carne de motelo en agua con sal hasta que esté tierna (aprox. 1.5 a 2 horas). Reservar el caldo.",
+        "En una olla aparte, hacer un aderezo con aceite, cebolla, ajo y ají amarillo.",
+        "Añadir el culantro licuado y freír por unos minutos hasta que cambie a un verde oscuro.",
+        "Verter el caldo de la carne y añadir el arroz.",
+        "Cuando el arroz esté a media cocción, incorporar la carne de motelo, las arvejas y la zanahoria.",
+        "Cocinar a fuego medio hasta que el arroz esté bien cocido y la sopa haya tomado consistencia.",
+        "Rectificar la sal y servir con una rodaja de limón."
+      ]
+    },
+    {
+      "id": "SEL-SOP-012",
+      "nombre": "Sopa de Paiche Seco-Salado",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Caldo de sabor intenso que utiliza paiche conservado en sal, técnica tradicional de las zonas donde no hay refrigeración.",
+      "ingredientes": [
+        "500g de paiche seco-salado",
+        "2 yucas grandes peladas y troceadas",
+        "1 cebolla picada",
+        "2 ajíes dulces picados",
+        "4 hojas de sacha culantro",
+        "1 cucharadita de palillo fresco",
+        "1.5 litros de agua"
+      ],
+      "pasos": [
+        "Remojar el paiche seco desde la noche anterior cambiando el agua un par de veces para retirar el exceso de sal.",
+        "Cortar el pescado en trozos medianos.",
+        "En una olla, hervir el agua con la cebolla, el ajo y el palillo.",
+        "Añadir el paiche y las yucas.",
+        "Cocinar por 25 minutos hasta que la yuca esté suave y el pescado haya soltado su sabor.",
+        "Añadir el ají dulce y el sacha culantro picado 5 minutos antes de apagar.",
+        "Servir caliente sin añadir más sal (el pescado ya aporta lo suficiente)."
+      ]
+    },
+    {
+      "id": "SEL-SOP-013",
+      "nombre": "Caldo de Piraña",
+      "tiempo_preparacion": "35 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Sopa exótica y ligera, valorada por su sabor limpio y sus propiedades energéticas.",
+      "ingredientes": [
+        "4 pirañas medianas limpias",
+        "2 litros de agua",
+        "1 cebolla pequeña entera",
+        "2 dientes de ajo machacados",
+        "1 ají dulce picado",
+        "Sacha culantro y sal al gusto"
+      ],
+      "pasos": [
+        "Lavar bien las pirañas, retirando las vísceras.",
+        "Hervir el agua con la cebolla, el ajo y el ají dulce.",
+        "Cuando rompa el hervor, añadir las pirañas enteras.",
+        "Cocinar por 15 minutos (la carne de la piraña es delicada y se cuece rápido).",
+        "Añadir sacha culantro picado y apagar el fuego.",
+        "Servir con yuca sancochada a un lado."
+      ]
+    },
+    {
+      "id": "SEL-SOP-014",
+      "nombre": "Sopa de Maíz Tierno (Maizal)",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa dulce y salada a la vez, hecha con granos de maíz amazónico recién cosechado.",
+      "ingredientes": [
+        "4 choclos regionales maduros (maíz tierno)",
+        "500g de carne de cerdo o gallina",
+        "1 taza de leche evaporada",
+        "1 cebolla roja picada",
+        "Sal, pimienta y sacha culantro"
+      ],
+      "pasos": [
+        "Desgranar los choclos y licuar la mitad con un poco de agua. La otra mitad se deja entera.",
+        "Cocinar la carne en agua con sal hasta que esté blanda.",
+        "Añadir el choclo desgranado y el choclo licuado al caldo.",
+        "Cocinar a fuego lento moviendo constantemente para que el maíz licuado no se pegue.",
+        "Una vez que el maíz esté cocido, añadir la leche para dar cremosidad.",
+        "Aromatizar con sacha culantro picado y servir."
+      ]
+    },
+    {
+      "id": "SEL-SOP-015",
+      "nombre": "Caldo de Boquichico al Carbón",
+      "tiempo_preparacion": "45 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Variante donde el pescado se asa primero al carbón antes de entrar a la sopa, dándole un toque ahumado único.",
+      "ingredientes": [
+        "2 boquichicos grandes",
+        "2 litros de agua",
+        "2 yucas sancochadas",
+        "1 tomate y 1 cebolla picados",
+        "Sacha culantro y sal"
+      ],
+      "pasos": [
+        "Asar los boquichicos en la parrilla por 5 minutos por lado hasta que la piel esté dorada.",
+        "Hervir el agua con el tomate y la cebolla.",
+        "Añadir el pescado asado a la olla hirviendo.",
+        "Cocinar por 10 minutos para que el caldo absorba el sabor ahumado.",
+        "Incorporar la yuca y el sacha culantro.",
+        "Servir caliente con un toque de limón."
+      ]
+    },
+    {
+      "id": "SEL-SOP-016",
+      "nombre": "Sopa de Yuca con Carne Seca (Charqui)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa rústica y sustanciosa que combina la suavidad de la yuca con la dureza sabrosa de la carne seca.",
+      "ingredientes": [
+        "250g de carne seca de res o cerdo (charqui)",
+        "1 kg de yuca amarilla",
+        "1 cebolla picada",
+        "2 dientes de ajo",
+        "1 cucharadita de comino",
+        "Cebollita china para decorar"
+      ],
+      "pasos": [
+        "Lavar la carne seca y cortarla en tiras finas.",
+        "Sofreír la cebolla, el ajo y el comino en una olla.",
+        "Añadir la carne y sellarla.",
+        "Agregar 2 litros de agua y cocinar hasta que la carne esté blanda.",
+        "Añadir la yuca picada en trozos pequeños para que espese ligeramente el caldo.",
+        "Cocinar hasta que la yuca esté muy suave.",
+        "Servir decorado con cebollita china picada."
+      ]
+    },
+    {
+      "id": "SEL-SOP-017",
+      "nombre": "Chupe de Doncella con Leche",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa blanca y cremosa de pescado Doncella, enriquecida con leche y huevos escalfados.",
+      "ingredientes": [
+        "800g de filete de Doncella en cubos",
+        "1/2 taza de arroz",
+        "1 taza de leche evaporada",
+        "4 huevos",
+        "2 cucharadas de pasta de ají amarillo",
+        "Yuca sancochada y sal"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir 1.5 litros de agua y el arroz. Cocinar hasta que el arroz esté suave.",
+        "Incorporar los cubos de pescado y cocinar por 5 minutos.",
+        "Añadir la leche evaporada.",
+        "Cascar los huevos uno a uno sobre la sopa hirviendo sin mover para que se escalfen.",
+        "Apagar el fuego una vez que los huevos estén listos.",
+        "Servir con una porción de yuca."
+      ]
+    },
+    {
+      "id": "SEL-SOP-018",
+      "nombre": "Sopa de Gallina con Plátano Asado (Inguiri)",
+      "tiempo_preparacion": "80 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Caldo de gallina donde el carbohidrato principal es el plátano verde asado directamente en las brasas.",
+      "ingredientes": [
+        "4 presas de gallina",
+        "4 plátanos verdes (bellaco)",
+        "2 litros de agua",
+        "Kion, ajo y sal",
+        "Sacha culantro"
+      ],
+      "pasos": [
+        "Cocinar la gallina en agua con kion y sal hasta que esté muy blanda.",
+        "Mientras tanto, asar los plátanos verdes con cáscara en la parrilla o sobre la hornilla hasta que la cáscara se queme.",
+        "Pelar los plátanos asados y machacarlos ligeramente.",
+        "Añadir los plátanos al caldo de gallina y dejar hervir 5 minutos más.",
+        "Servir con abundante sacha culantro picado."
+      ]
+    },
+    {
+      "id": "SEL-SOP-019",
+      "nombre": "Sopa de Pescado con Leche de Coco",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Receta de influencia fronteriza que utiliza el coco para dar un toque dulce y exótico al pescado de río.",
+      "ingredientes": [
+        "500g de filete de pescado blanco",
+        "1 taza de leche de coco natural",
+        "1 pimiento rojo picado",
+        "1 cebolla picada",
+        "Ají dulce y sacha culantro",
+        "Sal y aceite de oliva"
+      ],
+      "pasos": [
+        "Saltear la cebolla, el pimiento y el ají dulce.",
+        "Añadir un litro de agua y dejar que hierva.",
+        "Incorporar el pescado y cocinar por 8 minutos.",
+        "Añadir la leche de coco y mezclar suavemente.",
+        "Dejar que dé un solo hervor y apagar.",
+        "Servir con arroz blanco a un lado."
+      ]
+    },
+    {
+      "id": "SEL-SOP-020",
+      "nombre": "Caldo de Cabeza de Paiche",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa rica en colágeno y de sabor profundo, hecha con la cabeza del paiche, muy apreciada por los locales.",
+      "ingredientes": [
+        "1 cabeza de paiche mediana (partida en cuatro)",
+        "2 litros de agua",
+        "2 yucas grandes",
+        "4 hojas de sacha culantro",
+        "Kion machacado y sal"
+      ],
+      "pasos": [
+        "Lavar meticulosamente la cabeza del paiche.",
+        "Hervir el agua con el kion y la cabeza.",
+        "Cocinar a fuego medio-alto por 40 minutos hasta que el caldo se vea ligeramente lechoso por el colágeno.",
+        "Añadir las yucas y cocinar hasta que ablanden.",
+        "Aromatizar con sacha culantro picado.",
+        "Servir caliente con un poco de ají charapita."
+      ]
+    }
+  ]
+}

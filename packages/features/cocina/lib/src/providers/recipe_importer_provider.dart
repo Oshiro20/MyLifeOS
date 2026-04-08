@@ -14,6 +14,7 @@ enum RecipeImportState {
   downloadingVideo,
   extractingAI,
   success,
+  duplicateFound,
   error
 }
 
@@ -21,6 +22,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   Recipe? importedRecipe;
   String? errorMessage;
   String currentStatusMessage = '';
+  List<DuplicateMatch> duplicateMatches = [];
 
   @override
   RecipeImportState build() {
@@ -389,6 +391,18 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     importedRecipe = null;
     errorMessage = null;
     currentStatusMessage = '';
+    duplicateMatches = [];
+  }
+
+  Future<void> checkForDuplicates(List<Recipe> existingRecipes,
+      {double threshold = 0.70}) async {
+    if (importedRecipe == null) return;
+    final checker = RecipeDuplicateChecker();
+    duplicateMatches = checker.findDuplicates(importedRecipe!, existingRecipes,
+        threshold: threshold);
+    if (duplicateMatches.isNotEmpty) {
+      state = RecipeImportState.duplicateFound;
+    }
   }
 }
 

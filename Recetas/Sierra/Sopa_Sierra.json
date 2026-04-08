@@ -1,0 +1,479 @@
+{
+  "region": "Sierra",
+  "categoria": "Sopas",
+  "recetas": [
+    {
+      "id": "SIE-SOP-001",
+      "nombre": "Patasca (Caldo de Mote)",
+      "tiempo_preparacion": "180 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Sopa contundente y nutritiva hecha con granos de maíz blanco gigante (mote) y diversas carnes, emblemática de los Andes centrales.",
+      "ingredientes": [
+        "500g de maíz mote pelado (remojado desde la víspera)",
+        "500g de carne de res (pecho o malaya)",
+        "1/2 cabeza de carnero o 500g de mondongo",
+        "2 patas de vaca",
+        "1 cebolla roja picada y 2 cucharadas de ajo",
+        "2 cucharadas de pasta de ají panca",
+        "Hierbabuena, sal, pimienta y orégano",
+        "Cebollita china y rocoto picado para decorar"
+      ],
+      "pasos": [
+        "Cocinar el mote en abundante agua hasta que los granos empiecen a reventar.",
+        "Añadir las carnes (res, carnero, patas) troceadas y el mondongo.",
+        "Hacer un aderezo aparte con cebolla, ajo y ají panca. Incorporarlo a la olla de la sopa.",
+        "Cocinar a fuego medio-bajo durante 2 o 3 horas hasta que las carnes estén muy suaves y el caldo esté concentrado.",
+        "Sazonar con sal, pimienta y abundante orégano seco.",
+        "Añadir ramas de hierbabuena al final para aromatizar.",
+        "Servir muy caliente con cebollita china y rocoto picado encima."
+      ]
+    },
+    {
+      "id": "SIE-SOP-002",
+      "nombre": "Caldo de Cabeza de Carnero",
+      "tiempo_preparacion": "120 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "El desayuno tradicional en las zonas altas de los Andes, conocido por su alto contenido energético y sabor intenso.",
+      "ingredientes": [
+        "1 cabeza de carnero joven cortada en trozos",
+        "4 papas blancas grandes",
+        "250g de maíz mote cocido",
+        "1 trozo de kion (jengibre) machacado",
+        "1 tallo de apio y 1 de poro",
+        "Sal y orégano seco",
+        "Limón y ají para acompañar"
+      ],
+      "pasos": [
+        "Lavar meticulosamente los trozos de la cabeza de carnero.",
+        "Hervir en una olla grande con agua, el kion, apio y poro.",
+        "Retirar la espuma que se forma en la superficie durante los primeros hervores.",
+        "Cocinar a fuego medio por 1 hora y media hasta que la carne se desprenda del hueso.",
+        "Añadir las papas y cocinar hasta que estén suaves.",
+        "Incorporar el mote ya cocido y sazonar con sal y orégano.",
+        "Servir caliente con un chorrito de limón."
+      ]
+    },
+    {
+      "id": "SIE-SOP-003",
+      "nombre": "Shambar Liberteno",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Sopa tradicional de la sierra de La Libertad (Trujillo), que combina trigo resbalado con diversas menestras y carnes ahumadas.",
+      "ingredientes": [
+        "250g de trigo resbalado (pelado)",
+        "100g de frijol bayo, 100g de garbanzos y 100g de habas secas",
+        "200g de pellejo de cerdo y 200g de jamón serrano",
+        "1 rama de hierbabuena",
+        "2 cucharadas de ají panca y 1 de ají amarillo",
+        "Cebolla, ajo, sal y comino"
+      ],
+      "pasos": [
+        "Remojar el trigo y las menestras desde la noche anterior.",
+        "Sancochar el trigo, las menestras y el pellejo de cerdo en abundante agua hasta que todo esté tierno.",
+        "Hacer un aderezo con cebolla, ajo, ají panca y ají amarillo.",
+        "Añadir el aderezo a la olla de las menestras junto con el jamón serrano picado.",
+        "Cocinar por 20 minutos más para que los sabores se integren y espese ligeramente.",
+        "Aromatizar con la hierbabuena picada.",
+        "Servir tradicionalmente con cancha serrana."
+      ]
+    },
+    {
+      "id": "SIE-SOP-004",
+      "nombre": "Chairo Puno",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa espesa y nutritiva del Altiplano, caracterizada por el uso de chuño (papa deshidratada) y carne de cordero.",
+      "ingredientes": [
+        "250g de carne de cordero (lomo o chuleta)",
+        "1/2 taza de chuño negro remojado y machacado",
+        "1/2 taza de trigo y 1/2 taza de habas verdes",
+        "1 zanahoria y 1 trozo de nabo picados",
+        "4 papas blancas picadas en tiras",
+        "1 rama de huacatay",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Cocinar la carne de cordero en agua con sal.",
+        "Añadir el trigo, la zanahoria y el nabo.",
+        "Incorporar las habas y las papas.",
+        "Agregar el chuño machacado (esto le dará el espesor y color oscuro).",
+        "Cocinar a fuego lento hasta que todos los ingredientes estén tiernos.",
+        "Finalizar añadiendo el huacatay picado.",
+        "Servir bien caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-005",
+      "nombre": "Sopa de Quinua Tradicional",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa balanceada y muy nutritiva que resalta el grano de oro de los incas.",
+      "ingredientes": [
+        "1 taza de quinua lavada",
+        "250g de carne de res o pollo en cubos",
+        "1 zanahoria y 1 tallo de apio picados",
+        "2 papas blancas en cubos",
+        "100g de queso fresco en cuadritos",
+        "1/2 taza de leche evaporada",
+        "Sal y una rama de huacatay"
+      ],
+      "pasos": [
+        "Hervir el agua con la carne y la quinua.",
+        "Añadir la zanahoria y el apio. Cocinar por 15 minutos.",
+        "Incorporar las papas y cocinar hasta que estén suaves.",
+        "Añadir el queso fresco y la leche al final.",
+        "Rectificar la sal y aromatizar con el huacatay.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-006",
+      "nombre": "Caldo Verde Cajamarquino",
+      "tiempo_preparacion": "35 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa ligera de papas que obtiene su color verde intenso de una mezcla de hierbas andinas molidas.",
+      "ingredientes": [
+        "1 kg de papa blanca pelada y troceada",
+        "2 huevos",
+        "200g de quesillo cajamarquino o queso fresco",
+        "1 taza de hierbas molidas (paico, ruda, perejil y hierbabuena)",
+        "2 litros de agua",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Sancochar las papas en el agua con sal.",
+        "Cuando las papas estén cocidas, batir los huevos y verterlos lentamente en la sopa moviendo circularmente.",
+        "Añadir el queso desmenuzado.",
+        "Apagar el fuego e inmediatamente agregar la mezcla de hierbas molidas (no debe hervir con las hierbas para no perder el color y sabor).",
+        "Mezclar bien y servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-007",
+      "nombre": "Lawa de Maiz (Cusco)",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Crema espesa de maíz fresco, una preparación ancestral muy común en las festividades cusqueñas.",
+      "ingredientes": [
+        "6 choclos maduros desgranados y licuados",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "1 cucharada de pasta de ají amarillo",
+        "150g de queso fresco en cubitos",
+        "Sal, pimienta y huacatay"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir 1.5 litros de agua o caldo de verduras.",
+        "Verter el maíz licuado y mover constantemente con una cuchara de palo para evitar grumos.",
+        "Cocinar a fuego lento hasta que la mezcla espese y brille.",
+        "Añadir el queso y el huacatay picado al final.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-008",
+      "nombre": "Chupe de Olluco",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa cremosa basada en el olluco, un tubérculo nativo de textura suave.",
+      "ingredientes": [
+        "500g de olluco picado en tiras finas",
+        "2 papas amarillas",
+        "1/2 taza de arroz",
+        "1/2 taza de leche evaporada",
+        "100g de queso fresco",
+        "Ají colorado, cebolla, ajo y huacatay"
+      ],
+      "pasos": [
+        "Preparar un aderezo con cebolla, ajo y ají colorado.",
+        "Añadir el olluco y las papas con agua suficiente.",
+        "Incorporar el arroz y cocinar hasta que esté suave.",
+        "Añadir el queso, la leche y el huacatay al final.",
+        "Remover y servir."
+      ]
+    },
+    {
+      "id": "SIE-SOP-009",
+      "nombre": "Sopa de Siete Semillas",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Bomba proteica hecha con una mezcla de harinas de granos y legumbres andinas tostadas.",
+      "ingredientes": [
+        "1 taza de mezcla de harina de 7 semillas (quinua, cañihua, kiwicha, habas, maíz, cebada y trigo)",
+        "250g de carne de res picada",
+        "1 zanahoria picada",
+        "1.5 litros de agua",
+        "Sal y orégano"
+      ],
+      "pasos": [
+        "Disolver la harina de 7 semillas en un poco de agua fría.",
+        "Cocinar la carne con la zanahoria en el agua hirviendo.",
+        "Verter la harina disuelta moviendo constantemente.",
+        "Cocinar a fuego lento por 20 minutos hasta que espese uniformemente.",
+        "Sazonar con sal y orégano antes de servir."
+      ]
+    },
+    {
+      "id": "SIE-SOP-010",
+      "nombre": "Caldo de Cordero con Yuca",
+      "tiempo_preparacion": "70 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa reconfortante típica de los valles interandinos, donde el cordero aporta un sabor profundo y graso.",
+      "ingredientes": [
+        "1/2 kg de carne de cordero con hueso",
+        "2 yucas grandes peladas y troceadas",
+        "1 trozo de kion",
+        "1 zanahoria y 1 tallo de apio",
+        "Sal, pimienta y perejil picado"
+      ],
+      "pasos": [
+        "Sancochar el cordero en agua con kion, zanahoria y apio.",
+        "Retirar la espuma para que el caldo sea claro.",
+        "Cuando la carne esté a medio cocer, añadir las yucas.",
+        "Cocinar hasta que la carne y la yuca estén muy suaves.",
+        "Sazonar con sal y servir decorado con perejil."
+      ]
+    },
+    {
+      "id": "SIE-SOP-011",
+      "nombre": "Sopa de Trigo Pelado",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa casera y reconfortante que utiliza el grano de trigo entero, muy común en los hogares de los Andes centrales.",
+      "ingredients": [
+        "250g de trigo pelado (resbalado)",
+        "250g de carne de res o cordero en trozos",
+        "2 papas blancas en cubos",
+        "1 zanahoria picada",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "Sal, pimienta y una rama de orégano fresco"
+      ],
+      "pasos": [
+        "Remojar el trigo desde la noche anterior para acelerar la cocción.",
+        "En una olla, hacer un aderezo con cebolla y ajo. Añadir la carne y sellarla.",
+        "Verter 2 litros de agua y añadir el trigo.",
+        "Cocinar a fuego medio por 30 minutos o hasta que el trigo esté tierno.",
+        "Incorporar las papas y la zanahoria. Cocinar hasta que ablanden.",
+        "Sazonar con sal, pimienta y añadir el orégano al final.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-012",
+      "nombre": "Caldo Blanco Arequipeño",
+      "tiempo_preparacion": "90 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa clara y elegante típica de los domingos en Arequipa, hecha a base de lomo de cordero, garbanzos y chuño.",
+      "ingredients": [
+        "1/2 kg de lomo de cordero",
+        "1/2 taza de garbanzos (remojados)",
+        "4 chuños blancos remojados",
+        "1 trozo de yuca y 1 papa blanca",
+        "1 rama de apio, 1 poro y kion",
+        "Sal y abundante orégano seco"
+      ],
+      "pasos": [
+        "Sancochar el cordero con el apio, poro y kion en abundante agua.",
+        "Añadir los garbanzos y cocinar hasta que estén tiernos.",
+        "Incorporar la yuca, la papa y el chuño blanco (entero o troceado).",
+        "Mantener el fuego medio para que el caldo no se enturbie.",
+        "Una vez todo esté cocido, rectificar la sal y frotar el orégano seco con las manos sobre la olla.",
+        "Servir en plato hondo, asegurando una pieza de carne en cada servicio."
+      ]
+    },
+    {
+      "id": "SIE-SOP-013",
+      "nombre": "Yacu Chupe (Sopa Verde)",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa ligera y curativa hecha a base de papas, queso y una mezcla de hierbas aromáticas molidas.",
+      "ingredients": [
+        "1 kg de papa blanca o amarilla pelada y troceada",
+        "2 huevos",
+        "200g de queso fresco serrano",
+        "1 taza de hierbas molidas (muña, huacatay, perejil y ruda)",
+        "Sal y 2 litros de agua"
+      ],
+      "pasos": [
+        "Hervir las papas en el agua con sal hasta que estén muy suaves.",
+        "Batir los huevos ligeramente y echarlos en forma de hilo mientras se mueve la sopa.",
+        "Añadir el queso fresco desmenuzado.",
+        "Apagar el fuego y añadir las hierbas molidas. Mezclar bien.",
+        "Es vital no dejar hervir las hierbas para que no se amarguen ni pierdan el color verde vibrante."
+      ]
+    },
+    {
+      "id": "SIE-SOP-014",
+      "nombre": "Sopa de Morón (Cebada)",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa sustanciosa que utiliza cebada perlada (morón), conocida por sus beneficios digestivos.",
+      "ingredients": [
+        "200g de morón americano (cebada)",
+        "300g de carne de res o costilla de cerdo",
+        "2 papas blancas en cubos",
+        "1/2 taza de arvejas y zanahoria",
+        "Sal, pimienta y perejil"
+      ],
+      "pasos": [
+        "Lavar bien el morón.",
+        "En una olla, cocinar la carne con el morón en 2 litros de agua por 35 minutos.",
+        "Añadir las verduras y las papas.",
+        "Cocinar hasta que el morón esté suave y haya espesado ligeramente el caldo.",
+        "Sazonar y servir con perejil picado."
+      ]
+    },
+    {
+      "id": "SIE-SOP-015",
+      "nombre": "Wallpa Chupe (Sopa de Pollo de Altura)",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Versión andina de la sopa de pollo, enriquecida con papa amarilla y aromatizada con huacatay.",
+      "ingredients": [
+        "4 presas de pollo",
+        "4 papas amarillas grandes",
+        "1/2 taza de arroz",
+        "1/2 taza de habas verdes",
+        "1 cebolla picada y 1 cucharada de ají amarillo",
+        "Sal y una rama de huacatay"
+      ],
+      "pasos": [
+        "Sellar el pollo en la olla. Retirar.",
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir agua, el pollo, las habas y el arroz.",
+        "Cuando el arroz esté a media cocción, añadir las papas amarillas (que se cocinan rápido).",
+        "Cocinar hasta que la papa esté arenosa y el caldo tome cuerpo.",
+        "Añadir huacatay al final y servir."
+      ]
+    },
+    {
+      "id": "SIE-SOP-016",
+      "nombre": "Sopa de Habas Secas",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa de sabor intenso y textura terrosa, hecha con habas secas tostadas o peladas.",
+      "ingredients": [
+        "250g de habas secas peladas",
+        "1/2 kg de carne de cerdo o res",
+        "2 papas blancas",
+        "1 cebolla, ajo y palillo (cúrcuma)",
+        "Sal y orégano"
+      ],
+      "pasos": [
+        "Remojar las habas desde la noche anterior.",
+        "Cocinar las habas con la carne hasta que las habas se deshagan un poco.",
+        "Añadir las papas en cubos.",
+        "Hacer un sofrito con cebolla, ajo y palillo e incorporarlo a la olla.",
+        "Dejar que hierva hasta que espese. Sazonar con sal y orégano.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-017",
+      "nombre": "Sopa de Calabaza Andina",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa dulce y cremosa de calabaza madura, muy tradicional en las zonas rurales de la sierra.",
+      "ingredients": [
+        "1/2 kg de calabaza madura picada",
+        "1 taza de leche evaporada",
+        "100g de queso fresco",
+        "1/2 taza de arroz",
+        "1 cebolla picada y sal"
+      ],
+      "pasos": [
+        "Hervir la calabaza con un poco de agua hasta que esté muy suave.",
+        "Aplastarla con una cuchara de palo.",
+        "Añadir el arroz y cocinar hasta que esté listo.",
+        "Incorporar el queso en cubos y la leche al final.",
+        "Sazonar con sal (y un toque de azúcar si se desea más dulce).",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-SOP-018",
+      "nombre": "Sopa de Kiwicha y Verduras",
+      "tiempo_preparacion": "35 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Sopa ligera y altamente proteica basada en el grano de amaranto andino.",
+      "ingredients": [
+        "1/2 taza de kiwicha",
+        "1/2 pechuga de pollo picada",
+        "Zapallo macre en cubitos",
+        "1 zanahoria y arvejas",
+        "Sal y perejil"
+      ],
+      "pasos": [
+        "Cocinar la kiwicha en agua hirviendo por 20 minutos.",
+        "Añadir el pollo y las verduras.",
+        "Cocinar a fuego lento hasta que las verduras estén tiernas.",
+        "Sazonar con sal y servir con perejil picado."
+      ]
+    },
+    {
+      "id": "SIE-SOP-019",
+      "nombre": "Chaque de Tripas (Arequipa)",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Sopa espesa y rústica hecha con maíz molido crudo y tripas de cordero bien lavadas.",
+      "ingredients": [
+        "1/2 kg de tripas de cordero limpias",
+        "1 taza de maíz pelado molido",
+        "2 papas blancas y 1/2 taza de habas",
+        "Cebolla, ajo y ají panca",
+        "Sal y hierbabuena"
+      ],
+      "pasos": [
+        "Sancochar las tripas en trozos pequeños hasta que estén suaves.",
+        "Añadir el maíz molido disuelto en agua para evitar grumos.",
+        "Incorporar las papas y las habas.",
+        "Hacer un aderezo de cebolla, ajo y ají panca y verterlo a la olla.",
+        "Cocinar moviendo constantemente hasta que tome cuerpo.",
+        "Servir con hierbabuena picada."
+      ]
+    },
+    {
+      "id": "SIE-SOP-020",
+      "nombre": "Sopa de Pan Andina",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa de origen colonial para aprovechar el pan seco, enriquecida con huevo y queso de la zona.",
+      "ingredients": [
+        "4 panes serranos secos",
+        "1/2 taza de leche",
+        "2 huevos",
+        "100g de queso fresco",
+        "Cebolla, ajo y sal",
+        "Cebollita china"
+      ],
+      "pasos": [
+        "Hacer un aderezo simple con cebolla y ajo.",
+        "Añadir 1.5 litros de agua y sal.",
+        "Cuando hierva, agregar los panes troceados.",
+        "Añadir los huevos batidos y el queso.",
+        "Terminar con un chorrito de leche y cebollita china picada.",
+        "Servir inmediatamente."
+      ]
+    }
+  ]
+}

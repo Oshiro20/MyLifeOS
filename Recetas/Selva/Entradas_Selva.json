@@ -1,0 +1,490 @@
+{
+  "region": "Selva",
+  "categoria": "Entradas",
+  "recetas": [
+    {
+      "id": "SEL-ENT-001",
+      "nombre": "Ensalada de Chonta Tradicional",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada ultra fresca elaborada con las fibras del corazón de la palmera, de textura crocante y sabor delicado.",
+      "ingredientes": [
+        "1 kg de chonta fresca (palmito)",
+        "4 limones regionales (jugo recién exprimido)",
+        "2 cucharadas de aceite de oliva extra virgen",
+        "1 cebolla roja pequeña cortada en pluma muy fina",
+        "2 tomates maduros sin semillas, picados en cuadraditos",
+        "Sal de mar al gusto",
+        "Pimienta blanca molida",
+        "Hojas de lechuga orgánica para la base"
+      ],
+      "pasos": [
+        "Deshilachar la chonta con las manos siguiendo la dirección de sus fibras hasta obtener tiras similares a fideos largos.",
+        "Lavar las tiras en abundante agua fría con unas gotas de limón para evitar la oxidación inmediata.",
+        "Escurrir perfectamente y secar con papel absorbente.",
+        "En un bol, mezclar el jugo de limón con la sal, la pimienta y el aceite de oliva hasta emulsionar.",
+        "Incorporar la chonta deshilachada, la cebolla y el tomate picado.",
+        "Mezclar suavemente para que los sabores penetren en la fibra sin romperla.",
+        "Servir inmediatamente sobre una cama de lechuga para mantener la frescura."
+      ]
+    },
+    {
+      "id": "SEL-ENT-002",
+      "nombre": "Tequeños Amazónicos con Cecina",
+      "tiempo_preparacion": "35 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Versión selvática del clásico piqueo, sustituyendo el queso tradicional por el sabor ahumado de la cecina.",
+      "ingredientes": [
+        "12 láminas de masa wantán fresca",
+        "200g de cecina ahumada picada en tiras pequeñas",
+        "150g de queso mantecoso de la región",
+        "1 huevo batido (para sellar la masa)",
+        "2 tazas de aceite vegetal para freír",
+        "Para la salsa: 1 cocona madura, 2 ajíes charapita, sal y culantro"
+      ],
+      "pasos": [
+        "Colocar una tira de cecina y un bastón de queso en el centro de cada lámina de masa wantán.",
+        "Pintar los bordes con el huevo batido para asegurar el cierre.",
+        "Enrollar la masa presionando los extremos con un tenedor para que el relleno no se escape al freír.",
+        "Calentar el aceite en una sartén profunda hasta que alcance los 180°C.",
+        "Freír los tequeños por tandas hasta que estén dorados y crujientes (aprox. 2 minutos).",
+        "Preparar la salsa licuando la pulpa de cocona con el ají charapita, sal y culantro picado.",
+        "Servir calientes acompañados de la salsa de cocona."
+      ]
+    },
+    {
+      "id": "SEL-ENT-003",
+      "nombre": "Suri al Palo en Adobo",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Larva de palmera marinada y asada, considerada una de las mayores fuentes de proteína y sabor de la Amazonía.",
+      "ingredientes": [
+        "10 unidades de suri frescos",
+        "2 dientes de ajo machacados",
+        "1 cucharadita de palillo (cúrcuma fresca) rallado",
+        "Sal de selva al gusto",
+        "2 plátanos bellacos verdes para acompañar",
+        "Palitos de bambú para brocheta"
+      ],
+      "pasos": [
+        "Lavar suavemente los suris y secarlos con cuidado.",
+        "Macerar los suris en una mezcla de ajo, palillo y sal durante 10 minutos.",
+        "Ensartar 5 unidades en cada palito de bambú.",
+        "Asar a la parrilla sobre carbón a fuego medio, girándolos constantemente para que la piel se dore sin quemarse.",
+        "El suri está listo cuando se infla ligeramente y se vuelve muy crocante por fuera.",
+        "Servir acompañado de plátanos verdes asados (inguiri)."
+      ]
+    },
+    {
+      "id": "SEL-ENT-004",
+      "nombre": "Ceviche de Paiche Fresco",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada premium que utiliza el pescado más grande de agua dulce, marinado con sabores cítricos locales.",
+      "ingredientes": [
+        "600g de filete de paiche fresco (no seco-salado)",
+        "1/2 taza de jugo de limón regional",
+        "1 ají charapita rojo finamente picado",
+        "2 hojas de sacha culantro picadas en tiras finas",
+        "1 cebolla roja mediana en pluma",
+        "Sal de mar y pimienta blanca",
+        "Guarnición: Yuca sancochada y granos de choclo regional"
+      ],
+      "pasos": [
+        "Cortar el paiche en cubos uniformes de 1.5 cm.",
+        "En un bol de vidrio, colocar el pescado y sazonar con sal, pimienta y el ají charapita.",
+        "Añadir el sacha culantro y mezclar bien.",
+        "Verter el jugo de limón y dejar reposar por máximo 2 minutos (la carne del paiche es delicada).",
+        "Incorporar la cebolla roja y remover.",
+        "Servir inmediatamente decorado con una hoja de sacha culantro entera.",
+        "Acompañar con yuca caliente para contrastar temperaturas."
+      ]
+    },
+    {
+      "id": "SEL-ENT-005",
+      "nombre": "Brochetas de Pollo al Aguaje",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Pequeños trozos de pollo marinados en una reducción de la pulpa del fruto del aguaje.",
+      "ingredientes": [
+        "500g de pechuga de pollo picada en cubos",
+        "1 taza de pulpa de aguaje pura",
+        "2 cucharadas de miel de abeja regional",
+        "1 cucharadita de ajo molido",
+        "1/2 cucharadita de comino",
+        "Sal y pimienta",
+        "Palitos de brocheta"
+      ],
+      "pasos": [
+        "Licuar la pulpa de aguaje con la miel, el ajo, sal y comino hasta obtener una crema.",
+        "Sumergir el pollo en esta mezcla y dejar marinar en refrigeración por 20 minutos.",
+        "Armar las brochetas colocando 4 cubos de pollo por palito.",
+        "Cocinar a la plancha o parrilla, pincelando con el resto de la marinada durante la cocción.",
+        "Retirar cuando el pollo esté jugoso y la salsa se haya caramelizado.",
+        "Servir como piqueo de entrada."
+      ]
+    },
+    {
+      "id": "SEL-ENT-006",
+      "nombre": "Empanadas de Yuca y Queso",
+      "tiempo_preparacion": "50 min",
+      "porciones": 8,
+      "dificultad": "Media",
+      "descripcion": "Masa suave de yuca frita rellena de abundante queso derretido, ideal para iniciar cualquier almuerzo.",
+      "ingredientes": [
+        "1 kg de yuca amarilla sancochada",
+        "1 huevo",
+        "2 cucharadas de mantequilla",
+        "200g de queso fresco regional desmenuzado",
+        "1/2 taza de harina (para estirar la masa)",
+        "Aceite vegetal para freír",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Prensar la yuca sancochada aún caliente hasta que no queden grumos.",
+        "Añadir el huevo, la mantequilla y la sal. Amasar hasta tener una mezcla homogénea.",
+        "Tomar una porción de masa, formar una bola y aplanarla con un rodillo sobre una superficie enharinada.",
+        "Colocar una porción de queso en el centro y doblar por la mitad.",
+        "Sellar los bordes presionando con un tenedor.",
+        "Freír en aceite abundante a temperatura media hasta que doren.",
+        "Escurrir en papel toalla y servir calientes."
+      ]
+    },
+    {
+      "id": "SEL-ENT-007",
+      "nombre": "Rollitos de Cecina y Plátano",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Un bocado agridulce que combina la salinidad de la cecina con el dulzor del plátano maduro.",
+      "ingredientes": [
+        "200g de cecina ahumada cortada en láminas muy finas",
+        "2 plátanos bellacos muy maduros",
+        "Mantequilla",
+        "Palillos de dientes"
+      ],
+      "pasos": [
+        "Cortar los plátanos en láminas delgadas longitudinales.",
+        "Pasar el plátano por una sartén con mantequilla hasta que esté dorado y flexible.",
+        "Colocar una lámina de cecina sobre cada lámina de plátano.",
+        "Enrollar firmemente y asegurar con un palillo.",
+        "Llevar los rollitos a la plancha caliente por 1 minuto para que la cecina suelte su grasa.",
+        "Servir como un snack caliente."
+      ]
+    },
+    {
+      "id": "SEL-ENT-008",
+      "nombre": "Chicharrón de Doncella",
+      "categoria": "Entradas",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Trozos crocantes de pescado Doncella, valorado por su carne blanca y ausencia de espinas pequeñas.",
+      "ingredientes": [
+        "600g de filete de Doncella",
+        "1 taza de harina de trigo",
+        "1 cucharada de ajo molido",
+        "Sal, pimienta y comino",
+        "Aceite vegetal para freír",
+        "Salsa de ají charapita para acompañar"
+      ],
+      "pasos": [
+        "Cortar el pescado en trozos de bocado.",
+        "Sazonar con sal, pimienta, comino y ajo. Dejar reposar 5 minutos.",
+        "Pasar cada trozo por harina, sacudiendo el exceso.",
+        "Freír en aceite bien caliente hasta que estén crujientes y de color dorado claro.",
+        "Servir con yucas fritas y rodajas de limón."
+      ]
+    },
+    {
+      "id": "SEL-ENT-009",
+      "nombre": "Patarashca de Sardinas de Río",
+      "tiempo_preparacion": "25 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Versión pequeña del plato tradicional, ideal como entrada, usando sardinas locales envueltas en hoja.",
+      "ingredientes": [
+        "4 sardinas de río limpias",
+        "2 hojas de bijao",
+        "1 cebolla pequeña picada",
+        "2 ajíes dulces picados",
+        "Sacha culantro picado",
+        "Sal y palillo"
+      ],
+      "pasos": [
+        "Sazonar las sardinas con sal y palillo.",
+        "Mezclar la cebolla, el ají dulce y el sacha culantro.",
+        "Colocar las sardinas sobre la hoja de bijao y cubrir con el picadillo de vegetales.",
+        "Envolver y amarrar.",
+        "Asar a la parrilla por 15 minutos.",
+        "Abrir el paquete y servir directamente para disfrutar el aroma."
+      ]
+    },
+    {
+      "id": "SEL-ENT-010",
+      "nombre": "Alitas al Charapita y Miel",
+      "tiempo_preparacion": "40 min",
+      "porciones": 3,
+      "dificultad": "Media",
+      "descripcion": "Alitas de pollo con un glaseado picante y dulce, utilizando el ají más representativo de la selva.",
+      "ingredientes": [
+        "12 alitas de pollo",
+        "4 ajíes charapita machacados",
+        "1/2 taza de miel de abeja",
+        "2 cucharadas de vinagre regional",
+        "Sal y pimienta",
+        "Aceite para freír"
+      ],
+      "pasos": [
+        "Sazonar las alitas con sal y pimienta. Freírlas hasta que estén bien cocidas y crocantes.",
+        "En una cacerola, mezclar la miel, el vinagre y los ajíes charapita.",
+        "Cocinar a fuego bajo hasta que la salsa espese un poco.",
+        "Bañar las alitas calientes en la salsa y mezclar bien.",
+        "Servir con palitos de apio o yuca sancochada."
+      ]
+    },
+    {
+      "id": "SEL-ENT-011",
+      "nombre": "Humitas de Yuca Saladas",
+      "tiempo_preparacion": "60 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Pequeños tamalitos elaborados con masa de yuca fresca rallada, rellenos de carne o queso y envueltos en hojas de plátano.",
+      "ingredientes": [
+        "1.5 kg de yuca amarilla",
+        "200g de manteca de cerdo",
+        "1 cebolla roja finamente picada",
+        "2 cucharadas de pasta de ají amarillo",
+        "100g de queso fresco regional o carne de cerdo picada",
+        "Hojas de plátano suavizadas al fuego",
+        "Sal y pimienta al gusto",
+        "Pabilo para amarrar"
+      ],
+      "pasos": [
+        "Rallar la yuca finamente y exprimirla con una tela para retirar el exceso de almidón (líquido).",
+        "En una sartén, preparar un aderezo con la manteca, cebolla, ajo y ají amarillo.",
+        "Mezclar la yuca rallada con el aderezo caliente hasta formar una masa uniforme.",
+        "Limpiar las hojas de plátano y cortarlas en rectángulos de 20x25 cm.",
+        "Colocar una porción de masa en la hoja, añadir un trozo de queso o carne en el centro.",
+        "Doblar la hoja formando un paquete y asegurar con el pabilo.",
+        "Cocinar al vapor en una olla con rejilla por 45 minutos.",
+        "Dejar reposar 10 minutos antes de servir."
+      ]
+    },
+    {
+      "id": "SEL-ENT-012",
+      "nombre": "Tiradito de Doncella al Ají Dulce",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Láminas finas de pescado de río bañadas en una crema aromática de ají dulce selvático, una entrada de fusión moderna.",
+      "ingredientes": [
+        "400g de filete de Doncella muy fresco",
+        "6 ajíes dulces rojos y amarillos (sin semillas)",
+        "Jugo de 6 limones regionales",
+        "1 trozo pequeño de kion (jengibre)",
+        "1 rama de sacha culantro",
+        "Sal y pimienta blanca",
+        "Decoración: Granos de choclo sancochado y camote"
+      ],
+      "pasos": [
+        "Cortar el pescado en láminas delgadas (estilo sashimi) y disponerlas en un plato frío.",
+        "Licuar los ajíes dulces con el jugo de limón, el kion, sal y un chorrito de agua fría hasta obtener una crema lisa.",
+        "Colar la crema sobre un bol y rectificar la sazón.",
+        "Bañar las láminas de pescado con la crema de ají dulce.",
+        "Espolvorear sacha culantro picado finamente por encima.",
+        "Servir inmediatamente acompañado de choclo y camote."
+      ]
+    },
+    {
+      "id": "SEL-ENT-013",
+      "nombre": "Maduros con Queso Regional",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Entrada clásica y reconfortante que combina el dulzor del plátano frito con el toque salado del queso de la selva.",
+      "ingredientes": [
+        "2 plátanos bellacos muy maduros",
+        "200g de queso fresco regional (tipo mantecoso o salpreso)",
+        "Aceite vegetal para freír",
+        "Miel de abeja regional (opcional)"
+      ],
+      "pasos": [
+        "Pelar los plátanos y cortarlos por la mitad longitudinalmente o en rodajas gruesas sesgadas.",
+        "Freír en aceite a temperatura media hasta que estén dorados y caramelizados por fuera.",
+        "Colocar el queso encima de los plátanos calientes para que se ablande ligeramente.",
+        "Si se desea, añadir un hilo de miel de abeja para resaltar el contraste.",
+        "Servir caliente como abreboca."
+      ]
+    },
+    {
+      "id": "SEL-ENT-014",
+      "nombre": "Croquetas de Paiche y Yuca",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Bocaditos crujientes elaborados con una masa de yuca y deshilachado de paiche ahumado.",
+      "ingredientes": [
+        "300g de paiche seco-salado (previamente desalado y deshilachado)",
+        "500g de puré de yuca amarilla",
+        "1 huevo",
+        "2 cucharadas de culantro picado",
+        "1/2 taza de pan rallado",
+        "Sal, pimienta y aceite vegetal"
+      ],
+      "pasos": [
+        "Mezclar el puré de yuca con el paiche deshilachado.",
+        "Agregar el huevo, el culantro picado y salpimentar al gusto.",
+        "Formar pequeñas bolas o cilindros con la masa.",
+        "Pasar las croquetas por el pan rallado cubriéndolas totalmente.",
+        "Freír en abundante aceite caliente hasta que estén doradas de forma pareja.",
+        "Acompañar con una salsa de cocona o ají charapita."
+      ]
+    },
+    {
+      "id": "SEL-ENT-015",
+      "nombre": "Causa Amazónica",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Adaptación de la causa limeña, utilizando plátano bellaco sancochado en lugar de papa, rellena de mayonesa de cecina.",
+      "ingredientes": [
+        "4 plátanos bellacos verdes",
+        "2 cucharadas de pasta de ají amarillo",
+        "Jugo de 2 limones",
+        "150g de cecina picada y frita",
+        "1/2 taza de mayonesa",
+        "1 palta madura",
+        "Sal y aceite de oliva"
+      ],
+      "pasos": [
+        "Sancochar los plátanos verdes hasta que estén suaves. Prensar en caliente hasta obtener una masa sin grumos.",
+        "Sazonar la masa con sal, aceite de oliva, el ají amarillo y el limón. Amasar bien.",
+        "Mezclar la cecina frita con la mayonesa.",
+        "En un molde, colocar una capa de masa de plátano, una capa de palta en láminas y el relleno de cecina.",
+        "Cubrir con otra capa de plátano y decorar con tiras de ají dulce.",
+        "Servir frío."
+      ]
+    },
+    {
+      "id": "SEL-ENT-016",
+      "nombre": "Patacones Rellenos de Pescado",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Discos de plátano frito con una concavidad rellena de un guiso rápido de pescado amazónico.",
+      "ingredientes": [
+        "2 plátanos bellacos verdes",
+        "200g de filete de pescado (Gritón o Palometa) picado en cubos pequeños",
+        "1 cebolla pequeña picada",
+        "1 diente de ajo",
+        "Sacha culantro picado",
+        "Aceite vegetal y sal"
+      ],
+      "pasos": [
+        "Cortar los plátanos en trozos de 4 cm. Freírlos ligeramente y retirarlos.",
+        "Usar un exprimidor de limones o un mazo para darles forma de 'canastita' y volver a freír hasta que estén crocantes.",
+        "En una sartén, saltear el ajo, la cebolla y el pescado picado.",
+        "Añadir el sacha culantro y sal. Cocinar por 3 minutos.",
+        "Rellenar las canastitas de plátano con el guiso de pescado.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "SEL-ENT-017",
+      "nombre": "Ensalada de Cocona y Charqui",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Ensalada cítrica que utiliza charqui (carne seca y salada) para aportar una textura fibrosa y potente sabor.",
+      "ingredientes": [
+        "2 coconas grandes picadas en cubos pequeños",
+        "100g de charqui de res o cerdo deshilachado y frito",
+        "1 cebolla roja picada en cuadraditos",
+        "2 ajíes charapita",
+        "Jugo de 2 limones",
+        "Sal y culantro picado"
+      ],
+      "pasos": [
+        "Lavar y picar la cocona descartando las semillas si se desea una textura más limpia.",
+        "Mezclar en un bol la cocona, la cebolla y el culantro.",
+        "Incorporar el charqui frito y crujiente.",
+        "Machacar los ajíes charapita e integrarlos junto con el jugo de limón y la sal.",
+        "Mezclar todo y dejar reposar 5 minutos antes de servir."
+      ]
+    },
+    {
+      "id": "SEL-ENT-018",
+      "nombre": "Carpaccio de Paiche Ahumado",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Finas láminas de paiche ahumado artesanalmente, servidas con una vinagreta de frutas locales.",
+      "ingredientes": [
+        "250g de paiche ahumado en frío",
+        "1 maracuyá (el jugo)",
+        "1 cucharadita de miel de abeja",
+        "Aceite de castañas amazónicas (o de oliva)",
+        "Pimienta negra recién molida",
+        "Brotes de culantro para decorar"
+      ],
+      "pasos": [
+        "Cortar el paiche ahumado en láminas casi transparentes.",
+        "Preparar la vinagreta mezclando el jugo de maracuyá, la miel y el aceite de castañas.",
+        "Disponer el pescado en el plato sin que las láminas se amontonen demasiado.",
+        "Bañar con la vinagreta de maracuyá.",
+        "Finalizar con pimienta y los brotes de culantro.",
+        "Servir con tostadas de pan de yuca."
+      ]
+    },
+    {
+      "id": "SEL-ENT-019",
+      "nombre": "Wantanes de Cecina y Chorizo",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Bocaditos de influencia oriental rellenos con el 'dueto amazónico' (cecina y chorizo).",
+      "ingredientes": [
+        "20 láminas de masa wantán",
+        "100g de cecina picada muy fina",
+        "100g de chorizo amazónico desmenuzado",
+        "1 huevo batido",
+        "Aceite para freír",
+        "Salsa agridulce de camu camu para acompañar"
+      ],
+      "pasos": [
+        "Mezclar la cecina y el chorizo en un bol.",
+        "Colocar una pequeña cantidad de la mezcla en el centro de la masa wantán.",
+        "Doblar en forma de triángulo y sellar los bordes con huevo batido.",
+        "Freír en aceite caliente hasta que la masa esté burbujeante y dorada.",
+        "Servir con la salsa de camu camu."
+      ]
+    },
+    {
+      "id": "SEL-ENT-020",
+      "nombre": "Yuquitas Fritas con Crema de Charapita",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bastones de yuca frita, crocantes por fuera y harinosos por dentro, con una salsa cremosa y picante.",
+      "ingredientes": [
+        "1 kg de yuca amarilla sancochada",
+        "1/2 taza de leche evaporada",
+        "100g de queso fresco",
+        "4 ajíes charapita",
+        "Sal y aceite vegetal"
+      ],
+      "pasos": [
+        "Cortar la yuca sancochada en bastones gruesos, retirando la fibra central.",
+        "Freír en abundante aceite caliente hasta que doren.",
+        "Para la crema: Licuar la leche, el queso, los ajíes charapita y la sal hasta que espese.",
+        "Servir las yucas calientes con la crema en un pocillo aparte."
+      ]
+    }
+  ]
+}

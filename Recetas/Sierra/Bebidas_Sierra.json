@@ -1,0 +1,425 @@
+{
+  "region": "Sierra",
+  "categoria": "Bebidas",
+  "recetas": [
+    {
+      "id": "SIE-BEB-001",
+      "nombre": "Chicha de Jora (Tradicional)",
+      "tiempo_preparacion": "3 días (fermentación)",
+      "porciones": 10,
+      "dificultad": "Alta",
+      "descripcion": "La 'bebida de los incas'. Un fermento de maíz malteado (jora) que es el eje central de la cultura y gastronomía andina.",
+      "ingredientes": [
+        "1 kg de maíz jora (maíz germinado y seco)",
+        "1/2 kg de cebada tostada",
+        "1 tapa de chancaca (500g)",
+        "5 litros de agua",
+        "Clavo de olor y canela entera"
+      ],
+      "pasos": [
+        "En una olla grande, poner a hervir el agua con la jora, la cebada y las especias.",
+        "Cocinar a fuego medio moviendo constantemente por unas 3 horas, reponiendo el agua si se consume demasiado.",
+        "Añadir la chancaca hasta que se disuelva totalmente.",
+        "Colar el líquido con una tela fina o colador de malla muy delgada.",
+        "Verter el líquido en una vasija de barro (tina o cántaro) y cubrir con una tela que permita la respiración.",
+        "Dejar fermentar en un lugar oscuro por 2 a 3 días. La espuma en la superficie indica que está lista.",
+        "Endulzar con un poco más de azúcar si es necesario antes de servir."
+      ]
+    },
+    {
+      "id": "SIE-BEB-002",
+      "nombre": "Mate de Coca",
+      "tiempo_preparacion": "5 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Infusión milenaria esencial en la sierra para combatir el soroche (mal de altura) y facilitar la digestión.",
+      "ingredientes": [
+        "5 a 8 hojas de coca secas y enteras",
+        "1 taza de agua hirviendo",
+        "Miel de abeja o azúcar al gusto",
+        "Unas gotas de limón (opcional)"
+      ],
+      "pasos": [
+        "Colocar las hojas de coca en una taza previamente calentada.",
+        "Verter el agua hirviendo directamente sobre las hojas.",
+        "Tapar la taza y dejar infusionar por 5 minutos para que suelte sus alcaloides naturales.",
+        "Endulzar al gusto y beber bien caliente."
+      ]
+    },
+    {
+      "id": "SIE-BEB-003",
+      "nombre": "Ponche de Habas",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida caliente, espesa y altamente proteica, ideal para los desayunos de los niños en zonas altoandinas.",
+      "ingredientes": [
+        "1 taza de harina de habas tostadas",
+        "1.5 litros de leche fresca o agua",
+        "1 rama de canela y 2 clavos de olor",
+        "Azúcar rubia al gusto",
+        "Vainilla"
+      ],
+      "pasos": [
+        "Hervir la leche (o agua) con la canela y el clavo.",
+        "Disolver la harina de habas en una taza de agua fría para evitar grumos.",
+        "Verter la harina disuelta en la leche hirviendo moviendo constantemente con un batidor de mano.",
+        "Cocinar a fuego bajo por 10 minutos hasta que espese y la harina esté bien cocida.",
+        "Añadir el azúcar y la vainilla. Servir caliente con un toque de canela molida."
+      ]
+    },
+    {
+      "id": "SIE-BEB-004",
+      "nombre": "Calientito Serrano",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Bebida alcohólica caliente que combina hierbas medicinales y aguardiente, perfecta para las noches de helada o fiestas patronales.",
+      "ingredientes": [
+        "2 tazas de agua de hierbas (té, muña o eucalipto)",
+        "3 oz de aguardiente de caña (cañazo) o Pisco",
+        "Jugo de 2 limones",
+        "2 cucharadas de miel de abeja",
+        "1 rama de canela"
+      ],
+      "pasos": [
+        "Preparar la infusión de hierbas con la canela y dejar que esté bien concentrada.",
+        "En una olla pequeña, mezclar la infusión con la miel y el jugo de limón.",
+        "Calentar sin que llegue a hervir para no evaporar el alcohol.",
+        "Añadir el aguardiente o pisco al final y apagar el fuego.",
+        "Servir en vasos resistentes al calor."
+      ]
+    },
+    {
+      "id": "SIE-BEB-005",
+      "nombre": "Chicha de Molle",
+      "tiempo_preparacion": "2 días (fermentación)",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Bebida ancestral elaborada con las bayas rosadas del árbol de molle. Tiene un sabor dulce y ligeramente picante.",
+      "ingredientes": [
+        "500g de bayas de molle maduras (rosadas)",
+        "3 litros de agua tibia",
+        "Azúcar al gusto"
+      ],
+      "pasos": [
+        "Lavar las bayas de molle retirando las ramitas.",
+        "Frotar las bayas con las manos en el agua tibia para desprender el dulce de la cáscara (no moler la semilla porque es amarga).",
+        "Colar el líquido con una tela fina.",
+        "Dejar reposar en un recipiente tapado por 24 a 48 horas para una fermentación ligera.",
+        "Servir fresca."
+      ]
+    },
+    {
+      "id": "SIE-BEB-006",
+      "nombre": "Refresco de Quinua con Piña",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida refrescante y nutritiva que aprovecha el agua de cocción de la quinua y el aroma de la fruta.",
+      "ingredientes": [
+        "1/2 taza de quinua blanca",
+        "Cáscaras de 1 piña madura",
+        "2 litros de agua",
+        "1 rama de canela",
+        "Azúcar al gusto"
+      ],
+      "pasos": [
+        "Hervir el agua con las cáscaras de piña, la canela y la quinua bien lavada.",
+        "Cocinar por 20 minutos hasta que la quinua esté suave y suelte su almidón.",
+        "Colar el líquido (la quinua cocida puede usarse para un postre o ensalada).",
+        "Endulzar el líquido aún caliente.",
+        "Dejar enfriar y servir helado. Es ideal para acompañar almuerzos."
+      ]
+    },
+    {
+      "id": "SIE-BEB-007",
+      "nombre": "Mate de Muña",
+      "tiempo_preparacion": "5 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Infusión de la 'menta de los Andes', famosa por sus propiedades digestivas inmediatas y su aroma penetrante.",
+      "ingredientes": [
+        "1 rama de muña fresca o una cucharada de muña seca",
+        "1 taza de agua hirviendo",
+        "Azúcar o miel"
+      ],
+      "pasos": [
+        "Colocar la muña en una taza.",
+        "Verter el agua hirviendo.",
+        "Dejar reposar tapado por 3 a 5 minutos.",
+        "Servir caliente después de comidas pesadas."
+      ]
+    },
+    {
+      "id": "SIE-BEB-008",
+      "nombre": "Ponche de Maca",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Bebida energizante hecha con la raíz de maca, conocida como el 'ginseng andino'.",
+      "ingredientes": [
+        "2 cucharadas de maca en polvo",
+        "1/2 litro de leche",
+        "1 clavo de olor y canela",
+        "Azúcar y una pizca de vainilla"
+      ],
+      "pasos": [
+        "Disolver la maca en un poco de leche fría.",
+        "Hervir el resto de la leche con las especias.",
+        "Incorporar la maca disuelta y cocinar a fuego bajo por 5 minutos moviendo para que no se pegue.",
+        "Endulzar y servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-BEB-009",
+      "nombre": "Chicha de Siete Semillas (Bebida)",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida muy espesa y nutritiva hecha con una mezcla de harinas tostadas (maíz, trigo, cebada, habas, quinua, kiwicha y cañihua).",
+      "ingredientes": [
+        "4 cucharadas de harina de 7 semillas",
+        "1 litro de agua",
+        "Canela y clavo",
+        "Leche y azúcar al gusto"
+      ],
+      "pasos": [
+        "Disolver la harina en un poco de agua fría.",
+        "Hervir el agua con las especias.",
+        "Añadir la harina disuelta y cocinar por 10 minutos.",
+        "Agregar leche al final para suavizar. Se consume como un desayuno líquido."
+      ]
+    },
+    {
+      "id": "SIE-BEB-010",
+      "nombre": "Chicha de Manzana",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Refresco natural de manzana de agua, muy común en los valles interandinos durante la cosecha.",
+      "ingredientes": [
+        "6 manzanas de agua picadas",
+        "2 litros de agua",
+        "Canela y azúcar",
+        "Jugo de 1 limón"
+      ],
+      "pasos": [
+        "Hervir las manzanas con la canela en el agua hasta que la fruta se deshaga.",
+        "Colar presionando la fruta para extraer todo el jugo y la pulpa fina.",
+        "Añadir el azúcar y el jugo de limón.",
+        "Servir frío."
+      ]
+    },
+    {
+      "id": "SIE-BEB-011",
+      "nombre": "Frutillada Cusqueña",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Variación festiva de la chicha de jora, licuada con fresas silvestres (frutillas) y harina de quinua, típica de los valles del Cusco.",
+      "ingredientes": [
+        "2 litros de chicha de jora madura (no muy fuerte)",
+        "250g de fresas o frutillas frescas",
+        "1/2 taza de harina de quinua tostada",
+        "Azúcar al gusto",
+        "Canela molida"
+      ],
+      "pasos": [
+        "Licuar las frutillas con un poco de la chicha de jora.",
+        "En una jarra grande, mezclar el licuado con el resto de la chicha.",
+        "Incorporar la harina de quinua tostada y mezclar vigorosamente hasta que se integre totalmente.",
+        "Endulzar al gusto.",
+        "Servir en vasos grandes (caporales) y espolvorear un poco de canela encima."
+      ]
+    },
+    {
+      "id": "SIE-BEB-012",
+      "nombre": "Té de Hierba Luisa",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Infusión casera extremadamente aromática con notas cítricas, muy valorada como bajativo después de almuerzos pesados.",
+      "ingredientes": [
+        "1 manojo de hojas de hierba luisa fresca",
+        "2 tazas de agua",
+        "Miel de abeja o azúcar rubia",
+        "Unas gotas de limón"
+      ],
+      "pasos": [
+        "Hervir el agua.",
+        "Apagar el fuego y añadir las hojas de hierba luisa (previamente lavadas y anudadas).",
+        "Tapar la olla y dejar reposar por 5 a 7 minutos.",
+        "Colar y servir caliente, endulzando al gusto y añadiendo unas gotas de limón para resaltar el aroma."
+      ]
+    },
+    {
+      "id": "SIE-BEB-013",
+      "nombre": "Chicha de Maní (Cajamarca)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Bebida cremosa y nutritiva, muy diferente a la de maíz, con un sabor tostado único.",
+      "ingredientes": [
+        "250g de maní tostado y pelado",
+        "1/2 taza de arroz",
+        "2 litros de agua",
+        "Canela, clavo de olor y azúcar rubia"
+      ],
+      "pasos": [
+        "Remojar el arroz por 2 horas y luego licuarlo con el maní tostado y un poco de agua.",
+        "Hervir el resto del agua con la canela y el clavo.",
+        "Verter la mezcla licuada en el agua hirviendo, moviendo constantemente para que no se pegue.",
+        "Cocinar a fuego lento por 20 minutos hasta que tome una consistencia cremosa.",
+        "Colar, endulzar y servir tibia o fría."
+      ]
+    },
+    {
+      "id": "SIE-BEB-014",
+      "nombre": "Agua de Linaza con Cebada",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "La bebida clásica de los emolienteros y mercados serranos, refrescante y excelente para la digestión.",
+      "ingredientes": [
+        "100g de cebada tostada",
+        "2 cucharadas de linaza en grano",
+        "2 litros de agua",
+        "Cáscara de piña y canela",
+        "Azúcar y limón al gusto"
+      ],
+      "pasos": [
+        "Hervir el agua con la cebada, la linaza, la cáscara de piña y la canela.",
+        "Cocinar por 20 minutos hasta que la linaza suelte su espesor característico.",
+        "Colar el líquido.",
+        "Endulzar y añadir jugo de limón cuando el agua esté tibia o fría.",
+        "Servir con abundante hielo si se desea."
+      ]
+    },
+    {
+      "id": "SIE-BEB-015",
+      "nombre": "Refresco de Tumbo",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cítrica hecha con el fruto del tumbo, un pariente andino de la maracuyá pero con un aroma más floral.",
+      "ingredientes": [
+        "4 tumbos maduros",
+        "1 litro de agua hervida fría",
+        "Azúcar al gusto",
+        "Hielo"
+      ],
+      "pasos": [
+        "Extraer la pulpa del tumbo con sus semillas.",
+        "Dar un golpe rápido de licuadora (2 segundos) con un poco de agua, solo para desprender la pulpa.",
+        "Colar inmediatamente para separar las semillas.",
+        "Mezclar con el resto del agua y endulzar.",
+        "Servir muy frío."
+      ]
+    },
+    {
+      "id": "SIE-BEB-016",
+      "nombre": "Ponche de Huevo Serrano",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Bebida caliente y espumosa que se consume para recuperar energías después del trabajo en el campo.",
+      "ingredientes": [
+        "2 tazas de leche fresca",
+        "2 huevos (separar claras y yemas)",
+        "2 oz de pisco o aguardiente de caña (opcional)",
+        "Azúcar y canela molida"
+      ],
+      "pasos": [
+        "Hervir la leche con azúcar y una rama de canela.",
+        "Batir las claras a punto de nieve y luego añadir las yemas, batiendo hasta que esté muy espumoso.",
+        "Verter la leche caliente sobre los huevos batidos en forma de hilo, sin dejar de batir manualmente.",
+        "Añadir el licor si se desea.",
+        "Servir en tazas con abundante canela molida encima."
+      ]
+    },
+    {
+      "id": "SIE-BEB-017",
+      "nombre": "Chicha de Cañihua",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Refresco nutritivo de color oscuro intenso hecho con el grano de cañihua tostado, primo de la quinua.",
+      "ingredientes": [
+        "1/2 taza de cañihua tostada y molida (cañihuaco)",
+        "1.5 litros de agua",
+        "Canela y clavo de olor",
+        "Azúcar o miel de abeja"
+      ],
+      "pasos": [
+        "Hervir el agua con la canela y el clavo.",
+        "Disolver el cañihuaco en un poco de agua fría.",
+        "Verter en el agua hirviendo y cocinar por 10 minutos.",
+        "Endulzar al gusto.",
+        "Se puede consumir caliente como desayuno o dejar enfriar para tomar como refresco."
+      ]
+    },
+    {
+      "id": "SIE-BEB-018",
+      "nombre": "Infusión de Eucalipto y Muña",
+      "tiempo_preparacion": "10 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Combinación poderosa para despejar las vías respiratorias y calentar el cuerpo en noches de helada.",
+      "ingredientes": [
+        "2 hojas de eucalipto fresco",
+        "1 rama de muña",
+        "1 taza de agua hirviendo",
+        "Miel de abeja y unas gotas de limón"
+      ],
+      "pasos": [
+        "Colocar las hojas de eucalipto y la muña en una taza.",
+        "Verter el agua hirviendo y tapar inmediatamente para no perder los aceites esenciales.",
+        "Dejar reposar por 5 minutos.",
+        "Endulzar con miel y añadir limón.",
+        "Beber lo más caliente posible."
+      ]
+    },
+    {
+      "id": "SIE-BEB-019",
+      "nombre": "Bebida de Avena con Membrillo",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "El desayuno tradicional de las escuelas y hogares serranos, espeso, dulce y reconfortante.",
+      "ingredientes": [
+        "1 taza de avena en hojuelas",
+        "2 membrillos picados con cáscara",
+        "1.5 litros de agua",
+        "Canela y clavo de olor",
+        "Azúcar al gusto"
+      ],
+      "pasos": [
+        "Hervir el agua con el membrillo y las especias hasta que la fruta esté muy suave.",
+        "Añadir la avena y cocinar moviendo constantemente por 10 minutos.",
+        "Si se prefiere una textura fina, licuar todo y colar.",
+        "Endulzar y servir caliente en tazones."
+      ]
+    },
+    {
+      "id": "SIE-BEB-020",
+      "nombre": "Té de Kion y Canela",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Infusión picante y estimulante que ayuda a combatir el frío intenso y acelera el metabolismo.",
+      "ingredientes": [
+        "1 trozo grande de kion (jengibre) machacado",
+        "2 ramas de canela",
+        "2 tazas de agua",
+        "Miel de abeja"
+      ],
+      "pasos": [
+        "Hervir el agua con el kion y la canela.",
+        "Dejar que hierva a fuego bajo por 10 minutos para que el kion suelte todo su picor.",
+        "Colar y servir en tazas.",
+        "Endulzar generosamente con miel de abeja."
+      ]
+    }
+  ]
+}

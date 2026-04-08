@@ -6,11 +6,26 @@ import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
 
-class RecipesTab extends ConsumerWidget with AppFeedback {
+class RecipesTab extends ConsumerStatefulWidget {
   const RecipesTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecipesTab> createState() => _RecipesTabState();
+}
+
+class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
+  MealType? _selectedCategory;
+  String _searchQuery = '';
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(recipesProvider);
 
     if (state.isLoading) {
@@ -51,23 +66,130 @@ class RecipesTab extends ConsumerWidget with AppFeedback {
         await ref.read(recipesProvider.notifier).load();
       },
       color: const Color(0xFF00C896),
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
-        itemCount: state.recipes.length,
-        itemBuilder: (ctx, i) {
-          final recipe = state.recipes[i];
-          return _RecipeTile(
-            recipe: recipe,
-            onFavorite: () {
-              ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
-              final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
-              showInfo(context, '"${recipe.name}" $label favoritos');
-            },
-            onDelete: () => _confirmDelete(context, ref, recipe),
-            onTap: () => _showRecipeDetail(context, recipe),
-          );
-        },
+      child: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: TextField(
+              controller: _searchCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Buscar recetas...',
+                hintStyle: const TextStyle(color: Colors.white38),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          setState(() {
+                            _searchCtrl.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFF2A2A40),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+              onChanged: (value) =>
+                  setState(() => _searchQuery = value.toLowerCase()),
+            ),
+          ),
+          // Category filter chips
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              children: [
+                // "All" chip
+                _CategoryChip(
+                  label: 'Todas',
+                  isSelected: _selectedCategory == null,
+                  onTap: () => setState(() => _selectedCategory = null),
+                ),
+                const SizedBox(width: 6),
+                ...MealType.values.where((t) => t != MealType.otro).map(
+                      (type) => Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: _CategoryChip(
+                          label: '${type.emoji} ${type.label}',
+                          isSelected: _selectedCategory == type,
+                          onTap: () => setState(() => _selectedCategory = type),
+                        ),
+                      ),
+                    ),
+              ],
+            ),
+          ),
+          // Recipe list
+          Expanded(
+            child: _buildFilteredList(state),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildFilteredList(RecipesState state) {
+    var filtered = state.recipes;
+
+    // Filter by category
+    if (_selectedCategory != null) {
+      filtered =
+          filtered.where((r) => r.tipoComida == _selectedCategory).toList();
+    }
+
+    // Filter by search query
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered
+          .where((r) =>
+              r.name.toLowerCase().contains(_searchQuery) ||
+              r.description.toLowerCase().contains(_searchQuery) ||
+              r.tags.any((t) => t.toLowerCase().contains(_searchQuery)))
+          .toList();
+    }
+
+    if (filtered.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.filter_list_off, size: 48, color: Colors.white24),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isNotEmpty || _selectedCategory != null
+                  ? 'No se encontraron recetas con estos filtros'
+                  : 'Sin recetas guardadas',
+              style: const TextStyle(color: Colors.white38, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
+      itemCount: filtered.length,
+      itemBuilder: (ctx, i) {
+        final recipe = filtered[i];
+        return _RecipeTile(
+          recipe: recipe,
+          onFavorite: () {
+            ref.read(recipesProvider.notifier).toggleFavorite(recipe.id);
+            final label = recipe.isFavorite ? 'quitado de' : 'añadido a';
+            showInfo(context, '"${recipe.name}" $label favoritos');
+          },
+          onDelete: () => _confirmDelete(context, ref, recipe),
+          onTap: () => _showRecipeDetail(context, recipe),
+        );
+      },
     );
   }
 
@@ -966,6 +1088,42 @@ class _IngredientRowState extends State<_IngredientRow> {
           ),
         ),
       ]),
+    );
+  }
+}
+
+// ── Category Filter Chip ─────────────────────────────────────────────────────
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF9800) : const Color(0xFF2A2A40),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white70,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }

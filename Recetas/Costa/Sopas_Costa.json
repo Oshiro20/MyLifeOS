@@ -1,0 +1,521 @@
+{
+  "region": "Costa",
+  "categoria": "Sopas",
+  "recetas": [
+    {
+      "id": "COS-SOP-001",
+      "nombre": "Sopa a la Minuta",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa criolla rápida y nutritiva, hecha a base de carne molida, fideos delgados y un toque de leche.",
+      "ingredientes": [
+        "300g de carne de res molida o picada finamente",
+        "150g de fideo cabello de ángel",
+        "1/2 taza de leche evaporada",
+        "1 cebolla roja pequeña picada en cuadritos",
+        "1 cucharada de ajo molido",
+        "2 cucharadas de pasta de ají panca",
+        "1 tomate pelado y picado",
+        "2 litros de caldo de res o agua",
+        "2 huevos (opcional, para cuajar)",
+        "Sal, pimienta y orégano seco"
+      ],
+      "pasos": [
+        "En una olla, calentar un poco de aceite y freír la cebolla con el ajo hasta que doren.",
+        "Añadir la pasta de ají panca y el tomate picado. Cocinar por 5 minutos.",
+        "Agregar la carne molida y dorarla bien, desmenuzándola con la cuchara.",
+        "Verter el caldo o agua y llevar a ebullición. Sazonar con sal, pimienta y comino.",
+        "Incorporar los fideos cabello de ángel y cocinar por 3 a 5 minutos (se cocinan muy rápido).",
+        "Si desea, añadir los huevos removiendo suavemente para que se formen hilos de clara.",
+        "Apagar el fuego, añadir la leche evaporada y frotar el orégano seco entre las manos sobre la sopa.",
+        "Servir caliente, usualmente acompañado de pan tostado."
+      ]
+    },
+    {
+      "id": "COS-SOP-002",
+      "nombre": "Chupe de Camarones (Versión Costa)",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Sopa de lujo, espesa y cremosa, que combina el sabor intenso del coral de los camarones con queso fresco y leche.",
+      "ingredientes": [
+        "1 kg de camarones grandes y frescos",
+        "1/2 taza de arroz",
+        "4 papas amarillas sancochadas",
+        "1 taza de habas verdes peladas",
+        "1 choclo cortado en rodajas",
+        "150g de queso fresco en cubos",
+        "1/2 taza de leche evaporada",
+        "2 huevos",
+        "2 cucharadas de pasta de ají panca",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "Caldo de pescado o cabezas de camarón licuadas",
+        "Hierbabuena fresca"
+      ],
+      "pasos": [
+        "Limpiar los camarones. Licuar las cabezas con un poco de agua, colar y reservar ese líquido (es la esencia del sabor).",
+        "Hacer un aderezo con cebolla, ajo y ají panca. Sofreír hasta que corte.",
+        "Añadir el líquido de las cabezas y completar con caldo de pescado (total 2 litros).",
+        "Incorporar el choclo, las habas y el arroz. Cocinar hasta que el arroz esté tierno.",
+        "Agregar las papas amarillas y los camarones enteros. Cocinar solo por 5 minutos.",
+        "Añadir el queso fresco y los huevos (pueden ser escalfados directamente en la sopa).",
+        "Verter la leche evaporada y la hierbabuena picada.",
+        "Retirar del fuego inmediatamente para que los camarones no se endurezcan y servir."
+      ]
+    },
+    {
+      "id": "COS-SOP-003",
+      "nombre": "Parihuela de Mariscos",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Caldo potente y concentrado de diversos mariscos, aromatizado con chicha de jora.",
+      "ingredientes": [
+        "500g de mixtura de mariscos (langostinos, calamares, caracoles, pulpo)",
+        "4 cangrejos y 8 choros",
+        "4 filetes de pescado (opcional)",
+        "2 cucharadas de pasta de ají panca",
+        "1 taza de chicha de jora o cerveza negra",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "2 litros de concentrado de pescado (chilcano)",
+        "Sal, pimienta, orégano y culantro picado"
+      ],
+      "pasos": [
+        "En una olla grande, hacer un aderezo potente con aceite, cebolla, ajo y ají panca.",
+        "Añadir la chicha de jora y dejar que evapore el alcohol.",
+        "Verter el caldo concentrado de pescado.",
+        "Añadir los cangrejos y los choros (que demoran más). Hervir por 10 minutos.",
+        "Incorporar la mixtura de mariscos y los filetes de pescado.",
+        "Cocinar a fuego alto por 5 a 8 minutos. Sazonar con sal y pimienta.",
+        "Al final, añadir el culantro y orégano.",
+        "Servir caliente con rodajas de rocoto y limón al lado."
+      ]
+    },
+    {
+      "id": "COS-SOP-004",
+      "nombre": "Aguadito de Pollo",
+      "tiempo_preparacion": "45 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Sopa espesa y verde por el culantro, muy popular después de reuniones sociales.",
+      "ingredientes": [
+        "6 presas de pollo (o menudencia)",
+        "1 taza de culantro licuado",
+        "1/2 taza de arroz",
+        "1/2 taza de arvejas y zanahoria en cubos",
+        "1 pimiento rojo en tiras",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "2 cucharadas de pasta de ají amarillo",
+        "1.5 litros de caldo de pollo",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Sellar las presas de pollo en la olla. Retirar.",
+        "En la misma olla, freír la cebolla, el ajo y el ají amarillo. Añadir el culantro licuado y cocinar bien.",
+        "Verter el caldo y añadir el arroz.",
+        "Cuando el arroz esté a media cocción, regresar el pollo y añadir las verduras.",
+        "Cocinar hasta que el arroz esté muy suave (el aguadito debe ser ligeramente espeso).",
+        "Añadir el pimiento en tiras y rectificar sal.",
+        "Servir caliente con un chorrito de limón."
+      ]
+    },
+    {
+      "id": "COS-SOP-005",
+      "nombre": "Chilcano de Pescado",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Caldo ligero y transparente hecho con la esencia de la cabeza y espinazo de pescado.",
+      "ingredientes": [
+        "1 kg de cabezas y huesos de pescado blanco",
+        "2 litros de agua",
+        "1 trozo de kion (jengibre) machacado",
+        "1 rama de apio y 1 de poro",
+        "Sal, pimienta blanca",
+        "Cebollita china picada y limón para decorar"
+      ],
+      "pasos": [
+        "Lavar bien los restos de pescado (quitar agallas).",
+        "Poner en una olla con agua fría, kion, apio y poro.",
+        "Hervir a fuego medio. Al primer hervor, retirar la espuma de la superficie.",
+        "Cocinar solo por 20 minutos (más tiempo amarga el caldo).",
+        "Colar el líquido. Sazonar con sal.",
+        "Servir en cuencos con cebollita china picada y mucho limón."
+      ]
+    },
+    {
+      "id": "COS-SOP-006",
+      "nombre": "Sopa de Choros",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Caldo marino sencillo y económico, muy popular en los mercados de la costa.",
+      "ingredientes": [
+        "2 docenas de choros (mejillones) bien limpios",
+        "200g de fideo tallarín grueso",
+        "2 papas blancas en cubos",
+        "1 trozo de kion machacado",
+        "1 tallo de apio",
+        "2 litros de agua",
+        "Sal y cebollita china"
+      ],
+      "pasos": [
+        "Poner a hervir el agua con el kion, el apio y las papas.",
+        "Cuando las papas estén a medio cocinar, añadir los fideos.",
+        "Una vez los fideos estén casi listos, echar los choros limpios.",
+        "Cocinar solo hasta que los choros se abran (aprox. 5 minutos).",
+        "Rectificar la sal.",
+        "Servir con cebollita china picada encima."
+      ]
+    },
+    {
+      "id": "COS-SOP-007",
+      "nombre": "Sopa Criolla",
+      "tiempo_preparacion": "35 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Similar a la minuta pero con una base de carne más fina, huevos escalfados y pan tostado.",
+      "ingredientes": [
+        "300g de lomo de res picado en cuadritos",
+        "150g de fideo cabello de ángel",
+        "1/2 taza de leche evaporada",
+        "2 cucharadas de pasta de ají panca",
+        "1 cebolla picada y 1 tomate picado",
+        "4 huevos",
+        "Rodajas de pan francés frito",
+        "Orégano y sal"
+      ],
+      "pasos": [
+        "Hacer el aderezo con cebolla, ajo, ají panca y tomate.",
+        "Añadir la carne picada y dorar.",
+        "Verter 2 litros de agua y hervir.",
+        "Añadir los fideos y cocinar por 3 minutos.",
+        "Cascar los huevos uno a uno sobre la sopa hirviendo para que se cocinen enteros (escalfados).",
+        "Apagar el fuego, añadir la leche y el orégano.",
+        "Servir colocando un huevo y una rodaja de pan frito en cada plato."
+      ]
+    },
+    {
+      "id": "COS-SOP-008",
+      "nombre": "Menestrón Limeño",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Adaptación peruana del minestrone italiano, espesado con un pesto de albahaca y espinaca.",
+      "ingredientes": [
+        "500g de carne de res (punta de pecho)",
+        "200g de fideo canuto o tornillo",
+        "1 taza de albahaca y espinaca licuadas con aceite y queso",
+        "1/2 taza de arvejas, vainitas, choclo desgranado",
+        "1 papa blanca y 1 trozo de nabo",
+        "100g de habas peladas",
+        "Sal y queso parmesano"
+      ],
+      "pasos": [
+        "Cocinar la carne en agua con sal hasta que esté tierna.",
+        "Añadir todas las verduras (choclo, habas, arvejas, nabo, papa).",
+        "Cuando las verduras estén cocidas, agregar los fideos.",
+        "Al final, verter el licuado de albahaca y espinaca (el pesto).",
+        "Dejar que hierva 2 minutos más.",
+        "Servir con abundante queso parmesano o un trozo de queso fresco encima."
+      ]
+    },
+    {
+      "id": "COS-SOP-009",
+      "nombre": "Chupe de Pescado",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa cremosa de pescado, ideal para días nublados en la costa.",
+      "ingredientes": [
+        "800g de filete de pescado en trozos",
+        "1/2 taza de arroz",
+        "1/2 taza de habas y arvejas",
+        "2 papas amarillas",
+        "2 cucharadas de ají colorado",
+        "1 taza de leche evaporada",
+        "100g de queso fresco",
+        "Sal y orégano"
+      ],
+      "pasos": [
+        "Hacer aderezo de cebolla, ajo y ají colorado.",
+        "Añadir agua, arroz y verduras. Cocinar hasta que estén suaves.",
+        "Incorporar el pescado y las papas amarillas.",
+        "Cocinar por 10 minutos.",
+        "Finalizar con la leche, el queso en cubos y el orégano.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "COS-SOP-010",
+      "nombre": "Sustancia de Carne",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Caldo clarificado de res, muy ligero y curativo, servido con fideos cabello de ángel.",
+      "ingredientes": [
+        "400g de lomo o carne de res suave",
+        "1.5 litros de agua",
+        "100g de fideo cabello de ángel",
+        "1 trozo de kion",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Poner a hervir la carne en trozos grandes con el agua y el kion.",
+        "Retirar las impurezas que floten.",
+        "Cocinar hasta que la carne esté bien suave.",
+        "Añadir los fideos y cocinar 3 minutos.",
+        "Sazonar con sal.",
+        "Servir solo el caldo con los fideos y opcionalmente la carne troceada."
+      ]
+    },
+    {
+      "id": "COS-SOP-011",
+      "nombre": "Chupín de Pescado",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa concentrada de origen italiano-peruano, con una base de tomate y vino blanco que resalta la frescura del pescado.",
+      "ingredientes": [
+        "1 kg de pescado entero o en filetes (Cabrilla, Tramoyo o Merluza)",
+        "2 cebollas rojas picadas",
+        "2 tomates maduros pelados y picados",
+        "2 cucharadas de pasta de ají panca",
+        "1/2 taza de vino blanco seco",
+        "1 cucharadita de orégano",
+        "1.5 litros de chilcano (caldo de pescado)",
+        "Papas amarillas, sal y pimienta"
+      ],
+      "pasos": [
+        "Hacer un aderezo con aceite, cebolla, ajo, ají panca y tomate hasta que el tomate se deshaga.",
+        "Añadir el vino blanco y dejar que el alcohol se evapore por un par de minutos.",
+        "Verter el chilcano y añadir las papas amarillas cortadas por la mitad.",
+        "Cocinar hasta que las papas estén casi listas.",
+        "Incorporar los trozos de pescado y sazonar con sal, pimienta y orégano.",
+        "Cocinar por 8 minutos a fuego medio para que el pescado no se rompa.",
+        "Servir caliente, opcionalmente con un trozo de pan tostado dentro del plato."
+      ]
+    },
+    {
+      "id": "COS-SOP-012",
+      "nombre": "Aguadito de Mariscos",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Variante marina del aguadito tradicional, utilizando la mixtura de mariscos para un sabor más intenso y elegante.",
+      "ingredientes": [
+        "400g de mixtura de mariscos (langostino, calamar, caracol)",
+        "1 taza de culantro licuado",
+        "1/2 taza de arroz",
+        "1/2 taza de arvejas y zanahoria picada",
+        "2 cucharadas de pasta de ají amarillo",
+        "1 cebolla picada",
+        "1.5 litros de chilcano (caldo de pescado)",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "En una olla, sofreír la cebolla, el ajo y el ají amarillo.",
+        "Agregar el culantro licuado y cocinar bien por 5 minutos.",
+        "Verter el chilcano y añadir el arroz junto con las verduras.",
+        "Cocinar a fuego medio hasta que el arroz esté muy suave.",
+        "Incorporar la mixtura de mariscos al final.",
+        "Cocinar solo 3 a 5 minutos para que los mariscos queden tiernos.",
+        "Servir con limón y ají limo picado."
+      ]
+    },
+    {
+      "id": "COS-SOP-013",
+      "nombre": "Sopa de Sémola con Carne",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa casera muy ligera y nutritiva, clásica en las cenas limeñas para los niños y adultos mayores.",
+      "ingredientes": [
+        "200g de carne de res cortada en cubitos pequeños",
+        "1/2 taza de sémola",
+        "1 papa blanca picada en cubitos",
+        "1 zanahoria pequeña rallada",
+        "1 tallo de apio",
+        "1.5 litros de agua",
+        "Sal y orégano"
+      ],
+      "pasos": [
+        "Hervir el agua con la carne y el apio hasta que la carne esté blanda.",
+        "Añadir la papa y la zanahoria rallada.",
+        "Una vez que la papa esté cocida, verter la sémola en forma de lluvia mientras se mueve con una cuchara para evitar grumos.",
+        "Cocinar por 5 a 10 minutos a fuego lento.",
+        "Sazonar con sal y añadir orégano seco frotado.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "COS-SOP-014",
+      "nombre": "Chupe de Viernes (Sin Carne)",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Sopa tradicional de Semana Santa en la costa, rica en lácteos, legumbres y huevo, omitiendo las carnes rojas.",
+      "ingredientes": [
+        "1/2 taza de arroz",
+        "200g de habas verdes peladas",
+        "1 choclo en rodajas",
+        "2 papas amarillas",
+        "150g de queso fresco",
+        "1 taza de leche evaporada",
+        "2 huevos",
+        "1 cucharada de ají panca",
+        "Sal, pimienta y huacatay picado"
+      ],
+      "pasos": [
+        "Hacer un aderezo de cebolla, ajo y ají panca.",
+        "Añadir 1.5 litros de agua, el choclo y las habas. Hervir.",
+        "Agregar el arroz y cocinar hasta que esté tierno.",
+        "Incorporar las papas amarillas y cocinar 10 minutos más.",
+        "Añadir el queso en cubos y los huevos (dejarlos cuajar enteros).",
+        "Finalizar con la leche y una rama de huacatay.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "COS-SOP-015",
+      "nombre": "Caldo de Gallina (Estilo Lima)",
+      "tiempo_preparacion": "120 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "El caldo nocturno por excelencia de Lima, conocido por su potencia y por servirse con fideos largos.",
+      "ingredientes": [
+        "1/2 gallina troceada (presas grandes)",
+        "250g de fideo tallarín grueso",
+        "4 papas amarillas enteras",
+        "4 huevos duros",
+        "1 trozo de kion (jengibre) machacado",
+        "Cebollita china picada, limón y cancha serrana para decorar"
+      ],
+      "pasos": [
+        "Cocinar la gallina en una olla con abundante agua y el kion a fuego medio-bajo hasta que esté muy tierna (aprox. 1.5 horas).",
+        "Retirar las impurezas de la superficie.",
+        "Añadir las papas amarillas y cocinar hasta que estén suaves pero enteras.",
+        "En una olla aparte, sancochar los fideos y escurrir.",
+        "Servir en un plato hondo: una porción de fideos, una presa, una papa y un huevo duro.",
+        "Cubrir con el caldo caliente y añadir cebollita china al gusto."
+      ]
+    },
+    {
+      "id": "COS-SOP-016",
+      "nombre": "Sopa de Letritas (Consomé Infantil)",
+      "tiempo_preparacion": "25 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Consomé de pollo clarificado con fideos de figuras de letras, un clásico del hogar peruano.",
+      "ingredientes": [
+        "1 espinazo de pollo y 1 ala",
+        "100g de fideo de letritas",
+        "1 zanahoria pequeña en cuadraditos",
+        "1 papa blanca en cuadraditos",
+        "1 litro de agua",
+        "Sal"
+      ],
+      "pasos": [
+        "Hervir el pollo con el agua y sal. Retirar la espuma.",
+        "Añadir la zanahoria y la papa.",
+        "Cuando las verduras estén cocidas, agregar los fideos de letritas.",
+        "Cocinar por 8 minutos o hasta que el fideo esté al dente.",
+        "Servir caliente."
+      ]
+    },
+    {
+      "id": "COS-SOP-017",
+      "nombre": "Chilcano de Cangrejo",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Concentrado marino hecho puramente con la esencia de cangrejos golpeados para extraer todo su sabor.",
+      "ingredientes": [
+        "6 cangrejos medianos",
+        "1.5 litros de agua",
+        "1 rama de apio y un trozo de kion",
+        "1 ají limo",
+        "Sal, limón y culantro picado"
+      ],
+      "pasos": [
+        "Lavar bien los cangrejos. Golpear las tenazas para que suelten el jugo.",
+        "Poner a hervir el agua con el apio, kion y los cangrejos.",
+        "Cocinar por 25 minutos.",
+        "Colar el caldo (opcionalmente se puede servir con un cangrejo entero).",
+        "Sazonar con sal, limón y añadir culantro y ají limo picado.",
+        "Servir muy caliente."
+      ]
+    },
+    {
+      "id": "COS-SOP-018",
+      "nombre": "Sopa de Verduras Criolla",
+      "tiempo_preparacion": "35 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Sopa equilibrada con diversas verduras de la estación, arroz y trozos de pollo.",
+      "ingredientes": [
+        "1/2 pechuga de pollo en cubos",
+        "1/2 taza de arroz",
+        "Mix de verduras: zapallo, zanahoria, arvejas, choclo, habas",
+        "1 papa blanca",
+        "1.5 litros de agua",
+        "Sal y perejil picado"
+      ],
+      "pasos": [
+        "Hervir el agua con el pollo y sal.",
+        "Añadir el arroz y el choclo.",
+        "Incorporar el resto de verduras y la papa.",
+        "Cocinar hasta que todos los ingredientes estén tiernos.",
+        "Rectificar sal y servir con perejil fresco picado encima."
+      ]
+    },
+    {
+      "id": "COS-SOP-019",
+      "nombre": "Sopa de Pollo con Kion (Antigripal)",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Sopa medicinal y reconfortante con una dosis alta de jengibre, muy común en invierno.",
+      "ingredientes": [
+        "2 presas de pollo",
+        "1 trozo grande de kion en láminas",
+        "100g de fideo cabello de ángel",
+        "1 papa amarilla",
+        "1 litro de agua",
+        "Sal"
+      ],
+      "pasos": [
+        "Hervir el pollo con el agua y las láminas de kion por 20 minutos.",
+        "Añadir la papa amarilla y dejar que se deshaga un poco para dar espesor.",
+        "Incorporar el fideo y cocinar 3 minutos.",
+        "Servir bien caliente."
+      ]
+    },
+    {
+      "id": "COS-SOP-020",
+      "nombre": "Sopa Teóloga (Versión Costa)",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Plato festivo del norte (Trujillo), es una sopa espesa de pan con pavo o pollo, legumbres y azafrán.",
+      "ingredientes": [
+        "1/2 pavo o pollo troceado",
+        "2 panes franceses remojados en caldo",
+        "1/2 taza de garbanzos cocidos",
+        "1/2 taza de arvejas",
+        "Ají amarillo y azafrán (o palillo)",
+        "Sal y cebolla picada"
+      ],
+      "pasos": [
+        "Cocinar el pavo en agua con sal. Reservar el caldo.",
+        "Hacer un aderezo con cebolla, ajo y ají amarillo con azafrán.",
+        "Añadir el pan remojado y licuado al aderezo junto con un poco de caldo.",
+        "Mover constantemente hasta que espese.",
+        "Incorporar las legumbres y las presas de pavo.",
+        "Dejar que hierva unos minutos para que se unan los sabores.",
+        "Servir con una porción de arroz blanco aparte."
+      ]
+    }
+  ]
+}

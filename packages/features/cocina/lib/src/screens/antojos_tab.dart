@@ -132,18 +132,48 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
     });
   }
 
-  void _cookRecipe(BuildContext context, Recipe recipe) {
+  Future<void> _cookRecipe(BuildContext context, Recipe recipe) async {
     ref.read(cookingSessionProvider.notifier).startSession(
           recipeName: recipe.name,
           recipeId: recipe.id,
           originalServings: recipe.servings,
         );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('🍳 ¡Cocinando ${recipe.name}!'),
-        backgroundColor: const Color(0xFFFF9800),
-      ),
-    );
+
+    final inventoryNotifier = ref.read(inventoryProvider.notifier);
+    final deducted =
+        await inventoryNotifier.deductRecipeIngredients(recipe.ingredients);
+
+    if (context.mounted) {
+      if (deducted.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '⚠️ No tienes ingredientes coincidentes en tu despensa para ${recipe.name}.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
+                const SizedBox(height: 4),
+                Text(
+                  deducted.join(', '),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFFF9800),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        inventoryNotifier.load();
+      }
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
+import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
 import '../providers/cooking_session_provider.dart';
@@ -542,9 +543,30 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     return suggestionsAsync.when(
       data: (suggestions) {
         if (suggestions.isEmpty) {
-          return _EmptyState(
-            hasRecipes: ref.read(recipesProvider).recipes.isNotEmpty,
-            hasIngredients: ref.read(inventoryProvider).ingredients.isNotEmpty,
+          return Column(
+            children: [
+              _EmptyState(
+                hasRecipes: ref.read(recipesProvider).recipes.isNotEmpty,
+                hasIngredients:
+                    ref.read(inventoryProvider).ingredients.isNotEmpty,
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ElevatedButton.icon(
+                  onPressed: () => _searchMoreFromInternet(context, ref),
+                  icon: const Icon(Icons.public, size: 18),
+                  label: const Text('Buscar más en internet'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9800),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    minimumSize: const Size(double.infinity, 44),
+                  ),
+                ),
+              ),
+            ],
           );
         }
 
@@ -747,6 +769,112 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     if (hour < 10) return '🌅 ¿Qué desayunamos hoy?';
     if (hour < 17) return '🍛 ¿Qué almorzamos hoy?';
     return '🌙 ¿Qué cenamos hoy?';
+  }
+
+  Future<void> _searchMoreFromInternet(
+      BuildContext context, WidgetRef ref) async {
+    final invState = ref.read(inventoryProvider);
+    if (invState.ingredients.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Agrega ingredientes a tu despensa primero.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final apiService = TheMealDBService();
+    final keyIngredient = invState.ingredients.first.name;
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: Card(
+            color: Color(0xFF1A1A2E),
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFFFF9800)),
+                  SizedBox(height: 16),
+                  Text('Buscando en internet...',
+                      style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    try {
+      final apiRecipes = await apiService.searchByIngredient(keyIngredient);
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        if (apiRecipes.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se encontraron recetas en internet.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          // Show first few results in a dialog
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1A1A2E),
+              title: const Text('Recetas encontradas',
+                  style: TextStyle(color: Colors.white)),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: apiRecipes.length,
+                  itemBuilder: (context, index) {
+                    final recipe = apiRecipes[index];
+                    return ListTile(
+                      title: Text(recipe.name,
+                          style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(
+                          '${recipe.durationMinutes} min · ${recipe.ingredients.length} ingredientes',
+                          style: const TextStyle(color: Colors.white54)),
+                      trailing: TextButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _showRecipeDetail(context, recipe);
+                        },
+                        child: const Text('Ver'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
   }
 }
 

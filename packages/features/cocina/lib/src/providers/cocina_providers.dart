@@ -310,7 +310,8 @@ final hybridSuggestionsProvider =
   return useCase.execute(
     inventory: invState.ingredients,
     limit: 15,
-    minMatchPercentage: 0.40,
+    minMatchPercentage: 0.30,
+    useApi: false,
   );
 });
 
@@ -334,15 +335,24 @@ class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
 
   Future<void> load() async {
     state = WeeklyMenuLoading();
-    final entries = await _repo.getWeeklyMenu();
-    state = WeeklyMenuLoaded(entries);
+    try {
+      final entries = await _repo.getWeeklyMenu();
+      state = WeeklyMenuLoaded(entries);
+    } catch (e) {
+      state = WeeklyMenuInitial();
+    }
   }
 
   Future<void> generate() async {
     state = WeeklyMenuLoading();
-    final useCase = GenerateWeeklyMenuUseCase(repository: _repo);
-    await useCase.execute();
-    await load();
+    try {
+      final useCase = GenerateWeeklyMenuUseCase(repository: _repo);
+      await useCase.execute();
+      await load();
+    } catch (e) {
+      state = WeeklyMenuInitial();
+      rethrow;
+    }
   }
 }
 

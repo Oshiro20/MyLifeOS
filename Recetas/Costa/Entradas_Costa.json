@@ -1,0 +1,484 @@
+{
+  "region": "Costa",
+  "categoria": "Entradas",
+  "recetas": [
+    {
+      "id": "COS-ENT-001",
+      "nombre": "Ceviche de Pescado Clásico",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "El plato bandera del Perú. Se basa en pescado blanco fresquísimo 'cocido' por la acción del ácido del limón piurano.",
+      "ingredientes": [
+        "800g de filete de pescado fresco (Corvina, Lenguado o Mero)",
+        "15 limones regionales (recién exprimidos)",
+        "2 cebollas rojas cortadas en pluma fina",
+        "2 ajíes limo picados (sin pepas)",
+        "2 cucharadas de culantro fresco picado",
+        "1 cucharadita de ajo molido",
+        "Sal de mar y pimienta blanca al gusto",
+        "Guarnición: 2 camotes sancochados, 1 choclo desgranado, hojas de lechuga"
+      ],
+      "pasos": [
+        "Cortar el pescado en cubos de 2 cm y colocarlos en un bol de acero o vidrio (previamente enfriado).",
+        "Sazonar con sal, pimienta y ajo molido. Mezclar suavemente.",
+        "Añadir el ají limo y el culantro picado.",
+        "Verter el jugo de limón sobre el pescado de manera que casi lo cubra.",
+        "Añadir unos cubos de hielo para mantener la temperatura y remover por 1 minuto.",
+        "Incorporar la cebolla roja, mezclar y retirar los hielos.",
+        "Servir de inmediato acompañado de camote, choclo y lechuga para evitar que el pescado se endurezca."
+      ]
+    },
+    {
+      "id": "COS-ENT-002",
+      "nombre": "Causa Limeña de Pollo",
+      "tiempo_preparacion": "50 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Entrada fría de origen colonial, hecha con masa de papa amarilla, ají y un relleno cremoso.",
+      "ingredientes": [
+        "1.5 kg de papa amarilla sancochada y prensada",
+        "1/2 taza de pasta de ají amarillo fresco",
+        "1/2 taza de aceite vegetal",
+        "Jugo de 3 limones",
+        "1 pechuga de pollo deshilachada",
+        "1/2 taza de mayonesa",
+        "1 palta madura en láminas",
+        "Sal y pimienta",
+        "Decoración: Huevo duro y aceituna botija"
+      ],
+      "pasos": [
+        "Amasar la papa prensada (fría) con el aceite, la pasta de ají amarillo, el limón y la sal hasta obtener una masa maleable.",
+        "Mezclar el pollo deshilachado con la mayonesa en un bol aparte.",
+        "En un molde rectangular o aros individuales, colocar una capa de masa de papa.",
+        "Poner una capa de láminas de palta y encima el pollo con mayonesa.",
+        "Cubrir con otra capa de masa de papa y presionar ligeramente.",
+        "Decorar con rodajas de huevo duro y una aceituna.",
+        "Servir frío."
+      ]
+    },
+    {
+      "id": "COS-ENT-003",
+      "nombre": "Anticuchos de Corazón",
+      "tiempo_preparacion": "40 min (+ 3h macerado)",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Brochetas de corazón de res con fuerte influencia africana, maceradas en ají panca y asadas al carbón.",
+      "ingredientes": [
+        "1 corazón de res limpio (sin grasa, cortado en trozos sesgados)",
+        "1/2 taza de vinagre tinto",
+        "4 cucharadas de pasta de ají panca",
+        "2 cucharadas de ajo molido",
+        "1 cucharadita de orégano seco y comino",
+        "Sal y pimienta",
+        "Palitos de caña para ensartar",
+        "Acompañamiento: Papas sancochadas y choclo"
+      ],
+      "pasos": [
+        "Mezclar en un bol el vinagre, ají panca, ajo, orégano, comino, sal y pimienta.",
+        "Agregar los trozos de corazón y dejar macerar por al menos 3 horas.",
+        "Ensartar 3 o 4 trozos de carne por palito de caña.",
+        "Calentar la parrilla. Mientras se asan, barnizar los anticuchos con el líquido de la maceración mezclado con aceite.",
+        "Cocinar 3 minutos por lado (término medio es ideal para que no se endurezcan).",
+        "Servir con papas y choclo caliente."
+      ]
+    },
+    {
+      "id": "COS-ENT-004",
+      "nombre": "Papa Rellena a la Limeña",
+      "tiempo_preparacion": "60 min",
+      "porciones": 5,
+      "dificultad": "Media",
+      "descripcion": "Masa de papa frita rellena de un guiso de carne (picadillo) muy sabroso.",
+      "ingredientes": [
+        "1 kg de papa (80% blanca, 20% amarilla) sancochada y prensada",
+        "300g de carne de res molida o picada",
+        "1 cebolla roja picada",
+        "2 huevos duros picados",
+        "50g de pasas y aceitunas picadas",
+        "1 cucharada de ají panca molido",
+        "Harina para rebozar",
+        "Aceite para freír y sal"
+      ],
+      "pasos": [
+        "Hacer el puré de papa, salpimentar y amasar. Dejar enfriar.",
+        "Para el relleno: Sofreír la cebolla con ajo y ají panca. Añadir la carne y cocinar.",
+        "Incorporar las pasas, aceitunas y huevo duro. Dejar enfriar el relleno.",
+        "Tomar una porción de masa, aplanarla, colocar una cucharada de relleno y cerrar dando forma ovalada.",
+        "Pasar por harina y freír en abundante aceite caliente hasta que dore.",
+        "Servir con salsa criolla (cebolla, limón y ají)."
+      ]
+    },
+    {
+      "id": "COS-ENT-005",
+      "nombre": "Choritos a la Chalaca",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada marina clásica del Callao, servida en la misma valva del choro.",
+      "ingredientes": [
+        "12 choros (mejillones) grandes",
+        "1 cebolla roja picada en cuadritos",
+        "2 tomates picados (sin semillas)",
+        "1 taza de choclo desgranado cocido",
+        "1 ají limo picado",
+        "Culantro picado y jugo de 5 limones",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Cocinar los choros al vapor con un poco de agua hasta que abran. Retirar de la valva.",
+        "Limpiar las valvas y reservar las más bonitas.",
+        "Preparar la 'chalaca': Mezclar cebolla, tomate, choclo, ají limo y culantro.",
+        "Aliñar con el jugo de limón, sal y pimienta.",
+        "Colocar un choro en cada valva y cubrir con la salsa chalaca generosamente.",
+        "Servir frío."
+      ]
+    },
+    {
+      "id": "COS-ENT-006",
+      "nombre": "Tiradito de Pescado al Ají Amarillo",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Fusión nikkei: láminas de pescado crudo (estilo sashimi) bañadas en una crema picante de ají amarillo.",
+      "ingredientes": [
+        "400g de filete de pescado fresco",
+        "1/2 taza de pasta de ají amarillo licuado",
+        "Jugo de 8 limones",
+        "1 trozo de kion (jengibre) para aromatizar",
+        "Sal y pimienta blanca",
+        "Choclo desgranado para acompañar"
+      ],
+      "pasos": [
+        "Cortar el pescado en láminas delgadas y alargadas.",
+        "Disponer las láminas en un plato plano de forma ordenada.",
+        "Mezclar el jugo de limón con la sal, pimienta, el kion (solo el jugo exprimido) y la pasta de ají amarillo.",
+        "Bañar el pescado con esta crema justo antes de servir.",
+        "Acompañar con choclo sancochado."
+      ]
+    },
+    {
+      "id": "COS-ENT-007",
+      "nombre": "Pulpo al Olivo",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Plato de la cocina fusión peruana creado con la influencia de la aceituna de Tacna.",
+      "ingredientes": [
+        "1 pulpo de 1 kg (previamente cocido y en láminas)",
+        "1 taza de aceitunas botija (negras) sin pepa",
+        "1 taza de mayonesa casera",
+        "Jugo de 1 limón",
+        "Aceite de oliva",
+        "Galletas de soda para acompañar"
+      ],
+      "pasos": [
+        "Licuar las aceitunas con la mayonesa y el jugo de limón hasta obtener una crema morada homogénea.",
+        "Disponer las láminas de pulpo cocido en un plato.",
+        "Bañar el pulpo con la crema de olivo.",
+        "Decorar con un hilo de aceite de oliva.",
+        "Servir con galletas de soda o pan tostado."
+      ]
+    },
+    {
+      "id": "COS-ENT-008",
+      "nombre": "Conchitas a la Parmesana",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada caliente de conchas de abanico gratinadas con queso y mantequilla.",
+      "ingredientes": [
+        "12 conchas de abanico frescas con su valva",
+        "100g de queso parmesano rallado",
+        "50g de mantequilla",
+        "Gotas de limón",
+        "Sal y pimienta",
+        "Un chorrito de vino blanco (opcional)"
+      ],
+      "pasos": [
+        "Lavar las conchas y secarlas.",
+        "Sazonar cada concha con sal, pimienta y unas gotas de limón.",
+        "Colocar un trocito de mantequilla sobre cada una.",
+        "Cubrir generosamente con queso parmesano.",
+        "Llevar al horno a fuego alto (o gratinador) por 5 a 8 minutos hasta que el queso burbujee y dore.",
+        "Servir inmediatamente."
+      ]
+    },
+    {
+      "id": "COS-ENT-009",
+      "nombre": "Leche de Tigre en Copa",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Concentrado de jugo de ceviche, revitalizante y picante, servido como aperitivo.",
+      "ingredientes": [
+        "1 taza de caldo de pescado frío",
+        "100g de retazos de pescado blanco",
+        "Jugo de 6 limones",
+        "1/2 tallo de apio y un trozo de kion",
+        "Ají limo y culantro",
+        "Cebolla roja picada",
+        "Chicharrón de pota (opcional) para coronar"
+      ],
+      "pasos": [
+        "Licuar los retazos de pescado con el caldo de pescado, el apio, el kion, el jugo de limón y sal.",
+        "Colar la preparación en un bol.",
+        "Añadir el culantro picado, el ají limo y la cebolla roja picada.",
+        "Servir en copas o vasos altos.",
+        "Decorar con un poco más de pescado en cubitos y maíz tostado (cancha)."
+      ]
+    },
+    {
+      "id": "COS-ENT-010",
+      "nombre": "Tamal Limeño de Cerdo",
+      "tiempo_preparacion": "120 min",
+      "porciones": 8,
+      "dificultad": "Alta",
+      "descripcion": "Masa de maíz mote molido, sazonada con ají panca y envuelta en hojas de plátano.",
+      "ingredientes": [
+        "1 kg de maíz mote molido",
+        "250g de manteca de cerdo",
+        "1/2 taza de pasta de ají panca",
+        "500g de carne de cerdo troceada",
+        "Hojas de plátano",
+        "Maní tostado, aceitunas y tiras de ají amarillo",
+        "Sal y pabilo"
+      ],
+      "pasos": [
+        "Calentar la manteca y freír el ají panca con ajo. Añadir la masa de maíz.",
+        "Cocinar la masa a fuego bajo moviendo constantemente hasta que brille y no se pegue.",
+        "Colocar una porción de masa en una hoja de plátano.",
+        "Poner en el centro un trozo de cerdo cocido, maní, aceituna y ají.",
+        "Envolver y amarrar firmemente.",
+        "Cocinar al vapor durante 1.5 a 2 horas.",
+        "Dejar enfriar un poco antes de servir con salsa criolla."
+      ]
+    },
+    {
+      "id": "COS-ENT-011",
+      "nombre": "Tamalito Verde Piurano",
+      "tiempo_preparacion": "60 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Especialidad del norte peruano hecha de maíz tierno y culantro, lo que le otorga su color y aroma característicos.",
+      "ingredientes": [
+        "6 choclos grandes (maíz tierno) desgranados",
+        "1 taza de hojas de culantro fresco",
+        "1/2 taza de manteca de cerdo o aceite vegetal",
+        "1 cebolla roja picada",
+        "2 dientes de ajo molidos",
+        "1 ají amarillo picado",
+        "Pancas de choclo (hojas) para envolver",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Licuar los granos de choclo con el culantro y un chorrito de agua o leche si fuera necesario (debe quedar una pasta espesa).",
+        "En una olla, calentar la manteca y sofreír la cebolla, el ajo y el ají amarillo.",
+        "Añadir la pasta de choclo y culantro. Cocinar a fuego bajo moviendo constantemente por 10 minutos hasta que la masa tome cuerpo.",
+        "Colocar dos pancas de choclo superpuestas, poner una porción de masa en el centro.",
+        "Doblar y asegurar con tiras de la misma panca.",
+        "Cocinar al vapor en una olla con poca agua por 30 a 40 minutos.",
+        "Servir caliente, usualmente acompañado de una salsa criolla con abundante limón."
+      ]
+    },
+    {
+      "id": "COS-ENT-012",
+      "nombre": "Palta a la Reina",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Entrada clásica de las mesas limeñas, elegante y nutritiva, que utiliza la palta fuerte como recipiente.",
+      "ingredientes": [
+        "1 palta (aguacate) fuerte grande y madura",
+        "1/2 pechuga de pollo sancochada y deshilachada",
+        "1/2 taza de verduras picadas (zanahoria, arvejas y vainitas sancochadas)",
+        "4 cucharadas de mayonesa",
+        "Jugo de 1/2 limón",
+        "Sal y pimienta",
+        "Hojas de lechuga y rodajas de huevo duro para decorar"
+      ],
+      "pasos": [
+        "En un bol, mezclar el pollo deshilachado con las verduras sancochadas.",
+        "Añadir la mayonesa, sal, pimienta y unas gotas de limón. Integrar bien.",
+        "Cortar la palta por la mitad, retirar la semilla y pelar con cuidado.",
+        "Rociar la palta con limón para que no se negree.",
+        "Rellenar el hueco de la palta con la mezcla de pollo de forma generosa, creando una montaña.",
+        "Servir sobre una cama de lechuga y decorar con huevo duro."
+      ]
+    },
+    {
+      "id": "COS-ENT-013",
+      "nombre": "Salpicón de Pollo",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Ensalada fría muy popular en la costa, ideal para los meses de verano por su frescura.",
+      "ingredientes": [
+        "1 pechuga de pollo cocida y troceada",
+        "2 papas blancas sancochadas y en cubos",
+        "1 taza de vainitas y zanahorias en cubos sancochadas",
+        "1 choclo sancochado y desgranado",
+        "1/2 taza de mayonesa",
+        "1 cucharadita de mostaza",
+        "Sal, pimienta y limón"
+      ],
+      "pasos": [
+        "En un bol grande, colocar el pollo, las papas, el choclo y las verduras.",
+        "En un recipiente pequeño, mezclar la mayonesa con la mostaza y el jugo de limón.",
+        "Verter el aliño sobre los ingredientes sólidos y mezclar suavemente para no deshacer la papa.",
+        "Sazonar con sal y pimienta al gusto.",
+        "Servir frío, decorado con perejil picado."
+      ]
+    },
+    {
+      "id": "COS-ENT-014",
+      "nombre": "Ceviche de Conchas Negras",
+      "tiempo_preparacion": "15 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Especialidad de Tumbes. Un ceviche de sabor intenso y color oscuro, considerado un potente afrodisíaco.",
+      "ingredientes": [
+        "2 docenas de conchas negras frescas",
+        "12 limones regionales",
+        "1 cebolla roja picada en cuadritos",
+        "1 ají limo picado finamente",
+        "Culantro picado",
+        "Sal y pimienta",
+        "Cancha serrana y camote para acompañar"
+      ],
+      "pasos": [
+        "Abrir las conchas negras recuperando todo su jugo en un bol.",
+        "Añadir los moluscos al jugo.",
+        "Incorporar la cebolla, el ají limo y el culantro.",
+        "Verter el jugo de limón recién exprimido y sazonar con sal y pimienta.",
+        "Mezclar rápidamente para que el ácido del limón actúe.",
+        "Servir inmediatamente con cancha (maíz tostado) y una rodaja de camote."
+      ]
+    },
+    {
+      "id": "COS-ENT-015",
+      "nombre": "Yuquitas Fritas con Salsa Huancaína",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bastones de yuca crujientes acompañados de la salsa más famosa del Perú.",
+      "ingredientes": [
+        "1 kg de yuca sancochada",
+        "Aceite para freír",
+        "Para la salsa: 4 ajíes amarillos (sin pepas), 200g de queso fresco, 1/2 taza de leche evaporada, 4 galletas de soda, sal"
+      ],
+      "pasos": [
+        "Cortar la yuca sancochada en bastones gruesos.",
+        "Freír en abundante aceite caliente hasta que estén bien doradas. Escurrir.",
+        "Para la salsa: Licuar el ají amarillo (previamente salteado), el queso, la leche y las galletas hasta obtener una crema suave.",
+        "Servir las yuquitas calientes con la salsa en un pocillo aparte para dipear."
+      ]
+    },
+    {
+      "id": "COS-ENT-016",
+      "nombre": "Tequeños con Salsa Guacamole",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Masa wantán rellena de queso frito, un piqueo infaltable en cualquier reunión costera.",
+      "ingredientes": [
+        "20 láminas de masa wantán",
+        "250g de queso fresco o tipo edam",
+        "1 huevo batido",
+        "2 paltas fuertes maduras",
+        "1 tomate y 1 cebolla pequeña picada",
+        "Limón y sal"
+      ],
+      "pasos": [
+        "Cortar el queso en bastones.",
+        "Colocar un bastón de queso en una lámina de masa wantán, pintar los bordes con huevo y enrollar sellando bien los extremos.",
+        "Freír en aceite caliente hasta que estén dorados.",
+        "Para el guacamole: Aplastar la palta con un tenedor, mezclar con el tomate, la cebolla, limón y sal.",
+        "Servir los tequeños calientes con el guacamole."
+      ]
+    },
+    {
+      "id": "COS-ENT-017",
+      "nombre": "Wantán Frito con Salsa de Tamarindo",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Entrada clásica de la cocina chifa (fusión china-peruana), crujiente y dulce.",
+      "ingredientes": [
+        "20 masas de wantán",
+        "150g de carne molida de cerdo",
+        "1 cucharadita de aceite de ajonjolí",
+        "Salsa de tamarindo",
+        "Aceite vegetal"
+      ],
+      "pasos": [
+        "Mezclar el cerdo con sal, pimienta y aceite de ajonjolí.",
+        "Poner una pizca de relleno en el centro de la masa, doblar y sellar con agua.",
+        "Freír en abundante aceite hasta que se inflen y estén dorados.",
+        "Servir con salsa de tamarindo caliente."
+      ]
+    },
+    {
+      "id": "COS-ENT-018",
+      "nombre": "Humitas de Maíz Saladas",
+      "tiempo_preparacion": "70 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Masa de maíz tierno molido con un toque de manteca, envuelta y cocida al vapor.",
+      "ingredientes": [
+        "6 choclos grandes molidos",
+        "100g de manteca de cerdo",
+        "1/2 taza de leche",
+        "Sal al gusto",
+        "Pancas de choclo"
+      ],
+      "pasos": [
+        "Mezclar el maíz molido con la manteca derretida, la leche y la sal.",
+        "Colocar una porción en las pancas, cerrar y amarrar.",
+        "Cocinar al vapor por 50 minutos.",
+        "Servir con café o como entrada con salsa criolla."
+      ]
+    },
+    {
+      "id": "COS-ENT-019",
+      "nombre": "Salchipapa Clásica",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "La entrada/snack más popular de las calles limeñas.",
+      "ingredientes": [
+        "3 papas blancas grandes en bastones",
+        "4 salchichas tipo viena o de Huacho en rodajas",
+        "Aceite para freír",
+        "Cremas: Mayonesa, mostaza, kétchup y ají"
+      ],
+      "pasos": [
+        "Freír las papas hasta que estén crocantes.",
+        "Freír las rodajas de salchicha.",
+        "Mezclar ambos en un plato, salar.",
+        "Servir con todas las cremas al gusto."
+      ]
+    },
+    {
+      "id": "COS-ENT-020",
+      "nombre": "Almejas a la Chalaca",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Variante de los choritos, pero con la textura firme y elegante de la almeja marina.",
+      "ingredientes": [
+        "12 almejas frescas",
+        "Cebolla, tomate, ají limo y culantro picado",
+        "Jugo de 4 limones",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Lavar y abrir las almejas, retirar la carne y picarla ligeramente.",
+        "Limpiar las valvas.",
+        "Preparar la salsa chalaca mezclando todos los vegetales con el limón.",
+        "Regresar la carne a la valva y cubrir con la salsa.",
+        "Servir helado."
+      ]
+    }
+  ]
+}

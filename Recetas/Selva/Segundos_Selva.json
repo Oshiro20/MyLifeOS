@@ -1,0 +1,740 @@
+{
+  "region": "Selva",
+  "categoria": "Segundos / Platos de Fondo",
+  "recetas": [
+    {
+      "id": "SEL-FON-001",
+      "nombre": "Juane de Gallina de Chacra",
+      "tiempo_preparacion": "150 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "El plato más sagrado de la Amazonía, donde el arroz se impregna del sabor de la gallina y el aroma de la hoja de bijao.",
+      "ingredientes": [
+        "1 gallina de chacra cortada en presas",
+        "1.5 kg de arroz de grano largo",
+        "12 hojas de bijao (ablandadas al fuego)",
+        "6 huevos duros y 2 huevos batidos",
+        "100g de aceitunas negras",
+        "2 cucharadas de mishquina (palillo, ajo, comino, pimienta)",
+        "1/2 taza de manteca de cerdo",
+        "Sal y pabilo para amarrar"
+      ],
+      "pasos": [
+        "Sancochar la gallina en agua con sal y un poco de mishquina hasta que esté tierna. Reservar el caldo.",
+        "Cocinar el arroz utilizando el caldo de la gallina para que absorba todo el sabor.",
+        "En una sartén, calentar la manteca y sofreír el resto de la mishquina y el ajo.",
+        "Mezclar el arroz cocido con el aderezo de manteca y los huevos batidos para dar consistencia.",
+        "Limpiar las hojas de bijao. Colocar una porción de arroz, una presa de gallina, un huevo duro y aceitunas.",
+        "Envolver dándole forma esférica y amarrar firmemente con el pabilo.",
+        "Hervir los juanes en una olla con poca agua por 30 minutos.",
+        "Servir frío o tibio con ají de cocona."
+      ]
+    },
+    {
+      "id": "SEL-FON-002",
+      "nombre": "Tacacho con Cecina y Chorizo",
+      "tiempo_preparacion": "45 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Combinación energética de plátano verde machacado con trozos de chicharrón, servido con carnes ahumadas de la región.",
+      "ingredientes": [
+        "4 plátanos bellacos verdes",
+        "250g de cecina ahumada de cerdo",
+        "2 chorizos amazónicos",
+        "100g de chicharrón de cerdo picado",
+        "2 cucharadas de manteca de cerdo caliente",
+        "Aceite vegetal y sal"
+      ],
+      "pasos": [
+        "Pelar los plátanos y cortarlos en rodajas gruesas.",
+        "Freír los plátanos en aceite a fuego medio hasta que estén cocidos por dentro.",
+        "Machacar los plátanos calientes en un mazo de madera (tacacho) junto con la manteca y el chicharrón picado.",
+        "Formar bolas con la masa obtenida.",
+        "Aparte, freír o asar la cecina y los chorizos hasta que doren.",
+        "Servir las bolas de tacacho junto con las carnes y una salsa de cebolla con cocona."
+      ]
+    },
+    {
+      "id": "SEL-FON-003",
+      "nombre": "Patarashca de Pescado Entero",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Pescado de río sazonado con hierbas silvestres y asado a la parrilla envuelto en hojas de bijao, técnica que mantiene la jugosidad.",
+      "ingredientes": [
+        "2 pescados medianos (Boquichico o Palometa)",
+        "4 hojas de bijao",
+        "1 cebolla roja picada en tiras",
+        "2 ajíes dulces picados",
+        "4 hojas de sacha culantro picadas",
+        "1 cucharadita de palillo",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Limpiar los pescados y hacerles cortes transversales.",
+        "Sazonar con sal, pimienta, comino y palillo.",
+        "Rellenar y cubrir el pescado con la cebolla, el ají dulce y el sacha culantro.",
+        "Envolver el pescado con las hojas de bijao y amarrar.",
+        "Asar a la parrilla sobre carbón por 20 minutos, volteando a mitad de tiempo.",
+        "Servir acompañado de plátanos asados (inguiri) o yuca sancochada."
+      ]
+    },
+    {
+      "id": "SEL-FON-004",
+      "nombre": "Paiche a la Loretana",
+      "tiempo_preparacion": "35 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Filetes de paiche rebozados y fritos, servidos con los acompañamientos clásicos del departamento de Loreto.",
+      "ingredientes": [
+        "500g de filete de paiche fresco",
+        "1 taza de harina de trigo",
+        "2 huevos batidos",
+        "Sal, pimienta y ajo molido",
+        "Plátanos maduros fritos",
+        "Arroz blanco y ensalada de chonta"
+      ],
+      "pasos": [
+        "Cortar el paiche en medallones y sazonar con ajo, sal y pimienta.",
+        "Pasar cada trozo por harina, luego por huevo batido y finalmente por harina nuevamente.",
+        "Freír en abundante aceite caliente hasta que esté dorado y crocante.",
+        "Freír las tajadas de plátano maduro.",
+        "Servir el paiche con el plátano, el arroz y una porción de ensalada de chonta fresca."
+      ]
+    },
+    {
+      "id": "SEL-FON-005",
+      "nombre": "Chaufa Amazónico Especial",
+      "tiempo_preparacion": "25 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Versión selvática del arroz frito chino, integrando la cecina, el chorizo y trozos de plátano maduro.",
+      "ingredientes": [
+        "4 tazas de arroz blanco cocido",
+        "200g de cecina ahumada en cubos",
+        "2 chorizos regionales en rodajas",
+        "1 plátano maduro frito en cubos",
+        "4 huevos (en tortilla)",
+        "Sillao (salsa de soja), aceite de ajonjolí y cebollita china"
+      ],
+      "pasos": [
+        "En un wok grande, freír la cecina y el chorizo. Retirar.",
+        "Hacer una tortilla de huevo, cortarla y reservar.",
+        "En el mismo wok, saltear el arroz a fuego muy alto.",
+        "Añadir el sillao y el aceite de ajonjolí hasta que el arroz tome color.",
+        "Regresar las carnes, el huevo y añadir los cubos de plátano frito.",
+        "Mezclar bien y terminar con abundante cebollita china picada."
+      ]
+    },
+    {
+      "id": "SEL-FON-006",
+      "nombre": "Majás al Horno con Hierbas",
+      "tiempo_preparacion": "120 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Carne de monte tierna y jugosa, marinada en especias regionales y horneada a fuego lento.",
+      "ingredientes": [
+        "1.5 kg de carne de majás troceada",
+        "1/2 taza de vinagre o chicha de jora",
+        "2 cucharadas de ajo molido",
+        "3 cucharadas de ají panca",
+        "Sacha culantro licuado",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Lavar la carne con limón y sal. Macerar con todos los ingredientes por 4 horas.",
+        "Colocar la carne en una asadera con todo su líquido.",
+        "Cubrir con papel aluminio y hornear a 180°C por 1 hora.",
+        "Retirar el aluminio y hornear 30 minutos más para dorar.",
+        "Servir con yucas sancochadas y arroz."
+      ]
+    },
+    {
+      "id": "SEL-FON-007",
+      "nombre": "Purtumute Amazónico",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Guiso de frijoles variados y mote de maíz, típico de la zona de Chachapoyas.",
+      "ingredientes": [
+        "250g de frijol negro y 250g de frijol blanco",
+        "500g de mote de maíz cocido",
+        "100g de tocino o cecina picada",
+        "1 cebolla picada",
+        "Culantro y ajo"
+      ],
+      "pasos": [
+        "Sancochar los frijoles por separado hasta que estén tiernos.",
+        "En una olla, hacer un aderezo con cebolla, ajo y el tocino.",
+        "Añadir los frijoles y el mote.",
+        "Mezclar bien y cocinar a fuego lento por 15 minutos para integrar sabores.",
+        "Añadir culantro picado antes de servir."
+      ]
+    },
+    {
+      "id": "SEL-FON-008",
+      "nombre": "Sudado de Doncella al Vapor de Hoja",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Pescado blanco de río cocido en una salsa de tomate y cebolla, utilizando hojas de bijao para potenciar el vapor.",
+      "ingredientes": [
+        "600g de filete de Doncella",
+        "2 tomates y 1 cebolla en rodajas",
+        "1/2 taza de chicha de jora",
+        "Ají amarillo en tiras",
+        "Sal, pimienta y sacha culantro"
+      ],
+      "pasos": [
+        "Sazonar el pescado con sal y pimienta.",
+        "En una olla con fondo de hojas de bijao, colocar el pescado.",
+        "Cubrir con el tomate, la cebolla y el ají amarillo.",
+        "Bañar con la chicha de jora.",
+        "Tapar bien y cocinar al vapor por 15 a 20 minutos.",
+        "Servir con yuca sancochada."
+      ]
+    },
+    {
+      "id": "SEL-FON-009",
+      "nombre": "Venado en Salsa de Cocona",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Carne de venado guisada en una base agridulce de cocona, resaltando los sabores silvestres.",
+      "ingredientes": [
+        "1 kg de carne de venado en trozos",
+        "3 coconas licuadas",
+        "1 cebolla picada",
+        "1 cucharada de ají amarillo",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Sellar la carne de venado en una olla con aceite.",
+        "Añadir la cebolla y el ají amarillo hasta que doren.",
+        "Verter el jugo de cocona y tapar la olla.",
+        "Cocinar a fuego lento por 45 minutos hasta que la carne esté blanda y la salsa espese.",
+        "Servir con arroz y plátano asado."
+      ]
+    },
+    {
+      "id": "SEL-FON-010",
+      "nombre": "Guiso de Motelo Tradicional",
+      "tiempo_preparacion": "150 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Guiso de cocción lenta de carne de tortuga motelo, muy apreciado en celebraciones familiares.",
+      "ingredientes": [
+        "1 kg de carne de motelo",
+        "2 tazas de caldo de la misma carne",
+        "1 cebolla y 2 dientes de ajo",
+        "Sacha culantro y palillo",
+        "Yuca y plátano"
+      ],
+      "pasos": [
+        "Hervir la carne de motelo hasta que esté tierna (unas 2 horas).",
+        "Hacer un aderezo con ajo, cebolla y palillo.",
+        "Añadir la carne cocida y un poco de su caldo.",
+        "Guisar por 20 minutos más con yucas cortadas.",
+        "Añadir sacha culantro al apagar. Servir caliente."
+      ]
+    },
+    {
+      "id": "SEL-FON-011",
+      "nombre": "Chicharrón de Lagarto",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Carne blanca y magra de lagarto (caimán de criadero), troceada y frita hasta obtener una textura crujiente por fuera y muy suave por dentro.",
+      "ingredientes": [
+        "1 kg de lomo de lagarto limpio",
+        "2 tazas de harina de trigo o maicena",
+        "2 cucharadas de ajo molido",
+        "1 cucharada de pasta de ají dulce",
+        "Jugo de 2 limones regionales",
+        "Sal, pimienta y comino",
+        "Aceite vegetal abundante",
+        "Acompañamiento: Yucas fritas y salsa de cocona"
+      ],
+      "pasos": [
+        "Cortar la carne de lagarto en cubos de bocado (aprox. 3 cm).",
+        "Marinar la carne con el limón, ajo, ají dulce, sal, pimienta y comino por 20 minutos.",
+        "Pasar cada trozo por la harina o maicena, asegurando una cobertura uniforme.",
+        "Calentar el aceite a fuego alto (180°C).",
+        "Freír los trozos de carne en tandas pequeñas para no bajar la temperatura del aceite.",
+        "Retirar cuando estén dorados y colocarlos sobre papel absorbente.",
+        "Servir caliente con yucas fritas y una generosa porción de ají charapita."
+      ]
+    },
+    {
+      "id": "SEL-FON-012",
+      "nombre": "Gamitana a la Parrilla con Ají Dulce",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Pez de escama grande y carne grasosa, ideal para la parrilla, glaseado con una reducción de ajíes amazónicos.",
+      "ingredientes": [
+        "1 Gamitana entera de 2 kg abierta por el lomo (estilo libro)",
+        "4 cucharadas de pasta de ají dulce",
+        "2 cucharadas de aceite de achiote",
+        "1 cucharada de ajo molido",
+        "Sal y pimienta al gusto",
+        "Hojas de bijao para la base de la parrilla",
+        "Plátanos verdes (inguiri) para acompañar"
+      ],
+      "pasos": [
+        "Lavar el pescado y secarlo con papel absorbente. Hacer cortes superficiales en la carne.",
+        "Mezclar el aceite de achiote con el ajo, ají dulce, sal y pimienta.",
+        "Untar esta mezcla por todo el pescado, especialmente en los cortes.",
+        "Colocar hojas de bijao sobre la parrilla a fuego medio para proteger la piel del pescado.",
+        "Poner la gamitana sobre las hojas y cocinar por 20 minutos del lado de la piel.",
+        "Voltear con cuidado y cocinar 10 minutos más directamente sobre la carne para sellar el sabor.",
+        "Servir con plátanos verdes sancochados y una ensalada fresca de cebolla."
+      ]
+    },
+    {
+      "id": "SEL-FON-013",
+      "nombre": "Picante de Churos (Caracoles de Río)",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Guiso tradicional de caracoles gigantes de río en una salsa espesa de maní y ajíes, muy valorado en la selva alta.",
+      "ingredientes": [
+        "20 churos grandes limpios (extraídos de su caparazón)",
+        "100g de maní tostado y molido",
+        "2 cucharadas de ají panca molido",
+        "1 cebolla roja picada finamente",
+        "1 cucharada de palillo",
+        "2 tazas de caldo de pescado o carne",
+        "Sacha culantro picado",
+        "Sal y aceite"
+      ],
+      "pasos": [
+        "Lavar los churos con limón y sal para quitar la viscosidad. Sancochar en agua hirviendo por 15 minutos y trocear.",
+        "En una olla, dorar la cebolla, el ajo, el ají panca y el palillo.",
+        "Añadir el maní molido y mezclar hasta formar una pasta.",
+        "Incorporar los churos troceados y el caldo.",
+        "Cocinar a fuego lento por 30 minutos hasta que la salsa espese y los caracoles estén tiernos.",
+        "Añadir el sacha culantro antes de apagar.",
+        "Servir con arroz blanco y yuca sancochada."
+      ]
+    },
+    {
+      "id": "SEL-FON-014",
+      "nombre": "Sajino al Horno con Yuca",
+      "tiempo_preparacion": "120 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Carne de cerdo silvestre (peccary) horneada, marinada con especias regionales que mitigan su sabor fuerte y resaltan su jugosidad.",
+      "ingredientes": [
+        "2 kg de pierna de sajino",
+        "1 taza de chicha de jora",
+        "3 cucharadas de ajo molido",
+        "2 cucharadas de pasta de ají amarillo",
+        "1 cucharada de orégano",
+        "Sal, pimienta y comino",
+        "1 kg de yuca amarilla sancochada"
+      ],
+      "pasos": [
+        "Hacer incisiones profundas en la pierna de sajino.",
+        "Preparar un adobo con la chicha de jora, ajo, ají amarillo y especias.",
+        "Bañar la carne y dejar macerar toda la noche en el refrigerador.",
+        "Colocar en una fuente para horno, cubrir con papel aluminio y hornear a 170°C por 90 minutos.",
+        "Retirar el papel, bañar con sus jugos y hornear 30 minutos más a 200°C para dorar la superficie.",
+        "Servir en tajadas acompañado de abundante yuca y ají de cocona."
+      ]
+    },
+    {
+      "id": "SEL-FON-015",
+      "nombre": "Saltado de Paiche al Estilo Oriental",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Fusión técnica del lomo saltado aplicada al pez paiche, utilizando el fuego alto para sellar la carne blanca.",
+      "ingredientes": [
+        "500g de filete de paiche fresco en cubos grandes",
+        "1 cebolla roja en gajos",
+        "2 tomates en gajos",
+        "1 ají amarillo en tiras",
+        "2 cucharadas de sillao (soja)",
+        "1 cucharada de vinagre de plátano",
+        "Culantro y cebollita china picada",
+        "Arroz blanco y papas fritas"
+      ],
+      "pasos": [
+        "Sazonar el paiche con sal y pimienta.",
+        "Calentar el wok a fuego máximo. Añadir aceite y sellar el pescado rápidamente por ambos lados. Reservar.",
+        "En el mismo wok, saltear la cebolla, el ají y el tomate.",
+        "Regresar el pescado, añadir el sillao y el vinagre por los bordes.",
+        "Saltear por 30 segundos, añadir la cebollita china y el culantro.",
+        "Servir inmediatamente con arroz y papas fritas."
+      ]
+    },
+    {
+      "id": "SEL-FON-016",
+      "nombre": "Arroz Amazónico con Carnes Ahumadas",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Arroz meloso cocido con el caldo de las carnes ahumadas, mishquina y trozos de cecina y chorizo.",
+      "ingredientes": [
+        "3 tazas de arroz",
+        "200g de cecina ahumada",
+        "2 chorizos amazónicos",
+        "1 cucharada de palillo fresco rallado",
+        "1 cebolla picada",
+        "1/2 taza de arvejas",
+        "4 tazas de caldo de carne",
+        "Sacha culantro"
+      ],
+      "pasos": [
+        "Freír la cecina y el chorizo en trozos. Retirar y reservar.",
+        "En la misma grasa, dorar la cebolla, ajo y palillo.",
+        "Añadir el arroz y nacarar por un minuto.",
+        "Verter el caldo, añadir las arvejas y cocinar a fuego medio hasta que el agua evapore.",
+        "Bajar el fuego al mínimo, añadir las carnes fritas encima y tapar por 10 minutos.",
+        "Mezclar todo con sacha culantro picado y servir."
+      ]
+    },
+    {
+      "id": "SEL-FON-017",
+      "nombre": "Palometa Frita con Inguiri",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Pescado de río plano y circular, muy consumido en los mercados de la selva por su sabor intenso y carne firme.",
+      "ingredientes": [
+        "2 palometas medianas",
+        "1 taza de harina de maíz",
+        "2 cucharadas de ajo molido",
+        "4 plátanos verdes (inguiri)",
+        "Sal y pimienta",
+        "Aceite vegetal para freír"
+      ],
+      "pasos": [
+        "Hacer cortes en forma de cruz en los costados de las palometas.",
+        "Sazonar con sal, pimienta y ajo.",
+        "Pasar por harina de maíz sacudiendo el exceso.",
+        "Sancochar los plátanos verdes con cáscara en agua con sal.",
+        "Freír el pescado en abundante aceite caliente hasta que esté bien crocante.",
+        "Servir el pescado con los plátanos pelados (inguiri) y una salsa de cebolla con mucho limón."
+      ]
+    },
+    {
+      "id": "SEL-FON-018",
+      "nombre": "Sudado de Doncella en Caldo de Cocona",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Pescado cocido al vapor en una base de frutas ácidas locales, creando un caldo ligero y aromático.",
+      "ingredientes": [
+        "2 filetes grandes de Doncella",
+        "2 coconas peladas y licuadas",
+        "1 tomate y 1 cebolla en rodajas",
+        "2 ajíes dulces picados",
+        "1/2 taza de caldo de pescado",
+        "Sacha culantro y sal"
+      ],
+      "pasos": [
+        "En una sartén profunda, colocar una cama de cebolla y tomate.",
+        "Poner los filetes de pescado sazonados encima.",
+        "Añadir el ají dulce, el licuado de cocona y el caldo.",
+        "Tapar herméticamente y cocinar a fuego medio por 15 minutos.",
+        "Añadir el sacha culantro picado al final.",
+        "Servir en plato hondo para disfrutar el jugo, acompañado de yuca."
+      ]
+    },
+    {
+      "id": "SEL-FON-019",
+      "nombre": "Escabeche de Boquichico",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Pescado frito cubierto con una salsa de vinagre regional, cebollas y ajíes dulces.",
+      "ingredientes": [
+        "4 boquichicos medianos fritos",
+        "2 cebollas rojas en gajos gruesos",
+        "4 ajíes dulces en tiras",
+        "1/2 taza de vinagre de plátano",
+        "1 cucharadita de palillo",
+        "Sal, pimienta y laurel"
+      ],
+      "pasos": [
+        "Tener listos los pescados fritos en una fuente.",
+        "En una sartén, saltear la cebolla y el ají dulce con el palillo y el laurel.",
+        "Añadir el vinagre de plátano y dejar que dé un hervor fuerte.",
+        "Sazonar con sal y pimienta.",
+        "Verter la salsa caliente sobre los pescados y dejar reposar 20 minutos antes de consumir.",
+        "Acompañar con arroz y camote."
+      ]
+    },
+    {
+      "id": "SEL-FON-020",
+      "nombre": "Tallarines con Cecina al Estilo Selvático",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Pasta salteada con trozos de cecina y una salsa a base de sacha culantro y pasta de ají dulce.",
+      "ingredientes": [
+        "250g de fideos tallarín grueso",
+        "200g de cecina en tiras",
+        "1/2 taza de crema de sacha culantro (licuado con aceite)",
+        "1 cebolla picada",
+        "1 cucharada de ajo",
+        "Queso fresco rallado (opcional)"
+      ],
+      "pasos": [
+        "Cocinar los fideos al dente.",
+        "En una sartén, freír la cecina hasta que esté dorada. Reservar.",
+        "En la misma sartén, dorar la cebolla y el ajo.",
+        "Añadir la crema de sacha culantro y dejar cocinar un minuto.",
+        "Incorporar los fideos y la cecina, mezclando bien para que la pasta se pinte de verde.",
+        "Servir caliente con un toque de queso regional si se desea."
+      ]
+    },
+    {
+      "id": "SEL-FON-021",
+      "nombre": "Paiche al Horno en Salsa de Castañas",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Filete de paiche bañado en una crema aterciopelada de castañas de Madre de Dios, una receta de alta cocina amazónica.",
+      "ingredientes": [
+        "800g de filete de paiche fresco",
+        "200g de castañas amazónicas (nuez de Brasil) peladas",
+        "1 taza de leche evaporada",
+        "1 cucharadita de ajo molido",
+        "1/2 taza de caldo de pescado",
+        "Mantequilla, sal y pimienta blanca",
+        "Guarnición: Puré de pituca (tubérculo regional) y espárragos de monte"
+      ],
+      "pasos": [
+        "Sazonar los filetes de paiche con sal, pimienta blanca y un toque de ajo.",
+        "Sellar los filetes en una sartén con mantequilla por 2 minutos por lado. Reservar en una fuente para horno.",
+        "Para la salsa: Licuar las castañas con la leche y el caldo de pescado hasta obtener una crema fina.",
+        "Cocinar la crema en una cacerola a fuego lento hasta que espese ligeramente. Rectificar sal.",
+        "Bañar el paiche con la salsa y llevar al horno a 180°C por 10 minutos para que los sabores se integren.",
+        "Servir caliente decorado con láminas de castaña tostada."
+      ]
+    },
+    {
+      "id": "SEL-FON-022",
+      "nombre": "Maito de Pescado (Técnica Ancestral)",
+      "tiempo_preparacion": "45 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "A diferencia de la patarashca, el maito se enfoca en el vapor puro del pescado dentro de la hoja, sin aderezos líquidos, resaltando el sabor natural.",
+      "ingredientes": [
+        "2 pescados medianos (Bocachico o Sábalo)",
+        "6 hojas de bijao grandes",
+        "Sal de mar en grano",
+        "Sacha culantro (hojas enteras)",
+        "Pabilo de corteza de plátano",
+        "Acompañamiento: Yuca sancochada y ají de cocona"
+      ],
+      "pasos": [
+        "Limpiar los pescados sin retirar las escamas (esto ayuda a que la carne no se pegue a la hoja y mantenga su jugo).",
+        "Sazonar únicamente con abundante sal de grano por dentro y por fuera.",
+        "Colocar 3 hojas de bijao superpuestas, poner el pescado y unas ramas de sacha culantro encima.",
+        "Envolver formando un paquete alargado y amarrar firmemente con el pabilo.",
+        "Colocar directamente sobre las brasas del carbón durante 15 a 20 minutos por lado.",
+        "El punto exacto es cuando la hoja de bijao exterior se carboniza ligeramente.",
+        "Servir abriendo la hoja y retirando la piel con escamas, que saldrá fácilmente dejando la carne blanca y jugosa."
+      ]
+    },
+    {
+      "id": "SEL-FON-023",
+      "nombre": "Estofado de Venado con Hongos Regionales",
+      "tiempo_preparacion": "90 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Guiso sustancioso de carne de monte con hongos deshidratados de la selva alta y un toque de vino de plátano.",
+      "ingredientes": [
+        "1 kg de carne de venado troceada",
+        "1/2 taza de hongos de pino o regionales hidratados",
+        "1/2 taza de vino de plátano o vino tinto seco",
+        "2 cebollas rojas picadas",
+        "2 cucharadas de pasta de ají panca",
+        "1 taza de caldo de carne",
+        "Sal, pimienta, comino y una rama de canela"
+      ],
+      "pasos": [
+        "Sellar la carne de venado en una olla con aceite caliente hasta que esté bien dorada. Retirar.",
+        "En el mismo aceite, preparar un aderezo con la cebolla, ajo y ají panca.",
+        "Regresar la carne, añadir el vino y dejar que evapore el alcohol.",
+        "Incorporar los hongos, el caldo de carne y la rama de canela.",
+        "Cocinar a fuego bajo durante 60 a 70 minutos hasta que la carne esté sumamente tierna.",
+        "Retirar la canela antes de servir. Acompañar con arroz blanco y frijoles."
+      ]
+    },
+    {
+      "id": "SEL-FON-024",
+      "nombre": "Macambo (Majambo) con Pescado Frito",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "El macambo es una semilla pariente del cacao. Su pulpa se usa para acompañar pescados fritos, aportando una textura cremosa.",
+      "ingredientes": [
+        "2 pescados medianos (Liza o Palometa)",
+        "6 frutos de macambo maduros",
+        "1/2 taza de harina de maíz",
+        "Sal y pimienta",
+        "Aceite vegetal para freír",
+        "Salsa de cebolla y sacha culantro"
+      ],
+      "pasos": [
+        "Limpiar los pescados y sazonar con sal y pimienta.",
+        "Pasar por harina de maíz y freír en aceite caliente hasta que estén crocantes.",
+        "Retirar las semillas de macambo del fruto. Las semillas se pueden asar y la pulpa que las rodea se consume fresca.",
+        "Preparar un puré rústico con la pulpa del macambo, añadiendo un toque de limón y sal.",
+        "Servir el pescado frito sobre el puré de macambo.",
+        "Acompañar con las semillas de macambo tostadas como snack crocante."
+      ]
+    },
+    {
+      "id": "SEL-FON-025",
+      "nombre": "Pescado en Salsa de Camu Camu",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Filete de pescado a la plancha bañado en una reducción ácida y vitamínica de camu camu.",
+      "ingredientes": [
+        "500g de filete de Doncella o Paiche",
+        "200g de pulpa de camu camu pura",
+        "2 cucharadas de miel de abeja",
+        "1 ají amarillo picado finamente",
+        "1 cucharada de mantequilla",
+        "Sal y pimienta",
+        "Yucas sancochadas para acompañar"
+      ],
+      "pasos": [
+        "En una cacerola pequeña, reducir la pulpa de camu camu con la miel y el ají amarillo a fuego lento hasta que espese.",
+        "Añadir la mantequilla al final para dar brillo a la salsa. Reservar caliente.",
+        "Salpimentar el pescado y cocinarlo a la plancha con un chorrito de aceite hasta que esté dorado.",
+        "Colocar el pescado en el plato y cubrir con la salsa de camu camu.",
+        "Servir con yucas y una ensalada de chonta fresca."
+      ]
+    },
+    {
+      "id": "SEL-FON-026",
+      "nombre": "Guiso de Sajino con Frijol Regional",
+      "tiempo_preparacion": "100 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Combinación potente de carne de chancho silvestre con los frijoles mantecosos de la Amazonía.",
+      "ingredientes": [
+        "1/2 kg de carne de sajino en cubos",
+        "1/2 kg de frijol regional (uayruro o ucayalino)",
+        "100g de tocino ahumado",
+        "1 cebolla picada",
+        "2 cucharadas de ajo molido",
+        "Palillo y sacha culantro",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Cocinar los frijoles con el tocino en agua hasta que estén suaves.",
+        "En una olla aparte, sellar la carne de sajino. Añadir la cebolla, ajo y palillo.",
+        "Agregar un poco de agua y cocinar la carne hasta que esté blanda.",
+        "Mezclar la carne y su jugo con los frijoles cocidos.",
+        "Dejar que hierva todo junto por 10 minutos para que el frijol tome el sabor ahumado.",
+        "Añadir sacha culantro picado y servir con arroz."
+      ]
+    },
+    {
+      "id": "SEL-FON-027",
+      "nombre": "Ají de Paiche (Estilo Criollo)",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Adaptación del ají de gallina utilizando paiche seco-salado, lo que le da un sabor marino-ahumado muy particular.",
+      "ingredientes": [
+        "500g de paiche seco-salado (desalado y deshilachado)",
+        "1/2 taza de pasta de ají amarillo",
+        "4 rodajas de pan de molde remojadas en leche",
+        "1/2 taza de leche evaporada",
+        "1 cebolla roja picada",
+        "Queso parmesano y pecanas picadas",
+        "Sal y palillo"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo, ají amarillo y palillo.",
+        "Licuar el pan remojado y añadirlo al aderezo.",
+        "Cocinar moviendo constantemente hasta que la crema tome cuerpo.",
+        "Incorporar el paiche deshilachado y mezclar bien.",
+        "Añadir la leche, el queso y las pecanas al final.",
+        "Servir sobre rodajas de yuca sancochada y decorar con aceituna."
+      ]
+    },
+    {
+      "id": "SEL-FON-028",
+      "nombre": "Picante de Paiche Seco",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Guiso picante de paiche seco con papas y mucho ají, una receta común en los hogares de la selva central.",
+      "ingredientes": [
+        "300g de paiche seco-salado en trozos pequeños",
+        "1/2 kg de papa blanca en cubos",
+        "2 cucharadas de pasta de ají panca",
+        "1 cucharada de pasta de ají amarillo",
+        "1 cebolla picada",
+        "Culantro y cebollita china"
+      ],
+      "pasos": [
+        "Remojar el paiche por 2 horas y escurrir.",
+        "En una olla, hacer un aderezo con cebolla, ajo y las pastas de ají.",
+        "Añadir el paiche y las papas.",
+        "Cubrir con agua y cocinar a fuego medio hasta que las papas estén cocidas.",
+        "Dejar que el guiso espese naturalmente con el almidón de la papa.",
+        "Servir con arroz y decorar con hierbas frescas."
+      ]
+    },
+    {
+      "id": "SEL-FON-029",
+      "nombre": "Saltado de Cecina con Vegetales Amazónicos",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Un salteado rápido de cecina ahumada con ají dulce, palmito fresco y cebolla.",
+      "ingredientes": [
+        "300g de cecina ahumada en tiras",
+        "1 taza de palmito (chonta) en rodajas",
+        "4 ajíes dulces en tiras",
+        "1 cebolla roja en gajos",
+        "1 cucharada de vinagre regional",
+        "Sillao y sal al gusto"
+      ],
+      "pasos": [
+        "Calentar una sartén o wok con muy poco aceite (la cecina suelta grasa).",
+        "Freír la cecina hasta que dore. Retirar.",
+        "En la misma sartén, saltear la cebolla, el ají dulce y el palmito a fuego alto.",
+        "Regresar la cecina, añadir el vinagre y el sillao.",
+        "Saltar por un minuto y apagar.",
+        "Servir con arroz o tacacho."
+      ]
+    },
+    {
+      "id": "SEL-FON-030",
+      "nombre": "Lomo de Cerdo al Estilo Moyobambino",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Carne de cerdo guisada con mishquina y un toque de café de la zona, una receta innovadora de San Martín.",
+      "ingredientes": [
+        "1/2 kg de lomo de cerdo en cubos",
+        "1 cucharada de mishquina (aderezo regional)",
+        "1/2 taza de café pasado cargado (sin azúcar)",
+        "1 cebolla picada",
+        "Sal y pimienta",
+        "Plátano maduro frito para acompañar"
+      ],
+      "pasos": [
+        "Sellar la carne de cerdo con sal y pimienta. Retirar.",
+        "Hacer un aderezo con la cebolla y la mishquina.",
+        "Regresar la carne y añadir el café.",
+        "Cocinar a fuego lento hasta que la carne esté tierna y la salsa haya reducido.",
+        "El café aporta un aroma terroso que combina perfecto con el cerdo.",
+        "Servir con arroz blanco y plátano maduro."
+      ]
+    }
+  ]
+}

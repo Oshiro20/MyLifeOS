@@ -1,0 +1,341 @@
+{
+  "region": "Sierra",
+  "categoria": "Postres",
+  "recetas": [
+    {
+      "id": "SIE-POS-001",
+      "nombre": "Mazamorra de Calabaza",
+      "tiempo_preparacion": "50 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Postre rústico y reconfortante, hecho con calabaza madura, chancaca y un toque de harina de trigo para dar cuerpo.",
+      "ingredientes": [
+        "1 kg de calabaza madura (solo la pulpa picada)",
+        "2 tapas de chancaca (500g)",
+        "2 tazas de agua de canela y clavo de olor",
+        "1/2 taza de harina de trigo",
+        "1/2 taza de leche evaporada",
+        "Cáscara de naranja y anís en grano"
+      ],
+      "pasos": [
+        "Cocinar la calabaza con el agua de especias, la cáscara de naranja y el anís hasta que esté totalmente suave y se deshaga.",
+        "Añadir la chancaca picada y mover hasta que se disuelva e integre con la fruta.",
+        "Disolver la harina en un poco de leche o agua fría e incorporarla a la olla en forma de hilo.",
+        "Mover constantemente con cuchara de palo por 15 minutos a fuego bajo para que la harina se cocine bien.",
+        "Al final, añadir la leche evaporada para dar cremosidad.",
+        "Servir caliente o tibio. Es ideal para las noches frías de los Andes."
+      ]
+    },
+    {
+      "id": "SIE-POS-002",
+      "nombre": "Humitas Dulces de Choclo",
+      "tiempo_preparacion": "70 min",
+      "porciones": 8,
+      "dificultad": "Media",
+      "descripcion": "Versión dulce de la humita, rellena de pasas y a veces un toque de manjarblanco, envuelta en pancas frescas.",
+      "ingredientes": [
+        "6 choclos grandes (maíz tierno) molidos",
+        "100g de mantequilla derretida",
+        "1/2 taza de azúcar rubia",
+        "1 cucharadita de anís en grano",
+        "50g de pasas morenas",
+        "Pancas de choclo lavadas y suavizadas",
+        "Canela molida"
+      ],
+      "pasos": [
+        "Mezclar el choclo molido con la mantequilla, el azúcar, el anís y la canela.",
+        "Añadir las pasas a la masa.",
+        "Colocar una porción de masa en dos pancas superpuestas, envolver y amarrar con una tira de panca.",
+        "Sancochar al vapor en una olla con una cama de pancas al fondo durante 50 minutos.",
+        "Dejar enfriar un poco antes de abrir para que la masa tome consistencia.",
+        "Servir como lonche o postre."
+      ]
+    },
+    {
+      "id": "SIE-POS-003",
+      "nombre": "Queso Helado Arequipeño",
+      "tiempo_preparacion": "40 min (+ 4h congelado)",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "No lleva queso; su nombre viene de las láminas que parecen queso cuando se corta. Es un helado de leche aromatizado con coco y canela.",
+      "ingredientes": [
+        "1 litro de leche fresca",
+        "1 lata de leche condensada",
+        "1 lata de leche evaporada",
+        "100g de coco rallado seco",
+        "2 ramas de canela y 3 clavos de olor",
+        "Canela molida para decorar"
+      ],
+      "pasos": [
+        "Hervir la leche fresca con el coco, la canela y el clavo por 15 minutos hasta que se reduzca un poco. Colar.",
+        "Mezclar el líquido obtenido con la leche evaporada y la leche condensada.",
+        "Verter en un recipiente metálico y llevar al congelador.",
+        "Cada 45 minutos, retirar y batir enérgicamente para romper los cristales de hielo hasta que esté cremoso.",
+        "Servir raspando la superficie para formar las láminas blancas.",
+        "Espolvorear abundante canela molida encima."
+      ]
+    },
+    {
+      "id": "SIE-POS-004",
+      "nombre": "Api de Maíz Morado",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida-postre espesa y caliente típica de Puno, hecha con harina de maíz morado y frutas.",
+      "ingredientes": [
+        "2 tazas de harina de maíz morado",
+        "2 litros de agua",
+        "2 ramas de canela y 2 clavos de olor",
+        "Cáscara de naranja y piña",
+        "Azúcar al gusto"
+      ],
+      "pasos": [
+        "Hervir el agua con las especias y las cáscaras de fruta por 15 minutos.",
+        "Disolver la harina de maíz morado en un poco de agua fría.",
+        "Añadir la harina disuelta al agua hirviendo (previamente colada de las cáscaras).",
+        "Mover constantemente hasta que espese y hierva por 10 minutos.",
+        "Endulzar al gusto y servir muy caliente en tazas grandes, usualmente acompañado de buñuelos."
+      ]
+    },
+    {
+      "id": "SIE-POS-005",
+      "nombre": "Dulce de Oca Asoleada",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "La oca es un tubérculo que, al ponerse al sol por varios días, se vuelve dulce como una fruta. Este postre es una joya ancestral.",
+      "ingredientes": [
+        "1 kg de ocas expuestas al sol por 1 semana",
+        "1 taza de almíbar de chancaca",
+        "Canela y clavo de olor",
+        "1/2 taza de leche evaporada"
+      ],
+      "pasos": [
+        "Sancochar las ocas en agua con canela y clavo hasta que estén muy suaves.",
+        "Escurrir y retirar las cáscaras si se desea (aunque la cáscara es comestible).",
+        "Chancarlas con un tenedor o dejarlas enteras según preferencia.",
+        "Bañar con el almíbar de chancaca y cocinar 5 minutos más para que el dulce penetre.",
+        "Servir en pocillos con un chorrito de leche evaporada encima."
+      ]
+    },
+    {
+      "id": "SIE-POS-006",
+      "nombre": "Quinua con Leche (Postre)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Versión andina del arroz con leche, sustituyendo el arroz por la quinua blanca, resultando en un postre más nutritivo.",
+      "ingredientes": [
+        "1 taza de quinua blanca bien lavada",
+        "3 tazas de agua",
+        "1 rama de canela",
+        "1 lata de leche evaporada y 1/2 taza de leche condensada",
+        "Pasas y canela molida"
+      ],
+      "pasos": [
+        "Cocinar la quinua en el agua con la canela hasta que el grano reviente y el agua se evapore casi por completo.",
+        "Añadir la leche evaporada y las pasas. Cocinar a fuego bajo.",
+        "Incorporar la leche condensada y mover para que no se pegue hasta que tome punto cremoso.",
+        "Servir caliente o frío con canela espolvoreada."
+      ]
+    },
+    {
+      "id": "SIE-POS-007",
+      "nombre": "Dulce de Níspero",
+      "tiempo_preparacion": "50 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Compota aromática hecha con los nísperos maduros que crecen en los valles interandinos.",
+      "ingredientes": [
+        "1 kg de nísperos maduros",
+        "500g de azúcar rubia o chancaca",
+        "3 tazas de agua",
+        "Canela y clavo de olor"
+      ],
+      "pasos": [
+        "Lavar los nísperos y quitarles el 'ombligo'. No es necesario pelarlos.",
+        "Hervir el agua con el azúcar y las especias hasta formar un almíbar ligero.",
+        "Añadir los nísperos enteros.",
+        "Cocinar a fuego lento hasta que la fruta cambie de color a un rojizo oscuro y el almíbar espese.",
+        "Dejar enfriar y servir."
+      ]
+    },
+    {
+      "id": "SIE-POS-008",
+      "nombre": "Sango de Trigo Dulce",
+      "tiempo_preparacion": "35 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Postre de origen colonial que sobrevive en la sierra central. Una masa dulce de harina de trigo con pasas y queso.",
+      "ingredientes": [
+        "250g de harina de trigo tostada",
+        "1 taza de miel de chancaca",
+        "100g de pasas",
+        "100g de queso fresco salado en cubos",
+        "2 cucharadas de mantequilla",
+        "Anís en grano"
+      ],
+      "pasos": [
+        "En una olla, calentar la miel de chancaca con la mantequilla y el anís.",
+        "Añadir la harina de trigo tostada poco a poco moviendo vigorosamente para evitar grumos.",
+        "Cocinar hasta que la masa se desprenda de la olla.",
+        "Incorporar las pasas y el queso fresco.",
+        "Servir caliente en platos planos; el contraste del dulce con el queso salado es la clave."
+      ]
+    },
+    {
+      "id": "SIE-POS-009",
+      "nombre": "Buñuelos de Quinua",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Esferas fritas y crujientes de masa de quinua, bañadas en miel de chancaca o de abejas.",
+      "ingredientes": [
+        "2 tazas de quinua cocida y escurrida",
+        "2 huevos",
+        "1/2 taza de harina de trigo",
+        "1 cucharadita de polvo de hornear",
+        "Miel de abejas o de chancaca para bañar",
+        "Aceite vegetal para freír"
+      ],
+      "pasos": [
+        "Licuar la quinua cocida con los huevos para obtener una pasta.",
+        "Mezclar en un bol con la harina y el polvo de hornear hasta tener una masa espesa.",
+        "Calentar el aceite y echar porciones de masa con una cuchara formando bolas.",
+        "Freír hasta que doren por todos lados.",
+        "Escurrir y servir bañados generosamente con miel."
+      ]
+    },
+    {
+      "id": "SIE-POS-010",
+      "nombre": "Pastel de Choclo Dulce",
+      "tiempo_preparacion": "60 min",
+      "porciones": 8,
+      "dificultad": "Media",
+      "descripcion": "Bizcocho húmedo de maíz tierno, tradicional de Cusco y los valles sagrados.",
+      "ingredientes": [
+        "6 choclos molidos",
+        "3 huevos (claras a punto de nieve)",
+        "1 taza de azúcar rubia",
+        "100g de pasas",
+        "1 cucharadita de anís y 100g de mantequilla derretida"
+      ],
+      "pasos": [
+        "Mezclar el choclo molido con el azúcar, yemas, mantequilla derretida y anís.",
+        "Añadir las pasas.",
+        "Incorporar suavemente las claras batidas a punto de nieve.",
+        "Verter en un molde engrasado.",
+        "Hornear a 180°C por 45 minutos hasta que la superficie esté dorada.",
+        "Servir tibio."
+      ]
+    },
+    {
+      "id": "SIE-POS-011",
+      "nombre": "Dulce de Maca con Leche",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Postre altamente energético hecho con la raíz milenaria de los Andes, de sabor terroso y dulce.",
+      "ingredientes": [
+        "2 tazas de maca fresca rallada o 4 cucharadas de maca en polvo",
+        "1 litro de leche fresca",
+        "1 rama de canela",
+        "Azúcar rubia o miel al gusto",
+        "Vainilla"
+      ],
+      "pasos": [
+        "Hervir la leche con la canela a fuego medio.",
+        "Añadir la maca (si es fresca, debe estar muy bien rallada; si es en polvo, disolverla previamente en un poco de leche fría para evitar grumos).",
+        "Cocinar moviendo constantemente por 20 minutos hasta que la mezcla espese ligeramente.",
+        "Endulzar al gusto y añadir un chorrito de esencia de vainilla.",
+        "Servir caliente, especialmente recomendado para el desayuno en climas fríos."
+      ]
+    },
+    {
+      "id": "SIE-POS-012",
+      "nombre": "Mazamorra de Tocosh (Penicilina Natural)",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Postre ancestral de olor penetrante pero sabor dulce, obtenido de la papa fermentada en corrientes de agua. Es altamente valorado por sus propiedades medicinales.",
+      "ingredientes": [
+        "500g de harina de tocosh",
+        "2 litros de agua",
+        "Cáscara de naranja, canela y clavo de olor",
+        "Azúcar al gusto o miel"
+      ],
+      "pasos": [
+        "Hervir el agua con la canela, el clavo y la cáscara de naranja por 10 minutos.",
+        "Disolver la harina de tocosh en un poco de agua fría.",
+        "Incorporar la mezcla al agua hirviendo (previamente colada) sin dejar de mover.",
+        "Cocinar a fuego lento hasta que la mazamorra tome una textura transparente y espesa.",
+        "Endulzar y servir caliente. El sabor es mucho más suave que su aroma inicial."
+      ]
+    },
+    {
+      "id": "SIE-POS-013",
+      "nombre": "Dulce de Lacayote",
+      "tiempo_preparacion": "60 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Compota hecha con lacayote, un tipo de calabaza serrana de pulpa fibrosa que se deshace en hilos dulces.",
+      "ingredientes": [
+        "1 lacayote mediano maduro",
+        "1/2 kg de azúcar rubia",
+        "2 ramas de canela y 4 clavos de olor",
+        "1/2 taza de nueces picadas (opcional)"
+      ],
+      "pasos": [
+        "Pelar el lacayote, retirar las semillas y picar la pulpa en trozos.",
+        "Colocar la pulpa en una olla grande sin agua (el lacayote soltará su propio jugo) con el azúcar, la canela y el clavo.",
+        "Cocinar a fuego muy bajo por 45 minutos, moviendo ocasionalmente hasta que el lacayote se deshaga en hebras.",
+        "Continuar la cocción hasta que tome un color caramelo y el líquido se reduzca.",
+        "Servir frío, decorado con nueces picadas."
+      ]
+    },
+    {
+      "id": "SIE-POS-014",
+      "nombre": "Champús Serrano",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Postre denso y caliente que mezcla mote, harina de maíz y frutas como la piña y el membrillo.",
+      "ingredientes": [
+        "250g de maíz mote cocido",
+        "1/2 taza de harina de maíz",
+        "1 piña picada y 2 membrillos picados",
+        "2 litros de agua",
+        "Chancaca, canela y clavo de olor",
+        "Hojas de naranjo"
+      ],
+      "pasos": [
+        "Hervir el agua con la chancaca, especias y las hojas de naranjo.",
+        "Añadir las frutas picadas y cocinar hasta que estén suaves.",
+        "Incorporar el mote cocido.",
+        "Disolver la harina de maíz en agua fría y añadirla a la olla moviendo constantemente para que no se formen grumos.",
+        "Cocinar hasta que la preparación espese. Servir caliente."
+      ]
+    },
+    {
+      "id": "SIE-POS-015",
+      "nombre": "Maná de Kiwicha con Miel",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bolitas dulces y nutritivas de kiwicha pop unidas por miel, un dulce tradicional de ferias y fiestas patronales.",
+      "ingredientes": [
+        "2 tazas de kiwicha pop (kiwicha tostada e inflada)",
+        "1/2 taza de miel de chancaca o miel de abejas",
+        "1 cucharadita de esencia de vainilla",
+        "Grajeas de colores (opcional)"
+      ],
+      "pasos": [
+        "Calentar la miel en una sartén hasta que esté bien fluida.",
+        "Apagar el fuego y añadir la vainilla y la kiwicha pop.",
+        "Mezclar rápidamente para que toda la kiwicha se cubra con la miel.",
+        "Con las manos ligeramente húmedas, formar bolitas del tamaño de una nuez mientras la mezcla aún esté tibia.",
+        "Dejar enfriar hasta que endurezcan. Son un snack postre ideal."
+      ]
+    }
+  ]
+}

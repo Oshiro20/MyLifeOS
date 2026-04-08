@@ -1,0 +1,377 @@
+{
+  "region": "Costa",
+  "categoria": "Postres",
+  "recetas": [
+    {
+      "id": "COS-POS-001",
+      "nombre": "Suspiro a la Limeña Clásico",
+      "tiempo_preparacion": "50 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Postre emblemático de Lima, descrito por el poeta José Gálvez como un 'suspiro de una mujer', por su suavidad y dulzor extremo.",
+      "ingredientes": [
+        "1 lata de leche condensada (397g)",
+        "1 lata de leche evaporada (400g)",
+        "5 yemas de huevo frescas",
+        "1 taza de azúcar blanca",
+        "1/2 taza de vino Oporto",
+        "2 claras de huevo",
+        "1 rama de canela",
+        "Canela molida para espolvorear"
+      ],
+      "pasos": [
+        "En una olla de fondo grueso, mezclar la leche evaporada y la condensada con la rama de canela.",
+        "Cocinar a fuego bajo, moviendo constantemente con cuchara de palo hasta que la mezcla espese y tome un color pajizo (punto de manjar blanco suave).",
+        "Retirar del fuego y añadir las yemas coladas una por una, batiendo enérgicamente para evitar que se cocinen por el calor residual. Verter en copas individuales.",
+        "Para el merengue: Cocinar el azúcar con el vino Oporto hasta obtener un almíbar a punto de 'bola blanda' (al soltar una gota en agua fría se forma una bolita blanda).",
+        "Batir las claras a punto de nieve e incorporar el almíbar caliente en forma de hilo, batiendo hasta que el merengue esté frío, firme y brillante.",
+        "Decorar las copas con el merengue usando una manga pastelera y espolvorear canela molida."
+      ]
+    },
+    {
+      "id": "COS-POS-002",
+      "nombre": "Mazamorra Morada",
+      "tiempo_preparacion": "60 min",
+      "porciones": 8,
+      "dificultad": "Baja",
+      "descripcion": "Postre tradicional de octubre hecho a base de maíz morado, espesado con harina de camote y enriquecido con frutas secas.",
+      "ingredientes": [
+        "1/2 kg de maíz morado",
+        "2 litros de agua",
+        "Cáscaras de 1 piña madura",
+        "2 membrillos y 2 manzanas picadas",
+        "100g de guindones y 100g de duraznos secos (huesillos)",
+        "1 1/2 taza de azúcar",
+        "1 taza de harina de camote (chuño)",
+        "Jugo de 2 limones regionales",
+        "Canela entera y clavo de olor"
+      ],
+      "pasos": [
+        "Hervir el maíz morado con las cáscaras de piña, el clavo y la canela en el agua hasta que los granos revienten y el agua sea oscura. Colar.",
+        "Poner el líquido de nuevo al fuego, añadir el azúcar, los guindones, los duraznos secos y las frutas frescas picadas.",
+        "Cocinar hasta que las frutas frescas estén tiernas.",
+        "Disolver la harina de camote en un poco de agua fría e incorporarla a la olla hirviendo en forma de hilo, moviendo constantemente para evitar grumos.",
+        "Cocinar a fuego lento hasta que la mezcla se vuelva transparente y espesa. Añadir el jugo de limón al final.",
+        "Servir caliente o frío con canela molida encima."
+      ]
+    },
+    {
+      "id": "COS-POS-003",
+      "nombre": "Arroz con Leche Limeño",
+      "tiempo_preparacion": "45 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Un clásico de la cocina hogareña, valorado por su textura extremadamente cremosa y el equilibrio entre leche y especias.",
+      "ingredientes": [
+        "1 taza de arroz de grano corto",
+        "3 tazas de agua",
+        "1 rama de canela y 3 clavos de olor",
+        "1 tira de cáscara de naranja",
+        "1 lata de leche evaporada",
+        "1 lata de leche condensada",
+        "1 cucharadita de esencia de vainilla",
+        "50g de pasas (opcional)"
+      ],
+      "pasos": [
+        "Lavar el arroz y ponerlo a cocinar con el agua, la canela, el clavo y la cáscara de naranja a fuego medio.",
+        "Cuando el agua casi se haya evaporado y el arroz esté muy blando, retirar las especias y la cáscara.",
+        "Añadir la leche evaporada y las pasas. Mover constantemente a fuego bajo.",
+        "Incorporar la leche condensada y la vainilla.",
+        "Seguir cocinando y moviendo hasta que la mezcla espese y se vea el fondo de la olla.",
+        "Retirar del fuego y dejar reposar 5 minutos. Servir con canela molida."
+      ]
+    },
+    {
+      "id": "COS-POS-004",
+      "nombre": "Picarones con Miel de Chancaca",
+      "tiempo_preparacion": "90 min (+ 2h reposo)",
+      "porciones": 8,
+      "dificultad": "Alta",
+      "descripcion": "Anillos fritos de masa de zapallo y camote, herederos de los buñuelos españoles pero adaptados con insumos andinos.",
+      "ingredientes": [
+        "500g de harina de trigo",
+        "250g de zapallo macre y 250g de camote naranja (sancochados)",
+        "2 cucharadas de levadura seca",
+        "1 cucharada de anís en grano",
+        "Para la miel: 1 tapa de chancaca (500g), higos secos, canela, clavo, cáscara de naranja y piña",
+        "Abundante aceite vegetal para freír"
+      ],
+      "pasos": [
+        "Hacer un puré fino con el zapallo y el camote. Mezclar con la levadura disuelta en un poco de agua tibia de la cocción.",
+        "Añadir la harina y el anís. Batir la masa manualmente con mucha fuerza hasta que sea elástica y no se pegue tanto a las manos.",
+        "Dejar levar en un lugar cálido por 2 horas hasta que duplique su volumen.",
+        "Preparar la miel: Hervir la chancaca con las frutas y especias en agua hasta que reduzca a punto de jarabe espeso. Colar.",
+        "Con las manos mojadas en agua con sal, tomar una porción de masa, formar un aro con el pulgar y freír en aceite muy caliente.",
+        "Girar con un palito de madera hasta que doren uniformemente. Servir bañados en la miel caliente."
+      ]
+    },
+    {
+      "id": "COS-POS-005",
+      "nombre": "Turrón de Doña Pepa",
+      "tiempo_preparacion": "150 min",
+      "porciones": 12,
+      "dificultad": "Alta",
+      "descripcion": "Postre icónico de la festividad del Señor de los Milagros, compuesto por palitos de masa de anís unidos por miel de frutas.",
+      "ingredientes": [
+        "1 kg de harina de trigo",
+        "500g de manteca vegetal",
+        "5 yemas de huevo",
+        "1 cucharada de anís en grano tostado",
+        "Miel de frutas (hecha con membrillo, piña, manzana, naranja y chancaca)",
+        "Grajeas de colores de distintos tamaños"
+      ],
+      "pasos": [
+        "Hacer una masa con harina, manteca, yemas y anís. Formar palitos largos y delgados.",
+        "Hornear los palitos a 180°C hasta que estén dorados y secos.",
+        "En un molde cuadrado, colocar una capa compacta de palitos. Cubrir con una capa generosa de miel de frutas.",
+        "Repetir el proceso cruzando los palitos en la siguiente capa hasta terminar.",
+        "Cubrir la superficie final con más miel y decorar con todas las grajeas de colores.",
+        "Dejar reposar 24 horas antes de cortar para que la miel asiente."
+      ]
+    },
+    {
+      "id": "COS-POS-006",
+      "nombre": "Frejol Colado",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Media",
+      "descripcion": "Dulce afroperuano tradicional de Chincha y Cañete, hecho a base de frijoles negros macerados con azúcar y especias.",
+      "ingredientes": [
+        "500g de frijol negro",
+        "750g de azúcar blanca",
+        "1 tarro de leche evaporada",
+        "Canela entera y clavo de olor",
+        "Ajonjolí tostado para decorar"
+      ],
+      "pasos": [
+        "Remojar los frijoles desde la víspera. Sancochar sin sal hasta que estén muy suaves.",
+        "Licuar los frijoles con su propia agua y colarlos con una tela fina para retirar las cáscaras.",
+        "Llevar la pulpa filtrada al fuego con el azúcar y las especias.",
+        "Mover constantemente con cuchara de palo (salta mucho) hasta que espese y se vea el fondo de la olla.",
+        "Añadir la leche poco a poco sin dejar de mover hasta obtener una textura brillante y oscura.",
+        "Servir en pocillos y espolvorear ajonjolí tostado."
+      ]
+    },
+    {
+      "id": "COS-POS-007",
+      "nombre": "Ranfañote Limeño",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Considerado el postre más antiguo de Lima, es un budín rústico de pan tostado, miel de chancaca, queso y frutos secos.",
+      "ingredientes": [
+        "3 panes franceses del día anterior en cubos",
+        "1 taza de miel de chancaca espesa",
+        "50g de nueces y 50g de pecanas picadas",
+        "50g de pasas rubias",
+        "100g de queso fresco salado en cubitos",
+        "2 cucharadas de mantequilla",
+        "Oporto o pisco (un chorrito)"
+      ],
+      "pasos": [
+        "Tostar los cubos de pan en una sartén con mantequilla hasta que estén bien crocantes.",
+        "En un bol grande, mezclar el pan tostado con los frutos secos, las pasas y el queso fresco.",
+        "Añadir el vino u oporto a la miel de chancaca tibia e incorporar al bol.",
+        "Mezclar todo con cuidado para que el pan absorba la miel pero no se deshaga por completo.",
+        "Dejar reposar 10 minutos para que las texturas se equilibren.",
+        "Servir a temperatura ambiente."
+      ]
+    },
+    {
+      "id": "COS-POS-008",
+      "nombre": "Arroz Zambito",
+      "tiempo_preparacion": "50 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Variante del arroz con leche que utiliza chancaca para darle su color 'zambo' (oscuro) y un sabor más profundo a melaza.",
+      "ingredientes": [
+        "1 taza de arroz",
+        "2 tazas de agua de canela y clavo",
+        "1 tapa de chancaca picada",
+        "1/2 taza de leche evaporada",
+        "50g de coco rallado",
+        "50g de nueces picadas",
+        "Pasas"
+      ],
+      "pasos": [
+        "Cocinar el arroz en el agua aromatizada hasta que esté bien cocido.",
+        "Añadir la chancaca picada y mover hasta que se disuelva totalmente y el arroz tome el color oscuro.",
+        "Agregar el coco rallado, las pasas y las nueces.",
+        "Añadir la leche evaporada al final para dar cremosidad.",
+        "Cocinar por 5 minutos adicionales moviendo siempre. Servir tibio."
+      ]
+    },
+    {
+      "id": "COS-POS-009",
+      "nombre": "Tejas de Ica (Pecana)",
+      "tiempo_preparacion": "60 min",
+      "porciones": 12,
+      "dificultad": "Alta",
+      "descripcion": "Dulce típico iqueño consistente en un centro de fruta o nuez, relleno de manjar blanco y cubierto de un baño de azúcar (fondant).",
+      "ingredientes": [
+        "12 mitades de pecanas grandes",
+        "200g de manjar blanco de olla (bien espeso)",
+        "2 tazas de azúcar blanca",
+        "1/2 taza de agua",
+        "1 cucharadita de jugo de limón",
+        "Papel manteca o seda para envolver"
+      ],
+      "pasos": [
+        "Tomar dos mitades de pecana y unirlas con una cantidad generosa de manjar blanco, dándole forma ovalada.",
+        "Dejar reposar estas piezas en el frío para que el manjar endurezca un poco.",
+        "Preparar el almíbar: Hervir el azúcar con el agua y el limón hasta punto de 'bola dura'.",
+        "Batir el almíbar caliente hasta que se ponga blanco y opaco (fondant).",
+        "Sumergir rápidamente cada pieza de manjar y pecana en el fondant caliente usando un tenedor.",
+        "Colocar sobre papel manteca para que sequen y el baño endurezca. Envolver de forma tradicional."
+      ]
+    },
+    {
+      "id": "COS-POS-010",
+      "nombre": "King Kong de Manjarblanco",
+      "tiempo_preparacion": "120 min",
+      "porciones": 10,
+      "dificultad": "Media",
+      "descripcion": "Alfajor gigante de Lambayeque, compuesto por galletas grandes y crujientes rellenas de diversas capas de dulce.",
+      "ingredientes": [
+        "1/2 kg de harina de trigo",
+        "100g de mantequilla",
+        "4 yemas de huevo",
+        "Agua con sal",
+        "Rellenos: Manjar blanco de leche, dulce de piña, dulce de membrillo"
+      ],
+      "pasos": [
+        "Amasar la harina con la mantequilla, yemas y agua hasta tener una masa firme. Estirar y cortar rectángulos grandes.",
+        "Pinchar la masa con tenedor y hornear a 180°C hasta que estén doradas y crocantes (hojarascas).",
+        "Armado: Colocar una galleta de base, cubrir con una capa gruesa de manjar blanco.",
+        "Colocar otra galleta, cubrir con dulce de piña.",
+        "Poner una tercera galleta y cubrir con dulce de membrillo o más manjar.",
+        "Terminar con una galleta. Presionar y dejar reposar 12 horas antes de cortar en bloques."
+      ]
+    },
+    {
+      "id": "COS-POS-011",
+      "nombre": "Crema Volteada Peruana",
+      "tiempo_preparacion": "90 min (+ 3h refrigerado)",
+      "porciones": 8,
+      "dificultad": "Baja",
+      "descripcion": "Versión peruana del flan, caracterizada por una textura más densa y suave, bañada en un caramelo ámbar brillante.",
+      "ingredientes": [
+        "1 lata de leche condensada",
+        "1 lata de leche evaporada",
+        "8 huevos grandes",
+        "1 cucharada de esencia de vainilla",
+        "1 taza de azúcar blanca (para el caramelo)",
+        "Unas gotas de limón"
+      ],
+      "pasos": [
+        "Preparar el caramelo: En una sartén o directamente en el molde, derretir el azúcar con las gotas de limón hasta que tome un color ámbar. Esparcir por todo el molde y dejar enfriar.",
+        "En un bol, mezclar las leches con la vainilla. Añadir los huevos uno a uno, batiendo suavemente a mano (evitar hacer mucha espuma para que no queden huecos).",
+        "Colar la mezcla al menos dos veces para retirar cualquier residuo de clara de huevo.",
+        "Verter la mezcla en el molde acaramelado.",
+        "Cocinar a baño maría en el horno precalentado a 160°C durante 60 a 70 minutos, o hasta que al insertar un palillo, este salga limpio.",
+        "Dejar enfriar a temperatura ambiente y luego refrigerar por 3 horas antes de desmoldar con cuidado."
+      ]
+    },
+    {
+      "id": "COS-POS-012",
+      "nombre": "Torta Helada de Fresa",
+      "tiempo_preparacion": "60 min (+ 4h refrigerado)",
+      "porciones": 10,
+      "dificultad": "Media",
+      "descripcion": "Postre visual y refrescante compuesto por capas de gelatina de fresa, una base de bizcochuelo y una crema aireada llamada carlota.",
+      "ingredientes": [
+        "1 paquete grande de gelatina de fresa",
+        "1 lata de leche evaporada (congelada desde la noche anterior)",
+        "1 bizcochuelo de vainilla circular (comprado o casero)",
+        "1 taza de duraznos en almíbar picados",
+        "Agua hirviendo y agua fría para la gelatina"
+      ],
+      "pasos": [
+        "Preparar la gelatina de fresa según las instrucciones del paquete. Verter una pequeña capa en el fondo del molde y refrigerar hasta que cuaje.",
+        "Colocar láminas de durazno sobre la capa cuajada y añadir un poco más de gelatina líquida para fijarlas. Refrigerar.",
+        "Batir la leche evaporada congelada a velocidad alta hasta que triplique su volumen y parezca crema chantilly.",
+        "Añadir la mitad de la gelatina líquida restante a la leche batida de forma envolvente hasta obtener la crema 'carlota'.",
+        "Verter una capa de carlota en el molde. Colocar encima una tajada circular de bizcochuelo (remojada con un poco de almíbar).",
+        "Repetir las capas y terminar con bizchocuelo. Refrigerar por 4 horas.",
+        "Para desmoldar, pasar el molde rápidamente por agua caliente y voltear sobre una fuente grande."
+      ]
+    },
+    {
+      "id": "COS-POS-013",
+      "nombre": "Alfajores de Maicena con Manjarblanco",
+      "tiempo_preparacion": "45 min",
+      "porciones": 15,
+      "dificultad": "Media",
+      "descripcion": "Delicadas galletas que se deshacen en la boca, rellenas de dulce de leche y decoradas con azúcar fina.",
+      "ingredientes": [
+        "1 1/2 tazas de maicena (almidón de maíz)",
+        "1 taza de harina de trigo",
+        "150g de mantequilla sin sal a temperatura ambiente",
+        "1/2 taza de azúcar impalpable",
+        "2 yemas de huevo",
+        "1 cucharadita de polvo de hornear y vainilla",
+        "200g de manjarblanco espeso"
+      ],
+      "pasos": [
+        "Tamizar la maicena, harina, azúcar impalpable y polvo de hornear.",
+        "Mezclar con la mantequilla usando los dedos hasta que parezca arena.",
+        "Añadir las yemas y la vainilla. Unir la masa sin amasar demasiado para que no se ponga dura.",
+        "Estirar la masa con un rodillo (5mm de espesor) y cortar círculos con un molde.",
+        "Hornear a 170°C por 10 a 12 minutos. Las galletas deben quedar blancas, no doradas.",
+        "Una vez frías, unir dos tapitas con abundante manjarblanco.",
+        "Rodar los bordes por coco rallado (opcional) y espolvorear azúcar impalpable encima."
+      ]
+    },
+    {
+      "id": "COS-POS-014",
+      "nombre": "Budín de Pan al Estilo Criollo",
+      "tiempo_preparacion": "70 min",
+      "porciones": 12,
+      "dificultad": "Baja",
+      "descripcion": "Clásico postre de aprovechamiento hecho con pan del día anterior, enriquecido con leche, pasas y un toque de oporto.",
+      "ingredientes": [
+        "8 a 10 panes franceses o de molde",
+        "1 litro de leche fresca",
+        "4 huevos",
+        "1 1/2 tazas de azúcar",
+        "100g de pasas rubias",
+        "1 cucharadita de canela en polvo y vainilla",
+        "Ralladura de un limón",
+        "Azúcar para el caramelo del molde"
+      ],
+      "pasos": [
+        "Acaramelar un molde con azúcar y dejar enfriar.",
+        "Remojar el pan troceado en la leche tibia durante 20 minutos. Deshacer el pan con un tenedor o con las manos.",
+        "Agregar el azúcar, los huevos ligeramente batidos, la canela, la vainilla y la ralladura de limón.",
+        "Añadir las pasas (pueden remojarse previamente en un poco de pisco).",
+        "Verter la mezcla en el molde acaramelado.",
+        "Hornear a 180°C por 50 a 60 minutos hasta que al pincharlo esté firme.",
+        "Dejar enfriar antes de desmoldar para que el caramelo bañe todo el budín."
+      ]
+    },
+    {
+      "id": "COS-POS-015",
+      "nombre": "Sanguito de Maíz con Miel",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Postre colonial limeño casi olvidado, hecho de harina de maíz amarillo y miel de chancaca, decorado con grajeas.",
+      "ingredientes": [
+        "250g de harina de maíz amarillo fina",
+        "1 tapa de chancaca (250g)",
+        "2 tazas de agua",
+        "50g de manteca de cerdo o mantequilla",
+        "Anís en grano, canela y clavo de olor",
+        "Pasas y grajeas de colores para decorar"
+      ],
+      "pasos": [
+        "Hacer un almíbar de chancaca hirviéndola con el agua, canela y clavo hasta que se disuelva. Colar.",
+        "En una olla, disolver la harina de maíz en el almíbar frío para evitar grumos.",
+        "Cocinar a fuego medio moviendo constantemente con cuchara de madera.",
+        "Añadir la manteca y el anís. Seguir moviendo hasta que la mezcla espese, se vea brillante y se desprenda de las paredes de la olla.",
+        "Añadir las pasas al final.",
+        "Servir en platos pequeños y decorar con las grajeas de colores mientras está caliente."
+      ]
+    }
+  ]
+}

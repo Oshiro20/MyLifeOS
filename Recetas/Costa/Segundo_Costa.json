@@ -1,0 +1,760 @@
+{
+  "region": "Costa",
+  "categoria": "Segundos / Platos de Fondo",
+  "recetas": [
+    {
+      "id": "COS-FON-001",
+      "nombre": "Lomo Saltado al Jugo",
+      "tiempo_preparacion": "25 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Plato bandera de la fusión peruano-china. Se basa en la técnica del salteado a fuego alto para lograr una carne jugosa y vegetales crocantes.",
+      "ingredientes": [
+        "500g de lomo fino de res cortado en tiras gruesas",
+        "2 cebollas rojas grandes cortadas en gajos",
+        "3 tomates medianos en gajos (sin semillas)",
+        "1 ají amarillo cortado en tiras delgadas",
+        "2 cucharadas de sillao (salsa de soja)",
+        "1 cucharada de vinagre tinto",
+        "1 cucharadita de ajo molido",
+        "500g de papas blancas cortadas en bastones y fritas",
+        "Culantro picado, sal y pimienta al gusto",
+        "Arroz blanco graneado"
+      ],
+      "pasos": [
+        "Sazonar la carne con sal y pimienta.",
+        "Calentar un wok o sartén grande a fuego máximo hasta que humee. Añadir aceite.",
+        "Sellar la carne por tandas pequeñas para evitar que suelte jugo; debe quedar dorada por fuera y rosada por dentro. Retirar.",
+        "En el mismo wok, añadir la cebolla y el ají amarillo. Saltear por 1 minuto.",
+        "Agregar el ajo y los tomates. Regresar la carne con sus jugos.",
+        "Verter el vinagre y el sillao por los bordes de la sartén para generar vapor y aroma.",
+        "Mezclar rápidamente por 30 segundos, añadir el culantro y apagar.",
+        "Servir inmediatamente con las papas fritas y arroz blanco."
+      ]
+    },
+    {
+      "id": "COS-FON-002",
+      "nombre": "Ají de Gallina Tradicional",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Crema untuosa y ligeramente picante hecha a base de ají amarillo y pan, servida sobre pollo deshilachado.",
+      "ingredientes": [
+        "1 pechuga de gallina o pollo grande sancochada",
+        "5 ajíes amarillos frescos (hervidos y licuados)",
+        "4 rodajas de pan de molde o 2 panes franceses remojados en leche",
+        "1 cebolla roja picada finamente",
+        "1 taza de leche evaporada",
+        "1/2 taza de caldo de la cocción del pollo",
+        "50g de pecanas picadas y 50g de queso parmesano",
+        "Sal, ajo, papas sancochadas, huevo duro y aceituna"
+      ],
+      "pasos": [
+        "Deshilachar la pechuga de pollo en trozos medianos.",
+        "Preparar un aderezo con cebolla, ajo y la pasta de ají amarillo. Cocinar a fuego lento hasta que el aceite se separe.",
+        "Licuar el pan remojado con las pecanas y añadirlo al aderezo.",
+        "Mover constantemente con cuchara de madera, añadiendo caldo de pollo poco a poco hasta que espese y tome textura de crema.",
+        "Incorporar el pollo deshilachado y el queso parmesano.",
+        "Al final, verter la leche evaporada para dar brillo y cremosidad. Rectificar sal.",
+        "Servir sobre rodajas de papa, decorando con huevo y aceituna."
+      ]
+    },
+    {
+      "id": "COS-FON-003",
+      "nombre": "Arroz con Pato a la Chiclayana",
+      "tiempo_preparacion": "100 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Plato emblemático del norte peruano que utiliza culantro y chicha de jora para lograr un arroz verde intenso y aromático.",
+      "ingredientes": [
+        "4 presas de pato tierno",
+        "1 taza de culantro licuado",
+        "1/2 taza de chicha de jora",
+        "1 taza de cerveza negra",
+        "3 tazas de arroz",
+        "1 cebolla picada y 2 cucharadas de ají amarillo",
+        "1/2 taza de arvejas y zanahoria picada",
+        "Aceite, sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Sellar las presas de pato en una olla grande con aceite. Retirar.",
+        "Hacer un aderezo con la cebolla, el ajo y el ají amarillo. Añadir el culantro licuado y freír bien.",
+        "Regresar el pato, añadir la chicha de jora y la cerveza. Cocinar a fuego lento hasta que el pato esté suave (aprox. 45 min).",
+        "Retirar el pato. En ese líquido, añadir el arroz y las verduras.",
+        "Cocinar a fuego bajo hasta que el arroz esté graneado.",
+        "Servir el arroz verde coronado con la presa de pato y salsa criolla."
+      ]
+    },
+    {
+      "id": "COS-FON-004",
+      "nombre": "Seco de Cabrito con Frijoles",
+      "tiempo_preparacion": "120 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Guiso norteño de carne de cabrito tierno macerado en chicha, acompañado de frijoles cremosos.",
+      "ingredientes": [
+        "1 kg de carne de cabrito troceada",
+        "2 tazas de chicha de jora",
+        "500g de frijol canario (remojado desde la víspera)",
+        "1 taza de culantro picado",
+        "2 cebollas rojas picadas",
+        "2 cucharadas de ají amarillo y 1 de ají panca",
+        "Zapallo loche rallado (indispensable)",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Macerar el cabrito en chicha de jora, sal y comino por 2 horas.",
+        "Cocinar los frijoles con un trozo de piel de cerdo hasta que estén cremosos.",
+        "Para el seco: Sofreír la cebolla, ajo, ajíes y el loche rallado.",
+        "Añadir el culantro y luego el cabrito con su jugo de maceración.",
+        "Cocinar a fuego muy lento hasta que la carne esté tierna.",
+        "Servir con los frijoles, arroz blanco y salsa criolla."
+      ]
+    },
+    {
+      "id": "COS-FON-005",
+      "nombre": "Carapulcra con Sopa Seca",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "El famoso 'mancha pecho' de Chincha. Una combinación de guiso de papa seca y fideos sazonados.",
+      "ingredientes": [
+        "500g de papa seca (tostada y remojada)",
+        "500g de carne de cerdo",
+        "500g de fideos spaghetti",
+        "1/2 taza de ají panca molido",
+        "100g de maní tostado y molido",
+        "Albahaca y perejil licuados",
+        "Caldo de carne, sal y comino"
+      ],
+      "pasos": [
+        "Carapulcra: Freír el cerdo. Hacer aderezo de ají panca y ajo. Añadir la papa seca hidratada y caldo. Cocinar hasta que espese. Añadir maní al final.",
+        "Sopa Seca: Hacer un aderezo con achiote, ajo y el licuado de albahaca/perejil. Añadir caldo y, al hervir, echar los fideos crudos.",
+        "Cocinar los fideos moviendo constantemente hasta que absorban el líquido.",
+        "Servir ambos platos juntos para que los sabores se mezclen."
+      ]
+    },
+    {
+      "id": "COS-FON-006",
+      "nombre": "Arroz con Pollo Peruano",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Clásico del domingo en la costa. Arroz graneado con culantro, verduras y presas de pollo doradas.",
+      "ingredientes": [
+        "4 presas de pollo",
+        "3 tazas de arroz",
+        "1 taza de culantro licuado",
+        "1/2 taza de arvejas, zanahoria y pimiento",
+        "2 cucharadas de ají amarillo",
+        "1 cebolla picada",
+        "Caldo de pollo y sal"
+      ],
+      "pasos": [
+        "Sellar el pollo y retirar.",
+        "Hacer aderezo con cebolla, ajo, ají amarillo y culantro. Freír bien.",
+        "Añadir el arroz, las verduras y el caldo necesario.",
+        "Colocar las presas encima y cocinar a fuego lento hasta que el arroz esté seco y graneado.",
+        "Servir con una generosa porción de Papa a la Huancaína como acompañante."
+      ]
+    },
+    {
+      "id": "COS-FON-007",
+      "nombre": "Escabeche de Pescado",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Plato de influencia española. Pescado frito bañado en una salsa ácida de cebollas y ajíes.",
+      "ingredientes": [
+        "4 filetes de pescado blanco",
+        "3 cebollas rojas en gajos gruesos",
+        "2 ajíes amarillos en tiras",
+        "1/2 taza de vinagre tinto",
+        "2 cucharadas de ají panca",
+        "Harina para rebozar, sal, pimienta y orégano",
+        "Camote, huevo y aceituna para decorar"
+      ],
+      "pasos": [
+        "Sazonar el pescado, pasarlo por harina y freír. Colocar en una fuente.",
+        "En una sartén, freír ajo y ají panca. Añadir las cebollas y el ají amarillo.",
+        "Verter el vinagre y el orégano. Cocinar 2 minutos (la cebolla debe quedar crocante).",
+        "Bañar el pescado con esta salsa y dejar reposar al menos 30 minutos.",
+        "Servir con camote sancochado."
+      ]
+    },
+    {
+      "id": "COS-FON-008",
+      "nombre": "Tallarines Rojos con Pollo",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Pasta en salsa de tomate y zanahoria licuada, un plato casero infaltable.",
+      "ingredientes": [
+        "500g de fideos tallarín",
+        "4 presas de pollo",
+        "2 zanahorias grandes ralladas y licuadas",
+        "2 cebollas picadas",
+        "3 cucharadas de pasta de tomate",
+        "Laurel y hongos secos",
+        "Queso parmesano"
+      ],
+      "pasos": [
+        "Dorar el pollo y reservar.",
+        "Hacer aderezo con cebolla, ajo, pasta de tomate y el licuado de zanahoria.",
+        "Añadir laurel y hongos. Regresar el pollo y guisar por 20 minutos.",
+        "Mezclar los fideos cocidos con la salsa.",
+        "Servir con queso parmesano encima."
+      ]
+    },
+    {
+      "id": "COS-FON-009",
+      "nombre": "Pescado a lo Macho",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Filete de pescado frito cubierto con una salsa cremosa de mariscos.",
+      "ingredientes": [
+        "2 filetes de pescado",
+        "200g de mixtura de mariscos",
+        "1/2 taza de crema de leche",
+        "2 cucharadas de ají amarillo y 1 de ají panca",
+        "1/4 taza de vino blanco",
+        "Harina, sal y pimienta"
+      ],
+      "pasos": [
+        "Freír el pescado enharinado.",
+        "Hacer una salsa salteando mariscos con ajo y ajíes.",
+        "Añadir vino blanco y reducir.",
+        "Agregar la crema de leche y cocinar hasta que espese.",
+        "Bañar el pescado con la salsa. Servir con arroz y yucas."
+      ]
+    },
+    {
+      "id": "SEL-FON-010",
+      "nombre": "Tacu Tacu con Sábana de Lomo",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Mezcla de arroz y frijoles del día anterior, frita hasta formar una costra, servida con un bistec delgado.",
+      "ingredientes": [
+        "2 tazas de frijoles cocidos",
+        "2 tazas de arroz blanco cocido",
+        "2 bistecs grandes (sábana)",
+        "1 cebolla picada y ají amarillo",
+        "Aceite y sal"
+      ],
+      "pasos": [
+        "Mezclar el arroz y los frijoles.",
+        "En una sartén con poco aceite, dorar la mezcla dándole forma ovalada hasta que esté crocante por fuera.",
+        "Freír el bistec sazonado.",
+        "Servir el tacu tacu con la carne encima y salsa criolla."
+      ]
+    },
+    {
+      "id": "COS-FON-011",
+      "nombre": "Pollo a la Brasa (Versión Casera al Horno)",
+      "tiempo_preparacion": "90 min (+ 12h macerado)",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "El plato más popular del Perú. Aunque tradicionalmente se hace en horno de carbón, esta receta adapta el marinado secreto para obtener el sabor auténtico en casa.",
+      "ingredientes": [
+        "1 pollo entero de 2 kg (limpio)",
+        "2 cucharadas de sal de mar",
+        "1 cucharadita de pimienta negra y 1 de comino",
+        "2 cucharadas de romero seco picado",
+        "1/2 taza de cerveza negra",
+        "2 cucharadas de sillao (salsa de soja)",
+        "1 cucharada de vinagre tinto",
+        "2 cucharadas de ajo molido",
+        "1 cucharadita de orégano seco",
+        "Acompañamiento: Papas amarillas fritas y ensalada fresca"
+      ],
+      "pasos": [
+        "En un bol, mezclar la sal, pimienta, comino, romero, orégano, ajo, sillao, vinagre y la cerveza negra.",
+        "Colocar el pollo en un recipiente y bañarlo con la mezcla, asegurándose de que el marinado entre debajo de la piel de la pechuga y muslos.",
+        "Dejar macerar en el refrigerador por lo menos 12 horas (vital para el sabor).",
+        "Precalentar el horno a 200°C.",
+        "Colocar el pollo en una asadera y hornear por aproximadamente 60 a 70 minutos.",
+        "A mitad de cocción, barnizar el pollo con sus propios jugos para que la piel quede crocante y dorada.",
+        "Servir con papas fritas gruesas y las clásicas cremas (ají, mayonesa y mostaza)."
+      ]
+    },
+    {
+      "id": "COS-FON-012",
+      "nombre": "Cau Cau de Mondongo",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso criollo de origen afroperuano que destaca por el uso de la hierbabuena y el corte uniforme de los ingredientes en cubitos.",
+      "ingredientes": [
+        "500g de mondongo (tripa de res) cocido y picado en cuadraditos",
+        "500g de papa blanca picada en cuadraditos",
+        "1/2 taza de arvejas verdes",
+        "1 cebolla roja picada finamente",
+        "2 cucharadas de pasta de ají amarillo",
+        "1 cucharadita de palillo (cúrcuma)",
+        "1 rama generosa de hierbabuena fresca picada",
+        "Caldo de la cocción del mondongo",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Sancochar el mondongo con un trozo de kion y hierbabuena hasta que esté tierno. Picar en cubos de 1 cm.",
+        "En una olla, hacer un aderezo con cebolla, ajo, ají amarillo y palillo hasta que dore.",
+        "Añadir el mondongo picado y las papas.",
+        "Cubrir con el caldo y cocinar a fuego medio hasta que las papas estén cocidas.",
+        "Incorporar las arvejas 5 minutos antes de apagar el fuego.",
+        "Apagar y añadir la hierbabuena picada (esto le da el aroma característico).",
+        "Servir acompañado de arroz blanco."
+      ]
+    },
+    {
+      "id": "COS-FON-013",
+      "nombre": "Arroz con Mariscos",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Un arroz colorido, húmedo y lleno de sabor marino, enriquecido con coral de langostinos y ajíes costeños.",
+      "ingredientes": [
+        "300g de mixtura de mariscos (langostinos, calamares, pulpo, conchas)",
+        "2 tazas de arroz blanco cocido",
+        "1/2 taza de pasta de ají amarillo",
+        "2 cucharadas de pasta de ají panca",
+        "1/2 taza de caldo de pescado concentrado",
+        "1/4 taza de vino blanco",
+        "1/2 taza de arvejas y pimiento rojo en tiras",
+        "Queso parmesano y culantro picado",
+        "Sal, pimienta y ajo molido"
+      ],
+      "pasos": [
+        "En una sartén grande o wok, dorar la cebolla y el ajo.",
+        "Añadir las pastas de ají amarillo y panca. Cocinar hasta que el aderezo esté bien frito.",
+        "Incorporar los mariscos y saltear a fuego alto. Verter el vino blanco y dejar que evapore el alcohol.",
+        "Agregar el caldo de pescado, las arvejas y el pimiento.",
+        "Añadir el arroz cocido y mezclar bien para que absorba el jugo y el color del aderezo.",
+        "Espolvorear el queso parmesano y el culantro picado. Debe quedar un arroz húmedo.",
+        "Servir con salsa criolla y una rodaja de limón."
+      ]
+    },
+    {
+      "id": "COS-FON-014",
+      "nombre": "Tallarines Verdes con Bistec",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "La interpretación peruana del pesto italiano, utilizando espinaca y albahaca salteadas, queso fresco y leche.",
+      "ingredientes": [
+        "250g de fideos tallarín (spaghetti)",
+        "1 taza de hojas de espinaca",
+        "1/2 taza de hojas de albahaca",
+        "150g de queso fresco salado",
+        "1/2 taza de leche evaporada",
+        "2 cucharadas de nueces o pecanas",
+        "2 bistecs de lomo de res",
+        "Sal, pimienta y aceite"
+      ],
+      "pasos": [
+        "Pasar las hojas de espinaca y albahaca por agua hirviendo solo por 30 segundos y luego pasarlas por agua helada (blanqueado).",
+        "Licuar las hojas con el queso fresco, la leche, las nueces y un chorrito de aceite hasta obtener una crema espesa y verde brillante.",
+        "Cocinar los fideos al dente en agua con sal.",
+        "Mezclar la crema con los fideos calientes en una sartén a fuego bajo.",
+        "Sazonar los bistecs con sal y pimienta, y freírlos al término deseado.",
+        "Servir los tallarines coronados con el bistec y, opcionalmente, con papas sancochadas."
+      ]
+    },
+    {
+      "id": "COS-FON-015",
+      "nombre": "Picante de Mariscos",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Un guiso cremoso y picante de mariscos, espesado con pan o galletas, similar a la técnica del ají de gallina pero con sabor marino.",
+      "ingredientes": [
+        "300g de mixtura de mariscos",
+        "2 panes franceses remojados en caldo de pescado",
+        "3 cucharadas de pasta de ají amarillo",
+        "1 cucharada de pasta de ají panca",
+        "1/2 taza de leche evaporada",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "Papas sancochadas en rodajas",
+        "Sal, pimienta y perejil"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo y los ajíes.",
+        "Licuar el pan remojado y añadirlo a la olla. Cocinar moviendo constantemente hasta que espese.",
+        "Añadir los mariscos (previamente salteados rápidamente) a la crema.",
+        "Verter la leche evaporada para suavizar la salsa.",
+        "Rectificar la sal y añadir perejil picado.",
+        "Servir sobre rodajas de papa blanca con arroz blanco a un lado."
+      ]
+    },
+    {
+      "id": "COS-FON-016",
+      "nombre": "Malarrabia Piurana",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Plato típico de los viernes de Cuaresma en Piura. Consiste en un puré rústico de plátano maduro con queso, servido con pescado frito.",
+      "ingredientes": [
+        "4 plátanos bellacos muy maduros",
+        "200g de queso fresco regional desmenuzado",
+        "1 cebolla roja picada",
+        "2 cucharadas de pasta de ají amarillo",
+        "4 filetes de pescado (Mero o Cabrilla) fritos",
+        "Arroz blanco y frijoles canarios como acompañamiento"
+      ],
+      "pasos": [
+        "Sancochar los plátanos maduros con cáscara. Una vez suaves, pelar y machacar con un tenedor dejando algunos trozos pequeños.",
+        "Preparar un aderezo de cebolla y ají amarillo en abundante aceite.",
+        "Mezclar el plátano machacado con el aderezo caliente y el queso fresco desmenuzado.",
+        "El puré debe quedar con una textura granulosa y grasosa (deliciosa).",
+        "Servir una porción generosa de malarrabia junto al arroz, los frijoles y el pescado frito."
+      ]
+    },
+    {
+      "id": "COS-FON-017",
+      "nombre": "Jalea Mixta Especial",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Montaña de mariscos y trozos de pescado fritos al estilo 'chicharrón', coronados con salsa criolla fresca.",
+      "ingredientes": [
+        "500g de trozos de pescado (perico o merluza)",
+        "300g de mixtura de mariscos (calamar, langostino)",
+        "2 tazas de harina de trigo mezclada con 1/2 taza de chuño (maicena)",
+        "1 huevo batido",
+        "1 cucharada de ajo molido y mostaza",
+        "Yucas sancochadas y fritas",
+        "Sal, pimienta y abundante aceite"
+      ],
+      "pasos": [
+        "Sazonar el pescado y los mariscos con sal, pimienta, ajo y un toque de mostaza.",
+        "Pasar las piezas por el huevo batido y luego por la mezcla de harina y chuño.",
+        "Freír en aceite bien caliente hasta que estén extremadamente crujientes.",
+        "En una fuente grande, colocar las yucas fritas como base.",
+        "Apilar los mariscos y pescados fritos sobre las yucas.",
+        "Cubrir todo con una salsa criolla abundante (cebolla, limón, ají limo y culantro).",
+        "Decorar con hojas de lechuga."
+      ]
+    },
+    {
+      "id": "COS-FON-018",
+      "nombre": "Arroz con Conchas Negras",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Plato lujoso del norte (Tumbes), donde el arroz se tiñe de negro con el jugo natural de las conchas de manglar.",
+      "ingredientes": [
+        "2 docenas de conchas negras con su jugo",
+        "2 tazas de arroz blanco cocido",
+        "1/2 taza de culantro licuado",
+        "1 cebolla roja picada",
+        "1 cucharada de pasta de ají amarillo",
+        "Jugo de 2 limones",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo, ají amarillo y culantro licuado.",
+        "Añadir el jugo de las conchas negras al aderezo y dejar que hierva.",
+        "Incorporar el arroz cocido y mezclar bien para que se pigmente uniformemente de color oscuro.",
+        "Agregar las conchas negras (la carne) al final, justo antes de apagar, para que no se pongan elásticas.",
+        "Añadir el jugo de limón y culantro picado.",
+        "Servir caliente con rodajas de camote."
+      ]
+    },
+    {
+      "id": "COS-FON-019",
+      "nombre": "Sudado de Pescado a la Norteña",
+      "tiempo_preparacion": "35 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Pescado cocido al vapor de la chicha de jora, con una cobertura de cebollas y tomates que crean un caldo corto delicioso.",
+      "ingredientes": [
+        "2 pescados enteros medianos (Cabrilla o Cachema)",
+        "2 cebollas rojas cortadas en gajos",
+        "2 tomates maduros en gajos",
+        "1 ají amarillo en tiras",
+        "1/2 taza de chicha de jora (fermentada)",
+        "1 cucharada de pasta de ají amarillo",
+        "Culantro picado y sal"
+      ],
+      "pasos": [
+        "Sazonar el pescado con sal y pimienta.",
+        "En una sartén ancha o cacerola, colocar una base con la mitad de las cebollas y tomates.",
+        "Poner el pescado encima.",
+        "Cubrir con el resto de la cebolla, tomate y las tiras de ají.",
+        "Verter la chicha de jora y la pasta de ají amarillo disuelta.",
+        "Tapar bien y cocinar a fuego medio por 15 a 18 minutos.",
+        "No mover el pescado para que no se rompa. Terminar con culantro picado.",
+        "Servir con yuca sancochada y arroz."
+      ]
+    },
+    {
+      "id": "COS-FON-020",
+      "nombre": "Chicharrón de Pescado",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Bocaditos de pescado frito muy populares en las cevicherías, servidos con salsa tártara.",
+      "ingredientes": [
+        "500g de filete de pescado blanco (Perico o Merluza) en cubos",
+        "1 taza de harina de trigo",
+        "2 cucharadas de sillao (soja)",
+        "1 cucharada de mostaza",
+        "1 huevo batido",
+        "Sal, pimienta y aceite vegetal",
+        "Salsa tártara para acompañar"
+      ],
+      "pasos": [
+        "Marinar los trozos de pescado con sal, pimienta, mostaza y sillao.",
+        "Pasar el pescado por el huevo batido y luego por la harina, presionando para que se adhiera.",
+        "Freír en aceite muy caliente hasta que estén crujientes.",
+        "Servir con yucas fritas y salsa tártara casera (mayonesa, cebollita china, huevo duro picado y limón)."
+      ]
+    },
+    {
+      "id": "COS-FON-021",
+      "nombre": "Seco de Chabelo",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Plato bandera de Piura que combina plátano verde frito y machacado con carne de res seca (cecina) y un aderezo de chicha de jora.",
+      "ingredientes": [
+        "4 plátanos verdes (bellaco)",
+        "500g de cecina de res (carne seca y salada)",
+        "2 cebollas rojas picadas",
+        "2 tomates picados",
+        "2 cucharadas de pasta de ají amarillo",
+        "1/2 taza de chicha de jora",
+        "Culantro picado y sal al gusto",
+        "Aceite vegetal para freír"
+      ],
+      "pasos": [
+        "Pelar los plátanos y cortarlos en trozos medianos. Freírlos hasta que estén cocidos pero no muy dorados.",
+        "Machacar los plátanos calientes en un mortero o mazo hasta que queden trozos pequeños y rústicos.",
+        "En una sartén aparte, freír la cecina cortada en tiras delgadas. Retirar y deshilachar o picar.",
+        "Preparar un aderezo con cebolla, ajo, tomate y ají amarillo.",
+        "Incorporar el plátano machacado y la carne al aderezo.",
+        "Añadir la chicha de jora y el culantro picado. Mezclar bien a fuego medio por 5 minutos para que el plátano absorba los jugos.",
+        "Servir acompañado de cancha serrana y chifles."
+      ]
+    },
+    {
+      "id": "COS-FON-022",
+      "nombre": "Pepián de Choclo con Pollo",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso espeso de maíz tierno molido con un aderezo criollo, servido con presas de pollo doradas.",
+      "ingredientes": [
+        "6 choclos grandes desgranados y licuados",
+        "4 presas de pollo",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "2 cucharadas de pasta de ají amarillo",
+        "1/2 taza de caldo de pollo",
+        "1/2 taza de leche evaporada",
+        "Culantro picado y sal"
+      ],
+      "pasos": [
+        "Sellar las presas de pollo con sal y pimienta. Retirar.",
+        "En la misma olla, hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Verter el choclo licuado y el caldo. Mover constantemente con cuchara de palo para que no se pegue.",
+        "Regresar el pollo a la olla y cocinar a fuego bajo por 20 minutos.",
+        "Cuando el maíz esté cocido y brillante, añadir la leche y el culantro.",
+        "Servir con arroz blanco y una salsa criolla."
+      ]
+    },
+    {
+      "id": "COS-FON-023",
+      "nombre": "Tallarín Saltado de Res (Estilo Chifa)",
+      "tiempo_preparacion": "20 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Fusión peruano-china donde los fideos se saltean a fuego alto con carne, verduras y salsas orientales.",
+      "ingredientes": [
+        "250g de fideos tallarín cocidos al dente",
+        "300g de lomo de res en tiras",
+        "1 cebolla roja y 2 tomates en gajos",
+        "1/2 taza de col china picada",
+        "2 cucharadas de sillao (soja) y 1 de salsa de ostión",
+        "Aceite de ajonjolí y cebollita china",
+        "Aceite vegetal"
+      ],
+      "pasos": [
+        "Calentar el wok al máximo. Sellar la carne sazonada por tandas. Reservar.",
+        "Saltear la cebolla, el tomate y la col china por un minuto.",
+        "Añadir los fideos y la carne al wok.",
+        "Verter el sillao, la salsa de ostión y un chorrito de aceite de ajonjolí.",
+        "Saltar enérgicamente por un minuto para integrar sabores.",
+        "Finalizar con cebollita china picada y servir caliente."
+      ]
+    },
+    {
+      "id": "COS-FON-024",
+      "nombre": "Locro de Zapallo con Pescado Frito",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Guiso cremoso de zapallo macre y papas, enriquecido con queso y leche, un clásico nutritivo de la costa.",
+      "ingredientes": [
+        "1 kg de zapallo macre picado en cubos",
+        "2 papas blancas en cubos",
+        "1 taza de granos de choclo y 1/2 taza de arvejas",
+        "150g de queso fresco en cubos",
+        "1/2 taza de leche evaporada",
+        "1 cebolla picada y ají amarillo",
+        "4 filetes de pescado fritos",
+        "Sal, pimienta y huacatay"
+      ],
+      "pasos": [
+        "Hacer aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir el zapallo, las papas, el choclo y las arvejas con un chorrito de agua.",
+        "Tapar y cocinar a fuego lento hasta que el zapallo se deshaga y forme una crema.",
+        "Aplastarlo ligeramente para dar textura.",
+        "Incorporar el queso, la leche y una rama de huacatay picada.",
+        "Servir con arroz blanco y el filete de pescado frito encima."
+      ]
+    },
+    {
+      "id": "COS-FON-025",
+      "nombre": "Arroz Tapado a la Limeña",
+      "tiempo_preparacion": "35 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Presentación elegante de arroz blanco moldeado que oculta un corazón de picadillo de carne jugoso.",
+      "ingredientes": [
+        "2 tazas de arroz blanco cocido",
+        "300g de carne de res molida",
+        "1 cebolla picada y 1 cucharada de ají panca",
+        "2 huevos duros, aceitunas y pasas",
+        "Sal, pimienta y perejil"
+      ],
+      "pasos": [
+        "Preparar un picadillo: Sofreír cebolla, ajo y ají panca. Añadir la carne y cocinar.",
+        "Incorporar huevo picado, pasas, aceituna y perejil.",
+        "En un tazón pequeño, colocar una capa de arroz, luego una capa generosa de carne y terminar con más arroz.",
+        "Presionar un poco y desmoldar sobre un plato plano.",
+        "Servir con un huevo frito encima y plátano frito al lado."
+      ]
+    },
+    {
+      "id": "COS-FON-026",
+      "nombre": "Saltado de Vainitas con Res",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Plato casero que utiliza la técnica del saltado para combinar vainitas crujientes con carne y papas fritas.",
+      "ingredientes": [
+        "250g de vainitas cortadas en tiras sesgadas",
+        "300g de carne de res en tiras",
+        "1 cebolla y 1 tomate en gajos",
+        "2 papas blancas en bastones fritos",
+        "2 cucharadas de sillao y vinagre",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Sancochar las vainitas al dente (solo 5 min) y pasar por agua fría.",
+        "Sellar la carne a fuego alto en una sartén.",
+        "Añadir cebolla, tomate y las vainitas sancochadas.",
+        "Agregar sillao y vinagre. Saltear un minuto.",
+        "Incorporar las papas fritas, mezclar y servir con arroz."
+      ]
+    },
+    {
+      "id": "COS-FON-027",
+      "nombre": "Estofado de Res con Vino Tinto",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso de carne suave con zanahorias y arvejas en una salsa roja enriquecida con vino.",
+      "ingredientes": [
+        "600g de carne de res para guiso (asado o malaya)",
+        "2 zanahorias en rodajas y 1/2 taza de arvejas",
+        "1/2 taza de vino tinto seco",
+        "2 cucharadas de pasta de tomate",
+        "1 cebolla picada, laurel y hongos secos",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Dorar los trozos de carne en una olla. Retirar.",
+        "Hacer aderezo con cebolla, ajo y pasta de tomate.",
+        "Regresar la carne, añadir el vino, laurel y hongos.",
+        "Añadir la zanahoria y arvejas. Cubrir con un poco de agua.",
+        "Tapar y cocinar a fuego bajo por 45 min hasta que la carne esté tierna.",
+        "Servir con arroz blanco."
+      ]
+    },
+    {
+      "id": "COS-FON-028",
+      "nombre": "Escabeche de Pollo",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Presas de pollo fritas cubiertas por una salsa de cebollas, ajíes y vinagre, con un aroma a orégano muy marcado.",
+      "ingredientes": [
+        "4 presas de pollo",
+        "3 cebollas rojas en gajos gruesos",
+        "2 ajíes amarillos en tiras",
+        "1/2 taza de vinagre tinto",
+        "2 cucharadas de ají panca molido",
+        "Sal, pimienta y orégano seco",
+        "Acompañamiento: Camote, arroz y huevo duro"
+      ],
+      "pasos": [
+        "Sancochar el pollo ligeramente y luego freírlo hasta que dore. Reservar.",
+        "En una sartén, freír ajo y ají panca. Añadir las cebollas y el ají amarillo.",
+        "Verter el vinagre y sazonar con sal y abundante orégano seco.",
+        "Cocinar 3 minutos para que la cebolla absorba el vinagre sin ablandarse demasiado.",
+        "Colocar el pollo en una fuente y cubrir con la salsa.",
+        "Servir tibio o frío con camote."
+      ]
+    },
+    {
+      "id": "COS-FON-029",
+      "nombre": "Pescado a la Chorrillana",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Filete de pescado frito servido con un encebollado jugoso encima, típico del distrito de Chorrillos.",
+      "ingredientes": [
+        "2 filetes de pescado blanco",
+        "2 cebollas rojas en gajos",
+        "2 tomates en gajos",
+        "1 cucharada de pasta de ají amarillo",
+        "1/4 taza de vinagre",
+        "Harina, sal y pimienta"
+      ],
+      "pasos": [
+        "Enharinar el pescado y freírlo. Colocar en el plato.",
+        "En la misma sartén, saltear cebolla y tomate con el ají amarillo.",
+        "Añadir el vinagre y un chorrito de caldo o agua para crear jugo.",
+        "Sazonar y cubrir el pescado con este encebollado.",
+        "Servir con arroz y camote."
+      ]
+    },
+    {
+      "id": "COS-FON-030",
+      "nombre": "Pollo al Sillao",
+      "tiempo_preparacion": "35 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Guiso rápido de pollo con una salsa oscura a base de sillao y kion, de clara influencia oriental.",
+      "ingredientes": [
+        "4 presas de pollo",
+        "1/2 taza de sillao (salsa de soja)",
+        "1 trozo grande de kion picado o licuado",
+        "2 cebollitas chinas picadas",
+        "1 pimiento rojo en tiras",
+        "Azúcar y sal al gusto"
+      ],
+      "pasos": [
+        "Dorar las presas de pollo en una olla con aceite.",
+        "Añadir el kion y el pimiento.",
+        "Verter el sillao y media taza de agua.",
+        "Añadir una pizca de azúcar para equilibrar el salado.",
+        "Cocinar tapado por 20 minutos.",
+        "Terminar con la cebollita china picada.",
+        "Servir con arroz blanco."
+      ]
+    }
+  ]
+}

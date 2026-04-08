@@ -56,11 +56,22 @@ class TheMealDBService {
   Future<List<Recipe>> searchByCategory(String category) async {
     final url = Uri.parse('$_baseUrl/filter.php?c=$category');
     final response = await http.get(url);
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final meals = data['meals'] as List<dynamic>? ?? [];
-      return meals.take(10).map((meal) => _parseMeal(meal)).toList();
+      final idsToFetch = meals.take(15).map((meal) => meal['idMeal']).toList();
+      final futures = idsToFetch.map((id) async {
+        final detailUrl = Uri.parse('$_baseUrl/lookup.php?i=$id');
+        final detailResponse = await http.get(detailUrl);
+        if (detailResponse.statusCode == 200) {
+          final detailData = json.decode(detailResponse.body);
+          final details = detailData['meals']?.first;
+          if (details != null) return _parseMeal(details);
+        }
+        return null;
+      });
+      final results = await Future.wait(futures);
+      return results.whereType<Recipe>().toList();
     }
     return [];
   }

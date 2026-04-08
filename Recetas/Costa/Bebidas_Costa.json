@@ -1,0 +1,448 @@
+{
+  "region": "Costa",
+  "categoria": "Bebidas",
+  "recetas": [
+    {
+      "id": "COS-BEB-001",
+      "nombre": "Pisco Sour Tradicional (Proporción 3-1-1)",
+      "tiempo_preparacion": "10 min",
+      "porciones": 1,
+      "dificultad": "Media",
+      "descripcion": "El cóctel nacional del Perú. Es un equilibrio perfecto entre la fuerza del pisco, la acidez del limón y el dulzor del jarabe.",
+      "ingredientes": [
+        "3 oz de Pisco puro (preferiblemente variedad Quebranta)",
+        "1 oz de jugo de limón recién exprimido (limón sutil)",
+        "1 oz de jarabe de goma",
+        "1 clara de huevo fresco",
+        "4 a 6 cubos de hielo grandes",
+        "Gotas de amargo de angostura"
+      ],
+      "pasos": [
+        "Colocar en una coctelera (o licuadora) el pisco, el jugo de limón y el jarabe de goma.",
+        "Agregar los cubos de hielo.",
+        "Incorporar la clara de huevo al final.",
+        "Batir enérgicamente por unos 15 segundos si se usa coctelera, o licuar por 5 segundos si se prefiere esa versión.",
+        "Servir en una copa helada en tres tiempos para que la espuma quede arriba.",
+        "Decorar con una o dos gotas de amargo de angostura sobre la espuma."
+      ]
+    },
+    {
+      "id": "COS-BEB-002",
+      "nombre": "Chicha Morada Clásica",
+      "tiempo_preparacion": "60 min",
+      "porciones": 8,
+      "dificultad": "Baja",
+      "descripcion": "Bebida milenaria y refrescante hecha a base de maíz morado, frutas y especias, infaltable en cualquier mesa costeña.",
+      "ingredientes": [
+        "1/2 kg de maíz morado",
+        "3 litros de agua",
+        "Cáscaras de 1 piña madura",
+        "1 membrillo picado",
+        "2 ramas de canela y 4 clavos de olor",
+        "Azúcar al gusto",
+        "Jugo de 4 limones regionales",
+        "Manzana picada en cuadraditos (opcional para decorar)"
+      ],
+      "pasos": [
+        "En una olla grande, poner el maíz morado desgranado (con la tusa o coronta), las cáscaras de piña, el membrillo, la canela y el clavo con el agua.",
+        "Hervir a fuego medio hasta que los granos de maíz revienten y el agua tome un color morado muy intenso (aprox. 45 min).",
+        "Colar el líquido y dejar enfriar por completo.",
+        "Una vez fría, añadir el azúcar y el jugo de limón.",
+        "Mezclar bien y añadir la manzana picada si se desea.",
+        "Servir muy helada."
+      ]
+    },
+    {
+      "id": "COS-BEB-003",
+      "nombre": "Cocktail de Algarrobina",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cremosa y nutritiva hecha con el jarabe del fruto del algarrobo, típica del norte y Lima.",
+      "ingredientes": [
+        "3 oz de Pisco puro",
+        "2 oz de jarabe de algarrobina",
+        "1 oz de jarabe de goma",
+        "1 lata de leche evaporada",
+        "1 yema de huevo",
+        "6 cubos de hielo",
+        "Canela molida para decorar"
+      ],
+      "pasos": [
+        "Colocar todos los ingredientes en la licuadora: pisco, algarrobina, leche, jarabe de goma, yema y hielos.",
+        "Licuar a velocidad alta por 30 segundos hasta obtener una consistencia espumosa y homogénea.",
+        "Servir en copas cortas.",
+        "Espolvorear canela molida en la superficie de cada copa.",
+        "Consumir de inmediato para mantener la temperatura y la espuma."
+      ]
+    },
+    {
+      "id": "COS-BEB-004",
+      "nombre": "Chilcano de Pisco",
+      "tiempo_preparacion": "5 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Trago largo, directo y sumamente refrescante, ideal para apreciar las notas aromáticas del pisco.",
+      "ingredientes": [
+        "2 oz de Pisco (variedad Acholado es muy recomendada)",
+        "1/2 oz de jugo de limón",
+        "4 a 5 cubos de hielo",
+        "Ginger Ale helado",
+        "1 rodaja de kion (jengibre) y 1 rodaja de limón",
+        "2 gotas de amargo de angostura"
+      ],
+      "pasos": [
+        "En un vaso largo (highball), colocar los cubos de hielo.",
+        "Verter el pisco y el jugo de limón.",
+        "Completar el vaso con Ginger Ale bien helado.",
+        "Añadir la rodaja de kion para un toque picante y la de limón.",
+        "Agregar las gotas de amargo de angostura.",
+        "Remover suavemente con una cucharilla de bar y servir."
+      ]
+    },
+    {
+      "id": "COS-BEB-005",
+      "nombre": "Emoliente Limeño",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida medicinal y tradicional vendida en las esquinas de Lima, conocida por sus propiedades digestivas.",
+      "ingredientes": [
+        "100g de cebada tostada",
+        "2 cucharadas de linaza",
+        "1 rama de cola de caballo y de uña de gato",
+        "2 litros de agua",
+        "Jugo de 2 limones",
+        "Almíbar o azúcar al gusto",
+        "Gotas de extracto de alfalfa (opcional)"
+      ],
+      "pasos": [
+        "Hervir en el agua la cebada, la linaza y las hierbas (cola de caballo y uña de gato) por 20 minutos hasta que la linaza suelte su mucílago (espesor).",
+        "Colar el líquido mientras está caliente.",
+        "Endulzar al gusto.",
+        "Servir en vasos grandes, añadiendo el jugo de limón y, si se desea, el extracto de alfalfa.",
+        "Se puede consumir caliente en invierno o frío en verano."
+      ]
+    },
+    {
+      "id": "COS-BEB-006",
+      "nombre": "Jugo de Lúcuma con Leche",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Batido cremoso de una de las frutas más emblemáticas del Perú, con una textura y sabor únicos.",
+      "ingredientes": [
+        "2 lúcumas maduras medianas",
+        "1 taza de leche evaporada",
+        "1 taza de agua fría",
+        "Azúcar o miel al gusto",
+        "Cubos de hielo"
+      ],
+      "pasos": [
+        "Lavar las lúcumas, pelarlas y retirar la semilla.",
+        "Colocar la pulpa en la licuadora junto con la leche, el agua y el azúcar.",
+        "Licuar a velocidad alta hasta que no queden grumos de la fruta.",
+        "Añadir los hielos y licuar por 5 segundos más.",
+        "Servir en vasos grandes. Es una bebida densa y muy saciante."
+      ]
+    },
+    {
+      "id": "COS-BEB-007",
+      "nombre": "Refresco de Maracuyá",
+      "tiempo_preparacion": "15 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cítrica de sabor intenso y aroma penetrante, esencial para acompañar almuerzos marinos.",
+      "ingredientes": [
+        "2 maracuyás grandes",
+        "1.5 litros de agua",
+        "Azúcar al gusto",
+        "Mucho hielo"
+      ],
+      "pasos": [
+        "Cortar los maracuyás por la mitad y extraer la pulpa con las semillas.",
+        "Licuar la pulpa con medio litro de agua por solo 2 segundos (solo para desprender la pulpa de la semilla sin triturar esta última).",
+        "Colar sobre una jarra.",
+        "Añadir el resto del agua y endulzar al gusto.",
+        "Servir con abundante hielo."
+      ]
+    },
+    {
+      "id": "COS-BEB-008",
+      "nombre": "Té Piteado",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Bebida caliente ideal para las noches húmedas y frías de la costa, hecha a base de té y pisco.",
+      "ingredientes": [
+        "2 tazas de té negro caliente y cargado",
+        "2 oz de Pisco puro",
+        "Jugo de 1/2 limón",
+        "Azúcar o miel de abeja",
+        "1 rama de canela"
+      ],
+      "pasos": [
+        "Preparar el té negro con la canela y dejarlo reposar para que esté bien concentrado.",
+        "En cada taza, verter 1 oz de pisco.",
+        "Llenar con el té caliente.",
+        "Añadir el jugo de limón y endulzar al gusto.",
+        "Mezclar bien y beber caliente."
+      ]
+    },
+    {
+      "id": "COS-BEB-009",
+      "nombre": "Limonada Culebra (Limonada con Hierbabuena)",
+      "tiempo_preparacion": "10 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Versión refrescante de la limonada clásica con el toque aromático de la hierbabuena, muy común en el norte.",
+      "ingredientes": [
+        "6 limones regionales",
+        "1.5 litros de agua",
+        "1 puñado de hojas de hierbabuena fresca",
+        "Azúcar blanca al gusto",
+        "Hielo"
+      ],
+      "pasos": [
+        "Preparar una limonada tradicional con el agua, el jugo de los limones y el azúcar.",
+        "Colocar la limonada en la licuadora junto con las hojas de hierbabuena.",
+        "Dar un 'toque' de licuado (pulso) para que la hierbabuena se trocee pero no se deshaga por completo.",
+        "Colar y servir en una jarra con mucho hielo."
+      ]
+    },
+    {
+      "id": "COS-BEB-010",
+      "nombre": "Capitán (Cóctel Clásico)",
+      "tiempo_preparacion": "5 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Cóctel elegante conocido como el 'Manhattan peruano', que combina pisco y vermut tinto.",
+      "ingredientes": [
+        "1.5 oz de Pisco Quebranta",
+        "1.5 oz de Vermut tinto (Cinzano o similar)",
+        "Cubos de hielo",
+        "1 aceituna verde o una cereza marrasquino"
+      ],
+      "pasos": [
+        "En un vaso de mezcla con hielo, combinar el pisco y el vermut.",
+        "Remover con suavidad durante 20 segundos para enfriar la mezcla sin diluirla demasiado.",
+        "Colar y servir en una copa de cóctel tipo martini previamente helada.",
+        "Decorar con la aceituna o la cereza."
+      ]
+    },
+    {
+      "id": "COS-BEB-011",
+      "nombre": "Pisco Punch",
+      "tiempo_preparacion": "15 min (+ 12h macerado)",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Cóctel histórico creado en San Francisco durante la fiebre del oro con pisco peruano, famoso por su almíbar de piña.",
+      "ingredientes": [
+        "4 oz de Pisco Italia (aromático)",
+        "2 oz de jarabe de piña (piña macerada en azúcar por 12h)",
+        "1 oz de jugo de limón",
+        "2 oz de agua destilada o agua de piña",
+        "Trozos de piña fresca para decorar",
+        "Hielo"
+      ],
+      "pasos": [
+        "Preparar el jarabe de piña con antelación macerando cubos de piña en azúcar rubia hasta que suelte su almíbar.",
+        "En una coctelera, colocar el pisco, el jarabe de piña, el jugo de limón y el agua.",
+        "Añadir abundante hielo y batir por 15 segundos.",
+        "Servir en vasos cortos con hielo nuevo.",
+        "Decorar con un trozo de piña fresca."
+      ]
+    },
+    {
+      "id": "COS-BEB-012",
+      "nombre": "Refresco de Cebada Tostada",
+      "tiempo_preparacion": "30 min",
+      "porciones": 6,
+      "dificultad": "Baja",
+      "descripcion": "Bebida cotidiana en los hogares costeños, muy fresca y con propiedades diuréticas.",
+      "ingredientes": [
+        "200g de cebada tostada en grano",
+        "3 litros de agua",
+        "1 rama de canela",
+        "2 clavos de olor",
+        "Azúcar rubia y jugo de limón al gusto"
+      ],
+      "pasos": [
+        "Hervir la cebada con la canela y el clavo de olor en el agua durante 20 minutos.",
+        "Colar el líquido y dejar que enfríe a temperatura ambiente.",
+        "Endulzar al gusto.",
+        "Añadir el jugo de limón justo antes de servir (importante para el sabor clásico).",
+        "Servir bien helado con cubos de hielo."
+      ]
+    },
+    {
+      "id": "COS-BEB-013",
+      "nombre": "Ponche de los Libertadores",
+      "tiempo_preparacion": "20 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Bebida caliente e histórica que se sirve tradicionalmente en el Congreso del Perú cada 28 de julio.",
+      "ingredientes": [
+        "4 oz de Pisco",
+        "2 huevos",
+        "1 taza de leche evaporada",
+        "1/2 taza de jarabe de goma",
+        "1 taza de agua caliente",
+        "Canela molida"
+      ],
+      "pasos": [
+        "Batir los huevos (claras y yemas) hasta que estén muy espumosos.",
+        "Añadir la leche evaporada y el jarabe de goma sin dejar de batir.",
+        "Verter el pisco y finalmente el agua caliente de forma pausada.",
+        "Mezclar bien hasta que la preparación esté integrada y espumosa.",
+        "Servir en copas resistentes al calor y espolvorear canela."
+      ]
+    },
+    {
+      "id": "COS-BEB-014",
+      "nombre": "Cóctel Machu Picchu",
+      "tiempo_preparacion": "10 min",
+      "porciones": 1,
+      "dificultad": "Media",
+      "descripcion": "Bebida visual de tres capas que representan los colores de la bandera de los incas y la ciudadela.",
+      "ingredientes": [
+        "1 oz de jarabe de granadina",
+        "1 oz de crema de menta verde",
+        "1.5 oz de Pisco puro",
+        "3 oz de jugo de naranja recién exprimido",
+        "Hielo picado"
+      ],
+      "pasos": [
+        "En un vaso largo, verter primero la granadina.",
+        "Llenar el vaso con hielo picado con mucho cuidado.",
+        "Mezclar en un recipiente aparte el pisco con el jugo de naranja y verterlo lentamente sobre el hielo para formar la segunda capa.",
+        "Finalmente, verter la crema de menta muy despacio por el borde para que flote y forme la tercera capa verde.",
+        "Decorar con una cereza o rodaja de naranja."
+      ]
+    },
+    {
+      "id": "COS-BEB-015",
+      "nombre": "Jugo de Papaya con Naranja",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "El desayuno clásico de Lima y de los mercados de la costa, energizante y digestivo.",
+      "ingredientes": [
+        "1/2 papaya madura mediana",
+        "2 tazas de jugo de naranja recién exprimido",
+        "Azúcar o miel al gusto",
+        "Unas gotas de limón"
+      ],
+      "pasos": [
+        "Pelar la papaya y retirar las semillas.",
+        "Licuar la papaya con el jugo de naranja hasta que no queden grumos.",
+        "Probar el dulzor y añadir azúcar si es necesario.",
+        "Servir fresco de inmediato (no se debe guardar porque la naranja amarga el jugo)."
+      ]
+    },
+    {
+      "id": "COS-BEB-016",
+      "nombre": "Clarito (Chicha de Jora Piurana)",
+      "tiempo_preparacion": "3 días (fermentación)",
+      "porciones": 10,
+      "dificultad": "Alta",
+      "descripcion": "Es la parte superior de la chicha de jora, más ligera, menos densa y muy refrescante, típica de los 'picanterías'.",
+      "ingredientes": [
+        "1 kg de jora (maíz germinado)",
+        "5 litros de agua",
+        "Chancaca para endulzar",
+        "Hojas de higo"
+      ],
+      "pasos": [
+        "Hervir la jora en el agua con la chancaca y hojas de higo por varias horas.",
+        "Dejar reposar en una tinaja de barro (moche) por 2 o 3 días para que fermente.",
+        "Sin mover el fondo (donde queda el 'asiento'), extraer el líquido cristalino de la parte superior.",
+        "Servir en 'potos' (recipientes de calabaza) muy frío."
+      ]
+    },
+    {
+      "id": "COS-BEB-017",
+      "nombre": "Refresco de Tamarindo",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Bebida agridulce muy popular en el verano costeño y en la gastronomía chifa.",
+      "ingredientes": [
+        "250g de pulpa de tamarindo con semilla",
+        "1.5 litros de agua",
+        "Azúcar rubia al gusto",
+        "Hielo"
+      ],
+      "pasos": [
+        "Hervir el tamarindo en medio litro de agua por 10 minutos para que suelte la pulpa.",
+        "Dejar enfriar y, con las manos limpias, estrujar para separar las semillas.",
+        "Colar el concentrado sobre una jarra.",
+        "Añadir el resto del agua fría y endulzar generosamente (el tamarindo es muy ácido).",
+        "Servir con abundante hielo."
+      ]
+    },
+    {
+      "id": "COS-BEB-018",
+      "nombre": "Perú Libre",
+      "tiempo_preparacion": "5 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Versión peruana del Cuba Libre, utilizando pisco en lugar de ron.",
+      "ingredientes": [
+        "2 oz de Pisco Quebranta",
+        "Gaseosa de cola negra helada",
+        "1 rodaja de limón sutil",
+        "Cubos de hielo"
+      ],
+      "pasos": [
+        "En un vaso largo, colocar 3 o 4 cubos de hielo.",
+        "Añadir el pisco.",
+        "Completar con la gaseosa de cola.",
+        "Exprimir un toque de limón y dejar caer la rodaja en el vaso.",
+        "Remover una vez y servir."
+      ]
+    },
+    {
+      "id": "COS-BEB-019",
+      "nombre": "Jugo de Fresa con Leche",
+      "tiempo_preparacion": "10 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Batido cremoso y rosado, un favorito en las loncherías de la costa central.",
+      "ingredientes": [
+        "250g de fresas lavadas y sin hojas",
+        "1 taza de leche evaporada",
+        "1/2 taza de agua fría",
+        "Azúcar y esencia de vainilla al gusto"
+      ],
+      "pasos": [
+        "Licuar las fresas con el azúcar y el agua primero.",
+        "Añadir la leche evaporada y la vainilla.",
+        "Licuar a velocidad alta para generar espuma.",
+        "Servir en vasos altos, decorando con una fresa entera en el borde."
+      ]
+    },
+    {
+      "id": "COS-BEB-020",
+      "nombre": "Chilcano de Aguaymanto",
+      "tiempo_preparacion": "5 min",
+      "porciones": 1,
+      "dificultad": "Baja",
+      "descripcion": "Variación moderna del chilcano clásico que utiliza el fruto cítrico de los Andes que crece en los valles costeños.",
+      "ingredientes": [
+        "2 oz de Pisco Acholado",
+        "6 aguaymantos frescos",
+        "1/2 oz de jarabe de goma",
+        "Ginger Ale helado",
+        "Hielo"
+      ],
+      "pasos": [
+        "Machacar 4 aguaymantos en el fondo del vaso con el jarabe de goma.",
+        "Llenar el vaso con cubos de hielo.",
+        "Agregar el pisco y completar con Ginger Ale.",
+        "Remover suavemente.",
+        "Decorar con los 2 aguaymantos restantes enteros."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,696 @@
+{
+  "region": "Sierra",
+  "categoria": "Segundos / Platos de Fondo",
+  "recetas": [
+    {
+      "id": "SIE-FON-001",
+      "nombre": "Pachamanca a la Olla",
+      "tiempo_preparacion": "90 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Adaptación casera del milenario ritual de cocción bajo tierra. Las carnes y tubérculos se cocinan al vapor de hierbas aromáticas.",
+      "ingredientes": [
+        "1 kg de carne (cerdo, pollo y cordero) en presas",
+        "1/2 taza de chincho y huacatay licuados",
+        "1/2 taza de ají panca y 1/4 taza de vinagre",
+        "6 papas huayro, 6 trozos de camote y 6 trozos de yuca",
+        "3 choclos en rodajas y 1/2 kg de habas con cáscara",
+        "Pancas de choclo para cubrir",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Macerar las carnes con el licuado de chincho, huacatay, ají panca, vinagre y especias por al menos 4 horas.",
+        "En una olla grande, colocar una base de pancas de choclo y ramas de huacatay.",
+        "Colocar primero las carnes de cerdo y cordero (demoran más), luego el pollo.",
+        "Acomodar encima las papas, camotes, yucas, choclos y habas.",
+        "Bañar con el resto del marinado y cubrir totalmente con más pancas de choclo.",
+        "Tapar herméticamente y cocinar a fuego muy bajo por 1 hora y 15 minutos sin abrir la olla.",
+        "Servir caliente con un toque de ají de huacatay."
+      ]
+    },
+    {
+      "id": "SIE-FON-002",
+      "nombre": "Cuy Chactado Arequipeño",
+      "tiempo_preparacion": "45 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Cuy frito entero bajo el peso de una piedra (chacta), lo que garantiza una piel extremadamente crocante y carne jugosa.",
+      "ingredientes": [
+        "2 cuyes limpios y abiertos",
+        "1 taza de harina de maíz o harina de trigo",
+        "2 cucharadas de ajo molido",
+        "Sal, pimienta y comino",
+        "Aceite abundante para freír",
+        "Piedra pesada y limpia (para presionar)"
+      ],
+      "pasos": [
+        "Sazonar los cuyes con ajo, sal, pimienta y comino. Dejar reposar 20 minutos.",
+        "Pasar los cuyes por la harina de maíz, sacudiendo el exceso.",
+        "Calentar el aceite en una sartén grande.",
+        "Colocar el cuy y poner la piedra encima para que se fría de forma pareja y se aplane.",
+        "Freír por 10 a 12 minutos por lado hasta que esté dorado y crujiente.",
+        "Servir con papas doradas, choclo y una salsa de cebolla con huacatay."
+      ]
+    },
+    {
+      "id": "SIE-FON-003",
+      "nombre": "Chicharrón de Chancho con Mote",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Trozos de cerdo cocidos en su propia grasa, servidos con maíz blanco gigante y camote.",
+      "ingredientes": [
+        "1 kg de panceta de cerdo con piel",
+        "1/2 kg de maíz mote cocido",
+        "2 camotes sancochados y fritos",
+        "Sal y una rama de hierbabuena",
+        "Cebolla roja para la salsa criolla"
+      ],
+      "pasos": [
+        "Cortar el cerdo en trozos medianos y ponerlos en una paila con agua que apenas los cubra y sal.",
+        "Cocinar hasta que el agua se evapore y el cerdo empiece a soltar su propia manteca.",
+        "Añadir la hierbabuena y dejar que se frían en su grasa hasta que doren.",
+        "Retirar cuando estén crocantes por fuera.",
+        "Servir con el mote caliente, el camote frito y una salsa de cebolla con hierbabuena y limón."
+      ]
+    },
+    {
+      "id": "SIE-FON-004",
+      "nombre": "Puca Picante Ayacuchana",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso de papas y carne de cerdo con una salsa roja vibrante de ají panca, maní y betarraga.",
+      "ingredientes": [
+        "1/2 kg de carne de cerdo picada",
+        "1 kg de papa blanca picada en cubos",
+        "2 cucharadas de ají panca molido",
+        "1/2 taza de maní tostado y molido",
+        "1/2 taza de caldo de remolacha (betarraga) para el color",
+        "Cebolla, ajo, sal y comino"
+      ],
+      "pasos": [
+        "Freír los trozos de cerdo hasta que doren. Reservar.",
+        "En la misma olla, hacer un aderezo con cebolla, ajo y ají panca.",
+        "Añadir el maní molido y el caldo de betarraga.",
+        "Incorporar las papas y el cerdo frito.",
+        "Cocinar a fuego lento hasta que las papas estén cocidas y la salsa espese.",
+        "Servir con arroz blanco y ensalada."
+      ]
+    },
+    {
+      "id": "SIE-FON-005",
+      "nombre": "Olluquito con Charqui",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Plato ancestral que combina el olluco fresco con la carne seca y salada de llama o res.",
+      "ingredientes": [
+        "1 kg de olluco picado en tiras finas",
+        "200g de charqui (carne seca) deshilachado",
+        "2 cucharadas de ají panca molido",
+        "1 cebolla picada y ajo",
+        "Perejil picado y sal"
+      ],
+      "pasos": [
+        "Tostar el charqui en una sartén, luego lavarlo y deshilacharlo.",
+        "Hacer un aderezo con cebolla, ajo y ají panca.",
+        "Añadir el charqui y dejar que dore un poco.",
+        "Incorporar el olluco (sin añadir agua, el olluco suelta su líquido).",
+        "Tapar y cocinar a fuego lento por 20 minutos.",
+        "Rectificar sal y añadir perejil. Servir con arroz blanco."
+      ]
+    },
+    {
+      "id": "SIE-FON-006",
+      "nombre": "Trucha Frita a la Andina",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Pescado de agua dulce de los ríos y lagunas altoandinas, frito de forma sencilla pero sabrosa.",
+      "ingredientes": [
+        "2 truchas enteras limpias",
+        "Harina de trigo",
+        "Ajo molido, sal y pimienta",
+        "Papas sancochadas y ensalada fresca"
+      ],
+      "pasos": [
+        "Hacer cortes transversales en la piel de la trucha.",
+        "Sazonar con ajo, sal y pimienta.",
+        "Pasar por harina y freír en aceite caliente hasta que la piel esté crocante.",
+        "Servir con papas sancochadas y una ensalada de berros o cebolla."
+      ]
+    },
+    {
+      "id": "SIE-FON-007",
+      "nombre": "Adobo Arequipeño",
+      "tiempo_preparacion": "60 min (+ 12h macerado)",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso de cerdo macerado en chicha de jora fuerte, tradicional de los domingos en Arequipa.",
+      "ingredientes": [
+        "1 kg de lomo de cerdo en trozos grandes",
+        "2 tazas de chicha de jora sin dulce (fermentada)",
+        "3 cebollas rojas grandes picadas en trozos gruesos",
+        "4 cucharadas de ají panca molido",
+        "1 cucharada de ajo, pimienta de chapa y canela"
+      ],
+      "pasos": [
+        "Macerar el cerdo con la chicha, ají panca, ajo y especias durante toda la noche.",
+        "En una olla de barro, colocar el cerdo con todo su jugo de maceración.",
+        "Añadir las cebollas troceadas.",
+        "Cocinar a fuego lento por 1 hora hasta que el líquido reduzca y la carne esté muy suave.",
+        "Servir en plato hondo con pan de tres puntas para mojar el jugo."
+      ]
+    },
+    {
+      "id": "SIE-FON-008",
+      "nombre": "Pesque de Quinua (Puno)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Guiso espeso y cremoso de quinua, tradicional del altiplano, que se sirve como plato principal o desayuno.",
+      "ingredientes": [
+        "2 tazas de quinua bien lavada",
+        "2 tazas de leche evaporada",
+        "200g de queso fresco serrano desmenuzado",
+        "1 cucharada de mantequilla",
+        "Sal al gusto"
+      ],
+      "pasos": [
+        "Cocinar la quinua en agua (que la cubra dos veces) hasta que esté muy suave y el grano reviente.",
+        "Bajar el fuego y batir con una cuchara de palo para que tome una textura cremosa.",
+        "Añadir la mantequilla, la leche y el queso fresco.",
+        "Mover constantemente por 5 minutos hasta que el queso se funda ligeramente.",
+        "Servir solo o con un huevo frito encima."
+      ]
+    },
+    {
+      "id": "SIE-FON-009",
+      "nombre": "Picante de Cuy",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Cuy troceado y guisado en una salsa potente de ajíes serranos y maní.",
+      "ingredientes": [
+        "1 cuy cortado en cuartos y frito",
+        "4 cucharadas de ají colorado molido",
+        "1/2 taza de maní tostado y molido",
+        "1 kg de papa amarilla sancochada",
+        "Caldo de carne, sal y comino"
+      ],
+      "pasos": [
+        "Hacer un aderezo con aceite, ajo y ají colorado.",
+        "Añadir el maní molido y un poco de caldo.",
+        "Incorporar los trozos de cuy frito y las papas amarillas en mitades.",
+        "Guisar por 15 minutos a fuego lento.",
+        "Servir con arroz blanco y huevo duro."
+      ]
+    },
+    {
+      "id": "SIE-FON-010",
+      "nombre": "Malaya Frita Arequipeña",
+      "tiempo_preparacion": "120 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Corte de carne de res sancochado hasta que esté tierno y luego frito para lograr una capa externa crocante.",
+      "ingredientes": [
+        "1 kg de carne malaya de res",
+        "2 cucharadas de ajo, sal y pimienta",
+        "Salsa criolla y yuca sancochada",
+        "Aceite para freír"
+      ],
+      "pasos": [
+        "Sancochar la malaya en agua con sal y verduras hasta que esté muy blanda (aprox. 1.5 horas).",
+        "Cortar en trozos medianos y sazonar con ajo, pimienta y sal.",
+        "Freír en aceite caliente hasta que dore por ambos lados.",
+        "Servir con yuca sancochada y una generosa salsa de cebolla con rocoto."
+      ]
+    },
+    {
+      "id": "SIE-FON-011",
+      "nombre": "Pepián de Cuy",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso espeso y reconfortante de cuy troceado en una salsa base de maíz tostado y molido con ajíes serranos.",
+      "ingredientes": [
+        "2 cuyes limpios y troceados",
+        "1 taza de harina de maíz tostado",
+        "2 cucharadas de pasta de ají panca",
+        "1 cebolla roja picada",
+        "1/2 taza de maní tostado y molido",
+        "Caldo de carne o agua",
+        "Sal, pimienta, comino y aceite"
+      ],
+      "pasos": [
+        "Sellar los trozos de cuy en una sartén con aceite caliente hasta que doren. Reservar.",
+        "En una olla, hacer un aderezo con cebolla, ajo, comino y ají panca.",
+        "Añadir el maní molido y la harina de maíz tostado disuelta en un poco de caldo frío.",
+        "Incorporar los trozos de cuy y cubrir con más caldo.",
+        "Cocinar a fuego lento moviendo constantemente para que el maíz no se pegue al fondo.",
+        "El guiso debe quedar espeso y el cuy muy suave.",
+        "Servir con papas sancochadas y arroz blanco."
+      ]
+    },
+    {
+      "id": "SIE-FON-012",
+      "nombre": "Costillar Frito Arequipeño",
+      "tiempo_preparacion": "50 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Grandes costillas de res o cordero maceradas en vinagre y especias, fritas hasta lograr una textura crocante.",
+      "ingredientes": [
+        "1 kg de costillar de res o cordero troceado",
+        "2 cucharadas de ajo molido",
+        "1/4 taza de vinagre tinto",
+        "Sal, pimienta y comino",
+        "Aceite vegetal abundante",
+        "Guarnición: Papas doradas y ensalada de cebolla con rocoto"
+      ],
+      "pasos": [
+        "Sancochar ligeramente el costillar con sal y ajo para asegurar que la carne esté tierna.",
+        "Escurrir y marinar con vinagre, más ajo, pimienta y comino por 30 minutos.",
+        "Calentar abundante aceite en una sartén profunda.",
+        "Freír las costillas hasta que la parte externa esté bien dorada y crujiente.",
+        "Servir inmediatamente con papas doradas en el mismo aceite y una salsa criolla picante."
+      ]
+    },
+    {
+      "id": "SIE-FON-013",
+      "nombre": "Lengua en Salsa de Maní",
+      "tiempo_preparacion": "120 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Plato refinado de la cocina andina central. Lengua de res tierna bañada en una crema untuosa de maní y ají amarillo.",
+      "ingredientes": [
+        "1 lengua de res grande",
+        "1/2 taza de maní tostado y licuado",
+        "2 cucharadas de pasta de ají amarillo",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "1/2 taza de leche evaporada (opcional)",
+        "Sal, pimienta y una rama de perejil",
+        "Arroz blanco y papas sancochadas"
+      ],
+      "pasos": [
+        "Sancochar la lengua en agua con sal, cebolla y apio hasta que esté muy suave (aprox. 1.5 a 2 horas).",
+        "Pelar la lengua mientras esté caliente y cortarla en rodajas de 1 cm.",
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir el maní licuado y un poco del caldo de la cocción de la lengua.",
+        "Incorporar las rodajas de lengua y cocinar a fuego bajo por 15 minutos.",
+        "Añadir la leche para suavizar la salsa si se desea.",
+        "Servir decorado con perejil picado."
+      ]
+    },
+    {
+      "id": "SIE-FON-014",
+      "nombre": "Guiso de Tarwi (Chocho)",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Plato altamente proteico basado en el grano de tarwi, típico de la sierra norte y central.",
+      "ingredientes": [
+        "500g de tarwi (chocho) desamargado y molido o entero",
+        "1 cebolla picada y 2 dientes de ajo",
+        "2 cucharadas de ají amarillo molido",
+        "150g de queso fresco en cubos",
+        "1/2 taza de leche evaporada",
+        "Papas sancochadas, sal y huacatay"
+      ],
+      "pasos": [
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir el tarwi y cocinar con un chorrito de agua o caldo por 10 minutos.",
+        "Incorporar las papas sancochadas en cubos.",
+        "Añadir el queso fresco y la leche evaporada al final para dar cremosidad.",
+        "Aromatizar con una rama de huacatay picada.",
+        "Servir caliente con arroz blanco."
+      ]
+    },
+    {
+      "id": "SIE-FON-015",
+      "nombre": "Estofado de Alpaca",
+      "tiempo_preparacion": "60 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Carne de alpaca (baja en grasa y colesterol) guisada con verduras y vino de la zona o chicha.",
+      "ingredientes": [
+        "1 kg de carne de alpaca troceada",
+        "2 cebollas y 2 zanahorias en rodajas",
+        "1/2 taza de chicha de jora o vino tinto",
+        "2 cucharadas de pasta de ají panca",
+        "Sal, pimienta, comino y laurel",
+        "Papas sancochadas"
+      ],
+      "pasos": [
+        "Sellar la carne de alpaca en una olla con aceite caliente.",
+        "Añadir la cebolla, ajo y ají panca. Sofreír bien.",
+        "Verter la chicha o vino y añadir el laurel.",
+        "Incorporar las zanahorias y cocinar a fuego lento hasta que la carne esté tierna (la alpaca se cocina similar a la res).",
+        "Rectificar la sal.",
+        "Servir acompañado de papas y arroz."
+      ]
+    },
+    {
+      "id": "SIE-FON-016",
+      "nombre": "Frito Cajamarquino",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Plato festivo de Cajamarca. Costillas de cerdo fritas acompañadas de un guiso de vísceras (sangrecita) y papas.",
+      "ingredientes": [
+        "1 kg de costilla de cerdo",
+        "1/2 kg de papas picadas en cubos sancochadas",
+        "1/2 taza de pasta de ají panca",
+        "200g de menudencia de cerdo picada (opcional)",
+        "Sal, pimienta, comino y azafrán (palillo)"
+      ],
+      "pasos": [
+        "Sancochar las costillas con sal y palillo hasta que estén suaves. Luego freírlas en su propia grasa.",
+        "Aparte, hacer un aderezo con ají panca, ajo y la menudencia picada.",
+        "Añadir las papas sancochadas al aderezo y mezclar bien para que tomen el color del ají.",
+        "Servir las costillas fritas sobre el guiso de papas.",
+        "Acompañar con una salsa de cebolla con mucho limón."
+      ]
+    },
+    {
+      "id": "SIE-FON-017",
+      "nombre": "Matambre Frito con Papas Nativas",
+      "tiempo_preparacion": "90 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Carne de la capa delgada entre el cuero y las costillas del cerdo, sancochada y frita hasta quedar crocante.",
+      "ingredientes": [
+        "1 kg de matambre de cerdo",
+        "1/2 kg de papas nativas variadas",
+        "2 cucharadas de ajo, sal y pimienta",
+        "Hierbabuena fresca",
+        "Aceite para freír"
+      ],
+      "pasos": [
+        "Sancochar el matambre con hierbabuena y sal hasta que esté muy tierno.",
+        "Cortar en piezas grandes y sazonar con ajo y pimienta.",
+        "Freír en abundante aceite hasta que la piel y la grasa estén bien doradas.",
+        "Sancochar las papas nativas con su cáscara.",
+        "Servir el matambre con las papas y una ensalada de berros."
+      ]
+    },
+    {
+      "id": "SIE-FON-018",
+      "nombre": "Locro de Pecho Arequipeño",
+      "tiempo_preparacion": "120 min",
+      "porciones": 4,
+      "dificultad": "Alta",
+      "descripcion": "Guiso denso y potente hecho con carne de pecho de res, papas que se deshacen y un toque de menta serrana.",
+      "ingredientes": [
+        "1 kg de pecho de res en trozos",
+        "1 kg de papa blanca (que sea arenosa)",
+        "2 cucharadas de ají panca molido",
+        "1 cebolla picada y 1 cucharada de ajo",
+        "Sal, pimienta y una rama de menta o hierbabuena",
+        "Choclo sancochado para acompañar"
+      ],
+      "pasos": [
+        "Cocinar el pecho de res en agua con sal hasta que esté muy suave. Reservar el caldo.",
+        "Hacer un aderezo con cebolla, ajo y ají panca.",
+        "Añadir las papas peladas y cortadas en trozos grandes junto con la carne cocida.",
+        "Verter caldo de la cocción (sin cubrir totalmente) y cocinar moviendo de vez en cuando para que las papas se deshagan y espesen el guiso.",
+        "Cuando tenga consistencia de puré rústico, añadir la menta picada.",
+        "Servir con una rodaja de choclo."
+      ]
+    },
+    {
+      "id": "SIE-FON-019",
+      "nombre": "Choncholí con Papas Doradas",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Tripas de cordero o res maceradas en ají panca y especias, asadas a la plancha o carbón.",
+      "ingredientes": [
+        "500g de choncholí (tripa fina) bien limpio y cocido",
+        "2 cucharadas de pasta de ají panca",
+        "1 cucharada de vinagre y 1 de ajo",
+        "Sal, pimienta, comino y orégano",
+        "Papas blancas sancochadas y cortadas en rodajas"
+      ],
+      "pasos": [
+        "Lavar el choncholí y sancocharlo con sal hasta que esté tierno. Cortar en trozos de 5 cm.",
+        "Macerar con el ají panca, vinagre, ajo y especias por 1 hora.",
+        "En una plancha caliente con un poco de aceite, freír el choncholí hasta que esté dorado y crocante.",
+        "En la misma plancha, dorar las rodajas de papa.",
+        "Servir muy caliente con un toque de ají de huacatay."
+      ]
+    },
+    {
+      "id": "SIE-FON-020",
+      "nombre": "Chancho al Horno Cusqueño",
+      "tiempo_preparacion": "120 min (+ 12h macerado)",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Plato festivo del Cusco. Carne de cerdo marinada en especias tradicionales y horneada a fuego lento hasta que se deshaga.",
+      "ingredientes": [
+        "2 kg de pierna o costillar de cerdo",
+        "1/2 taza de pasta de ají panca",
+        "1/2 taza de vinagre o chicha de jora",
+        "2 cucharadas de ajo, pimienta, comino y sal",
+        "Acompañamiento: Tamal cusqueño, papa sancochada y moraya (chuño blanco)"
+      ],
+      "pasos": [
+        "Hacer cortes profundos en la carne de cerdo.",
+        "Macerar con la mezcla de ají panca, vinagre, ajo y especias por lo menos 12 horas.",
+        "Colocar en una asadera y cubrir con papel aluminio.",
+        "Hornear a 160°C por 1.5 horas. Retirar el papel y subir a 200°C por 30 minutos más para dorar la piel.",
+        "Servir en tajadas generosas con su propio jugo, un tamal y moraya sancochada."
+      ]
+    },
+    {
+      "id": "SIE-FON-021",
+      "nombre": "Timpu o Puchero Cusqueño",
+      "tiempo_preparacion": "150 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "El festín de los carnavales. Un hervido de carnes y frutas que representa la abundancia de la cosecha cusqueña.",
+      "ingredientes": [
+        "1 kg de pecho de vaca y 1/2 kg de cabeza de cordero",
+        "200g de tocino o jamón serrano",
+        "6 papas blancas, 3 camotes y 3 rodajas de pavo",
+        "1/2 col (repollo), 3 zanahorias y 100g de garbanzos",
+        "3 duraznos y 3 peras (frutas de estación)",
+        "Sal, pimienta y arroz blanco para acompañar"
+      ],
+      "pasos": [
+        "Sancochar las carnes en abundante agua con sal hasta que estén tiernas.",
+        "Añadir los garbanzos y la col.",
+        "Incorporar las papas, camotes y zanahorias.",
+        "Al final, colocar las frutas enteras (duraznos y peras) sobre los demás ingredientes para que se cocinen al vapor.",
+        "Servir las carnes, verduras y frutas en una fuente grande y el caldo en platos aparte.",
+        "Acompañar con arroz graneado."
+      ]
+    },
+    {
+      "id": "SIE-FON-022",
+      "nombre": "Picante de Trigo con Queso",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Guiso cremoso y nutritivo que utiliza el trigo resbalado como base, ideal para un almuerzo energético.",
+      "ingredientes": [
+        "1/2 kg de trigo pelado (remojado)",
+        "200g de queso fresco en cubos",
+        "1 cebolla picada y 1 cucharada de ají amarillo",
+        "1/2 taza de leche evaporada",
+        "2 papas blancas en cuadraditos",
+        "Huacatay, sal y pimienta"
+      ],
+      "pasos": [
+        "Cocinar el trigo en agua con sal hasta que esté bien tierno.",
+        "Hacer un aderezo con cebolla, ajo y ají amarillo.",
+        "Añadir el trigo cocido y las papas.",
+        "Dejar cocinar hasta que las papas estén suaves.",
+        "Incorporar la leche, el queso fresco y el huacatay picado.",
+        "Mezclar bien hasta que el queso se funda ligeramente y servir."
+      ]
+    },
+    {
+      "id": "SIE-FON-023",
+      "nombre": "Sajta de Pollo (Estilo Puno)",
+      "tiempo_preparacion": "50 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Guiso altiplánico de pollo bañado en una salsa espesa de ají amarillo y maní, acompañado de chuño blanco.",
+      "ingredientes": [
+        "4 presas de pollo",
+        "1/2 taza de ají amarillo molido",
+        "2 cebollas blancas picadas en juliana",
+        "1/2 taza de maní tostado y molido",
+        "1/2 kg de tunta (chuño blanco) remojado y troceado",
+        "Sal, pimienta y comino"
+      ],
+      "pasos": [
+        "Sancochar el pollo ligeramente y reservar el caldo.",
+        "En una olla, freír la cebolla con el ají amarillo hasta que doren bien.",
+        "Añadir el maní molido y un poco de caldo.",
+        "Incorporar el pollo y la tunta.",
+        "Guisar a fuego lento por 20 minutos.",
+        "Servir con una ensalada de cebolla y tomate encima."
+      ]
+    },
+    {
+      "id": "SIE-FON-024",
+      "nombre": "Capchi de Setas (Hongos de Monte)",
+      "tiempo_preparacion": "35 min",
+      "porciones": 2,
+      "dificultad": "Media",
+      "descripcion": "Guiso tradicional cusqueño que aprovecha los hongos silvestres de la temporada de lluvias.",
+      "ingredientes": [
+        "1/2 kg de setas frescas de monte (o champiñones)",
+        "2 papas amarillas en cubos",
+        "1/2 taza de habas verdes peladas",
+        "1 cebolla picada y ají amarillo",
+        "100g de queso fresco y 1/4 taza de leche",
+        "Rama de huacatay y sal"
+      ],
+      "pasos": [
+        "Lavar bien las setas y trocearlas.",
+        "Hacer un aderezo de cebolla, ajo y ají amarillo.",
+        "Añadir las habas, las papas y las setas con un chorrito de agua.",
+        "Cocinar hasta que las verduras estén tiernas.",
+        "Añadir el queso, la leche y el huacatay al final.",
+        "Servir con arroz blanco."
+      ]
+    },
+    {
+      "id": "SIE-FON-025",
+      "nombre": "Chicharrón de Alpaca",
+      "tiempo_preparacion": "40 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Trozos de carne de alpaca fritos, valorados por ser una carne magra y saludable con el sabor del campo.",
+      "ingredientes": [
+        "1 kg de carne de alpaca picada en trozos",
+        "1/2 kg de maíz mote cocido",
+        "1 rama de hierbabuena y de paico",
+        "Ajo, sal y pimienta",
+        "Aceite para freír"
+      ],
+      "pasos": [
+        "Sancochar la alpaca con un poco de agua, sal y las hierbas hasta que el agua se consuma.",
+        "Añadir aceite o manteca y freír los trozos de carne hasta que doren.",
+        "Retirar del fuego una vez que estén crocantes.",
+        "Servir con abundante mote caliente y salsa criolla."
+      ]
+    },
+    {
+      "id": "SIE-FON-026",
+      "nombre": "Patachi (Guiso Huancavelicano)",
+      "tiempo_preparacion": "120 min",
+      "porciones": 6,
+      "dificultad": "Alta",
+      "descripcion": "Un plato sumamente potente hecho con trigo, menestras y carnes ahumadas que se cocina por horas.",
+      "ingredientes": [
+        "1/2 kg de trigo pelado",
+        "100g de frijoles, habas secas y arvejas secas",
+        "200g de tocino ahumado o jamón serrano",
+        "200g de carne de res",
+        "Cebolla, ajo y ají panca",
+        "Sal y orégano seco"
+      ],
+      "pasos": [
+        "Remojar el trigo y las menestras desde la víspera.",
+        "Cocinar el trigo y las menestras con las carnes en abundante agua.",
+        "Cuando todo esté suave, añadir un aderezo de cebolla, ajo y ají panca.",
+        "Dejar que el guiso tome consistencia espesa.",
+        "Sazonar con sal y orégano.",
+        "Servir en plato hondo como plato único."
+      ]
+    },
+    {
+      "id": "SIE-FON-027",
+      "nombre": "Japchi de Papas con Queso (Ayacucho)",
+      "tiempo_preparacion": "30 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Plato sencillo pero adictivo que mezcla papas harinosas con una crema de queso y rocoto.",
+      "ingredientes": [
+        "1 kg de papa amarilla sancochada",
+        "300g de queso fresco serrano",
+        "1/2 rocoto (sin pepas)",
+        "Aceite vegetal, sal y huacatay picado"
+      ],
+      "pasos": [
+        "Pelar y trocear las papas sancochadas.",
+        "Moler el queso con el rocoto y el aceite hasta obtener una pasta rústica (puede ser en batán o licuadora).",
+        "Mezclar la pasta de queso con las papas calientes.",
+        "Añadir el huacatay picado.",
+        "Servir caliente o frío."
+      ]
+    },
+    {
+      "id": "SIE-FON-028",
+      "nombre": "Lengua a la Vinagreta (Serrano Style)",
+      "tiempo_preparacion": "100 min",
+      "porciones": 4,
+      "dificultad": "Media",
+      "descripcion": "Versión andina de la lengua fría, servida con papas sancochadas y abundante aliño herbal.",
+      "ingredientes": [
+        "1 lengua de res cocida y pelada",
+        "1 cebolla roja picada finamente",
+        "1/2 taza de vinagre tinto",
+        "2 cucharadas de perejil picado",
+        "Aceite de oliva, sal y pimienta blanca",
+        "Papas blancas sancochadas"
+      ],
+      "pasos": [
+        "Cortar la lengua en láminas delgadas.",
+        "En un bol, mezclar la cebolla, el vinagre, el aceite y el perejil.",
+        "Colocar las láminas de lengua en una fuente y bañarlas con la vinagreta.",
+        "Dejar reposar 1 hora en refrigeración para que marine.",
+        "Servir sobre rodajas de papa blanca."
+      ]
+    },
+    {
+      "id": "SIE-FON-029",
+      "nombre": "Quinua Atamalada",
+      "tiempo_preparacion": "45 min",
+      "porciones": 4,
+      "dificultad": "Baja",
+      "descripcion": "Guiso cremoso de quinua que imita la textura del tamal, enriquecido con queso y leche.",
+      "ingredientes": [
+        "2 tazas de quinua lavada",
+        "2 papas blancas en cubos",
+        "1/2 taza de leche evaporada",
+        "150g de queso fresco",
+        "1 cebolla picada y ají panca",
+        "Sal y pimienta"
+      ],
+      "pasos": [
+        "Cocinar la quinua con las papas en agua con sal hasta que estén tiernas.",
+        "Hacer un aderezo con cebolla, ajo y ají panca e incorporarlo a la olla.",
+        "Bajar el fuego y añadir la leche y el queso.",
+        "Remover constantemente hasta que tome una consistencia melosa.",
+        "Servir con arroz blanco o solo."
+      ]
+    },
+    {
+      "id": "SIE-FON-030",
+      "nombre": "Trucha al Horno con Hierbas Andinas",
+      "tiempo_preparacion": "40 min",
+      "porciones": 2,
+      "dificultad": "Baja",
+      "descripcion": "Trucha entera asada con el aroma de la muña y el huacatay, una opción saludable y elegante.",
+      "ingredientes": [
+        "2 truchas enteras limpias",
+        "Ramas de muña y huacatay frescas",
+        "2 cucharadas de ajo molido",
+        "Sal, pimienta y aceite de oliva",
+        "Papas nativas para acompañar"
+      ],
+      "pasos": [
+        "Sazonar las truchas por dentro y por fuera con sal, pimienta y ajo.",
+        "Colocar ramas de hierbas dentro de la panza de la trucha.",
+        "Poner en una fuente para horno con un chorrito de aceite de oliva.",
+        "Hornear a 180°C por 20 a 25 minutos.",
+        "Servir con papas nativas sancochadas."
+      ]
+    }
+  ]
+}
