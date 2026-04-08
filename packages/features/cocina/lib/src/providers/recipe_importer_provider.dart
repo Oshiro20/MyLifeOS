@@ -398,7 +398,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       {double threshold = 0.70}) async {
     if (importedRecipe == null) return;
     final checker = RecipeDuplicateChecker();
-    duplicateMatches = checker.findDuplicates(importedRecipe!, existingRecipes,
+    duplicateMatches = RecipeDuplicateChecker.findDuplicates(
+        importedRecipe!, existingRecipes,
         threshold: threshold);
     if (duplicateMatches.isNotEmpty) {
       state = RecipeImportState.duplicateFound;

@@ -49,10 +49,13 @@ class CocinaRepository implements ICocinaRepository {
         goal: NutritionGoal.values[r.goalIndex],
         isFavorite: r.isFavorite,
         createdAt: r.createdAt,
-        sourceIndex: r.sourceIndex,
-        region: r.region.isEmpty ? null : r.region,
-        difficulty: r.difficulty.isEmpty ? null : r.difficulty,
-        sourceUrl: r.sourceUrl,
+        cuisineStyle: r.region.isNotEmpty ? r.region : null,
+        fuenteUrl: r.sourceUrl,
+        fuenteLabel: r.sourceIndex == 0
+            ? 'Local'
+            : r.sourceIndex == 1
+                ? 'TheMealDB'
+                : 'Chef IA',
       );
 
   ShoppingItem _toShoppingItem(ShoppingItemEntry e) => ShoppingItem(
@@ -154,10 +157,10 @@ class CocinaRepository implements ICocinaRepository {
           goalIndex: Value(recipe.goal.index),
           isFavorite: Value(recipe.isFavorite),
           createdAt: Value(now),
-          sourceIndex: Value(recipe.sourceIndex),
-          region: Value(recipe.region ?? ''),
-          difficulty: Value(recipe.difficulty ?? 'Media'),
-          sourceUrl: Value(recipe.sourceUrl),
+          sourceIndex: Value(0),
+          region: Value(recipe.cuisineStyle ?? ''),
+          difficulty: Value('Media'),
+          sourceUrl: Value(recipe.fuenteUrl),
         ));
 
     // Reemplazar ingredientes de la receta
@@ -213,10 +216,8 @@ class CocinaRepository implements ICocinaRepository {
       imageAssetId: Value(recipe.imageAssetId),
       goalIndex: Value(recipe.goal.index),
       isFavorite: Value(recipe.isFavorite),
-      sourceIndex: Value(recipe.sourceIndex),
-      region: Value(recipe.region ?? ''),
-      difficulty: Value(recipe.difficulty ?? 'Media'),
-      sourceUrl: Value(recipe.sourceUrl),
+      region: Value(recipe.cuisineStyle ?? ''),
+      sourceUrl: Value(recipe.fuenteUrl),
     ));
 
     // Update ingredients
