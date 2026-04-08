@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -129,6 +129,19 @@ class AppDatabase extends _$AppDatabase {
             debugPrint('📅 [DB v13] Creating weekly menu table...');
             await m.createTable(weeklyMenuEntries);
             debugPrint('✅ [DB v13] Weekly menu table created');
+          }
+          if (from < 14) {
+            try {
+              debugPrint(
+                  '🌐 [DB v14] Adding hybrid system columns to recipes...');
+              await m.addColumn(recipes, recipes.sourceIndex);
+              await m.addColumn(recipes, recipes.region);
+              await m.addColumn(recipes, recipes.difficulty);
+              await m.addColumn(recipes, recipes.sourceUrl);
+              debugPrint('✅ [DB v14] Hybrid columns added to recipes');
+            } catch (e) {
+              debugPrint('⚠️ [DB v14] Migration failed: $e');
+            }
           }
 
           debugPrint('✅ [DB] Migration completed from v$from to v$to');
