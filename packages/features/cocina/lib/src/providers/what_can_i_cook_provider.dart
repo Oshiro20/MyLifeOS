@@ -5,6 +5,8 @@ import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/user_food_preferences_provider.dart';
 import '../providers/chef_preferences_provider.dart';
+import '../utils/cooking_history_service.dart';
+import '../utils/suggestions_cache_service.dart';
 
 enum WhatCanICookState { initial, loading, success, error }
 
@@ -28,6 +30,9 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   // Cooked recipe IDs (history)
   final Set<String> _cookedIds = {};
 
+  // Cache service
+  final _cacheService = SuggestionsCacheService();
+
   /// Get currently visible suggestions (excluding dismissed)
   List<RecipeSuggestion> get visibleSuggestions =>
       suggestions.where((s) => !_dismissedIds.contains(s.recipe.id)).toList();
@@ -42,13 +47,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   /// Mark a recipe as cooked
   void markAsCooked(String recipeId) {
     _cookedIds.add(recipeId);
-  }
-
-  /// Get list of recently cooked recipe names (for variety)
-  List<String> getCookedRecipeNames() {
-    // In a real app, we would fetch names from a history store
-    // For now, return empty list (the useCase will handle this)
-    return [];
   }
 
   /// Get current suggestion mode
@@ -95,8 +93,21 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   Future<void> generateSuggestions({
     String? cuisinePreference,
     SuggestionMode? mode,
+    bool forceRefresh = false,
   }) async {
     if (mode != null) _currentMode = mode;
+
+    // Try to load from cache first (unless force refresh)
+    if (!forceRefresh) {
+      final cachedSuggestions = await _cacheService.getCachedSuggestions();
+      if (cachedSuggestions != null && cachedSuggestions.isNotEmpty) {
+        suggestions = cachedSuggestions;
+        state = WhatCanICookState.success;
+        _lastMealPeriod = _getCurrentMealPeriod();
+        debugPrint('✅ Suggestions loaded from cache');
+        return;
+      }
+    }
 
     state = WhatCanICookState.loading;
     errorMessage = null;
@@ -121,10 +132,10 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       final chefPrefs = ref.read(chefPreferencesProvider);
 
       // Get recently used recipes (last 7 days) for week variety
-      final recentlyUsed = _getRecentlyUsedRecipes();
+      final recentlyUsed = await _getRecentlyUsedRecipes();
 
       // Create the use case with Gemini adapter
-      final gemini = ref.read(geminiServiceProvider);
+      final gemini = ref.read(geminiProvider);
       final useCase = WhatCanICookUseCase(_GeminiAdapter(gemini));
 
       suggestions = await useCase.execute(
@@ -137,6 +148,24 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         userPreferences: chefPrefs,
       );
 
+      // Recalculate match percentages using local viability calculator
+      // instead of relying on AI-estimated numbers
+      final viabilityCalc = CalculateRecipeViabilityUseCase();
+      suggestions = suggestions.map((s) {
+        final viability = viabilityCalc.execute(
+          recipeIngredients: s.recipe.ingredients,
+          inventory: inventoryState.ingredients,
+        );
+        return RecipeSuggestion(
+          recipe: s.recipe,
+          matchPercentage: (viability * 100).round(),
+          missingIngredients: s.missingIngredients,
+        );
+      }).toList();
+
+      // Cache the suggestions
+      await _cacheService.saveSuggestions(suggestions);
+
       state = WhatCanICookState.success;
       _lastMealPeriod = _getCurrentMealPeriod();
     } catch (e) {
@@ -145,29 +174,39 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     }
   }
 
-  /// Get recipes used in the last 7 days (from local storage or cooking history)
-  List<String> _getRecentlyUsedRecipes() {
-    // TODO: Implement persistent storage of cooking history
-    // For now, this returns an empty list
-    // In the future, this should read from a SQLite table or SharedPreferences
-    return [];
+  /// Get recipes used in the last 7 days (from persistent storage)
+  Future<List<String>> _getRecentlyUsedRecipes() async {
+    final historyService = CookingHistoryService();
+    return await historyService.getRecentRecipeNames(days: 7);
   }
 
   void reset() {
     state = WhatCanICookState.initial;
     suggestions = [];
     errorMessage = null;
+    _cacheService.clearCache();
   }
 
-  /// Save a suggested recipe to the database
-  Future<bool> saveSuggestion(RecipeSuggestion suggestion) async {
+  /// Clear suggestions cache (user can call this manually)
+  Future<void> clearCache() async {
+    await _cacheService.clearCache();
+  }
+
+  /// Check if we have valid cached suggestions
+  Future<bool> hasCachedSuggestions() async {
+    return await _cacheService.hasValidCache();
+  }
+
+  /// Save a suggested recipe to the database with duplicate check.
+  /// Returns [SaveRecipeResult] indicating success or duplicates found.
+  Future<SaveRecipeResult> saveSuggestion(RecipeSuggestion suggestion) async {
     try {
       final recipesNotifier = ref.read(recipesProvider.notifier);
-      await recipesNotifier.saveRecipe(suggestion.recipe);
-      return true;
+      return await recipesNotifier
+          .saveRecipeWithDuplicateCheck(suggestion.recipe);
     } catch (e) {
       debugPrint('❌ Error saving suggestion: $e');
-      return false;
+      return SaveRecipeResult.error(e.toString());
     }
   }
 
@@ -185,6 +224,11 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
           deducted: [],
         );
       }
+
+      // Record in cooking history
+      final historyService = CookingHistoryService();
+      await historyService.recordCooked(suggestion.recipe.name);
+      _cookedIds.add(suggestion.recipe.id);
 
       return CookResult(
         success: true,

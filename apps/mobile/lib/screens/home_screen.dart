@@ -8,6 +8,7 @@ import 'package:cocina/cocina.dart';
 import 'package:foodcoach/foodcoach.dart';
 import '../services/mylifeos_update_service.dart';
 import '../widgets/update_dialog.dart';
+import '../widgets/ai_dashboard_cards.dart';
 import 'search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -97,6 +98,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _showVoiceAssistantDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Container(
+        height: 300,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Icon(Icons.mic, color: Color(0xFF00C896), size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'Escuchando...',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Dime algo como: "Añade un café a mis gastos"',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white38, fontSize: 14),
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white10,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Detener'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -110,6 +160,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             : 'Buenas noches';
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showVoiceAssistantDialog(context),
+        backgroundColor: const Color(0xFF00C896),
+        label: const Text('IA Voz', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        icon: const Icon(Icons.mic, color: Colors.white),
+      ),
       body: RefreshIndicator(
         color: primary,
         backgroundColor: isDark ? const Color(0xFF152019) : Colors.white,
@@ -184,9 +240,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (_newVersion != null) _UpdateBanner(version: _newVersion!),
                   if (_newVersion != null) const SizedBox(height: 12),
 
+                  // ── Insight del Día AI (Novedad Phase 2) ───────────────────────────
+                  const InsightDelDiaCard(),
+                  const SizedBox(height: 20),
+
                   // ── Score de bienestar ──────────────────────────────────────
                   _WellbeingCard(isDark: isDark, primary: primary),
                   const SizedBox(height: 20),
+
+                  // ── Outfit del Día AI ───────────────────────────────────────
+                  const OutfitAIPreviewCard(),
+                  const SizedBox(height: 12),
 
                   // ── Acceso rápido ───────────────────────────────────────────
                   const Text('Módulos',
@@ -202,6 +266,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   const SizedBox(height: 12),
                   _FinanceSummary(isDark: isDark, primary: primary),
+                  const SizedBox(height: 12),
+                  const FinanceHealthCard(),
                   const SizedBox(height: 20),
 
                   // ── Actividad reciente ──────────────────────────────────────

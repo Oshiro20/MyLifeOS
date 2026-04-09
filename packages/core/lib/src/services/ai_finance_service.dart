@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'ai_service.dart';
-import 'ai_chat_service.dart' show offlineCacheProvider;
 import 'offline_cache_service.dart';
 import 'connectivity_service.dart';
 
@@ -177,14 +176,70 @@ Devuelve EXACTAMENTE este JSON sin markdown ni texto adicional:
       return null;
     }
   }
+
+  /// Predice el gasto del próximo mes basado en el historial.
+  Future<String?> predictNextMonth({
+    required List<Map<String, dynamic>> history,
+  }) async {
+    if (history.isEmpty) return null;
+
+    final prompt = '''
+Eres un analista de datos financiero. Tengo este historial de gastos de los últimos meses:
+${history.toString()}
+
+1. Predice el gasto total aproximado para el próximo mes.
+2. Identifica si hay una tendencia al alza o a la baja.
+3. Da una recomendación para el cierre del mes.
+
+Responde en formato Markdown ejecutivo.
+''';
+
+    return await _gemini.generateText(prompt: prompt, cacheKey: 'finance_prediction');
+  }
+
+  /// Detecta "Gastos Hormiga" y suscripciones innecesarias.
+  Future<List<String>> detectWastefulExpenses({
+    required List<Map<String, dynamic>> transactions,
+  }) async {
+    if (transactions.isEmpty) return [];
+
+    final prompt = '''
+Eres un experto en ahorro. Analiza estas transacciones y busca "gastos hormiga" 
+(pequeños gastos recurrentes que sumados son mucho) o suscripciones duplicadas/olvidadas.
+$transactions
+
+Devuelve una lista JSON de strings con los hallazgos.
+Ejemplo: ["Gasto excesivo en cafeterías (S/120 al mes)", "Suscripción duplicada detectada"]
+Solo devuelve el JSON array.
+''';
+
+    try {
+      final result = await _gemini.generateText(prompt: prompt);
+      if (result == null) return [];
+      
+      final clean = result
+          .replaceAll(RegExp(r'```json\s*'), '')
+          .replaceAll(RegExp(r'```\s*'), '')
+          .trim();
+          
+      final decoded = jsonDecode(clean);
+      if (decoded is List) {
+        return List<String>.from(decoded);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('[AiFinanceService] Error detectWastefulExpenses: $e');
+      return [];
+    }
+  }
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-final aiFinanceServiceProvider = Provider<AiFinanceService>((ref) {
+final aiFinanceProvider = Provider<AiFinanceService>((ref) {
   return AiFinanceService(
-    ref.read(geminiServiceProvider),
+    ref.read(geminiProvider),
     ref.read(offlineCacheProvider),
-    ref.read(connectivityServiceProvider),
+    ref.read(connectivityProvider),
   );
 });

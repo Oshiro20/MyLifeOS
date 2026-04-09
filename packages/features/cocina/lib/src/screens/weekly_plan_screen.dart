@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
+import 'package:data/data.dart';
 import '../providers/cocina_providers.dart';
+import '../utils/cooking_history_service.dart';
 import 'suggestions_tab.dart';
 
 class WeeklyPlanScreen extends ConsumerStatefulWidget {
@@ -25,6 +28,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(weeklyMenuProvider);
     final recipesState = ref.watch(recipesProvider);
+    final invState = ref.watch(inventoryProvider);
     final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     final meals = [
       {'type': 0, 'label': 'Desayuno', 'icon': '🌅'},
@@ -42,6 +46,11 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
+            icon: const Icon(Icons.ios_share, color: Color(0xFF00F0FF)),
+            onPressed: () => _shareMenu(context),
+            tooltip: 'Exportar Menú',
+          ),
+          IconButton(
             icon: const Icon(Icons.auto_awesome, color: Color(0xFFFF9800)),
             onPressed: () => _generateMenu(context),
             tooltip: 'Generar Menú Automático',
@@ -53,16 +62,23 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
           : state is WeeklyMenuLoaded
               ? ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: days.length,
+                  itemCount: days.length + 1,
                   itemBuilder: (ctx, i) {
-                    final day = i + 1;
+                    // First item: cooking history banner
+                    if (i == 0) {
+                      return _CookingHistoryBanner();
+                    }
+                    final day = i; // shifted by 1
                     return _DaySection(
-                      dayLabel: days[i],
+                      dayLabel: days[i - 1],
                       meals: meals,
                       entries: state.entries,
                       recipes: recipesState.recipes,
+                      inventory: invState.ingredients,
                       day: day,
                       onTapRecipe: (entry) => _showRecipeDetail(context, entry),
+                      onAssignEmpty: (d, mealType) => _showRecipePicker(
+                          context, d, mealType, state.entries),
                     );
                   },
                 )
@@ -119,6 +135,73 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     }
   }
 
+  void _shareMenu(BuildContext context) {
+    final state = ref.read(weeklyMenuProvider);
+    if (state is! WeeklyMenuLoaded || state.entries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No hay menú generado para compartir.'),
+            backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final days = [
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo'
+    ];
+    final recipes = ref.read(recipesProvider).recipes;
+    final buffer = StringBuffer();
+    buffer.writeln('📅 *Menú Semanal - MyLifeOS*');
+    buffer.writeln('');
+
+    for (int d = 1; d <= 7; d++) {
+      buffer.writeln('*${days[d - 1]}*');
+      final dayEntries = state.entries.where((e) => e.dayOfWeek == d).toList();
+      for (final entry in dayEntries) {
+        final meal = _getMealLabel(entry.mealType.toString());
+        final recipe = recipes.firstWhere((r) => r.id == entry.recipeId,
+            orElse: () => Recipe(
+                id: '',
+                name: 'Sin asignar',
+                description: '',
+                durationMinutes: 0,
+                servings: 0,
+                instructions: [],
+                ingredients: [],
+                tags: [],
+                createdAt: DateTime.now()));
+        buffer.writeln('  ${_getMealEmoji(meal)} $meal: ${recipe.name}');
+      }
+      buffer.writeln('');
+    }
+
+    Clipboard.setData(ClipboardData(text: buffer.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('📋 Menú copiado al portapapeles'),
+          backgroundColor: Color(0xFF00E676)),
+    );
+  }
+
+  String _getMealEmoji(String type) {
+    switch (type) {
+      case 'Desayuno':
+        return '🌅';
+      case 'Almuerzo':
+        return '🍛';
+      case 'Cena':
+        return '🌙';
+      default:
+        return '🍽️';
+    }
+  }
+
   void _showRecipeDetail(BuildContext context, dynamic recipe) {
     showModalBottomSheet(
       context: context,
@@ -130,6 +213,84 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
       builder: (_) => RecipeDetailSheet(recipe: recipe),
     );
   }
+
+  Future<void> _showRecipePicker(BuildContext context, int day, String mealType,
+      List<dynamic> currentEntries) async {
+    final recipesState = ref.read(recipesProvider);
+    final allRecipes = recipesState.recipes;
+
+    if (allRecipes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No tienes recetas guardadas para asignar.'),
+            backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final selected = await showModalBottomSheet<Recipe>(
+      context: context,
+      backgroundColor: const Color(0xFF152019),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Seleccionar receta para ${_getMealLabel(mealType)}',
+                style: const TextStyle(
+                    color: Color(0xFF00E676),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: allRecipes.length,
+                itemBuilder: (ctx, i) => ListTile(
+                  title: Text(allRecipes[i].name,
+                      style: const TextStyle(color: Colors.white)),
+                  subtitle: Text('${allRecipes[i].durationMinutes} min',
+                      style: const TextStyle(color: Colors.white54)),
+                  trailing: const Icon(Icons.add_circle_outline,
+                      color: Color(0xFF00E676)),
+                  onTap: () => Navigator.pop(ctx, allRecipes[i]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      // Save to weekly menu
+      final repo = ref.read(cocinaRepositoryProvider);
+      await repo.saveWeeklyMenuEntry(WeeklyMenuEntry(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        dayOfWeek: day,
+        mealType: int.parse(mealType),
+        recipeId: selected.id,
+        isCustom: false,
+      ));
+      ref.read(weeklyMenuProvider.notifier).load();
+    }
+  }
+
+  String _getMealLabel(String type) {
+    switch (type) {
+      case '0':
+        return 'Desayuno';
+      case '1':
+        return 'Almuerzo';
+      case '2':
+        return 'Cena';
+      default:
+        return 'Comida';
+    }
+  }
 }
 
 class _DaySection extends StatelessWidget {
@@ -137,16 +298,20 @@ class _DaySection extends StatelessWidget {
   final List<Map<String, dynamic>> meals;
   final List<dynamic> entries;
   final List<Recipe> recipes;
+  final List<InventoryIngredient> inventory;
   final int day;
   final Function(dynamic recipe) onTapRecipe;
+  final Function(int day, String mealType) onAssignEmpty;
 
   const _DaySection({
     required this.dayLabel,
     required this.meals,
     required this.entries,
     required this.recipes,
+    required this.inventory,
     required this.day,
     required this.onTapRecipe,
+    required this.onAssignEmpty,
   });
 
   String? _getRecipeName(String? recipeId) {
@@ -156,6 +321,22 @@ class _DaySection extends StatelessWidget {
       return recipe.name;
     } catch (e) {
       return null;
+    }
+  }
+
+  int _getMatchPercentage(String? recipeId) {
+    if (recipeId == null || recipeId.isEmpty) return 0;
+    try {
+      final recipe = recipes.firstWhere((r) => r.id == recipeId);
+      final available = inventory.map((i) => i.name.toLowerCase()).toSet();
+      final total = recipe.ingredients.length;
+      if (total == 0) return 100;
+      final match = recipe.ingredients
+          .where((i) => available.contains(i.ingredientName.toLowerCase()))
+          .length;
+      return (match / total * 100).round();
+    } catch (e) {
+      return 0;
     }
   }
 
@@ -193,9 +374,10 @@ class _DaySection extends StatelessWidget {
               icon: m['icon'],
               recipeId: entry?.recipeId,
               recipeName: recipeName,
+              matchPercentage: _getMatchPercentage(entry?.recipeId),
               onTap: entry != null && entry.recipeId.isNotEmpty
                   ? () => onTapRecipe(entry)
-                  : null,
+                  : () => onAssignEmpty(day, m['type'].toString()),
             ),
           );
         }),
@@ -209,6 +391,7 @@ class _MealTile extends StatelessWidget {
   final String icon;
   final String? recipeId;
   final String? recipeName;
+  final int matchPercentage;
   final VoidCallback? onTap;
 
   const _MealTile({
@@ -216,6 +399,7 @@ class _MealTile extends StatelessWidget {
     required this.icon,
     required this.recipeId,
     this.recipeName,
+    this.matchPercentage = 0,
     this.onTap,
   });
 
@@ -223,7 +407,7 @@ class _MealTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasRecipe = recipeId != null && recipeId!.isNotEmpty;
     return GestureDetector(
-      onTap: hasRecipe ? onTap : null,
+      onTap: onTap, // Always tappable now
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -232,7 +416,9 @@ class _MealTile extends StatelessWidget {
               : const Color(0xFF2A2A40).withAlpha(100),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: hasRecipe ? const Color(0xFF00E676) : Colors.transparent),
+              color: hasRecipe
+                  ? const Color(0xFF00E676)
+                  : const Color(0xFFFF9800).withAlpha(60)),
         ),
         child: Row(
           children: [
@@ -263,9 +449,121 @@ class _MealTile extends StatelessWidget {
             ),
             Icon(hasRecipe ? Icons.check_circle : Icons.add_circle_outline,
                 color: hasRecipe ? const Color(0xFF00E676) : Colors.white24),
+            if (hasRecipe) ...[
+              const SizedBox(width: 8),
+              Text(
+                '$matchPercentage%',
+                style: TextStyle(
+                    color: matchPercentage == 100
+                        ? const Color(0xFF00E676)
+                        : matchPercentage >= 50
+                            ? const Color(0xFFFFB300)
+                            : const Color(0xFFFF5252),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shows recipes cooked in the last 7 days to help plan variety
+class _CookingHistoryBanner extends StatefulWidget {
+  @override
+  State<_CookingHistoryBanner> createState() => _CookingHistoryBannerState();
+}
+
+class _CookingHistoryBannerState extends State<_CookingHistoryBanner> {
+  late Future<List<String>> _historyFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _historyFuture = CookingHistoryService().getRecentRecipeNames(days: 7);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<String>>(
+      future: _historyFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final recentRecipes = snapshot.data!;
+        if (recentRecipes.isEmpty) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2A40),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.history, color: Colors.white38, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Aún no has cocinado esta semana. ¡Empieza a planificar!',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF9800).withAlpha(20),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFF9800).withAlpha(60)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.history, color: Color(0xFFFF9800), size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Cocinado esta semana:',
+                    style: TextStyle(
+                        color: Color(0xFFFF9800),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: recentRecipes
+                    .map((name) => Chip(
+                          label: Text(name,
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.white)),
+                          backgroundColor:
+                              const Color(0xFFFF9800).withAlpha(40),
+                          labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 0),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ))
+                    .toList(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

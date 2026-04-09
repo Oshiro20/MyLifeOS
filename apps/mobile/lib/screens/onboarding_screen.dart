@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -103,95 +104,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // ── Animation controllers ─────────────────────────────────────────────────
-  late AnimationController _entryController; // entrada de cada slide: 800ms
-  late AnimationController _shimmerController; // shimmer del botón final: loop
-
-  late Animation<double> _emojiScale;
-  late Animation<double> _emojiOpacity;
-  late Animation<Offset> _titleSlide;
-  late Animation<double> _subtitleOpacity;
-  late Animation<double> _featuresDelay;
-  late Animation<double> _shimmer;
-
   @override
   void initState() {
     super.initState();
-
-    _entryController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-
-    _setupAnimations();
-    _entryController.forward();
   }
 
-  void _setupAnimations() {
-    _emojiScale = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _entryController, curve: Curves.elasticOut),
-    );
-
-    _emojiOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entryController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
-      ),
-    );
-
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entryController,
-        curve: const Interval(0.2, 0.7, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _subtitleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entryController,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
-      ),
-    );
-
-    _featuresDelay = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entryController,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeIn),
-      ),
-    );
-
-    _shimmer = Tween<double>(begin: -1.5, end: 2.5).animate(
-      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _entryController.dispose();
-    _shimmerController.dispose();
-    _pageController.dispose();
-    super.dispose();
-  }
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);
-    _entryController
-      ..reset()
-      ..forward();
   }
 
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_done', true);
-    if (mounted) context.go('/home');
+    if (!mounted) return;
+    context.go('/home');
   }
 
   void _nextPage() {
@@ -248,12 +175,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   onPageChanged: _onPageChanged,
                   itemCount: _slides.length,
                   itemBuilder: (_, index) => _SlideContent(
+                    key: ValueKey(index),
                     slide: _slides[index],
-                    emojiScale: _emojiScale,
-                    emojiOpacity: _emojiOpacity,
-                    titleSlide: _titleSlide,
-                    subtitleOpacity: _subtitleOpacity,
-                    featuresDelay: _featuresDelay,
                   ),
                 ),
               ),
@@ -288,7 +211,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   label: isLast ? '✨ Comenzar' : 'Siguiente',
                   accentColor: slide.accentColor,
                   isLast: isLast,
-                  shimmer: _shimmer,
                   onTap: _nextPage,
                 ),
               ),
@@ -302,21 +224,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
 // ── Slide content widget ──────────────────────────────────────────────────────
 
-class _SlideContent extends StatelessWidget {
+ class _SlideContent extends StatelessWidget {
   final _Slide slide;
-  final Animation<double> emojiScale;
-  final Animation<double> emojiOpacity;
-  final Animation<Offset> titleSlide;
-  final Animation<double> subtitleOpacity;
-  final Animation<double> featuresDelay;
 
   const _SlideContent({
+    super.key,
     required this.slide,
-    required this.emojiScale,
-    required this.emojiOpacity,
-    required this.titleSlide,
-    required this.subtitleOpacity,
-    required this.featuresDelay,
   });
 
   @override
@@ -326,96 +239,104 @@ class _SlideContent extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Emoji con escala elástica e icono
-          ScaleTransition(
-            scale: emojiScale,
-            child: FadeTransition(
-              opacity: emojiOpacity,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: slide.accentColor.withValues(alpha: 0.15),
-                  border: Border.all(
-                    color: slide.accentColor.withValues(alpha: 0.4),
-                    width: 2,
+          // Emoji y Contenedor Icono
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: slide.accentColor.withValues(alpha: 0.1),
+              border: Border.all(
+                color: slide.accentColor.withValues(alpha: 0.3),
+                width: 2,
+              ),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(slide.emoji, style: const TextStyle(fontSize: 64)),
+                Positioned(
+                  bottom: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: slide.accentColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: slide.accentColor.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      slide.icon,
+                      size: 20,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text(slide.emoji, style: const TextStyle(fontSize: 56)),
-                    Positioned(
-                      bottom: 4,
-                      right: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: slide.accentColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: Icon(
-                          slide.icon,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ),
+          )
+              .animate()
+              .scale(
+                duration: 800.ms,
+                curve: Curves.elasticOut,
+                begin: const Offset(0.3, 0.3),
+              )
+              .fadeIn(duration: 400.ms),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 48),
 
-          // Título con slide-up
-          SlideTransition(
-            position: titleSlide,
-            child: Text(
-              slide.title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-                height: 1.25,
-              ),
+          // Título
+          Text(
+            slide.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              height: 1.2,
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 600.ms, delay: 200.ms)
+              .slideY(begin: 0.3, end: 0, curve: Curves.easeOutCubic),
 
           const SizedBox(height: 16),
 
-          // Subtítulo con fade
-          FadeTransition(
-            opacity: subtitleOpacity,
-            child: Text(
-              slide.subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 15,
-                height: 1.6,
-              ),
+          // Subtítulo
+          Text(
+            slide.subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 16,
+              height: 1.5,
             ),
-          ),
+          ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
 
-          // Features con animación delay
+          // Features
           if (slide.features.isNotEmpty)
-            FadeTransition(
-              opacity: featuresDelay,
-              child: Column(
-                children: slide.features
-                    .map((f) => _FeatureChip(
-                          label: f,
-                          accentColor: slide.accentColor,
-                        ))
-                    .toList(),
-              ),
+            Column(
+              children: slide.features
+                  .asMap()
+                  .entries
+                  .map((entry) => _FeatureChip(
+                        label: entry.value,
+                        accentColor: slide.accentColor,
+                      )
+                          .animate()
+                          .fadeIn(duration: 400.ms, delay: (600 + (entry.key * 100)).ms)
+                          .slideX(begin: 0.1, end: 0))
+                  .toList(),
             ),
         ],
       ),
@@ -471,64 +392,55 @@ class _FeatureChip extends StatelessWidget {
 
 // ── Action button con shimmer ─────────────────────────────────────────────────
 
-class _ActionButton extends StatelessWidget {
+ class _ActionButton extends StatelessWidget {
   final String label;
   final Color accentColor;
   final bool isLast;
-  final Animation<double> shimmer;
   final VoidCallback onTap;
 
   const _ActionButton({
     required this.label,
     required this.accentColor,
     required this.isLast,
-    required this.shimmer,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget button = SizedBox(
+    Widget button = Container(
       width: double.infinity,
-      height: 56,
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: accentColor,
           foregroundColor: Colors.white,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           elevation: 0,
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
         ),
       ),
     );
 
-    // En el último slide, envuelve con efecto shimmer
     if (isLast) {
-      button = AnimatedBuilder(
-        animation: shimmer,
-        builder: (_, child) {
-          return ShaderMask(
-            shaderCallback: (rect) => LinearGradient(
-              colors: [
-                accentColor,
-                Colors.white.withValues(alpha: 0.9),
-                accentColor,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-              begin: Alignment(shimmer.value - 1, 0),
-              end: Alignment(shimmer.value + 1, 0),
-            ).createShader(rect),
-            blendMode: BlendMode.srcATop,
-            child: child,
-          );
-        },
-        child: button,
-      );
+      return button
+          .animate(onPlay: (controller) => controller.repeat())
+          .shimmer(duration: 2.seconds, color: Colors.white.withValues(alpha: 0.4))
+          .then(delay: 1.seconds);
     }
 
     return button;

@@ -41,10 +41,12 @@ android {
         multiDexEnabled = true
     }
 
-    // ── APK Universal — un solo APK para todas las arquitecturas ─────────────
     splits {
         abi {
-            isEnable = false
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = true
         }
     }
 
@@ -78,7 +80,7 @@ flutter {
 dependencies {
     // Required when isCoreLibraryDesugaringEnabled = true
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
-    
+
     // Fix workmanager dependency conflict
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 }

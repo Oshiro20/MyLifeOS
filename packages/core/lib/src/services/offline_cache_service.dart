@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Servicio de caché offline para respuestas de Gemini AI.
 ///
@@ -10,7 +11,7 @@ class OfflineCacheService {
   static const String _tsPrefix = 'ai_cache_ts_';
 
   /// Guarda una respuesta JSON bajo una clave semántica.
-  Future<void> save(String key, String jsonValue) async {
+  Future<void> saveString(String key, String jsonValue) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_prefix$key', jsonValue);
     await prefs.setInt(
@@ -18,7 +19,7 @@ class OfflineCacheService {
   }
 
   /// Carga la respuesta cacheada. Retorna null si no existe.
-  Future<String?> load(String key) async {
+  Future<String?> loadString(String key) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('$_prefix$key');
   }
@@ -34,12 +35,12 @@ class OfflineCacheService {
 
   /// Guarda un objeto Dart encodificándolo como JSON.
   Future<void> saveMap(String key, Map<String, dynamic> data) async {
-    await save(key, jsonEncode(data));
+    await saveString(key, jsonEncode(data));
   }
 
   /// Carga un objeto desde caché. Retorna null si no existe o falla el parseo.
   Future<Map<String, dynamic>?> loadMap(String key) async {
-    final raw = await load(key);
+    final raw = await loadString(key);
     if (raw == null) return null;
     try {
       return jsonDecode(raw) as Map<String, dynamic>;
@@ -63,3 +64,8 @@ class OfflineCacheService {
     return DateTime.fromMillisecondsSinceEpoch(ts);
   }
 }
+
+/// Provider Riverpod para OfflineCacheService.
+final offlineCacheProvider = Provider<OfflineCacheService>(
+  (ref) => OfflineCacheService(),
+);

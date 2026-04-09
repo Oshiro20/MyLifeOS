@@ -102,8 +102,8 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
     if (_ai != null) {
       try {
-        final jsonStr = await _ai.generateFoodEvaluation(
-          ingredients: lowerIngredients,
+        final jsonStr = await _ai.evaluateMeal(
+          description: lowerIngredients.join(', '),
           photoPath: photoPath,
         );
         if (jsonStr != null) {

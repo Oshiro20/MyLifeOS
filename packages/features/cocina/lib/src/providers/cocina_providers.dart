@@ -1,6 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
+import '../utils/cooking_history_service.dart';
+
+/// Result of attempting to save a recipe with duplicate check
+class SaveRecipeResult {
+  final bool success;
+  final bool hasDuplicates;
+  final List<DuplicateMatch> duplicates;
+  final Recipe? savedRecipe;
+  final String? error;
+
+  const SaveRecipeResult.success({
+    required this.savedRecipe,
+    this.hasDuplicates = false,
+    this.duplicates = const [],
+  })  : success = true,
+        error = null;
+
+  const SaveRecipeResult.duplicatesFound({
+    required this.duplicates,
+    required this.savedRecipe,
+  })  : success = false,
+        hasDuplicates = true,
+        error = null;
+
+  const SaveRecipeResult.error(this.error)
+      : success = false,
+        hasDuplicates = false,
+        duplicates = const [],
+        savedRecipe = null;
+}
 
 // ── Estados ───────────────────────────────────────────────────────────────────
 class InventoryState {
@@ -114,7 +144,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
   }
 
   /// Deduct recipe ingredients from pantry
-  /// Returns list of ingredients that were deducted (for feedback)
+  /// Returns list of ingredient names that were deducted (for feedback)
   Future<List<String>> deductRecipeIngredients(
       List<RecipeIngredient> recipeIngredients) async {
     final deducted = <String>[];
@@ -136,9 +166,10 @@ class InventoryNotifier extends Notifier<InventoryState> {
           // Remove from pantry
           updatedIngredients.removeAt(matchIndex);
           deducted.add(recipeIng.ingredientName);
+          await _repo.deleteIngredient(pantryItem.id);
         } else {
           // Update quantity - create new instance since InventoryIngredient is immutable
-          updatedIngredients[matchIndex] = InventoryIngredient(
+          final updated = InventoryIngredient(
             id: pantryItem.id,
             name: pantryItem.name,
             primaryCategory: pantryItem.primaryCategory,
@@ -150,7 +181,9 @@ class InventoryNotifier extends Notifier<InventoryState> {
             imageAssetId: pantryItem.imageAssetId,
             storageArea: pantryItem.storageArea,
           );
+          updatedIngredients[matchIndex] = updated;
           deducted.add(recipeIng.ingredientName);
+          await _repo.updateIngredient(updated);
         }
       }
     }
@@ -160,6 +193,103 @@ class InventoryNotifier extends Notifier<InventoryState> {
     }
 
     return deducted;
+  }
+
+  /// Revert a deduction (undo last cook action)
+  Future<void> revertDeduction(List<RecipeIngredient> recipeIngredients) async {
+    final currentIngredients = state.ingredients;
+    final revertedIngredients =
+        List<InventoryIngredient>.from(currentIngredients);
+
+    for (final recipeIng in recipeIngredients) {
+      final matchIndex = revertedIngredients.indexWhere((pantryItem) =>
+          pantryItem.name.toLowerCase() ==
+          recipeIng.ingredientName.toLowerCase());
+
+      if (matchIndex != -1) {
+        final pantryItem = revertedIngredients[matchIndex];
+        final newQty = pantryItem.quantity + recipeIng.quantity;
+        revertedIngredients[matchIndex] = InventoryIngredient(
+          id: pantryItem.id,
+          name: pantryItem.name,
+          primaryCategory: pantryItem.primaryCategory,
+          subCategory: pantryItem.subCategory,
+          preparation: pantryItem.preparation,
+          quantity: newQty,
+          unit: pantryItem.unit,
+          expirationDate: pantryItem.expirationDate,
+          imageAssetId: pantryItem.imageAssetId,
+          storageArea: pantryItem.storageArea,
+        );
+      } else {
+        // Ingredient was deleted, re-add it (approximate)
+        revertedIngredients.add(InventoryIngredient(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: recipeIng.ingredientName,
+          primaryCategory: 'Otros',
+          subCategory: '',
+          preparation: '',
+          quantity: recipeIng.quantity,
+          unit: recipeIng.unit,
+          expirationDate: null,
+          imageAssetId: '',
+          storageArea: 'pantry',
+        ));
+      }
+    }
+
+    // Persist to DB
+    for (final ing in revertedIngredients) {
+      await _repo.updateIngredient(ing);
+    }
+
+    state = state.copyWith(ingredients: revertedIngredients);
+  }
+
+  /// Move bought shopping items to pantry inventory
+  Future<void> bulkAddBoughtToPantry(List<ShoppingItem> boughtItems) async {
+    if (boughtItems.isEmpty) return;
+
+    for (final item in boughtItems) {
+      final existingIndex = state.ingredients.indexWhere(
+          (ing) => ing.name.toLowerCase() == item.name.toLowerCase());
+
+      if (existingIndex != -1) {
+        final existing = state.ingredients[existingIndex];
+        final updated = InventoryIngredient(
+          id: existing.id,
+          name: existing.name,
+          primaryCategory: existing.primaryCategory,
+          subCategory: existing.subCategory,
+          preparation: existing.preparation,
+          quantity: existing.quantity + item.quantity,
+          unit: existing.unit,
+          expirationDate: existing.expirationDate,
+          imageAssetId: existing.imageAssetId,
+          storageArea: existing.storageArea,
+        );
+        await _repo.updateIngredient(updated);
+        state = state.copyWith(ingredients: [
+          for (int i = 0; i < state.ingredients.length; i++)
+            if (i == existingIndex) updated else state.ingredients[i]
+        ]);
+      } else {
+        final newIng = InventoryIngredient(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: item.name,
+          primaryCategory: 'Otros',
+          subCategory: '',
+          preparation: '',
+          quantity: item.quantity,
+          unit: item.unit,
+          expirationDate: null,
+          imageAssetId: '',
+          storageArea: 'pantry',
+        );
+        await _repo.addIngredient(newIng);
+        state = state.copyWith(ingredients: [newIng, ...state.ingredients]);
+      }
+    }
   }
 
   void clearError() => state = state.copyWith(error: null);
@@ -215,6 +345,49 @@ class RecipesNotifier extends Notifier<RecipesState> {
     }
   }
 
+  /// Save a recipe with automatic duplicate validation.
+  /// Returns [SaveRecipeResult] indicating success, duplicates found, or error.
+  Future<SaveRecipeResult> saveRecipeWithDuplicateCheck(
+    Recipe recipe, {
+    double duplicateThreshold = 0.70,
+  }) async {
+    try {
+      // Check for duplicates against existing recipes
+      final duplicates = RecipeDuplicateChecker.findDuplicates(
+        recipe,
+        state.recipes,
+        threshold: duplicateThreshold,
+      );
+
+      if (duplicates.isNotEmpty) {
+        // Save the recipe anyway but warn the user
+        final saved = await _repo.saveRecipe(recipe);
+        state = state.copyWith(
+          recipes: [saved, ...state.recipes],
+        );
+        return SaveRecipeResult.duplicatesFound(
+          duplicates: duplicates,
+          savedRecipe: saved,
+        );
+      }
+
+      // No duplicates, save normally
+      final saved = await _repo.saveRecipe(recipe);
+      final existing = state.recipes.any((r) => r.id == saved.id);
+      state = state.copyWith(
+        recipes: existing
+            ? [
+                for (final r in state.recipes)
+                  if (r.id == saved.id) saved else r
+              ]
+            : [saved, ...state.recipes],
+      );
+      return SaveRecipeResult.success(savedRecipe: saved);
+    } catch (e) {
+      return SaveRecipeResult.error(e.toString());
+    }
+  }
+
   Future<void> deleteRecipe(String id) async {
     await _repo.deleteRecipe(id);
     state = state.copyWith(
@@ -266,6 +439,15 @@ class RecipesNotifier extends Notifier<RecipesState> {
     await load();
   }
 
+  Future<void> addShoppingItem(ShoppingItem item) async {
+    try {
+      await _repo.addShoppingItem(item);
+      state = state.copyWith(shoppingList: [item, ...state.shoppingList]);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> clearAllShoppingList() async {
     for (final item in state.shoppingList) {
       await _repo.deleteShoppingItem(item.id);
@@ -286,6 +468,11 @@ class RecipesNotifier extends Notifier<RecipesState> {
 final cocinaRepositoryProvider = Provider<ICocinaRepository>((ref) {
   throw UnimplementedError(
       'Provide ICocinaRepository via ProviderScope.overrides');
+});
+
+// Shared service provider — single source of truth for cooking history
+final cookingHistoryServiceProvider = Provider<CookingHistoryService>((_) {
+  return CookingHistoryService();
 });
 
 final inventoryProvider =
@@ -347,7 +534,13 @@ class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
     state = WeeklyMenuLoading();
     try {
       final useCase = GenerateWeeklyMenuUseCase(repository: _repo);
-      await useCase.execute();
+
+      // Get current inventory to prioritize recipes with available ingredients
+      final inventoryNotifier = ref.read(inventoryProvider.notifier);
+      await inventoryNotifier.load();
+      final inventoryState = ref.read(inventoryProvider);
+
+      await useCase.execute(inventory: inventoryState.ingredients);
       await load();
     } catch (e) {
       state = WeeklyMenuInitial();

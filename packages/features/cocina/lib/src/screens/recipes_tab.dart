@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
+import '../utils/cooking_history_service.dart';
 
 class RecipesTab extends ConsumerStatefulWidget {
   const RecipesTab({super.key});
@@ -34,7 +35,16 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
           child: CircularProgressIndicator(color: Color(0xFF00C896)));
     }
 
-    if (state.recipes.isEmpty) {
+    // Sort recipes: by rating (desc), then by name
+    final sortedRecipes = List<Recipe>.from(state.recipes);
+    sortedRecipes.sort((a, b) {
+      final ratingA = a.rating ?? 0;
+      final ratingB = b.rating ?? 0;
+      if (ratingB != ratingA) return ratingB.compareTo(ratingA);
+      return a.name.compareTo(b.name);
+    });
+
+    if (sortedRecipes.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async {
           await ref.read(recipesProvider.notifier).load();
@@ -131,15 +141,15 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
           ),
           // Recipe list
           Expanded(
-            child: _buildFilteredList(state),
+            child: _buildFilteredList(state, sortedRecipes),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilteredList(RecipesState state) {
-    var filtered = state.recipes;
+  Widget _buildFilteredList(RecipesState state, List<Recipe> sortedRecipes) {
+    var filtered = sortedRecipes;
 
     // Filter by category
     if (_selectedCategory != null) {
@@ -201,11 +211,12 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
         subtitle:
             '${recipe.durationMinutes} min · ${recipe.ingredients.length} ingredientes');
     if (!confirmed) return;
+    if (!context.mounted) return;
     await ref.read(recipesProvider.notifier).deleteRecipe(recipe.id);
     if (context.mounted) showSuccess(context, '"${recipe.name}" eliminada.');
   }
 
-  void _showAddRecipeSheet(BuildContext ctx, WidgetRef ref) {
+  Future<void> _showAddRecipeSheet(BuildContext ctx, WidgetRef ref) async {
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
@@ -215,11 +226,54 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
       ),
       builder: (_) => _AddRecipeSheet(
         onSave: (r) async {
-          await ref.read(recipesProvider.notifier).saveRecipe(r);
-          if (ctx.mounted) showSuccess(ctx, '"${r.name}" guardada ✓');
+          await _saveRecipeWithDuplicateCheck(ctx, ref, r);
         },
       ),
     );
+  }
+
+  Future<void> _saveRecipeWithDuplicateCheck(
+      BuildContext context, WidgetRef ref, Recipe recipe) async {
+    final result = await ref
+        .read(recipesProvider.notifier)
+        .saveRecipeWithDuplicateCheck(recipe);
+
+    if (!context.mounted) return;
+
+    if (result.hasDuplicates) {
+      final dupNames = result.duplicates
+          .map((d) =>
+              '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
+          .join('\n');
+      await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('⚠️ Posible duplicado'),
+          content: Text(
+            'Esta receta es similar a:\n\n$dupNames\n\n¿Deseas guardarla de todos modos?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Guardar igual'),
+            ),
+          ],
+        ),
+      );
+
+      if (!context.mounted) return;
+      showSuccess(context, '⚠️ "${recipe.name}" guardada (posible duplicado)');
+    } else if (result.success) {
+      if (!context.mounted) return;
+      showSuccess(context, '"${recipe.name}" guardada ✓');
+    } else if (result.error != null) {
+      if (!context.mounted) return;
+      showError(context, 'Error al guardar: ${result.error}');
+    }
   }
 
   void _showRecipeDetail(BuildContext ctx, Recipe recipe) {
@@ -256,6 +310,12 @@ class _RecipeTile extends StatelessWidget {
     NutritionGoal.gainMuscle: '💪',
     NutritionGoal.other: '🍽️',
   };
+
+  Color _getTimeColor(int minutes) {
+    if (minutes < 20) return const Color(0xFF00E676);
+    if (minutes <= 45) return const Color(0xFFFFB300);
+    return const Color(0xFFFF5252);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -306,6 +366,18 @@ class _RecipeTile extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                    color: _getTimeColor(recipe.durationMinutes).withAlpha(30),
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text('${recipe.durationMinutes}m',
+                    style: TextStyle(
+                        color: _getTimeColor(recipe.durationMinutes),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 4),
               IconButton(
                 icon: Icon(
                     recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -341,6 +413,12 @@ class _RecipeDetailSheet extends StatefulWidget {
 class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   int _scaledServings = 1; // Current scaled servings (default 1 person)
 
+  @override
+  void initState() {
+    super.initState();
+    _scaledServings = widget.recipe.servings;
+  }
+
   /// Get scaled quantity for an ingredient
   double _getScaledQuantity(double originalQuantity) {
     final scale = _scaledServings / widget.recipe.servings;
@@ -348,16 +426,10 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
     return (result * 100).round() / 100; // Round to 2 decimal places
   }
 
-  /// Toggle between 1 person and original servings
-  void _toggleScaling() {
-    setState(() {
-      _scaledServings = _scaledServings == 1 ? widget.recipe.servings : 1;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final isScaled = _scaledServings != widget.recipe.servings;
+    final maxServings = widget.recipe.servings * 2;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -392,50 +464,42 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                     fontSize: 14)),
           ],
           const SizedBox(height: 14),
+          // Porciones Slider
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.people, size: 16, color: Colors.white54),
+                const SizedBox(width: 8),
+                Text('Porciones: $_scaledServings',
+                    style: TextStyle(
+                        color:
+                            isScaled ? const Color(0xFFFF9800) : Colors.white54,
+                        fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text('${widget.recipe.servings} orig',
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ),
+          ),
+          Slider(
+            min: 1,
+            max: maxServings.toDouble(),
+            divisions: maxServings - 1,
+            value: _scaledServings.toDouble(),
+            activeColor: const Color(0xFFFF9800),
+            inactiveColor: Colors.white12,
+            onChanged: (v) => setState(() => _scaledServings = v.toInt()),
+          ),
+          const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
             _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
             _chip(
-                context, '👥 $_scaledServings/${widget.recipe.servings} porc.'),
-            _chip(
                 context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
-            // Scale button
-            GestureDetector(
-              onTap: _toggleScaling,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isScaled
-                      ? const Color(0xFFFF9800)
-                      : const Color(0xFF2A2A40),
-                  borderRadius: BorderRadius.circular(8),
-                  border: isScaled
-                      ? Border.all(color: const Color(0xFFFF9800), width: 2)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isScaled ? Icons.person : Icons.person_outline,
-                      size: 14,
-                      color: isScaled ? Colors.black : Colors.white54,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isScaled ? '1 persona' : 'Escalar',
-                      style: TextStyle(
-                        color: isScaled ? Colors.black : Colors.white54,
-                        fontSize: 12,
-                        fontWeight:
-                            isScaled ? FontWeight.w700 : FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            if (isScaled)
+              _chip(context,
+                  '📏 x${(_scaledServings / widget.recipe.servings).toStringAsFixed(1)}'),
           ]),
           if (widget.recipe.ingredients.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -646,6 +710,10 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
         ),
       );
     } else {
+      // Record in cooking history
+      await CookingHistoryService().recordCooked(recipe.name);
+
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Column(
@@ -662,10 +730,27 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             ],
           ),
           backgroundColor: const Color(0xFFFF9800),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Deshacer',
+            textColor: Colors.white,
+            onPressed: () async {
+              await inventoryNotifier.revertDeduction(recipe.ingredients);
+              await inventoryNotifier.load();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('↩️ Deducción revertida'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+          ),
         ),
       );
     }
+    if (!context.mounted) return;
     Navigator.of(context).pop();
   }
 

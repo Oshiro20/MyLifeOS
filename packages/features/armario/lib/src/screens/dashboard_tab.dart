@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:core/core.dart'; // Para acceso a geminiServiceProvider si es necesario
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import '../providers/armario_provider.dart';
 import 'physical_scanner_screen.dart';
@@ -104,7 +104,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         state.ootd == null &&
         state.garments.where((g) => g.isClean).isNotEmpty) {
       ref.read(armarioProvider.notifier).generateOutfitOfTheDay(
-            ref.read(geminiServiceProvider),
+            ref.read(geminiProvider),
             _currentWeather,
           );
     }
@@ -278,7 +278,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             onPressed: () => ref
                 .read(armarioProvider.notifier)
                 .generateOutfitOfTheDay(
-                    ref.read(geminiServiceProvider), _currentWeather),
+                    ref.read(geminiProvider), _currentWeather),
             child:
                 const Text('Reintentar', style: TextStyle(color: Colors.white)),
           ),
@@ -307,7 +307,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             onPressed: () => ref
                 .read(armarioProvider.notifier)
                 .generateOutfitOfTheDay(
-                    ref.read(geminiServiceProvider), _currentWeather),
+                    ref.read(geminiProvider), _currentWeather),
             child: const Text('Generar Outfit',
                 style: TextStyle(color: Colors.white)),
           ),

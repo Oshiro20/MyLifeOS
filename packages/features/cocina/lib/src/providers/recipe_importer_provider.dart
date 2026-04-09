@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,15 +98,17 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       await tempFile.writeAsBytes(response.bodyBytes);
       debugPrint('✅ Video downloaded: ${tempFile.path}');
 
-      await importFromVideoFile(tempFile.path);
+      try {
+        await importFromVideoFile(tempFile.path);
+      } finally {
+        if (tempFile.existsSync()) tempFile.deleteSync();
+      }
 
       // Save to history on success
       if (state == RecipeImportState.success) {
         final historyService = ImportHistoryService();
         await historyService.saveImport(url);
       }
-
-      if (tempFile.existsSync()) tempFile.deleteSync();
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('❌ TikTok import error: $e');
@@ -123,9 +124,9 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
     try {
       // Call Gemini with all images
-      final geminiService = ref.read(geminiServiceProvider);
+      final geminiService = ref.read(geminiProvider);
       final jsonResult =
-          await geminiService.extractRecipeFromImages(imagePaths);
+          await geminiService.extractRecipe(mediaPath: imagePaths.first);
 
       if (jsonResult == null || jsonResult.isEmpty) {
         throw Exception(
@@ -146,158 +147,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
   void importFromJson(String jsonString, {String? sourceUrl}) {
     try {
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-
-      // Support both old and new JSON formats
-      final name =
-          decoded['name'] ?? decoded['nombre_receta'] ?? 'Receta Importada';
-      final description =
-          decoded['description'] ?? decoded['descripcion'] ?? '';
-
-      int durationMinutes;
-      if (decoded['durationMinutes'] != null) {
-        durationMinutes = decoded['durationMinutes'] as int;
-      } else if (decoded['tiempo_total_min'] != null) {
-        durationMinutes = decoded['tiempo_total_min'] as int;
-      } else {
-        durationMinutes = 30;
-      }
-
-      final servings = decoded['servings'] ?? decoded['porciones'];
-      final servingsInt =
-          servings is int ? servings : (servings is num ? servings.toInt() : 2);
-
-      // Ingredients
-      List<dynamic> rawIngredients =
-          decoded['ingredients'] ?? decoded['ingredientes'] ?? [];
-      final ingredients = <RecipeIngredient>[];
-      final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
-
-      for (int i = 0; i < rawIngredients.length; i++) {
-        final item = rawIngredients[i] as Map<String, dynamic>;
-        final ingName =
-            item['ingredientName'] ?? item['nombre'] ?? 'Ingrediente $i';
-        final rawQty = item['quantity'] ?? item['cantidad'];
-        final qty = rawQty is num
-            ? rawQty.toDouble()
-            : (rawQty is String ? double.tryParse(rawQty) ?? 1.0 : 1.0);
-        final unit = item['unit'] ?? item['unidad'] ?? 'unidades';
-
-        ingredients.add(RecipeIngredient(
-          id: '${recipeId}_ing_$i',
-          recipeId: recipeId,
-          ingredientName: ingName,
-          quantity: qty,
-          unit: unit,
-        ));
-      }
-
-      // Instructions
-      List<dynamic> rawInstructions =
-          decoded['instructions'] ?? decoded['pasos'] ?? [];
-      if (decoded['pasos'] != null) {
-        final pasosList = decoded['pasos'] as List<dynamic>;
-        pasosList.sort((a, b) {
-          final numA = (a as Map)['numero'] as int? ?? 0;
-          final numB = (b as Map)['numero'] as int? ?? 0;
-          return numA.compareTo(numB);
-        });
-        rawInstructions = pasosList
-            .map((p) => (p as Map)['descripcion'] ?? p.toString())
-            .toList();
-      }
-      final instructions = rawInstructions.map((e) => e.toString()).toList();
-
-      // Tags
-      final rawTags = decoded['tags'] as List<dynamic>? ?? [];
-      final tags = rawTags.map((e) => e.toString()).toList();
-
-      // Campos adicionales
-      final utensilios = (decoded['utensilios'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [];
-      final ingredientesInferidos =
-          (decoded['ingredientes_inferidos'] as List<dynamic>?)
-                  ?.map((e) => e.toString())
-                  .toList() ??
-              [];
-      final caloriasAproximadas = decoded['calorias_aproximadas'] as int?;
-
-      // Nutricion
-      NutritionInfo? nutrition;
-      if (decoded['nutricion'] != null) {
-        final nutriData = decoded['nutricion'] as Map<String, dynamic>;
-        nutrition = NutritionInfo(
-          proteinasG: (nutriData['proteinas_g'] as num?)?.toDouble() ?? 0,
-          carbohidratosG:
-              (nutriData['carbohidratos_g'] as num?)?.toDouble() ?? 0,
-          grasasG: (nutriData['grasas_g'] as num?)?.toDouble() ?? 0,
-          fibraG: (nutriData['fibra_g'] as num?)?.toDouble() ?? 0,
-        );
-      }
-
-      final alergenos = (decoded['alergenos'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [];
-
-      final sustitutos = <IngredientSubstitute>[];
-      if (decoded['sustitutos'] != null) {
-        final sustitutosData = decoded['sustitutos'] as List<dynamic>;
-        for (final sust in sustitutosData) {
-          if (sust is Map<String, dynamic>) {
-            sustitutos.add(IngredientSubstitute(
-              original: sust['original'] as String? ?? '',
-              sustituto: sust['sustituto'] as String? ?? '',
-              nota: sust['nota'] as String?,
-            ));
-          }
-        }
-      }
-
-      final tipsChef = (decoded['tips_chef'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [];
-      final maridaje = decoded['maridaje'] as String?;
-
-      final variaciones = <RecipeVariation>[];
-      if (decoded['variaciones'] != null) {
-        final variacionesData = decoded['variaciones'] as List<dynamic>;
-        for (final varData in variacionesData) {
-          if (varData is Map<String, dynamic>) {
-            variaciones.add(RecipeVariation(
-              nombre: varData['nombre'] as String? ?? '',
-              cambios: varData['cambios'] as String? ?? '',
-            ));
-          }
-        }
-      }
-
-      importedRecipe = Recipe(
-        id: recipeId,
-        name: name,
-        description: description,
-        durationMinutes: durationMinutes,
-        servings: servingsInt,
-        instructions: instructions,
-        ingredients: ingredients,
-        tags: tags,
-        createdAt: DateTime.now(),
-        utensilios: utensilios,
-        ingredientesInferidos: ingredientesInferidos,
-        caloriasAproximadas: caloriasAproximadas,
-        nutrition: nutrition,
-        alergenos: alergenos,
-        sustitutos: sustitutos,
-        tipsChef: tipsChef,
-        maridaje: maridaje,
-        variaciones: variaciones,
-        fuenteUrl: sourceUrl,
-        fuenteLabel: sourceUrl != null ? 'TikTok/Video' : 'Chef IA',
-      );
-
+      final useCase = ref.read(extractRecipeUseCaseProvider);
+      importedRecipe = useCase.parseFromJson(jsonString, sourceUrl: sourceUrl);
       currentStatusMessage = '¡Receta encontrada!';
       state = RecipeImportState.success;
     } catch (e) {
@@ -337,8 +188,9 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
       // Try to extract thumbnail, fallback to video file itself
       String mediaPath = filePath;
+      String? extractedThumbnailPath;
       try {
-        final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        extractedThumbnailPath = await VideoThumbnail.thumbnailFile(
           video: filePath,
           thumbnailPath:
               '${(await getTemporaryDirectory()).path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
@@ -347,15 +199,19 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
           quality: 85,
         );
 
-        if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
+        if (extractedThumbnailPath != null &&
+            File(extractedThumbnailPath).existsSync()) {
           // For videos under 20MB, we'll send the actual video file
           // For larger videos, use the thumbnail as fallback
           if (fileSizeMB < 20) {
             mediaPath = filePath; // Send actual video
+            // Thumbnail was extracted but won't be used — clean it up
+            File(extractedThumbnailPath).deleteSync();
+            extractedThumbnailPath = null;
             debugPrint(
                 '🎬 Using video file directly (${fileSizeMB.toStringAsFixed(1)} MB)');
           } else {
-            mediaPath = thumbnailPath; // Use thumbnail
+            mediaPath = extractedThumbnailPath; // Use thumbnail
             debugPrint('✅ Using thumbnail: $mediaPath');
           }
         } else {
@@ -369,15 +225,24 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
       debugPrint('🔍 Sending to AI: $mediaPath');
 
-      final recipe = await extractUseCase.execute(mediaPath: mediaPath);
+      try {
+        final recipe = await extractUseCase.execute(mediaPath: mediaPath);
 
-      if (recipe != null) {
-        importedRecipe = recipe;
-        currentStatusMessage = '¡Receta encontrada!';
-        state = RecipeImportState.success;
-      } else {
-        throw Exception(
-            'La IA no pudo estructurar la receta. Intenta con otro video más claro.');
+        if (recipe != null) {
+          importedRecipe = recipe;
+          currentStatusMessage = '¡Receta encontrada!';
+          state = RecipeImportState.success;
+        } else {
+          throw Exception(
+              'La IA no pudo estructurar la receta. Intenta con otro video más claro.');
+        }
+      } finally {
+        // Clean up thumbnail if it was used (>=20MB videos)
+        if (extractedThumbnailPath != null &&
+            File(extractedThumbnailPath).existsSync()) {
+          File(extractedThumbnailPath).deleteSync();
+          debugPrint('🧹 Thumbnail temp cleaned up');
+        }
       }
     } catch (e) {
       errorMessage = e.toString();
@@ -411,7 +276,7 @@ final extractRecipeUseCaseProvider = Provider<ExtractRecipeUseCase>((ref) {
   // We need to inject an IAIRecipeExtractor.
   // For simplicity since the Core GeminiService provides exactly what we need,
   // we proxy it via an anonymous class implementing IAIRecipeExtractor.
-  final gemini = ref.watch(geminiServiceProvider);
+  final gemini = ref.watch(geminiProvider);
   return ExtractRecipeUseCase(
     _GeminiExtractorAdapter(gemini),
   );

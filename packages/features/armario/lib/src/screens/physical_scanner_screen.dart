@@ -61,12 +61,22 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
     });
 
     try {
-      final aiService = ref.read(geminiServiceProvider);
-      final jsonResponse = await aiService.analyzePhysicalProfile(
-        _imageFile!.path,
-        _heightController.text,
-        _weightController.text,
-      );
+      final aiService = ref.read(geminiProvider);
+      final prompt = '''
+Analiza el perfil físico de la persona basada en esta descripción.
+Estatura: ${_heightController.text} cm
+Peso: ${_weightController.text} kg
+
+Devuelve un JSON estimado con:
+- skin_tone: tono de piel estimado (claro, medio, oscuro)
+- colorimetry: estación de colorimetría estimada (primavera, verano, otoño, invierno)
+- body_shape: forma corporal estimada basada en estatura/peso (rectángulo, triángulo, reloj de arena, triángulo invertido)
+- hair_type: no determinable sin imagen
+
+Formato JSON:
+{"skin_tone": "medio", "colorimetry": "otoño", "body_shape": "rectángulo", "hair_type": "no determinable"}
+''';
+      final jsonResponse = await aiService.generateText(prompt: prompt);
 
       if (jsonResponse == null) {
         throw Exception('No se recibió respuesta de la IA.');

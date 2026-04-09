@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
+import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';
 
 class ShoppingTab extends ConsumerWidget {
@@ -88,6 +89,24 @@ class ShoppingTab extends ConsumerWidget {
                               fontWeight: FontWeight.w700,
                               fontSize: 13)),
                     ),
+                    // Bulk add button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _bulkAddToPantry(context, ref),
+                        icon: const Icon(Icons.kitchen, size: 18),
+                        label: const Text('Mover comprados a despensa',
+                            style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF9800),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     ...items.where((i) => i.bought).map((item) =>
                         _BoughtItemTile(
                           item: item,
@@ -251,7 +270,7 @@ class ShoppingTab extends ConsumerWidget {
     // Group by category for sharing
     final grouped = <String, List<ShoppingItem>>{};
     for (final item in pending) {
-      final category = item.unit;
+      final category = _guessCategory(item.name);
       if (!grouped.containsKey(category)) grouped[category] = [];
       grouped[category]!.add(item);
     }
@@ -487,6 +506,67 @@ class ShoppingTab extends ConsumerWidget {
     }
   }
 
+  Future<void> _bulkAddToPantry(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF152019),
+        title: const Text('🥦 Mover a despensa',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            '¿Deseas mover todos los items comprados a tu despensa?',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Mover')),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!context.mounted) return;
+      final bought = ref
+          .read(recipesProvider)
+          .shoppingList
+          .where((i) => i.bought)
+          .toList();
+      if (bought.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hay items comprados para mover.')),
+        );
+        return;
+      }
+      try {
+        await ref
+            .read(inventoryProvider.notifier)
+            .bulkAddBoughtToPantry(bought);
+        // Delete moved items
+        for (final item in bought) {
+          await ref.read(recipesProvider.notifier).deleteShoppingItem(item.id);
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('✅ Items movidos a despensa'),
+                backgroundColor: Color(0xFF00E676)),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Error al mover items: $e'),
+                backgroundColor: Colors.redAccent),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _showAddManualItemDialog(
       BuildContext context, WidgetRef ref) async {
     final nameCtrl = TextEditingController();
@@ -577,12 +657,22 @@ class ShoppingTab extends ConsumerWidget {
             ElevatedButton(
               onPressed: () {
                 final name = nameCtrl.text.trim();
+                final qty = double.tryParse(qtyCtrl.text) ?? 1.0;
                 if (name.isNotEmpty) {
+                  ref.read(recipesProvider.notifier).addShoppingItem(
+                        ShoppingItem(
+                          id: const Uuid().v4(),
+                          name: name,
+                          quantity: qty,
+                          unit: selectedUnit,
+                          bought: false,
+                          createdAt: DateTime.now(),
+                        ),
+                      );
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                          '📝 "$name" añadido a la lista (próximamente editable)'),
+                      content: Text('🛒 "$name" añadido a la lista'),
                       backgroundColor: const Color(0xFF00E676),
                     ),
                   );

@@ -1,700 +1,22 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:domain/domain.dart';
 import 'package:data/data.dart';
-import 'package:uuid/uuid.dart';
 import 'package:core/core.dart';
-import '../providers/cocina_providers.dart';
-import '../providers/user_food_preferences_provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
-class InventoryTab extends ConsumerStatefulWidget {
-  const InventoryTab({super.key});
-
-  @override
-  ConsumerState<InventoryTab> createState() => _InventoryTabState();
-}
-
-class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
-  final TextEditingController _searchCtrl = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(inventoryProvider);
-    final foodPrefs = ref.watch(userFoodPreferencesProvider);
-    final foodPrefsNotifier = ref.read(userFoodPreferencesProvider.notifier);
-
-    if (state.isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFF00C896)));
-    }
-
-    // Filter ingredients by search query
-    final filteredIngredients = _searchQuery.isEmpty
-        ? state.ingredients
-        : state.ingredients
-            .where((i) =>
-                i.name.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
-
-    // Stats calculations
-    final expiringCount =
-        state.ingredients.where((i) => i.isExpiringSoon).length;
-    final expiredCount = state.ingredients.where((i) => i.isExpired).length;
-
-    final List<Widget> listChildren = [];
-
-    // Stats Panel (only if not searching)
-    if (_searchQuery.isEmpty) {
-      listChildren.add(
-        Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF152019),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF00C896).withAlpha(40)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _StatBadge(
-                  '🟢 ${state.ingredients.length}', 'Total', Colors.white),
-              _StatBadge(
-                  '🟡 $expiringCount', 'Por vencer', const Color(0xFFFFB300)),
-              _StatBadge(
-                  '🔴 $expiredCount', 'Vencidos', const Color(0xFFFF5252)),
-              _StatBadge(
-                  '📂 ${state.ingredients.map((i) => i.primaryCategory).toSet().length}',
-                  'Categorías',
-                  const Color(0xFF00F0FF)),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Search bar
-    listChildren.add(
-      Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A2A40),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: TextField(
-          controller: _searchCtrl,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: '🔍 Buscar en tu despensa...',
-            hintStyle: const TextStyle(color: Colors.white38),
-            prefixIcon: const Icon(Icons.search, color: Colors.white54),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white54),
-                    onPressed: () {
-                      setState(() {
-                        _searchCtrl.clear();
-                        _searchQuery = '';
-                      });
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          onChanged: (value) {
-            setState(() => _searchQuery = value.trim());
-          },
-        ),
-      ),
-    );
-
-    if (_searchQuery.isNotEmpty && filteredIngredients.isEmpty) {
-      listChildren.add(const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text('No se encontraron ingredientes',
-              style: TextStyle(color: Colors.white54, fontSize: 14)),
-        ),
-      ));
-    }
-
-    // Disliked ingredients section
-    listChildren.add(Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.block, color: Colors.redAccent, size: 18),
-              const SizedBox(width: 6),
-              const Text(
-                'Ingredientes que NO te gustan',
-                style: TextStyle(
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () =>
-                    _showAddDislikedDialog(context, foodPrefsNotifier),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Agregar', style: TextStyle(fontSize: 12)),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
-          ),
-          if (foodPrefs.dislikedIngredients.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                'Agrega ingredientes que no te gustan para que el Chef IA los evite.',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
-              ),
-            )
-          else
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: foodPrefs.dislikedIngredients.map((ing) {
-                return Chip(
-                  label: Text(ing,
-                      style: const TextStyle(
-                          color: Colors.redAccent, fontSize: 11)),
-                  deleteIcon: const Icon(Icons.close,
-                      size: 14, color: Colors.redAccent),
-                  onDeleted: () =>
-                      foodPrefsNotifier.removeDislikedIngredient(ing),
-                  backgroundColor: Colors.red.withValues(alpha: 0.2),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: EdgeInsets.zero,
-                  labelPadding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-                );
-              }).toList(),
-            ),
-        ],
-      ),
-    ));
-
-    final Set<String> categories =
-        filteredIngredients.map((i) => i.primaryCategory).toSet();
-    final sortedCategories = categories.toList()..sort();
-
-    // Group by primary category
-    for (final cat in sortedCategories) {
-      final itemsInCat =
-          filteredIngredients.where((i) => i.primaryCategory == cat).toList();
-      if (itemsInCat.isEmpty) continue;
-
-      // Sort: Expired -> Expiring Soon -> Others
-      itemsInCat.sort((a, b) {
-        if (a.isExpired && !b.isExpired) return -1;
-        if (!a.isExpired && b.isExpired) return 1;
-        if (a.isExpiringSoon && !b.isExpiringSoon) return -1;
-        if (!a.isExpiringSoon && b.isExpiringSoon) return 1;
-        return a.name.compareTo(b.name);
-      });
-
-      final catIcon = _IngredientTile._getCategoryIcon(cat);
-
-      listChildren.add(Padding(
-        padding: const EdgeInsets.only(top: 16, bottom: 8),
-        child: Row(
-          children: [
-            Text(catIcon, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              cat.toUpperCase(),
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  letterSpacing: 1.2),
-            ),
-            const Spacer(),
-            Text('${itemsInCat.length}',
-                style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.38),
-                    fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ));
-
-      listChildren.addAll(itemsInCat.map((i) => _IngredientTile(
-          ingredient: i,
-          onEdit: () => _showEditDialog(context, ref, i),
-          onDelete: () => _confirmDelete(context, ref, i.id, i.name))));
-    }
-
-    return Stack(
-      children: [
-        RefreshIndicator(
-          onRefresh: () async {
-            await ref.read(inventoryProvider.notifier).load();
-          },
-          color: const Color(0xFF00C896),
-          child: filteredIngredients.isEmpty
-              ? Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.kitchen_outlined,
-                        size: 64, color: Colors.white12),
-                    const SizedBox(height: 12),
-                    Text(
-                        _searchQuery.isNotEmpty
-                            ? 'No se encontraron resultados para "$_searchQuery"'
-                            : 'Tu despensa está vacía',
-                        style: const TextStyle(
-                            color: Colors.white38, fontSize: 17)),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => _showAddDialog(context, ref),
-                      icon: const Icon(Icons.add, color: Color(0xFF00C896)),
-                      label: Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Agregar este ingrediente'
-                              : 'Agregar ingrediente',
-                          style: const TextStyle(color: Color(0xFF00C896))),
-                    ),
-                  ]),
-                )
-              : ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: listChildren,
-                ),
-        ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton(
-            heroTag: 'add_ingredient',
-            backgroundColor: const Color(0xFF00C896),
-            onPressed: () => _showAddDialog(context, ref),
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, String id, String name) async {
-    final confirmed = await showConfirmDelete(context,
-        itemName: name, subtitle: 'Se eliminará de tu despensa.');
-    if (!confirmed) return;
-    await ref.read(inventoryProvider.notifier).delete(id);
-    if (context.mounted) {
-      showSuccess(context, '"$name" eliminado de la despensa.');
-    }
-  }
-
-  Future<void> _showAddDislikedDialog(
-      BuildContext context, UserFoodPreferencesNotifier notifier) async {
-    final controller = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF152019),
-        title: const Text('🚫 Ingrediente que NO te gusta',
-            style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Ej: cebolla, cilantro, pescado...',
-            hintStyle: TextStyle(color: Colors.white54),
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                notifier.addDislikedIngredient(text);
-                Navigator.pop(ctx);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('Agregar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddDialog(BuildContext ctx, WidgetRef ref) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _AddIngredientSheet(
-        onAdd: (ings) async {
-          for (final ing in ings) {
-            await ref.read(inventoryProvider.notifier).add(ing);
-          }
-          if (ctx.mounted) {
-            if (ings.length == 1) {
-              showSuccess(ctx, '"${ings.first.name}" añadido a la despensa ✓');
-            } else {
-              showSuccess(
-                  ctx, '${ings.length} productos añadidos a la despensa ✨');
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  void _showEditDialog(
-      BuildContext ctx, WidgetRef ref, InventoryIngredient itemToEdit) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _AddIngredientSheet(
-        itemToEdit: itemToEdit,
-        onAdd: (ings) async {
-          await ref.read(inventoryProvider.notifier).delete(itemToEdit.id);
-          await ref.read(inventoryProvider.notifier).add(ings.first);
-          if (ctx.mounted) {
-            showSuccess(ctx, '"${ings.first.name}" actualizado ✓');
-          }
-        },
-      ),
-    );
-  }
-}
-
-// ── Sub-widgets ──────────────────────────────────────────────────────────────
-
-class _IngredientTile extends StatelessWidget {
-  final InventoryIngredient ingredient;
-  final VoidCallback onDelete;
-  final VoidCallback onEdit;
-  const _IngredientTile(
-      {required this.ingredient, required this.onDelete, required this.onEdit});
-
-  static String _getCategoryIcon(String primaryCategory) {
-    final lower = primaryCategory.toLowerCase();
-    if (lower.contains('proteína') || lower.contains('carne')) return '🥩';
-    if (lower.contains('lácteo')) return '🥛';
-    if (lower.contains('fruta')) return '🍎';
-    if (lower.contains('verdura')) return '🥦';
-    if (lower.contains('tubérculo') ||
-        lower.contains('raíz') ||
-        lower.contains('raices')) {
-      return '🥔';
-    }
-    if (lower.contains('legumbre')) return '🫘';
-    if (lower.contains('cereal') || lower.contains('grano')) return '🌾';
-    if (lower.contains('harina') || lower.contains('pasta')) return '🥖';
-    if (lower.contains('aceite') || lower.contains('grasa')) return '🫒';
-    if (lower.contains('salsa')) return '🥫';
-    if (lower.contains('condimento') || lower.contains('especia')) return '🌶️';
-    if (lower.contains('endulzante')) return '🍯';
-    if (lower.contains('frutos secos') || lower.contains('semilla')) {
-      return '🥜';
-    }
-    return '📦';
-  }
-
-  Color get _expiryColor {
-    if (ingredient.isExpired) return const Color(0xFFFF4D4D);
-    if (ingredient.isExpiringSoon) return const Color(0xFFFFB74D);
-    return Colors.white54;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: ingredient.isExpiringSoon
-            ? Border.all(color: _expiryColor.withAlpha(100), width: 1)
-            : null,
-      ),
-      child: ListTile(
-        onTap: onEdit,
-        leading: Text(_getEmojiFor(ingredient.name, ingredient.primaryCategory),
-            style: const TextStyle(fontSize: 28)),
-        title: Text(ingredient.displayName,
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          '${ingredient.subCategory != null ? "${ingredient.subCategory} • " : ""}${ingredient.quantity} ${ingredient.unit}'
-          '${ingredient.expirationDate != null ? " · cad. ${_fmt(ingredient.expirationDate!)}" : ""}',
-          style: TextStyle(color: _expiryColor, fontSize: 12),
-        ),
-        trailing: IconButton(
-          icon:
-              const Icon(Icons.delete_outline, color: Colors.white24, size: 20),
-          onPressed: onDelete,
-        ),
-      ),
-    );
-  }
-
-  String _getEmojiFor(String name, String primaryCategory) {
-    final lowerName = name.toLowerCase();
-
-    // Frutas y Verduras comunes
-    if (lowerName.contains('tomate')) return '🍅';
-    if (lowerName.contains('limón') || lowerName.contains('limon')) return '🍋';
-    if (lowerName.contains('cebolla')) return '🧅';
-    if (lowerName.contains('ajo')) return '🧄';
-    if (lowerName.contains('zanahoria')) return '🥕';
-    if (lowerName.contains('papa') ||
-        lowerName.contains('patata') ||
-        lowerName.contains('olluco') ||
-        lowerName.contains('olluquito')) {
-      return '🥔';
-    }
-    if (lowerName.contains('palta') || lowerName.contains('aguacate')) {
-      return '🥑';
-    }
-    if (lowerName.contains('platano') ||
-        lowerName.contains('plátano') ||
-        lowerName.contains('banana')) {
-      return '🍌';
-    }
-    if (lowerName.contains('manzana')) return '🍎';
-    if (lowerName.contains('naranja')) return '🍊';
-    if (lowerName.contains('fresa') || lowerName.contains('frutilla')) {
-      return '🍓';
-    }
-    if (lowerName.contains('uva') ||
-        lowerName.contains('pasa') ||
-        lowerName.contains('pasas')) {
-      return '🍇';
-    }
-    if (lowerName.contains('sandia') || lowerName.contains('sandía')) {
-      return '🍉';
-    }
-    if (lowerName.contains('champiñon') || lowerName.contains('hongo')) {
-      return '🍄';
-    }
-    if (lowerName.contains('lechuga') || lowerName.contains('espinaca')) {
-      return '🥬';
-    }
-    if (lowerName.contains('maiz') ||
-        lowerName.contains('choclo') ||
-        lowerName.contains('maíz')) {
-      return '🌽';
-    }
-    if (lowerName.contains('pepino')) return '🥒';
-    if (lowerName.contains('berenjena')) return '🍆';
-    if (lowerName.contains('pimiento') || lowerName.contains('morrón')) {
-      return '🫑';
-    }
-    if (lowerName.contains('brócoli') || lowerName.contains('brocoli')) {
-      return '🥦';
-    }
-    if (lowerName.contains('kiwi')) return '🥝';
-    if (lowerName.contains('coco')) return '🥥';
-    if (lowerName.contains('piña')) return '🍍';
-    if (lowerName.contains('durazno') || lowerName.contains('melocoton')) {
-      return '🍑';
-    }
-    if (lowerName.contains('cereza')) return '🍒';
-
-    // Proteínas
-    if (lowerName.contains('pollo')) return '🍗';
-    if (lowerName.contains('carne') ||
-        lowerName.contains('bisteck') ||
-        lowerName.contains('res') ||
-        lowerName.contains('chancho') ||
-        lowerName.contains('cerdo')) {
-      return '🥩';
-    }
-    if (lowerName.contains('pescado') ||
-        lowerName.contains('atún') ||
-        lowerName.contains('atun')) {
-      return '🐟';
-    }
-    if (lowerName.contains('camaron') ||
-        lowerName.contains('camarón') ||
-        lowerName.contains('langostino')) {
-      return '🦐';
-    }
-    if (lowerName.contains('huevo')) return '🥚';
-    if (lowerName.contains('tocino') || lowerName.contains('panceta')) {
-      return '🥓';
-    }
-    if (lowerName.contains('salchicha') ||
-        lowerName.contains('hot dog') ||
-        lowerName.contains('chorizo')) {
-      return '🌭';
-    }
-    if (lowerName.contains('marisco') ||
-        lowerName.contains('cangrejo') ||
-        lowerName.contains('pulpo') ||
-        lowerName.contains('calamar')) {
-      return '🦑';
-    }
-
-    // Lácteos
-    if (lowerName.contains('leche')) return '🥛';
-    if (lowerName.contains('queso')) return '🧀';
-    if (lowerName.contains('mantequilla') || lowerName.contains('margarina')) {
-      return '🧈';
-    }
-    if (lowerName.contains('yogurt')) return '🥣';
-
-    // Granos, Masas y Cereales
-    if (lowerName.contains('arroz')) return '🍚';
-    if (lowerName.contains('pan')) return '🍞';
-    if (lowerName.contains('fideo') ||
-        lowerName.contains('pasta') ||
-        lowerName.contains('espagueti') ||
-        lowerName.contains('tallarin')) {
-      return '🍝';
-    }
-    if (lowerName.contains('pizza')) return '🍕';
-    if (lowerName.contains('harina')) return '🌾';
-    if (lowerName.contains('avena')) return '🥣';
-    if (lowerName.contains('lenteja') ||
-        lowerName.contains('frijol') ||
-        lowerName.contains('pallar') ||
-        lowerName.contains('garbanzo')) {
-      return '🫘';
-    }
-
-    // Condimentos, Aceites, Salsas y Repostería
-    if (lowerName.contains('aceite')) return '🫒';
-    if (lowerName.contains('sal')) return '🧂';
-    if (lowerName.contains('azucar') ||
-        lowerName.contains('azúcar') ||
-        lowerName.contains('endulzante') ||
-        lowerName.contains('stevia')) {
-      return '🧊';
-    }
-    if (lowerName.contains('pimienta') || lowerName.contains('comino')) {
-      return '🧂';
-    }
-    if (lowerName.contains('ají') ||
-        lowerName.contains('aji') ||
-        lowerName.contains('chile') ||
-        lowerName.contains('rocoto')) {
-      return '🌶️';
-    }
-    if (lowerName.contains('laurel') ||
-        lowerName.contains('oregano') ||
-        lowerName.contains('orégano') ||
-        lowerName.contains('perejil') ||
-        lowerName.contains('cilantro') ||
-        lowerName.contains('albahaca') ||
-        lowerName.contains('romero')) {
-      return '🌿';
-    }
-    if (lowerName.contains('miel') ||
-        lowerName.contains('mermelada') ||
-        lowerName.contains('jalea') ||
-        lowerName.contains('compota')) {
-      return '🍯';
-    }
-    if (lowerName.contains('sillao') ||
-        lowerName.contains('salsa de soya') ||
-        lowerName.contains('vinagre')) {
-      return '🧉';
-    }
-    if (lowerName.contains('vainilla')) return '🌸'; // Esencia de vainilla
-    if (lowerName.contains('canela')) return '🟤';
-    if (lowerName.contains('ketchup') ||
-        lowerName.contains('mayonesa') ||
-        lowerName.contains('mostaza')) {
-      return '🥫';
-    }
-    if (lowerName.contains('chocolate') || lowerName.contains('cacao')) {
-      return '🍫';
-    }
-    if (lowerName.contains('galleta')) return '🍪';
-    if (lowerName.contains('mani') ||
-        lowerName.contains('maní') ||
-        lowerName.contains('almendra') ||
-        lowerName.contains('nuez')) {
-      return '🥜';
-    }
-
-    // Bebidas
-    if (lowerName.contains('agua')) return '💧';
-    if (lowerName.contains('vino')) return '🍷';
-    if (lowerName.contains('cerveza')) return '🍺';
-    if (lowerName.contains('cafe') || lowerName.contains('café')) return '☕';
-    if (lowerName.contains('te') ||
-        lowerName.contains('té') ||
-        lowerName.contains('infusión') ||
-        lowerName.contains('manzanilla')) {
-      return '🍵';
-    }
-    if (lowerName.contains('jugo') || lowerName.contains('zumo')) return '🧃';
-    if (lowerName.contains('gaseosa') ||
-        lowerName.contains('soda') ||
-        lowerName.contains('coca cola')) {
-      return '🥤';
-    }
-
-    // Default fallback to category
-    return _getCategoryIcon(primaryCategory);
-  }
-
-  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
-}
-
-// ── Formulario con auto-detección ──────────────────────────────────────────
-
-class _AddIngredientSheet extends ConsumerStatefulWidget {
+class AddIngredientSheet extends ConsumerStatefulWidget {
   final Future<void> Function(List<InventoryIngredient>) onAdd;
   final InventoryIngredient? itemToEdit;
-  const _AddIngredientSheet({required this.onAdd, this.itemToEdit});
+  const AddIngredientSheet({super.key, required this.onAdd, this.itemToEdit});
+
   @override
-  ConsumerState<_AddIngredientSheet> createState() =>
-      _AddIngredientSheetState();
+  ConsumerState<AddIngredientSheet> createState() => _AddIngredientSheetState();
 }
 
-class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
+class _AddIngredientSheetState extends ConsumerState<AddIngredientSheet> {
   static const List<String> _masterCategories = [
     'Proteínas animales',
     'Lácteos',
@@ -799,7 +121,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                     decoration: BoxDecoration(
                         color: Colors.white24,
                         borderRadius: BorderRadius.circular(2)))),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -839,8 +160,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Nombre con auto-detección
             _field(_nameCtrl, 'Nombre (ej: Sillao, Arroz, Pollo)',
                 Icons.label_outline,
                 errorText: _nameError, onChanged: _onNameChanged),
@@ -850,8 +169,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                   style: TextStyle(color: Color(0xFF00C896), fontSize: 11)),
             ],
             const SizedBox(height: 10),
-
-            // Cantidad + Unidad
             Row(children: [
               Expanded(
                 flex: 2,
@@ -883,8 +200,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               ),
             ]),
             const SizedBox(height: 10),
-
-            // Categoría
             Row(children: [
               Expanded(
                 flex: 1,
@@ -917,8 +232,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               ),
             ]),
             const SizedBox(height: 10),
-
-            // Preparación/Estado
             DropdownButtonFormField<String>(
               initialValue:
                   _preparations.contains(_preparation) ? _preparation : '',
@@ -938,8 +251,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               onChanged: (v) => setState(() => _preparation = v ?? ''),
             ),
             const SizedBox(height: 10),
-
-            // Lugar de Guardado
             DropdownButtonFormField<String>(
               initialValue: _storageArea,
               dropdownColor: Theme.of(context).cardColor,
@@ -963,8 +274,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               },
             ),
             const SizedBox(height: 10),
-
-            // Tip de Almacenamiento (solo si hay IA)
             if (_aiStorageTip != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -995,8 +304,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 ),
               ),
             ],
-
-            // Fecha de caducidad
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.today_outlined, color: Colors.white38),
@@ -1023,7 +330,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               ),
             ),
             const SizedBox(height: 16),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -1087,7 +393,6 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         throw Exception("No se recibió respuesta de Gemini");
       }
 
-      // Limpiar markdown
       var cleanJson = jsonResponse.trim();
       if (cleanJson.startsWith('```json')) cleanJson = cleanJson.substring(7);
       if (cleanJson.startsWith('```')) cleanJson = cleanJson.substring(3);
@@ -1139,7 +444,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         if (!mounted) return;
         final confirmed = await showDialog<List<InventoryIngredient>>(
           context: context,
-          builder: (_) => _ReviewMultipleDialog(items: newItems),
+          builder: (_) => ReviewMultipleDialog(items: newItems),
         );
         if (confirmed != null && confirmed.isNotEmpty) {
           await widget.onAdd(confirmed);
@@ -1332,14 +637,15 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       );
 }
 
-class _ReviewMultipleDialog extends StatefulWidget {
+class ReviewMultipleDialog extends StatefulWidget {
   final List<InventoryIngredient> items;
-  const _ReviewMultipleDialog({required this.items});
+  const ReviewMultipleDialog({super.key, required this.items});
+
   @override
-  State<_ReviewMultipleDialog> createState() => _ReviewMultipleDialogState();
+  State<ReviewMultipleDialog> createState() => _ReviewMultipleDialogState();
 }
 
-class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
+class _ReviewMultipleDialogState extends State<ReviewMultipleDialog> {
   late List<InventoryIngredient> items;
 
   @override
@@ -1456,30 +762,6 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _StatBadge extends StatelessWidget {
-  final String label;
-  final String subtitle;
-  final Color color;
-
-  const _StatBadge(this.label, this.subtitle, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(subtitle, style: TextStyle(color: color, fontSize: 10)),
-      ],
     );
   }
 }

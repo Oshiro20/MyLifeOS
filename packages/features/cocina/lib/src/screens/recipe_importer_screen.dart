@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:core/core.dart';
 import '../providers/recipe_importer_provider.dart';
 import '../providers/cocina_providers.dart';
@@ -26,6 +27,8 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
   @override
   void initState() {
     super.initState();
+    // Reset importer state so old imported recipes don't persist
+    ref.read(recipeImportProvider.notifier).reset();
     _loadHistory();
     // Clear error when user types in URL field
     _urlController.addListener(() {
@@ -240,66 +243,111 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(recipe.name,
+                  children: [                    Text(recipe.name,
                         style: const TextStyle(
                             color: Color(0xFF00F0FF),
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(recipe.description,
-                        style: const TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 12),
+                    MarkdownBody(
+                      data: recipe.description,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(Icons.timer,
-                            color: Colors.white70, size: 16),
-                        const SizedBox(width: 4),
-                        Text('\${recipe.durationMinutes} min',
-                            style: const TextStyle(color: Colors.white)),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.restaurant,
-                            color: Colors.white70, size: 16),
-                        const SizedBox(width: 4),
-                        Text('\${recipe.servings} porciones',
-                            style: const TextStyle(color: Colors.white)),
+                        const Icon(Icons.timer_outlined,
+                            color: Color(0xFF00E676), size: 18),
+                        const SizedBox(width: 8),
+                        Text('${recipe.durationMinutes} min',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 24),
+                        const Icon(Icons.restaurant_outlined,
+                            color: Color(0xFF00E676), size: 18),
+                        const SizedBox(width: 8),
+                        Text('${recipe.servings} porciones',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                       ],
                     ),
-                    const Divider(color: Colors.white24, height: 32),
-                    const Text('Ingredientes detectados:',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
+                    const Divider(color: Colors.white12, height: 40),
+                    
+                    // Ingredients
+                    _buildSectionHeader('📝 Ingredientes'),
+                    const SizedBox(height: 12),
                     ...recipe.ingredients.map((ing) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text(
-                              '- ${ing.quantity} ${ing.unit} de ${ing.ingredientName}',
-                              style: const TextStyle(color: Colors.white70)),
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.add_circle_outline, color: Color(0xFF00E676), size: 14),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                    '${ing.quantity} ${ing.unit} de ${ing.ingredientName}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 13)),
+                              ),
+                            ],
+                          ),
                         )),
+                    
+                    if (recipe.instructions.isNotEmpty) ...[
+                      const Divider(color: Colors.white12, height: 40),
+                      _buildSectionHeader('🍳 Instrucciones'),
+                      const SizedBox(height: 12),
+                      MarkdownBody(
+                        data: recipe.instructions.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n'),
+                        styleSheet: MarkdownStyleSheet(
+                          p: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                        ),
+                      ),
+                    ],
+
+                    if (recipe.tipsChef.isNotEmpty) ...[
+                      const Divider(color: Colors.white12, height: 40),
+                      _buildSectionHeader('👨‍🍳 Tips del Chef'),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E676).withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.1)),
+                        ),
+                        child: MarkdownBody(
+                          data: recipe.tipsChef.map((t) => '* $t').join('\n'),
+                          styleSheet: MarkdownStyleSheet(
+                            listBullet: const TextStyle(color: Color(0xFF00E676)),
+                            p: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ),
+                    ],
+
                     if (recipe.ingredientesInferidos.isNotEmpty) ...[
-                      const Divider(color: Colors.white24, height: 32),
+                      const Divider(color: Colors.white12, height: 40),
                       Row(
                         children: [
                           const Icon(Icons.auto_fix_high,
                               color: Color(0xFFFF9800), size: 16),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           const Text(
-                            'Ingredientes inferidos (esenciales):',
+                            'Ingredientes inferidos:',
                             style: TextStyle(
                                 color: Color(0xFFFF9800),
                                 fontWeight: FontWeight.bold,
-                                fontSize: 12),
+                                fontSize: 14),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 12),
                       ...recipe.ingredientesInferidos.map((ing) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2.0),
+                            padding: const EdgeInsets.only(bottom: 6.0),
                             child: Row(
                               children: [
                                 const Icon(Icons.lightbulb_outline,
                                     color: Color(0xFFFF9800), size: 14),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     ing,
@@ -313,6 +361,7 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                             ),
                           )),
                     ],
+
                   ],
                 ),
               ),
@@ -327,18 +376,57 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                     borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: () async {
-                // Save to Drift Repository
+                // Save to Drift Repository with duplicate check
                 try {
-                  await ref.read(recipesProvider.notifier).saveRecipe(recipe);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('¡Receta guardada exitosamente!'),
-                        backgroundColor: Color(0xFF00E676),
-                      ),
-                    );
-                    Navigator.of(context).pop();
+                  final result = await ref
+                      .read(recipesProvider.notifier)
+                      .saveRecipeWithDuplicateCheck(recipe);
+
+                  if (!mounted) return;
+
+                  if (result.hasDuplicates) {
+                    // Show warning dialog with duplicate details
+                    final dupNames = result.duplicates
+                        .map((d) =>
+                            '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
+                        .join('\n');
+                    final shouldContinue = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('⚠️ Posible duplicado'),
+                            content: Text(
+                              'Esta receta es similar a:\n\n$dupNames\n\n¿Deseas guardarla de todos modos?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Guardar igual'),
+                              ),
+                            ],
+                          ),
+                        ) ??
+                        false;
+
+                    if (!shouldContinue) return;
                   }
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.hasDuplicates
+                          ? '⚠️ Receta guardada (posible duplicado)'
+                          : '¡Receta guardada exitosamente!'),
+                      backgroundColor: result.hasDuplicates
+                          ? Colors.orange
+                          : const Color(0xFF00E676),
+                    ),
+                  );
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -649,6 +737,17 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
             onPressed: _pickVideo,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
       ),
     );
   }

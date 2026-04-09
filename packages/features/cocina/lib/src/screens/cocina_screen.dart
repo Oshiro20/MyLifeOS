@@ -49,6 +49,33 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
     );
   }
 
+  List<Widget> _buildTabs(WidgetRef ref) {
+    final invState = ref.watch(inventoryProvider);
+    final expiringCount = invState.ingredients
+        .where((i) => i.isExpired || i.isExpiringSoon)
+        .length;
+
+    return [
+      Tab(
+        icon: expiringCount > 0
+            ? Badge(
+                label: Text('$expiringCount',
+                    style: const TextStyle(fontSize: 10)),
+                backgroundColor: Colors.red,
+                child: const Icon(Icons.kitchen_outlined, size: 20),
+              )
+            : const Icon(Icons.kitchen_outlined, size: 20),
+        text: 'Despensa',
+      ),
+      const Tab(
+          icon: Icon(Icons.menu_book_outlined, size: 20), text: 'Recetas'),
+      const Tab(
+          icon: Icon(Icons.lightbulb_outline, size: 20), text: 'Sugeridas'),
+      const Tab(icon: Icon(Icons.cookie, size: 20), text: 'Antojos'),
+      const Tab(icon: Icon(Icons.calendar_month, size: 20), text: 'Plan'),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final showFabs = _tab.index == 1;
@@ -129,17 +156,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           isScrollable: false,
           labelStyle:
               const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(icon: Icon(Icons.kitchen_outlined, size: 20), text: 'Despensa'),
-            Tab(
-                icon: Icon(Icons.menu_book_outlined, size: 20),
-                text: 'Recetas'),
-            Tab(
-                icon: Icon(Icons.lightbulb_outline, size: 20),
-                text: 'Sugeridas'),
-            Tab(icon: Icon(Icons.cookie, size: 20), text: 'Antojos'),
-            Tab(icon: Icon(Icons.calendar_month, size: 20), text: 'Plan'),
-          ],
+          tabs: _buildTabs(ref),
         ),
       ),
       body: TabBarView(

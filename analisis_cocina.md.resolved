@@ -1,0 +1,170 @@
+# Análisis y Mejoras — Módulo `cocina`
+
+> **Revisión realizada:** 2026-04-08  
+> **Archivos analizados:** 8 screens · 7 providers · 6 entities · 7 use cases  
+> **Total aprox. de líneas:** ~6,500 LOC
+
+---
+
+## Resumen ejecutivo
+
+El módulo `cocina` está bien estructurado siguiendo Clean Architecture (domain → data → feature). Tiene funcionalidades avanzadas como extracción de recetas con IA, detección de duplicados, gestión de despensa con fecha de vencimiento y escalado de porciones. Sin embargo, durante el análisis se identificaron **9 oportunidades de mejora concretas** clasificadas por criticidad.
+
+---
+
+## 🔴 Críticas (afectan funcionalidad o datos)
+
+### 1. Duplicación de lógica de parseo JSON entre `ExtractRecipeUseCase` y `RecipeImportNotifier`
+
+**Problema:** El parsing de JSON de Gemini está duplicado casi línea por línea ([extract_recipe_use_case.dart](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/domain/lib/src/cocina/usecases/extract_recipe_use_case.dart#L26-L229) y [recipe_importer_provider.dart](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/features/cocina/lib/src/providers/recipe_importer_provider.dart#L147-L307)). Cualquier cambio o bug en el formato JSON obliga a modificar ambos archivos, lo que ya ha generado desincronización (el `importFromJson` usa `fuenteLabel: 'TikTok/Video'` hardcodeado, mientras el use case lee `fuenteLabel` del JSON).
+
+**Solución:** Hacer que `RecipeImportNotifier.importFromJson` sea un thin wrapper que delegue a `ExtractRecipeUseCase._parseRecipe(jsonString)`. El use case ya tiene toda la lógica robusta, incluyendo `_extractJsonFromResponse` y `_parseMealType`.
+
+```dart
+// ANTES (recipe_importer_provider.dart):
+void importFromJson(String jsonString, {String? sourceUrl}) {
+  // ~160 líneas de parseo duplicado
+}
+
+// DESPUÉS:
+void importFromJson(String jsonString, {String? sourceUrl}) {
+  try {
+    final useCase = ref.read(extractRecipeUseCaseProvider);
+    importedRecipe = useCase.parseFromJson(jsonString, sourceUrl: sourceUrl);
+    state = RecipeImportState.success;
+  } catch (e) { ... }
+}
+```
+
+---
+
+### 2. Historial de cocina no persiste (`_getRecentlyUsedRecipes` siempre retorna `[]`)
+
+**Problema:** El método [_getRecentlyUsedRecipes()](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/features/cocina/lib/src/providers/what_can_i_cook_provider.dart#L149-L154) tiene un `TODO` y retorna siempre lista vacía. Esto significa que el prompt al Chef IA nunca tiene contexto de lo que el usuario cocinó recientemente, **ignorando una funcionalidad prometida al usuario**: evitar repetir recetas en la semana.
+
+**Solución:** Guardar en `SharedPreferences` (ya está como dependencia en `pubspec.yaml`) un mapa `{recipeName: DateTime}` cada vez que el usuario cocina:
+
+```dart
+// En _cookRecipe / cookSuggestion:
+await HistoryStorage.saveCooked(recipe.name);
+
+// En _getRecentlyUsedRecipes:
+return await HistoryStorage.getLastWeek(); // Filtra los últimos 7 días
+```
+
+---
+
+### 3. `CalculateRecipeViabilityUseCase` no se usa en ningún lugar de la UI
+
+**Problema:** Existe un use case sofisticado ([calculate_recipe_viability_use_case.dart](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/domain/lib/src/cocina/usecases/calculate_recipe_viability_use_case.dart)) que calcula con precisión de unidades qué tan viable es cocinar una receta con lo que hay en despensa. Sin embargo, no se referencia en ningún provider ni pantalla: los porcentajes mostrados en `RecipeSuggestion.matchPercentage` los calcula el propio modelo de IA (que puede ser inexacto), no este use case.
+
+**Solución:** Conectar el use case en `HybridSuggestionUseCase` y en `WhatCanICookNotifier.cookSuggestion` para mostrar un porcentaje validado localmente.
+
+---
+
+## 🟡 Importantes (degradan UX o deuda técnica)
+
+### 4. Código de descarga de video no cancela en caso de error ni limpia temp files en todos los paths
+
+**Problema:** En [importFromTikTokUrl](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/features/cocina/lib/src/providers/recipe_importer_provider.dart#L59-L116), el archivo temporal solo se elimina en el happy path (línea 110). Si `importFromVideoFile` lanza una excepción, el archivo MP4 temporal queda en disco indefinidamente.
+
+```dart
+// Línea 110 — solo se ejecuta si no hay error:
+if (tempFile.existsSync()) tempFile.deleteSync();
+```
+
+**Solución:** Usar `try/finally`:
+
+```dart
+try {
+  await importFromVideoFile(tempFile.path);
+  ...
+} finally {
+  if (tempFile.existsSync()) tempFile.deleteSync(); // siempre limpia
+}
+```
+
+---
+
+### 5. `InventoryNotifier.deductRecipeIngredients` no persiste en base de datos
+
+**Problema:** El método [deductRecipeIngredients](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/features/cocina/lib/src/providers/cocina_providers.dart#L118-L163) actualiza el estado en memoria pero **no llama a `_repo.updateIngredient()`**. Si el usuario cierra y reabre la app, los ingredientes regresan a sus cantidades originales, como si nunca hubiera cocinado.
+
+**Solución:**
+
+```dart
+// Agregar al final del método, dentro del if (deducted.isNotEmpty):
+for (final updated in updatedIngredients) {
+  await _repo.updateIngredient(updated);
+}
+// Los eliminados (newQty <= 0) también deben llamar _repo.deleteIngredient(id)
+```
+
+---
+
+### 6. Tamaño de archivos de pantalla excesivo — violación de Single Responsibility
+
+**Problema:** Los archivos de pantalla son enormes y mezclan lógica de negocio con UI:
+- `suggestions_tab.dart`: **1,822 líneas** / 69 KB
+- `inventory_tab.dart`: **1,351 líneas** / 51 KB
+- `recipes_tab.dart`: **1,184 líneas** / 45 KB
+
+Esto dificulta el mantenimiento, el code review y el testing. Por ejemplo, `suggestions_tab.dart` contiene la clase `RecipeDetailSheet` que también existe en `recipes_tab.dart` bajo el nombre `_RecipeDetailSheet` — **dos implementaciones distintas del mismo concepto**.
+
+**Solución:** Extraer widgets reutilizables a archivos separados:
+```
+screens/
+  widgets/
+    recipe_detail_sheet.dart   ← único, compartido
+    recipe_card.dart
+    ai_suggestion_card.dart
+    nutrition_chip.dart
+```
+
+---
+
+### 7. Tests prácticamente inexistentes para lógica crítica de IA
+
+**Problema:** El único test en [cocina_test.dart](file:///d:/Proyectos_Flutter/Aplicativo_Personal/packages/features/cocina/test/cocina_test.dart) prueba la entidad `Ingredient`. **No hay tests** para:
+- `ExtractRecipeUseCase.execute()` (parsing de JSON corrupto / variantes de formato)
+- `WhatCanICookUseCase.execute()` (respuesta AI vacía, mal formateada)
+- `CalculateRecipeViabilityUseCase.execute()` (conversión de unidades)
+- `RecipeDuplicateChecker.findDuplicates()` (umbral de similitud)
+
+Estos casos de uso manejan datos críticos del usuario y tienen lógica compleja de parsing. Un test hubiera detectado el bug del `deductRecipeIngredients` que no persiste.
+
+---
+
+## 🟢 Mejoras de UX / funcionalidad nueva
+
+### 8. El `RecipeImportNotifier` no valida duplicados automáticamente al guardar
+
+**Problema:** `checkForDuplicates()` existe y funciona bien, pero solo se llama **opccionalmente** desde la pantalla. Un usuario puede guardar una receta duplicada sin ver el aviso si el flujo no pasa por ese check. El método `importFromTikTokUrl` llama a `checkForDuplicates` solo en el happy path de éxito, pero el flujo de guardado final en `recipe_importer_screen.dart` puede omitirlo.
+
+**Solución:** Integrar `checkForDuplicates` directamente en `saveRecipe()` dentro del notifier para que nunca sea posible guardar sin verificar.
+
+---
+
+### 9. Falta un modo "Recetas de la semana pasada" en el Plan Semanal
+
+**Problema:** La pestaña `Plan` (`WeeklyPlanScreen`) existe pero `GenerateWeeklyMenuUseCase.execute()` solo genera el menú, sin considerar qué se cocinó la semana anterior. Complementaria con la mejora #2, esto cerraría el ciclo completo de **planificación → ejecución → historial → planificación**.
+
+---
+
+## Resumen priorizado
+
+| # | Mejora | Prioridad | Esfuerzo |
+|---|--------|-----------|----------|
+| 5 | Persistir deducciones de inventario al cocinar | 🔴 Crítica | Bajo |
+| 1 | Eliminar parseo JSON duplicado | 🔴 Crítica | Medio |
+| 4 | Limpiar temp files en `finally` | 🔴 Crítica | Bajo |
+| 2 | Implementar historial de cocina persistente | 🟡 Alta | Medio |
+| 3 | Conectar `CalculateRecipeViabilityUseCase` a la UI | 🟡 Alta | Medio |
+| 6 | Refactorizar screens gigantes en widgets | 🟡 Alta | Alto |
+| 7 | Agregar tests para use cases críticos | 🟡 Alta | Alto |
+| 8 | Validación automática de duplicados | 🟢 Media | Bajo |
+| 9 | Historial en planificación semanal | 🟢 Media | Alto |
+
+---
+
+> **¿Arrancamos con la #5 (bug de persistencia) y la #4 (cleanup de temp files)?** Ambas son críticas, de bajo esfuerzo y riesgo casi nulo.

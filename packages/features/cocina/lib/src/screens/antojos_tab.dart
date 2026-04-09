@@ -4,6 +4,7 @@ import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
+import '../utils/cooking_history_service.dart';
 import 'suggestions_tab.dart';
 
 /// "Antojos" tab - Shows Cravings (Desserts, Snacks) from LOCAL Spanish recipes
@@ -201,16 +202,53 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
     );
   }
 
-  void _saveRecipe(BuildContext context, Recipe recipe) {
-    ref.read(recipesProvider.notifier).saveRecipe(recipe).then((_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Receta guardada'),
-              backgroundColor: Color(0xFF00E676)),
-        );
-      }
-    });
+  Future<void> _saveRecipe(BuildContext context, Recipe recipe) async {
+    final result = await ref
+        .read(recipesProvider.notifier)
+        .saveRecipeWithDuplicateCheck(recipe);
+
+    if (!context.mounted) return;
+
+    if (result.hasDuplicates) {
+      final dupNames = result.duplicates
+          .map((d) =>
+              '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
+          .join('\n');
+      final shouldContinue = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('⚠️ Posible duplicado'),
+              content: Text(
+                'Esta receta es similar a:\n\n$dupNames\n\n¿Deseas guardarla de todos modos?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Guardar igual'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+
+      if (!shouldContinue || !context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('⚠️ Receta guardada (posible duplicado)'),
+            backgroundColor: Colors.orange),
+      );
+    } else if (result.success) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Receta guardada'),
+            backgroundColor: Color(0xFF00E676)),
+      );
+    }
   }
 
   Future<void> _cookRecipe(BuildContext context, Recipe recipe) async {
@@ -234,6 +272,10 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           ),
         );
       } else {
+        // Record in cooking history
+        await CookingHistoryService().recordCooked(recipe.name);
+
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Column(
@@ -249,7 +291,23 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
               ],
             ),
             backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Deshacer',
+              textColor: Colors.white,
+              onPressed: () async {
+                await inventoryNotifier.revertDeduction(recipe.ingredients);
+                await inventoryNotifier.load();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('↩️ Deducción revertida'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+            ),
           ),
         );
         inventoryNotifier.load();

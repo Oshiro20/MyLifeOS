@@ -183,6 +183,93 @@ class Recipe extends Equatable {
         cuisineStyle,
         cookingSessionId,
       ];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'durationMinutes': durationMinutes,
+      'servings': servings,
+      'instructions': instructions,
+      'ingredients': ingredients.map((i) => i.toJson()).toList(),
+      'tags': tags,
+      'imageAssetId': imageAssetId,
+      'goal': goal.name,
+      'isFavorite': isFavorite,
+      'createdAt': createdAt.toIso8601String(),
+      'nutrition': nutrition?.toJson(),
+      'alergenos': alergenos,
+      'sustitutos': sustitutos.map((s) => s.toJson()).toList(),
+      'tipsChef': tipsChef,
+      'maridaje': maridaje,
+      'variaciones': variaciones.map((v) => v.toJson()).toList(),
+      'utensilios': utensilios,
+      'caloriasAproximadas': caloriasAproximadas,
+      'ingredientesInferidos': ingredientesInferidos,
+      'tipoComida': tipoComida?.name,
+      'fuenteUrl': fuenteUrl,
+      'fuenteLabel': fuenteLabel,
+      'rating': rating,
+      'cuisineStyle': cuisineStyle,
+      'cookingSessionId': cookingSessionId,
+    };
+  }
+
+  factory Recipe.fromJson(Map<String, dynamic> json) {
+    return Recipe(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String? ?? '',
+      durationMinutes: json['durationMinutes'] as int? ?? 30,
+      servings: json['servings'] as int? ?? 2,
+      instructions:
+          (json['instructions'] as List<dynamic>?)?.cast<String>() ?? [],
+      ingredients: (json['ingredients'] as List<dynamic>?)
+              ?.map((i) => RecipeIngredient.fromJson(i as Map<String, dynamic>))
+              .toList() ??
+          [],
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      imageAssetId: json['imageAssetId'] as String?,
+      goal: NutritionGoal.values.firstWhere(
+        (e) => e.name == json['goal'],
+        orElse: () => NutritionGoal.maintain,
+      ),
+      isFavorite: json['isFavorite'] as bool? ?? false,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      nutrition: json['nutrition'] != null
+          ? NutritionInfo.fromJson(json['nutrition'] as Map<String, dynamic>)
+          : null,
+      alergenos: (json['alergenos'] as List<dynamic>?)?.cast<String>() ?? [],
+      sustitutos: (json['sustitutos'] as List<dynamic>?)
+              ?.map((s) =>
+                  IngredientSubstitute.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      tipsChef: (json['tipsChef'] as List<dynamic>?)?.cast<String>() ?? [],
+      maridaje: json['maridaje'] as String?,
+      variaciones: (json['variaciones'] as List<dynamic>?)
+              ?.map((v) => RecipeVariation.fromJson(v as Map<String, dynamic>))
+              .toList() ??
+          [],
+      utensilios: (json['utensilios'] as List<dynamic>?)?.cast<String>() ?? [],
+      caloriasAproximadas: json['caloriasAproximadas'] as int?,
+      ingredientesInferidos:
+          (json['ingredientesInferidos'] as List<dynamic>?)?.cast<String>() ??
+              [],
+      tipoComida: json['tipoComida'] != null
+          ? MealType.values.firstWhere(
+              (e) => e.name == json['tipoComida'],
+              orElse: () => MealType.otro,
+            )
+          : null,
+      fuenteUrl: json['fuenteUrl'] as String?,
+      fuenteLabel: json['fuenteLabel'] as String?,
+      rating: json['rating'] as int?,
+      cuisineStyle: json['cuisineStyle'] as String?,
+      cookingSessionId: json['cookingSessionId'] as String?,
+    );
+  }
 }
 
 class RecipeIngredient extends Equatable {
@@ -202,6 +289,26 @@ class RecipeIngredient extends Equatable {
 
   @override
   List<Object?> get props => [id, recipeId, ingredientName, quantity, unit];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'recipeId': recipeId,
+      'ingredientName': ingredientName,
+      'quantity': quantity,
+      'unit': unit,
+    };
+  }
+
+  factory RecipeIngredient.fromJson(Map<String, dynamic> json) {
+    return RecipeIngredient(
+      id: json['id'] as String,
+      recipeId: json['recipeId'] as String,
+      ingredientName: json['ingredientName'] as String,
+      quantity: (json['quantity'] as num).toDouble(),
+      unit: json['unit'] as String,
+    );
+  }
 }
 
 /// Información nutricional de la receta
@@ -233,6 +340,24 @@ class NutritionInfo extends Equatable {
 
   @override
   List<Object?> get props => [proteinasG, carbohidratosG, grasasG, fibraG];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'proteinasG': proteinasG,
+      'carbohidratosG': carbohidratosG,
+      'grasasG': grasasG,
+      'fibraG': fibraG,
+    };
+  }
+
+  factory NutritionInfo.fromJson(Map<String, dynamic> json) {
+    return NutritionInfo(
+      proteinasG: (json['proteinasG'] as num?)?.toDouble() ?? 0,
+      carbohidratosG: (json['carbohidratosG'] as num?)?.toDouble() ?? 0,
+      grasasG: (json['grasasG'] as num?)?.toDouble() ?? 0,
+      fibraG: (json['fibraG'] as num?)?.toDouble() ?? 0,
+    );
+  }
 }
 
 /// Sustituto de ingrediente
@@ -249,6 +374,22 @@ class IngredientSubstitute extends Equatable {
 
   @override
   List<Object?> get props => [original, sustituto, nota];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'original': original,
+      'sustituto': sustituto,
+      'nota': nota,
+    };
+  }
+
+  factory IngredientSubstitute.fromJson(Map<String, dynamic> json) {
+    return IngredientSubstitute(
+      original: json['original'] as String,
+      sustituto: json['sustituto'] as String,
+      nota: json['nota'] as String?,
+    );
+  }
 }
 
 /// Variación de receta
@@ -263,4 +404,18 @@ class RecipeVariation extends Equatable {
 
   @override
   List<Object?> get props => [nombre, cambios];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nombre': nombre,
+      'cambios': cambios,
+    };
+  }
+
+  factory RecipeVariation.fromJson(Map<String, dynamic> json) {
+    return RecipeVariation(
+      nombre: json['nombre'] as String,
+      cambios: json['cambios'] as String,
+    );
+  }
 }

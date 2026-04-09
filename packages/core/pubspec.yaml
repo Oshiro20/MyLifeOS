@@ -39,6 +39,7 @@ dependencies:
   uuid: ^4.4.0
   flutter_image_compress: ^2.4.0
   video_thumbnail: ^0.5.6
+  # speech_to_text: ^6.6.2  # Disabled - Android build incompatibility
 
 dev_dependencies:
   flutter_test:

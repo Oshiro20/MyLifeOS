@@ -750,10 +750,23 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
             content: Text('Gemini analizando prenda...'),
             duration: Duration(seconds: 1)));
       }
-      final ai = ref.read(geminiServiceProvider);
-      final jsonStr = await ai.analyzeGarment(
-        name: _nameCtrl.text,
-        photoPath: _photo!.path,
+      final ai = ref.read(geminiProvider);
+      final prompt = '''
+Analiza esta prenda de vestir y devuelve un JSON con:
+- name: nombre de la prenda
+- typeIndex: índice del tipo (0-14: tshirt, shirt, pants, shorts, skirt, dress, jacket, sweater, shoes, accessory, sock, underwear, swimwear, sleepwear, sport)
+- primaryColor: color principal en hex
+- material: material principal
+- brand: marca si es visible
+- size: talla si es visible
+- season: estación (all, summer, winter, spring, autumn)
+- styleIndex: estilo (0-4: casual, formal, sport, streetwear, vintage)
+
+JSON: {"name":"...","typeIndex":0,"primaryColor":"#...","material":"...","brand":"...","size":"...","season":"all","styleIndex":0}
+''';
+      final jsonStr = await ai.extractRecipe(
+        textContext: prompt,
+        mediaPath: _photo!.path,
       );
       if (jsonStr != null && mounted) {
         final cleanJson =
@@ -871,9 +884,24 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Analizando short con IA...')));
           }
-          final ai = ref.read(geminiServiceProvider);
-          final jsonStr = await ai.analyzeGarment(
-              name: 'Short de ${garment.name}', photoPath: xfile.path);
+          final ai = ref.read(geminiProvider);
+          final promptShort = '''
+Analiza esta prenda (short deportivo) y devuelve un JSON con:
+- name: "Short de ${garment.name}"
+- typeIndex: 3 (shorts)
+- primaryColor: color principal en hex
+- material: material principal
+- brand: marca si es visible
+- size: talla si es visible
+- season: all
+- styleIndex: 2 (sport)
+
+JSON: {"name":"Short de ${garment.name}","typeIndex":3,"primaryColor":"#...","material":"...","brand":"...","size":"...","season":"all","styleIndex":2}
+''';
+          final jsonStr = await ai.extractRecipe(
+            textContext: promptShort,
+            mediaPath: xfile.path,
+          );
 
           WardrobeGarment shortGarment;
           if (jsonStr != null) {

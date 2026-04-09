@@ -57,9 +57,9 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
   @override
   List<AiChatMessage> build() => [];
 
-  GeminiService get _gemini => ref.read(geminiServiceProvider);
+  GeminiService get _gemini => ref.read(geminiProvider);
   OfflineCacheService get _cache => ref.read(offlineCacheProvider);
-  ConnectivityService get _conn => ref.read(connectivityServiceProvider);
+  ConnectivityService get _conn => ref.read(connectivityProvider);
 
   /// Envía un mensaje del usuario y obtiene la respuesta de Gemini.
   ///
@@ -100,7 +100,7 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
           outfitContext: outfitContext,
         );
         aiResponse = raw ?? 'No pude procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
-        await _cache.save(
+        await _cache.saveString(
           'chat_last',
           '{"q":${_esc(text)},"a":${_esc(aiResponse)}}',
         );
@@ -127,8 +127,8 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
     String? walletContext,
     String? outfitContext,
   }) async {
-    final apiKey = await _gemini.getApiKey();
-    if (apiKey == null || apiKey.isEmpty) return null;
+    final apiKey = _gemini.apiKey;
+    if (apiKey.isEmpty) return null;
 
     final systemText = _systemWithContext(
       walletContext: walletContext,
@@ -169,6 +169,3 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
 
 final aiChatProvider =
     NotifierProvider<AiChatNotifier, List<AiChatMessage>>(AiChatNotifier.new);
-
-final offlineCacheProvider =
-    Provider<OfflineCacheService>((_) => OfflineCacheService());

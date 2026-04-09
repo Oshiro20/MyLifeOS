@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
+import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
 import '../providers/cooking_session_provider.dart';
+import 'widgets/recipe_detail_sheet.dart';
 
 /// Tab "Sugeridas" — muestra qué puedes cocinar hoy con lo que tienes.
 class SuggestionsTab extends ConsumerStatefulWidget {
@@ -48,6 +50,39 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     });
   }
 
+  /// Listen for inventory changes and auto-refresh suggestions
+  void _listenInventoryChanges(WidgetRef ref) {
+    ref.listen(inventoryProvider, (prev, next) {
+      if (prev != null && prev.ingredients.length != next.ingredients.length) {
+        // Inventory changed — mark suggestions as stale
+        final aiNotifier = ref.read(whatCanICookProvider.notifier);
+        if (aiNotifier.visibleSuggestions.isNotEmpty) {
+          // Show subtle notification that suggestions can be refreshed
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: Color(0xFFFF9800), size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                      'Despensa actualizada — toca "Actualizar" para nuevas sugerencias',
+                      style: TextStyle(fontSize: 12)),
+                ],
+              ),
+              backgroundColor: const Color(0xFF152019),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    });
+  }
+
   // Lista de preferencias culinarias
   final List<String> _cuisines = [
     'Todas',
@@ -67,6 +102,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final cookingSession = ref.watch(cookingSessionProvider);
     final aiState = ref.watch(whatCanICookProvider);
     final aiNotifier = ref.read(whatCanICookProvider.notifier);
+
+    // Listen for inventory changes
+    _listenInventoryChanges(ref);
 
     final availableNames =
         invState.ingredients.map((i) => i.name.toLowerCase()).toSet();
@@ -591,6 +629,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                   availableNames: availableNames,
                   onTap: () => _showRecipeDetail(context, s.recipe),
                   onCook: () => _cookRecipe(context, ref, s.recipe),
+                  onAddMissing: () => _addMissingToShoppingList(
+                      context, ref, s.recipe, availableNames),
                 );
               },
             ),
@@ -634,6 +674,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     WidgetRef ref,
     Recipe recipe,
   ) async {
+    if (!mounted) return;
     // Start cooking session
     ref.read(cookingSessionProvider.notifier).startSession(
           recipeName: recipe.name,
@@ -671,12 +712,71 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               ],
             ),
             backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Deshacer',
+              textColor: Colors.white,
+              onPressed: () async {
+                await inventoryNotifier.revertDeduction(recipe.ingredients);
+                await inventoryNotifier.load();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('↩️ Deducción revertida'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+            ),
           ),
         );
         // Reload inventory
         inventoryNotifier.load();
       }
+    }
+  }
+
+  /// Add missing ingredients to the shopping list
+  Future<void> _addMissingToShoppingList(BuildContext context, WidgetRef ref,
+      Recipe recipe, Set<String> availableNames) async {
+    if (!mounted) return;
+    final missingIngredients = recipe.ingredients
+        .where((i) => !availableNames.contains(i.ingredientName.toLowerCase()))
+        .toList();
+
+    if (missingIngredients.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Ya tienes todos los ingredientes'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return;
+    }
+
+    final notifier = ref.read(recipesProvider.notifier);
+    int added = 0;
+    for (final ing in missingIngredients) {
+      notifier.addShoppingItem(ShoppingItem(
+        id: const Uuid().v4(),
+        name: ing.ingredientName,
+        quantity: ing.quantity,
+        unit: ing.unit,
+        bought: false,
+        createdAt: DateTime.now(),
+      ));
+      added++;
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '🛒 $added ingrediente${added > 1 ? "s" : ""} agregado${added > 1 ? "s" : ""} a la Lista'),
+          backgroundColor: const Color(0xFF00C896),
+        ),
+      );
     }
   }
 
@@ -686,22 +786,63 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     WhatCanICookNotifier notifier,
     RecipeSuggestion suggestion,
   ) async {
-    final saved = await notifier.saveSuggestion(suggestion);
-    if (context.mounted) {
+    final result = await notifier.saveSuggestion(suggestion);
+    if (!context.mounted) return;
+
+    if (result.hasDuplicates) {
+      final dupNames = result.duplicates
+          .map((d) =>
+              '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
+          .join('\n');
+      final shouldContinue = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('⚠️ Posible duplicado'),
+              content: Text(
+                'Esta receta es similar a:\n\n$dupNames\n\n¿Deseas guardarla de todos modos?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Guardar igual'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+
+      if (!shouldContinue || !context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Receta guardada (posible duplicado)'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } else if (result.success) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(saved
-              ? '✅ "${suggestion.recipe.name}" guardada en tu recetario'
-              : '❌ Error al guardar la receta'),
-          backgroundColor: saved ? const Color(0xFF00E676) : Colors.redAccent,
+          content:
+              Text('✅ "${suggestion.recipe.name}" guardada en tu recetario'),
+          backgroundColor: const Color(0xFF00E676),
           duration: const Duration(seconds: 2),
         ),
       );
-      // Reload recipes if saved
-      if (saved) {
-        ref.read(recipesProvider.notifier).load();
-      }
+    } else if (result.error != null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al guardar: ${result.error}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
     }
+    ref.read(recipesProvider.notifier).load();
   }
 
   Future<void> _cookAISuggestion(
@@ -924,12 +1065,14 @@ class _SuggestionCard extends StatelessWidget {
   final Set<String> availableNames;
   final VoidCallback onTap;
   final VoidCallback onCook;
+  final VoidCallback? onAddMissing;
 
   const _SuggestionCard({
     required this.recipe,
     required this.availableNames,
     required this.onTap,
     required this.onCook,
+    this.onAddMissing,
   });
 
   @override
@@ -1011,6 +1154,9 @@ class _SuggestionCard extends StatelessWidget {
               children: [
                 _Chip('⏱ ${recipe.durationMinutes} min'),
                 _Chip('👥 ${recipe.servings} porciones'),
+                if (recipe.caloriasAproximadas != null &&
+                    recipe.caloriasAproximadas! > 0)
+                  _Chip('🔥 ${recipe.caloriasAproximadas} kcal'),
                 if (missing > 0)
                   _Chip(
                       '🛒 Faltan $missing ingrediente${missing > 1 ? "s" : ""}',
@@ -1019,6 +1165,49 @@ class _SuggestionCard extends StatelessWidget {
                   _Chip('✅ Tienes todo', highlight: true),
               ],
             ),
+            // Mostrar ingredientes faltantes
+            if (missing > 0) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 3,
+                children: recipe.ingredients
+                    .where((i) => !availableNames
+                        .contains(i.ingredientName.toLowerCase()))
+                    .map((ing) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            ing.ingredientName,
+                            style: const TextStyle(
+                                color: Colors.redAccent, fontSize: 10),
+                          ),
+                        ))
+                    .toList(),
+              ),
+              // Botón "Agregar faltantes a la lista"
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onAddMissing,
+                  icon: const Icon(Icons.add_shopping_cart, size: 16),
+                  label: const Text('🛒 Agregar faltantes a la Lista',
+                      style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF9800),
+                    side: const BorderSide(color: Color(0xFFFF9800)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
             // Botón "Cocinar esta receta"
             const SizedBox(height: 12),
             SizedBox(
@@ -1190,7 +1379,7 @@ class _RecipeDetailSheetState extends State<RecipeDetailSheet> {
                     spacing: 8,
                     runSpacing: 6,
                     children: [
-                      _DetailChip('⏱ ${widget.recipe.durationMinutes} min'),
+                      DetailChip('⏱ ${widget.recipe.durationMinutes} min'),
                       // Porciones con controles +/-
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1261,7 +1450,7 @@ class _RecipeDetailSheetState extends State<RecipeDetailSheet> {
                           ),
                         ],
                       ),
-                      _DetailChip(
+                      DetailChip(
                           '🥘 ${widget.recipe.ingredients.length} ingredientes'),
                     ],
                   ),
@@ -1471,7 +1660,24 @@ class _RecipeDetailSheetState extends State<RecipeDetailSheet> {
               ],
             ),
             backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Deshacer',
+              textColor: Colors.white,
+              onPressed: () async {
+                await inventoryNotifier
+                    .revertDeduction(widget.recipe.ingredients);
+                await inventoryNotifier.load();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('↩️ Deducción revertida'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+            ),
           ),
         );
         // Reload inventory
@@ -1483,21 +1689,7 @@ class _RecipeDetailSheetState extends State<RecipeDetailSheet> {
   }
 }
 
-class _DetailChip extends StatelessWidget {
-  final String label;
-  const _DetailChip(this.label);
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A2A40),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label,
-            style: const TextStyle(color: Colors.white54, fontSize: 12)),
-      );
-}
+// _DetailChip moved to shared widget: DetailChip in recipe_detail_sheet.dart
 
 class _CoverageBadge extends StatelessWidget {
   final int percent;
@@ -1784,38 +1976,4 @@ class _CookingSessionBanner extends StatelessWidget {
   }
 }
 
-// ── Star Rating Widget ───────────────────────────────────────────────────────
-
-class StarRating extends StatelessWidget {
-  final int? rating;
-  final ValueChanged<int?>? onRatingChanged;
-  final double size;
-
-  const StarRating({
-    super.key,
-    this.rating,
-    this.onRatingChanged,
-    this.size = 20,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        final starValue = index + 1;
-        final isFilled = rating != null && starValue <= rating!;
-        return GestureDetector(
-          onTap: onRatingChanged != null
-              ? () => onRatingChanged!(starValue)
-              : null,
-          child: Icon(
-            isFilled ? Icons.star : Icons.star_border,
-            color: isFilled ? const Color(0xFFFFB300) : Colors.white38,
-            size: size,
-          ),
-        );
-      }),
-    );
-  }
-}
+// StarRating moved to shared widget in recipe_detail_sheet.dart

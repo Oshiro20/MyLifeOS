@@ -34,12 +34,12 @@ class ConnectivityService {
 }
 
 /// Provider Riverpod para ConnectivityService.
-final connectivityServiceProvider = Provider<ConnectivityService>(
+final connectivityProvider = Provider<ConnectivityService>(
   (ref) => ConnectivityService(),
 );
 
 /// Provider que expone el estado de conectividad actual como ``AsyncValue<bool>``.
 final isOnlineProvider = FutureProvider<bool>((ref) async {
-  final service = ref.read(connectivityServiceProvider);
+  final service = ref.read(connectivityProvider);
   return service.isOnline();
 });

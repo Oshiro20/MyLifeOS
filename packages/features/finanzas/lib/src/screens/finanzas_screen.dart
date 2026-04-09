@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/wallet_ai_summary_card.dart';
+import '../widgets/ai_analysis_card.dart';
 import '../screens/walletai_connection_screen.dart';
 import 'package:core/core.dart';
 
@@ -69,6 +70,8 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
                 delegate: SliverChildListDelegate([
                   // ── WalletAI resumen ────────────────────────────────────────
                   const WalletAiSummaryCard(),
+                  const SizedBox(height: 16),
+                  AIAnalysisCard(summary: _summary),
                   const SizedBox(height: 20),
 
                   // ── Gráfico semanal ─────────────────────────────────────────
@@ -339,6 +342,20 @@ class _CategorySummary extends StatelessWidget {
                     ? const Color(0xFFF59E0B)
                     : const Color(0xFFFF6B6B),
             isPercentage: true,
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: savingsRate.clamp(0.0, 1.0),
+              backgroundColor: Colors.white12,
+              color: savingsRate > 0.2
+                  ? const Color(0xFF00C896)
+                  : savingsRate > 0
+                      ? const Color(0xFFF59E0B)
+                      : const Color(0xFFFF6B6B),
+              minHeight: 6,
+            ),
           ),
         ],
       ),

@@ -567,4 +567,20 @@ class RecipeSuggestion {
     required this.matchPercentage,
     required this.missingIngredients,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'recipe': recipe.toJson(),
+      'matchPercentage': matchPercentage,
+      'missingIngredients': missingIngredients,
+    };
+  }
+
+  factory RecipeSuggestion.fromJson(Map<String, dynamic> json) {
+    return RecipeSuggestion(
+      recipe: Recipe.fromJson(json['recipe'] as Map<String, dynamic>),
+      matchPercentage: json['matchPercentage'] as int,
+      missingIngredients: json['missingIngredients'] as int,
+    );
+  }
 }
