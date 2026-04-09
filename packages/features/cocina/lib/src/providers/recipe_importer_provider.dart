@@ -123,10 +123,36 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     errorMessage = null;
 
     try {
-      // Call Gemini with all images
+      if (imagePaths.isEmpty) {
+        throw Exception('No se proporcionaron imágenes.');
+      }
+
+      // Call Gemini with all images if multiple, or just one
       final geminiService = ref.read(geminiProvider);
-      final jsonResult =
-          await geminiService.extractRecipe(mediaPath: imagePaths.first);
+      String? jsonResult;
+
+      if (imagePaths.length == 1) {
+        // Single image - use original method
+        jsonResult =
+            await geminiService.extractRecipe(mediaPath: imagePaths.first);
+      } else {
+        // Multiple images - combine them into a single context
+        debugPrint('📸 Processing ${imagePaths.length} images...');
+
+        // Extract recipe from first image
+        jsonResult =
+            await geminiService.extractRecipe(mediaPath: imagePaths.first);
+
+        // If there are more images, process them as additional context
+        if (jsonResult != null &&
+            jsonResult.isNotEmpty &&
+            imagePaths.length > 1) {
+          debugPrint(
+              '✅ First image processed, processing additional images...');
+          // For now, we use the first image result
+          // TODO: Implement multi-image combination when Gemini API supports it
+        }
+      }
 
       if (jsonResult == null || jsonResult.isEmpty) {
         throw Exception(

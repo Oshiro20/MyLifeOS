@@ -33,17 +33,38 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
       final localDb = LocalRecipeDatabaseService();
       // Fetch desserts and snacks from local Spanish database
       final desserts = await localDb.searchByType(MealType.postre, limit: 25);
-      final snacks = await localDb.searchByType(MealType.snack, limit: 15);
-      final bebidas = await localDb.searchByType(MealType.bebida, limit: 15);
+      debugPrint('🍫 Antojos: ${desserts.length} postres encontrados');
 
-      // Combine and shuffle
-      final all = [...desserts, ...snacks, ...bebidas]..shuffle();
+      final snacks = await localDb.searchByType(MealType.snack, limit: 25);
+      debugPrint('🍿 Antojos: ${snacks.length} snacks encontrados');
+
+      final bebidas = await localDb.searchByType(MealType.bebida, limit: 25);
+      debugPrint('🥤 Antojos: ${bebidas.length} bebidas encontradas');
+
+      // Combine all cravings and shuffle
+      final all = [...desserts, ...snacks, ...bebidas];
+      debugPrint('🎯 Total antojos: ${all.length} recetas');
+
+      // If no snacks found, try to use alternative meal types
+      if (snacks.isEmpty) {
+        debugPrint(
+            '⚠️ No se encontraron snacks, buscando tipos alternativos...');
+        final alternatives =
+            await localDb.searchByType(MealType.entrada, limit: 15);
+        all.addAll(alternatives);
+        debugPrint('✅ Añadidos ${alternatives.length} recetas alternativas');
+      }
+
+      all.shuffle();
+
       setState(() {
         _allCravings = all;
         _applyFilter();
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading cravings: $e');
+      debugPrint('📋 Stack: $stackTrace');
       setState(() => _loading = false);
     }
   }

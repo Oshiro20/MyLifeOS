@@ -224,28 +224,32 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                       fontWeight: FontWeight.w700),
                 ),
               ),
-              IconButton(
-                onPressed: aiState == WhatCanICookState.loading
-                    ? null
-                    : () => aiNotifier.generateSuggestions(
-                          mode: _selectedMode,
-                          cuisinePreference: _selectedCuisine == 'Todas'
-                              ? null
-                              : _selectedCuisine,
-                        ),
-                icon: aiState == WhatCanICookState.loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFFFF9800),
-                        ),
-                      )
-                    : const Icon(Icons.refresh,
-                        color: Color(0xFFFF9800), size: 24),
-                tooltip: 'Nuevas sugerencias',
-              ),
+              // Single refresh button
+              if (aiState == WhatCanICookState.loading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFFF9800),
+                  ),
+                )
+              else
+                TextButton.icon(
+                  onPressed: () => aiNotifier.generateSuggestions(
+                    mode: _selectedMode,
+                    cuisinePreference:
+                        _selectedCuisine == 'Todas' ? null : _selectedCuisine,
+                  ),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label:
+                      const Text('Actualizar', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF9800),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
             ],
           ),
         ),
@@ -411,7 +415,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final modeLabel = _selectedMode == SuggestionMode.now
         ? '🎯 ¿Qué como ahora?'
         : _selectedMode == SuggestionMode.menu
-            ? '📋 Armar Menú'
+            ? '📋 Menús Completos'
             : '🍫 Antojos';
 
     // Get visible suggestions filtered by category
@@ -420,6 +424,20 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       visibleSuggestions = visibleSuggestions
           .where((s) => s.recipe.tipoComida == _selectedCategory)
           .toList();
+    }
+
+    // Group by menu number when in menu mode
+    Map<int, List<RecipeSuggestion>>? menuGroups;
+    if (_selectedMode == SuggestionMode.menu && visibleSuggestions.isNotEmpty) {
+      menuGroups = <int, List<RecipeSuggestion>>{};
+      final mealsPerMenu = 4; // Entrada, Sopa, Segundo, Bebida
+      for (int i = 0; i < visibleSuggestions.length; i++) {
+        final menuNum = (i / mealsPerMenu).floor() + 1;
+        if (!menuGroups.containsKey(menuNum)) {
+          menuGroups[menuNum] = [];
+        }
+        menuGroups[menuNum]!.add(visibleSuggestions[i]);
+      }
     }
 
     if (aiState == WhatCanICookState.loading) {
@@ -463,69 +481,81 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh,
-                      size: 18, color: Color(0xFFFF9800)),
-                  onPressed: () => aiNotifier.generateSuggestions(
-                    mode: _selectedMode,
-                    cuisinePreference:
-                        _selectedCuisine == 'Todas' ? null : _selectedCuisine,
-                  ),
-                  tooltip: 'Obtener nuevas sugerencias',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
+                // Single close button
+                TextButton.icon(
                   onPressed: () => aiNotifier.reset(),
-                  tooltip: 'Cerrar sugerencias',
+                  icon: const Icon(Icons.close, size: 14),
+                  label: const Text('Cerrar', style: TextStyle(fontSize: 11)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white54,
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox(
-            height: 380,
-            child: visibleSuggestions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.filter_list_off,
-                          size: 48,
-                          color: Colors.white24,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _selectedCategory != null
-                              ? 'No hay recetas de ${_selectedCategory!.label}'
-                              : 'No hay sugerencias disponibles',
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 14),
-                        ),
-                      ],
+          // Menu groups or regular list
+          if (menuGroups != null && menuGroups.isNotEmpty)
+            ...menuGroups.entries.map((entry) {
+              final menuNum = entry.key;
+              final menuRecipes = entry.value;
+              return _CompleteMenuCard(
+                menuNumber: menuNum,
+                recipes: menuRecipes,
+                onTap: (recipe) => _showRecipeDetail(context, recipe),
+                onSave: (suggestion) =>
+                    _saveAISuggestion(context, ref, aiNotifier, suggestion),
+                onCook: (suggestion) =>
+                    _cookAISuggestion(context, ref, aiNotifier, suggestion),
+              );
+            }).toList()
+          else
+            SizedBox(
+              height: 380,
+              child: visibleSuggestions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.filter_list_off,
+                            size: 48,
+                            color: Colors.white24,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _selectedCategory != null
+                                ? 'No hay recetas de ${_selectedCategory!.label}'
+                                : 'No hay sugerencias disponibles',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      itemCount: visibleSuggestions.length,
+                      itemBuilder: (ctx, i) {
+                        final suggestion = visibleSuggestions[i];
+                        return _AISuggestionCard(
+                          suggestion: suggestion,
+                          onTap: () =>
+                              _showRecipeDetail(context, suggestion.recipe),
+                          onSave: () => _saveAISuggestion(
+                              context, ref, aiNotifier, suggestion),
+                          onCook: () => _cookAISuggestion(
+                              context, ref, aiNotifier, suggestion),
+                          onDismiss: () =>
+                              aiNotifier.dismissRecipe(suggestion.recipe.id),
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    itemCount: visibleSuggestions.length,
-                    itemBuilder: (ctx, i) {
-                      final suggestion = visibleSuggestions[i];
-                      return _AISuggestionCard(
-                        suggestion: suggestion,
-                        onTap: () =>
-                            _showRecipeDetail(context, suggestion.recipe),
-                        onSave: () => _saveAISuggestion(
-                            context, ref, aiNotifier, suggestion),
-                        onCook: () => _cookAISuggestion(
-                            context, ref, aiNotifier, suggestion),
-                        onDismiss: () =>
-                            aiNotifier.dismissRecipe(suggestion.recipe.id),
-                      );
-                    },
-                  ),
-          ),
+            ),
         ],
       );
     }
@@ -1924,6 +1954,171 @@ class _AISuggestionCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Complete Menu Card (for Menu Mode) ───────────────────────────────────────
+
+class _CompleteMenuCard extends StatelessWidget {
+  final int menuNumber;
+  final List<RecipeSuggestion> recipes;
+  final Function(Recipe) onTap;
+  final Function(RecipeSuggestion) onSave;
+  final Function(RecipeSuggestion) onCook;
+
+  const _CompleteMenuCard({
+    required this.menuNumber,
+    required this.recipes,
+    required this.onTap,
+    required this.onSave,
+    required this.onCook,
+  });
+
+  String _getMealTypeLabel(Recipe recipe) {
+    final tipo = recipe.tipoComida;
+    if (tipo == null) return '🍽️ Plato';
+    return '${tipo.emoji} ${tipo.label}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2F1A), Color(0xFF0F1F0F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: const Color(0xFF00E676).withAlpha(60), width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Menu header
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E676),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'MENÚ $menuNumber',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${recipes.length} platos',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Recipe list
+            ...recipes.map((suggestion) {
+              final recipe = suggestion.recipe;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: GestureDetector(
+                  onTap: () => onTap(recipe),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: const Color(0xFFFF9800).withAlpha(30)),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _getMealTypeLabel(recipe),
+                          style: const TextStyle(
+                              color: Color(0xFFFF9800),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            recipe.name,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${recipe.durationMinutes}min',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        recipes.isNotEmpty ? () => onSave(recipes.first) : null,
+                    icon: const Icon(Icons.save_outlined, size: 14),
+                    label: const Text('Guardar menú',
+                        style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E676),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: const Size(0, 30),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        recipes.isNotEmpty ? () => onCook(recipes.first) : null,
+                    icon: const Icon(Icons.whatshot, size: 14),
+                    label:
+                        const Text('Cocinar', style: TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9800),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: const Size(0, 30),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

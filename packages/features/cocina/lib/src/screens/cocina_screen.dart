@@ -6,6 +6,7 @@ import 'inventory_tab.dart';
 import 'recipes_tab.dart';
 import 'suggestions_tab.dart';
 import 'antojos_tab.dart';
+import 'shopping_tab.dart';
 import 'weekly_plan_screen.dart';
 import '../providers/cocina_providers.dart';
 
@@ -23,7 +24,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 5, vsync: this);
+    _tab = TabController(length: 6, vsync: this);
     _tab.addListener(() {
       if (mounted) setState(() {});
     });
@@ -72,6 +73,8 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
       const Tab(
           icon: Icon(Icons.lightbulb_outline, size: 20), text: 'Sugeridas'),
       const Tab(icon: Icon(Icons.cookie, size: 20), text: 'Antojos'),
+      const Tab(
+          icon: Icon(Icons.shopping_cart_outlined, size: 20), text: 'Lista'),
       const Tab(icon: Icon(Icons.calendar_month, size: 20), text: 'Plan'),
     ];
   }
@@ -166,6 +169,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           const RecipesTab(),
           const SuggestionsTab(),
           const AntojosTab(),
+          const ShoppingTab(),
           const WeeklyPlanScreen(),
         ],
       ),

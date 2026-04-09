@@ -99,13 +99,31 @@ El usuario quiere ver opciones diversas para decidir qué cocinar AHORA.
 ''';
       case SuggestionMode.menu:
         modeContext = '''
-📋 MODO: "Armar Menú"
-Sugiere un MENÚ COMPLETO con:
-1. Una ENTRADA o ensalada
-2. Una SOPA o caldo
-3. Un PLATO FUERTE (segundo)
-4. Una BEBIDA
-Cada plato debe usar los ingredientes disponibles.
+📋 MODO: "Armar Menú Completo"
+Sugiere $maxSuggestions MENÚS COMPLETOS. Cada menú debe tener TODOS estos platos:
+
+MENÚ TIPO (ejemplo para $maxSuggestions menús):
+Menú 1:
+  • Entrada: [nombre de la entrada]
+  • Sopa: [nombre de la sopa]
+  • Plato fuerte (Segundo): [nombre del plato principal]
+  • Bebida/Refresco: [nombre de la bebida]
+
+Menú 2:
+  • Entrada: [otra entrada diferente]
+  • Sopa: [otra sopa diferente]
+  • Plato fuerte: [otro plato principal]
+  • Bebida: [otra bebida]
+
+REGLAS IMPORTANTES:
+1. Cada menú debe ser diferente (NO repetir recetas entre menús)
+2. Todos los platos deben usar los ingredientes disponibles
+3. Sé creativo con las combinaciones
+4. Para CADA plato del menú, incluye TODOS los campos obligatorios
+5. El "tipo_comida" de cada plato debe ser: "Entrada", "Sopa", "Almuerzo" (para el segundo), "Bebida"
+
+DEVUELVE un array con TODOS los platos de los $maxSuggestions menús completos.
+Ejemplo: si $maxSuggestions=4, devolverás 16 recetas (4 menús x 4 platos cada uno).
 ''';
       case SuggestionMode.cravings:
         modeContext = '''
@@ -179,29 +197,34 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 8. Para CADA receta incluye "cuisine_style" con el estilo de cocina (ej: "Peruana-sierra", "Italiana", "Selvática")
 
 📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
+IMPORTANTE: Devuelve SOLAMENTE el array JSON. Sin texto antes ni después. Sin backticks de markdown.
 
 [
   {
-    "nombre_receta": "Nombre del plato",
-    "descripcion": "Descripción atractiva de 2-3 oraciones",
+    "nombre_receta": "Arroz chaufa sencillo",
+    "descripcion": "Delicioso arroz chaufa peruano con huevo y cebollita china",
     "porciones": 4,
-    "tiempo_preparacion_min": 15,
-    "tiempo_coccion_min": 30,
-    "tiempo_total_min": 45,
+    "tiempo_preparacion_min": 10,
+    "tiempo_coccion_min": 20,
+    "tiempo_total_min": 30,
     "dificultad": "Fácil",
-    "tipo_comida": "Postre",
+    "tipo_comida": "Almuerzo",
     "cocina": "Peruana",
     "cuisine_style": "Peruana-costa",
     "ingredientes": [
-      {"nombre": "Arroz", "cantidad": 2.0, "unidad": "tazas"}
+      {"nombre": "Arroz", "cantidad": 2, "unidad": "tazas"},
+      {"nombre": "Huevo", "cantidad": 3, "unidad": "unidades"},
+      {"nombre": "Cebolla china", "cantidad": 2, "unidad": "unidades"}
     ],
-    "ingredientes_inferidos": ["aceite", "sal"],
+    "ingredientes_inferidos": ["aceite", "sal", "salsa de soya"],
     "pasos": [
-      {"numero": 1, "descripcion": "Paso detallado"}
+      {"numero": 1, "descripcion": "Calentar el wok a fuego alto con un poco de aceite"},
+      {"numero": 2, "descripcion": "Agregar los huevos batidos y revolver"},
+      {"numero": 3, "descripcion": "Añadir el arroz salteado y mezclar todo"}
     ],
-    "utensilios": ["olla", "cuchara"],
+    "utensilios": ["wok", "cuchara de madera"],
     "calorias_aproximadas": 350,
-    "tags": ["fácil", "peruano"],
+    "tags": ["fácil", "peruano", "rápido"],
     "ingredientes_disponibles": 8,
     "ingredientes_totales": 10,
     "nivel_confianza": "Alto",
@@ -209,19 +232,19 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
   }
 ]
 
-⚠️ REGLAS OBLIGATORIAS:
-1. Devuelve ÚNICAMENTE el array JSON. Sin markdown, sin backticks.
-2. TODOS los campos son obligatorios en cada receta.
-3. "cantidad" debe ser NÚMERO (float).
-4. "unidad" en ESPAÑOL.
-5. "ingredientes_disponibles": cuántos ingredientes de la receta están en el inventario
-6. "ingredientes_totales": total de ingredientes en la receta
-7. Mínimo 3 ingredientes, 3 pasos por receta.
-8. "tiempo_total_min" realista: 15-180 minutos.
-9. "porciones" entero: 1-12.
-10. NO uses ingredientes que el usuario no le gustan. Si son esenciales, sustitúyelos.
-11. Incluye "cuisine_style" con el estilo de cocina (ej: "Peruana-sierra", "Italiana", "Selvática").
-12. "tipo_comida" puede ser: Desayuno, Almuerzo, Cena, Entrada, Sopa, Seco, Postre, Mazamorra, Bebida, Snack.
+⚠️ REGLAS OBLIGATORIAS PARA EL JSON:
+1. El resultado DEBE ser un array JSON válido que empieza con [ y termina con ]
+2. NO incluyas texto fuera del array JSON
+3. NO uses backticks (```) ni markdown
+4. TODOS los campos son obligatorios en cada receta
+5. "cantidad" debe ser NÚMERO (ej: 2, 1.5, 0.25)
+6. "unidad" en ESPAÑOL (ej: "tazas", "unidades", "gramos")
+7. "ingredientes": array con AL MENOS 3 ingredientes
+8. "pasos": array con AL MENOS 3 pasos
+9. "tiempo_total_min": número realista entre 15 y 180
+10. "porciones": número entero entre 1 y 12
+11. NO uses ingredientes que el usuario no le gustan. Si son esenciales, sustitúyelos.
+12. Incluye "cuisine_style" con el estilo de cocina
 
 ${cuisineContext.isNotEmpty ? cuisineContext : ''}
 ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
@@ -229,7 +252,7 @@ ${recentlyUsedWarning.isNotEmpty ? recentlyUsedWarning : ''}
 ${modeContext.isNotEmpty ? modeContext : ''}
 ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
 
-🍳 AHORA SUGIERE LAS RECETAS BASADO EN EL INVENTARIO DEL USUARIO.''';
+🍳 AHORA DEVUELVE SOLAMENTE EL ARRAY JSON CON LAS $maxSuggestions RECETAS:''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
@@ -276,8 +299,11 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
 
       if (!parseSuccess) {
         throw Exception(
-          'La IA devolvió un formato inválido. Intenta de nuevo.\n\n'
-          'Tip: Asegúrate de tener al menos 3-5 ingredientes en tu despensa para mejores resultados.',
+          'La IA devolvió un formato inválido.\n\n'
+          'Consejos para mejores resultados:\n'
+          '• Ten al menos 5-7 ingredientes en tu despensa\n'
+          '• Incluye ingredientes variados (proteínas, verduras, granos)\n'
+          '• Toca "Reintentar" para probar de nuevo',
         );
       }
 

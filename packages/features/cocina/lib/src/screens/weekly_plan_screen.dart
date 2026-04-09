@@ -46,6 +46,12 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined,
+                color: Color(0xFF00E676)),
+            onPressed: () => _addMissingIngredientsToList(context),
+            tooltip: 'Añadir faltantes a lista de compras',
+          ),
+          IconButton(
             icon: const Icon(Icons.ios_share, color: Color(0xFF00F0FF)),
             onPressed: () => _shareMenu(context),
             tooltip: 'Exportar Menú',
@@ -135,6 +141,102 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     }
   }
 
+  Future<void> _addMissingIngredientsToList(BuildContext context) async {
+    final state = ref.read(weeklyMenuProvider);
+    if (state is! WeeklyMenuLoaded || state.entries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No hay menú generado para agregar ingredientes.'),
+            backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final recipes = ref.read(recipesProvider).recipes;
+    final inventory = ref.read(inventoryProvider).ingredients;
+    final availableNames = inventory.map((i) => i.name.toLowerCase()).toSet();
+
+    // Collect all missing ingredients from all recipes in the plan
+    final missingMap = <String, Set<String>>{}; // name -> units
+    int recipeCount = 0;
+
+    for (final entry in state.entries) {
+      if (entry.recipeId.isEmpty) continue;
+
+      final recipe = recipes.firstWhere(
+        (r) => r.id == entry.recipeId,
+        orElse: () => Recipe(
+          id: '',
+          name: '',
+          description: '',
+          durationMinutes: 0,
+          servings: 0,
+          instructions: [],
+          ingredients: [],
+          tags: [],
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      if (recipe.id.isEmpty) continue;
+      recipeCount++;
+
+      for (final ing in recipe.ingredients) {
+        final ingName = ing.ingredientName.toLowerCase();
+        if (!availableNames.contains(ingName)) {
+          if (!missingMap.containsKey(ingName)) {
+            missingMap[ingName] = {};
+          }
+          missingMap[ingName]!.add(ing.unit);
+        }
+      }
+    }
+
+    if (missingMap.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('✅ Ya tienes todos los ingredientes del plan'),
+            backgroundColor: Color(0xFF00E676)),
+      );
+      return;
+    }
+
+    // Add to shopping list
+    final notifier = ref.read(recipesProvider.notifier);
+    int added = 0;
+    for (final entry in missingMap.entries) {
+      final units = entry.value.toList();
+      notifier.addShoppingItem(ShoppingItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString() + added.toString(),
+        name: entry.key,
+        quantity: 1,
+        unit: units.length == 1 ? units.first : 'unidades',
+        bought: false,
+        createdAt: DateTime.now(),
+      ));
+      added++;
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '🛒 $added ingredientes añadidos a la lista de compras ($recipeCount recetas)'),
+          backgroundColor: const Color(0xFF00E676),
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'VER',
+            textColor: Colors.white,
+            onPressed: () {
+              // Switch to shopping tab
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      );
+    }
+  }
+
   void _shareMenu(BuildContext context) {
     final state = ref.read(weeklyMenuProvider);
     if (state is! WeeklyMenuLoaded || state.entries.isEmpty) {
@@ -202,7 +304,24 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     }
   }
 
-  void _showRecipeDetail(BuildContext context, dynamic recipe) {
+  void _showRecipeDetail(BuildContext context, dynamic entry) {
+    // entry is a WeeklyMenuEntry, we need to fetch the actual Recipe
+    final recipes = ref.read(recipesProvider).recipes;
+    final recipe = recipes.firstWhere(
+      (r) => r.id == entry.recipeId,
+      orElse: () => Recipe(
+        id: '',
+        name: 'Receta no encontrada',
+        description: 'Esta receta ya no existe en tu recetario.',
+        durationMinutes: 0,
+        servings: 0,
+        instructions: [],
+        ingredients: [],
+        tags: [],
+        createdAt: DateTime.now(),
+      ),
+    );
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
