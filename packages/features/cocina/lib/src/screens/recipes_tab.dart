@@ -682,6 +682,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           recipeId: recipe.id,
           originalServings: recipe.servings,
           scaledServings: scaledServings,
+          estimatedDurationMinutes: recipe.durationMinutes,
         );
 
     // Deduct ingredients with scaling

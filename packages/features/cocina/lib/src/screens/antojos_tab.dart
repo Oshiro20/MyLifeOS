@@ -256,6 +256,7 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           recipeName: recipe.name,
           recipeId: recipe.id,
           originalServings: recipe.servings,
+          estimatedDurationMinutes: recipe.durationMinutes,
         );
 
     final inventoryNotifier = ref.read(inventoryProvider.notifier);
