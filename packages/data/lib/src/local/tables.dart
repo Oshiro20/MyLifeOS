@@ -86,6 +86,8 @@ class Recipes extends Table {
   TextColumn get difficulty => text().withDefault(const Constant('Media'))();
   // External URL for attribution (API source)
   TextColumn get sourceUrl => text().nullable()();
+  // Recipe category/meal type (v3.5.4): desayuno, almuerzo, cena, entrada, sopa, seco, postre, mazamorra, bebida, snack, jugo, otro
+  TextColumn get mealType => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

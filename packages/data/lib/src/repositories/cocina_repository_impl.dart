@@ -56,6 +56,12 @@ class CocinaRepository implements ICocinaRepository {
             : r.sourceIndex == 1
                 ? 'TheMealDB'
                 : 'Chef IA',
+        tipoComida: r.mealType != null && r.mealType!.isNotEmpty
+            ? MealType.values.firstWhere(
+                (m) => m.name == r.mealType,
+                orElse: () => MealType.otro,
+              )
+            : null,
       );
 
   ShoppingItem _toShoppingItem(ShoppingItemEntry e) => ShoppingItem(
@@ -161,6 +167,7 @@ class CocinaRepository implements ICocinaRepository {
           region: Value(recipe.cuisineStyle ?? ''),
           difficulty: Value('Media'),
           sourceUrl: Value(recipe.fuenteUrl),
+          mealType: Value(recipe.tipoComida?.name),
         ));
 
     // Reemplazar ingredientes de la receta
@@ -218,6 +225,7 @@ class CocinaRepository implements ICocinaRepository {
       isFavorite: Value(recipe.isFavorite),
       region: Value(recipe.cuisineStyle ?? ''),
       sourceUrl: Value(recipe.fuenteUrl),
+      mealType: Value(recipe.tipoComida?.name),
     ));
 
     // Update ingredients

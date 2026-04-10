@@ -133,7 +133,14 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                   onTap: () => setState(() => _selectedCategory = null),
                 ),
                 const SizedBox(width: 6),
-                ...MealType.values.where((t) => t != MealType.otro).map(
+                // Recipe category chips (exclude meal periods: desayuno, almuerzo, cena)
+                ...MealType.values
+                    .where((t) =>
+                        t != MealType.otro &&
+                        t != MealType.desayuno &&
+                        t != MealType.almuerzo &&
+                        t != MealType.cena)
+                    .map(
                       (type) => Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: _CategoryChip(

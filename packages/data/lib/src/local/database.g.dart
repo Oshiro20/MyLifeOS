@@ -1019,6 +1019,12 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
   late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
       'source_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mealTypeMeta =
+      const VerificationMeta('mealType');
+  @override
+  late final GeneratedColumn<String> mealType = GeneratedColumn<String>(
+      'meal_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1035,7 +1041,8 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
         sourceIndex,
         region,
         difficulty,
-        sourceUrl
+        sourceUrl,
+        mealType
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1126,6 +1133,10 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
       context.handle(_sourceUrlMeta,
           sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta));
     }
+    if (data.containsKey('meal_type')) {
+      context.handle(_mealTypeMeta,
+          mealType.isAcceptableOrUnknown(data['meal_type']!, _mealTypeMeta));
+    }
     return context;
   }
 
@@ -1165,6 +1176,8 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
           .read(DriftSqlType.string, data['${effectivePrefix}difficulty'])!,
       sourceUrl: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}source_url']),
+      mealType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}meal_type']),
     );
   }
 
@@ -1190,6 +1203,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
   final String region;
   final String difficulty;
   final String? sourceUrl;
+  final String? mealType;
   const RecipeEntry(
       {required this.id,
       required this.name,
@@ -1205,7 +1219,8 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       required this.sourceIndex,
       required this.region,
       required this.difficulty,
-      this.sourceUrl});
+      this.sourceUrl,
+      this.mealType});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1227,6 +1242,9 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
     map['difficulty'] = Variable<String>(difficulty);
     if (!nullToAbsent || sourceUrl != null) {
       map['source_url'] = Variable<String>(sourceUrl);
+    }
+    if (!nullToAbsent || mealType != null) {
+      map['meal_type'] = Variable<String>(mealType);
     }
     return map;
   }
@@ -1252,6 +1270,9 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       sourceUrl: sourceUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceUrl),
+      mealType: mealType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mealType),
     );
   }
 
@@ -1274,6 +1295,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       region: serializer.fromJson<String>(json['region']),
       difficulty: serializer.fromJson<String>(json['difficulty']),
       sourceUrl: serializer.fromJson<String?>(json['sourceUrl']),
+      mealType: serializer.fromJson<String?>(json['mealType']),
     );
   }
   @override
@@ -1295,6 +1317,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       'region': serializer.toJson<String>(region),
       'difficulty': serializer.toJson<String>(difficulty),
       'sourceUrl': serializer.toJson<String?>(sourceUrl),
+      'mealType': serializer.toJson<String?>(mealType),
     };
   }
 
@@ -1313,7 +1336,8 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           int? sourceIndex,
           String? region,
           String? difficulty,
-          Value<String?> sourceUrl = const Value.absent()}) =>
+          Value<String?> sourceUrl = const Value.absent(),
+          Value<String?> mealType = const Value.absent()}) =>
       RecipeEntry(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1331,6 +1355,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
         region: region ?? this.region,
         difficulty: difficulty ?? this.difficulty,
         sourceUrl: sourceUrl.present ? sourceUrl.value : this.sourceUrl,
+        mealType: mealType.present ? mealType.value : this.mealType,
       );
   RecipeEntry copyWithCompanion(RecipesCompanion data) {
     return RecipeEntry(
@@ -1359,6 +1384,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       difficulty:
           data.difficulty.present ? data.difficulty.value : this.difficulty,
       sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
+      mealType: data.mealType.present ? data.mealType.value : this.mealType,
     );
   }
 
@@ -1379,7 +1405,8 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           ..write('sourceIndex: $sourceIndex, ')
           ..write('region: $region, ')
           ..write('difficulty: $difficulty, ')
-          ..write('sourceUrl: $sourceUrl')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('mealType: $mealType')
           ..write(')'))
         .toString();
   }
@@ -1400,7 +1427,8 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       sourceIndex,
       region,
       difficulty,
-      sourceUrl);
+      sourceUrl,
+      mealType);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1419,7 +1447,8 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           other.sourceIndex == this.sourceIndex &&
           other.region == this.region &&
           other.difficulty == this.difficulty &&
-          other.sourceUrl == this.sourceUrl);
+          other.sourceUrl == this.sourceUrl &&
+          other.mealType == this.mealType);
 }
 
 class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
@@ -1438,6 +1467,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
   final Value<String> region;
   final Value<String> difficulty;
   final Value<String?> sourceUrl;
+  final Value<String?> mealType;
   final Value<int> rowid;
   const RecipesCompanion({
     this.id = const Value.absent(),
@@ -1455,6 +1485,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     this.region = const Value.absent(),
     this.difficulty = const Value.absent(),
     this.sourceUrl = const Value.absent(),
+    this.mealType = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RecipesCompanion.insert({
@@ -1473,6 +1504,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     this.region = const Value.absent(),
     this.difficulty = const Value.absent(),
     this.sourceUrl = const Value.absent(),
+    this.mealType = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         name = Value(name),
@@ -1493,6 +1525,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     Expression<String>? region,
     Expression<String>? difficulty,
     Expression<String>? sourceUrl,
+    Expression<String>? mealType,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1511,6 +1544,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
       if (region != null) 'region': region,
       if (difficulty != null) 'difficulty': difficulty,
       if (sourceUrl != null) 'source_url': sourceUrl,
+      if (mealType != null) 'meal_type': mealType,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1531,6 +1565,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
       Value<String>? region,
       Value<String>? difficulty,
       Value<String?>? sourceUrl,
+      Value<String?>? mealType,
       Value<int>? rowid}) {
     return RecipesCompanion(
       id: id ?? this.id,
@@ -1548,6 +1583,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
       region: region ?? this.region,
       difficulty: difficulty ?? this.difficulty,
       sourceUrl: sourceUrl ?? this.sourceUrl,
+      mealType: mealType ?? this.mealType,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1600,6 +1636,9 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     if (sourceUrl.present) {
       map['source_url'] = Variable<String>(sourceUrl.value);
     }
+    if (mealType.present) {
+      map['meal_type'] = Variable<String>(mealType.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1624,6 +1663,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
           ..write('region: $region, ')
           ..write('difficulty: $difficulty, ')
           ..write('sourceUrl: $sourceUrl, ')
+          ..write('mealType: $mealType, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5127,6 +5167,7 @@ typedef $$RecipesTableCreateCompanionBuilder = RecipesCompanion Function({
   Value<String> region,
   Value<String> difficulty,
   Value<String?> sourceUrl,
+  Value<String?> mealType,
   Value<int> rowid,
 });
 typedef $$RecipesTableUpdateCompanionBuilder = RecipesCompanion Function({
@@ -5145,6 +5186,7 @@ typedef $$RecipesTableUpdateCompanionBuilder = RecipesCompanion Function({
   Value<String> region,
   Value<String> difficulty,
   Value<String?> sourceUrl,
+  Value<String?> mealType,
   Value<int> rowid,
 });
 
@@ -5243,6 +5285,9 @@ class $$RecipesTableFilterComposer
 
   ColumnFilters<String> get sourceUrl => $composableBuilder(
       column: $table.sourceUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mealType => $composableBuilder(
+      column: $table.mealType, builder: (column) => ColumnFilters(column));
 
   Expression<bool> recipeIngredientsRefs(
       Expression<bool> Function($$RecipeIngredientsTableFilterComposer f) f) {
@@ -5343,6 +5388,9 @@ class $$RecipesTableOrderingComposer
 
   ColumnOrderings<String> get sourceUrl => $composableBuilder(
       column: $table.sourceUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mealType => $composableBuilder(
+      column: $table.mealType, builder: (column) => ColumnOrderings(column));
 }
 
 class $$RecipesTableAnnotationComposer
@@ -5398,6 +5446,9 @@ class $$RecipesTableAnnotationComposer
 
   GeneratedColumn<String> get sourceUrl =>
       $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get mealType =>
+      $composableBuilder(column: $table.mealType, builder: (column) => column);
 
   Expression<T> recipeIngredientsRefs<T extends Object>(
       Expression<T> Function($$RecipeIngredientsTableAnnotationComposer a) f) {
@@ -5483,6 +5534,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             Value<String> region = const Value.absent(),
             Value<String> difficulty = const Value.absent(),
             Value<String?> sourceUrl = const Value.absent(),
+            Value<String?> mealType = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               RecipesCompanion(
@@ -5501,6 +5553,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             region: region,
             difficulty: difficulty,
             sourceUrl: sourceUrl,
+            mealType: mealType,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -5519,6 +5572,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             Value<String> region = const Value.absent(),
             Value<String> difficulty = const Value.absent(),
             Value<String?> sourceUrl = const Value.absent(),
+            Value<String?> mealType = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               RecipesCompanion.insert(
@@ -5537,6 +5591,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             region: region,
             difficulty: difficulty,
             sourceUrl: sourceUrl,
+            mealType: mealType,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

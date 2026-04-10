@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -141,6 +141,15 @@ class AppDatabase extends _$AppDatabase {
               debugPrint('✅ [DB v14] Hybrid columns added to recipes');
             } catch (e) {
               debugPrint('⚠️ [DB v14] Migration failed: $e');
+            }
+          }
+          if (from < 15) {
+            try {
+              debugPrint('🏷️ [DB v15] Adding mealType column to recipes...');
+              await m.addColumn(recipes, recipes.mealType);
+              debugPrint('✅ [DB v15] mealType column added to recipes');
+            } catch (e) {
+              debugPrint('⚠️ [DB v15] Migration failed: $e');
             }
           }
 
