@@ -7,7 +7,7 @@ const outputFile = 'packages/core/assets/recipes/local_recipes.json';
 final Map<String, String> categoriaToTipoComida = {
   'Entradas': 'entrada',
   'Sopas': 'sopa',
-  'Segundos / Platos de Fondo': 'almuerzo',
+  'Segundos / Platos de Fondo': 'seco', // Plato fuerte = Seco
   'Postres': 'postre',
   'Postre': 'postre',
   'Bebidas': 'bebida',
@@ -85,7 +85,8 @@ List<Map<String, dynamic>> _extractAllRecipes(String content) {
           region ??= data['region'] as String?;
           final recetas = data['recetas'] as List<dynamic>? ?? [];
           for (final receta in recetas) {
-            allRecipes.add(_convertRecipe(receta as Map<String, dynamic>, categoria!, region!));
+            allRecipes.add(_convertRecipe(
+                receta as Map<String, dynamic>, categoria!, region!));
           }
         } catch (_) {}
       }
@@ -94,15 +95,19 @@ List<Map<String, dynamic>> _extractAllRecipes(String content) {
   return allRecipes;
 }
 
-Map<String, dynamic> _convertRecipe(Map<String, dynamic> r, String categoria, String region) {
+Map<String, dynamic> _convertRecipe(
+    Map<String, dynamic> r, String categoria, String region) {
   final tipoComida = categoriaToTipoComida[categoria] ?? 'otro';
   final cuisineStyle = regionToCuisineStyle[region];
   final rawIngredients = r['ingredientes'] as List<dynamic>? ?? [];
   final ingredients = <Map<String, dynamic>>[];
-  for (final ing in rawIngredients) ingredients.add(_parseIngredient(ing.toString()));
+  for (final ing in rawIngredients)
+    ingredients.add(_parseIngredient(ing.toString()));
 
   final tiempoStr = r['tiempo_preparacion'] as String? ?? '30 min';
-  final durationMinutes = int.tryParse(RegExp(r'(\d+)').firstMatch(tiempoStr)?.group(1) ?? '30') ?? 30;
+  final durationMinutes =
+      int.tryParse(RegExp(r'(\d+)').firstMatch(tiempoStr)?.group(1) ?? '30') ??
+          30;
 
   return {
     'id': r['id'] ?? 'recipe_${DateTime.now().millisecondsSinceEpoch}',
@@ -111,8 +116,13 @@ Map<String, dynamic> _convertRecipe(Map<String, dynamic> r, String categoria, St
     'durationMinutes': durationMinutes,
     'servings': _parseServings(r['porciones']),
     'ingredients': ingredients,
-    'instructions': (r['pasos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-    'tags': [region.toLowerCase(), tipoComida, if (categoria.isNotEmpty) categoria.toLowerCase()],
+    'instructions':
+        (r['pasos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+    'tags': [
+      region.toLowerCase(),
+      tipoComida,
+      if (categoria.isNotEmpty) categoria.toLowerCase()
+    ],
     'tipoComida': tipoComida,
     'cuisineStyle': cuisineStyle,
     'caloriasAproximadas': _estimateCalories(tipoComida),
@@ -125,20 +135,38 @@ Map<String, dynamic> _parseIngredient(String ingStr) {
     final quantityStr = quantityMatch.group(1)!.replaceAll(',', '.');
     final quantity = double.tryParse(quantityStr) ?? 1.0;
     var rest = quantityMatch.group(2) ?? ingStr;
-    final unitMatch = RegExp(r'^(tazas?|cucharadas?|cucharaditas?|dientes?|ramas?|unidad(?:es)?|g|kg|lb|litros?|ml|pu\u00f1ados?|lonjas?|rebanadas?|hojas?|paquetes?|latas?|pizcas?)\s+(.*)', caseSensitive: false).firstMatch(rest.trim());
+    final unitMatch = RegExp(
+            r'^(tazas?|cucharadas?|cucharaditas?|dientes?|ramas?|unidad(?:es)?|g|kg|lb|litros?|ml|pu\u00f1ados?|lonjas?|rebanadas?|hojas?|paquetes?|latas?|pizcas?)\s+(.*)',
+            caseSensitive: false)
+        .firstMatch(rest.trim());
     if (unitMatch != null) {
       var unit = unitMatch.group(1)!.toLowerCase();
-      if (unit.contains('cucharada')) unit = 'cucharadas';
-      else if (unit.contains('cucharadita')) unit = 'cucharaditas';
-      else if (unit.contains('taza')) unit = 'tazas';
-      else if (unit.contains('diente')) unit = 'dientes';
-      else if (unit.contains('rama')) unit = 'ramas';
-      else if (unit.contains('unidad')) unit = 'unidades';
-      else if (unit.contains('hoja')) unit = 'hojas';
+      if (unit.contains('cucharada'))
+        unit = 'cucharadas';
+      else if (unit.contains('cucharadita'))
+        unit = 'cucharaditas';
+      else if (unit.contains('taza'))
+        unit = 'tazas';
+      else if (unit.contains('diente'))
+        unit = 'dientes';
+      else if (unit.contains('rama'))
+        unit = 'ramas';
+      else if (unit.contains('unidad'))
+        unit = 'unidades';
+      else if (unit.contains('hoja'))
+        unit = 'hojas';
       else if (unit.contains('lata')) unit = 'latas';
-      return {'ingredientName': unitMatch.group(2)!.trim(), 'quantity': quantity, 'unit': unit};
+      return {
+        'ingredientName': unitMatch.group(2)!.trim(),
+        'quantity': quantity,
+        'unit': unit
+      };
     }
-    return {'ingredientName': rest.trim(), 'quantity': quantity, 'unit': 'unidades'};
+    return {
+      'ingredientName': rest.trim(),
+      'quantity': quantity,
+      'unit': 'unidades'
+    };
   }
   return {'ingredientName': ingStr.trim(), 'quantity': 1.0, 'unit': 'unidades'};
 }
@@ -154,11 +182,17 @@ int _parseServings(dynamic porciones) {
 
 int _estimateCalories(String tipoComida) {
   switch (tipoComida) {
-    case 'entrada': return 250;
-    case 'sopa': return 300;
-    case 'almuerzo': return 450;
-    case 'postre': return 250;
-    case 'bebida': return 150;
-    default: return 350;
+    case 'entrada':
+      return 250;
+    case 'sopa':
+      return 300;
+    case 'seco': // Plato fuerte
+      return 450;
+    case 'postre':
+      return 250;
+    case 'bebida':
+      return 150;
+    default:
+      return 350;
   }
 }
