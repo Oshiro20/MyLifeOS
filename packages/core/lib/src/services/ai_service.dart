@@ -25,7 +25,7 @@ class GeminiService {
   })  : _connectivity = connectivity,
         _cache = cache,
         _apiKey = apiKey;
-  
+
   String get apiKey => _apiKey;
 
   Future<GenerativeModel?> _getModel({bool useVision = false}) async {
@@ -70,8 +70,8 @@ class GeminiService {
     String? textContext,
     String? mediaPath,
   }) async {
-    final cacheKey = mediaPath != null 
-        ? 'recipe_media_${mediaPath.hashCode}' 
+    final cacheKey = mediaPath != null
+        ? 'recipe_media_${mediaPath.hashCode}'
         : 'recipe_text_${textContext?.hashCode ?? 0}';
 
     return _generateWithCache(
@@ -110,6 +110,11 @@ Usa exactamente esta estructura:
     "Tip 1"
   ]
 }
+
+IMPORTANTE para "ingredientName": Usa SOLO el nombre base del ingrediente como lo buscarías en un supermercado.
+- NO incluir instrucciones de corte, preparación, estado o forma (ej: 'cortado en cubitos', 'pelado', 'rallado', 'en tiras', 'de lomo fino cortado en tiras gruesas').
+- Ejemplo correcto: 'Tomate', 'Cebolla roja', 'Pechuga de pollo', 'Lomo fino de res'.
+- Ejemplo incorrecto: 'Tomate cortado en cubitos', 'Cebolla roja pelada', 'Lomo fino de res cortado en tiras gruesas'.
 
 Contexto adicional: ${textContext ?? 'Ninguno'}
 ''';
@@ -343,13 +348,13 @@ Mantén la respuesta en 3 líneas máximo en Markdown.
     try {
       // 2. Intentar llamada a la API
       final result = await apiCall();
-      
+
       if (result != null && result.isNotEmpty) {
         // 3. Guardar en caché si tuvo éxito
         await _cache.saveString(cacheKey, result);
         return result;
       }
-      
+
       // 4. Si la API falló pero tenemos algo en caché, devolver eso
       return await _cache.loadString(cacheKey);
     } catch (e) {
@@ -371,8 +376,9 @@ Mantén la respuesta en 3 líneas máximo en Markdown.
 // Nota: Reemplazar con tu propia lógica de obtención de API KEY (secuencia de entorno, etc.)
 final geminiProvider = Provider<GeminiService>((ref) {
   final connectivity = ref.watch(connectivityProvider);
-  final cache = ref.watch(offlineCacheProvider); // Asumiendo que offlineCacheProvider está en offline_cache_service.dart o exportado.
-  
+  final cache = ref.watch(
+      offlineCacheProvider); // Asumiendo que offlineCacheProvider está en offline_cache_service.dart o exportado.
+
   // En una app real, esto vendría de --dart-define o un secret store
   const apiKey = String.fromEnvironment('GEMINI_API_KEY');
 

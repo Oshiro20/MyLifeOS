@@ -742,11 +742,13 @@ ${recentlyUsedWarning}
       }
 
       debugPrint('📄 executeWithMenu response (${jsonString.length} chars)');
-      if (jsonString.length < 1000) {
+      if (jsonString.length < 2000) {
         debugPrint('📄 Full: $jsonString');
+      } else {
+        debugPrint('📄 First 2000: ${jsonString.substring(0, 2000)}');
       }
 
-      // Parse JSON
+      // Parse JSON with multiple extraction strategies
       dynamic decoded;
       List<String> extractionAttempts = [
         _extractJsonFromResponse(jsonString, expectList: true),
@@ -759,8 +761,10 @@ ${recentlyUsedWarning}
         final attempt = extractionAttempts[i];
         if (attempt.isEmpty || attempt.length < 2) continue;
 
+        debugPrint('🧹 JSON parse attempt ${i + 1} (${attempt.length} chars)');
         try {
           decoded = jsonDecode(attempt);
+          debugPrint('✅ Parse succeeded on attempt ${i + 1}');
           parseSuccess = true;
           break;
         } catch (e) {

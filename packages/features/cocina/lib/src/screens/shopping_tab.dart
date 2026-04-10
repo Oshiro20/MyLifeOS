@@ -39,7 +39,7 @@ class ShoppingTab extends ConsumerWidget {
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 200),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 280),
                 children: [
                   // Summary card
                   _SummaryCard(
@@ -114,6 +114,7 @@ class ShoppingTab extends ConsumerWidget {
                           onDelete: () => notifier.deleteShoppingItem(item.id),
                         )),
                   ],
+                  const SizedBox(height: 100),
                 ],
               ),
         // FABs
