@@ -22,7 +22,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   final Set<MenuComponent> _selectedComponents = {
     MenuComponent.platoFuerte,
   };
-  int _menuCount = 3; // Número de menús a generar
+  int _menuCount = 5; // Número de menús a generar (por defecto 5)
 
   // Listen for inventory changes
   void _listenInventoryChanges(WidgetRef ref) {
@@ -302,17 +302,29 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               ],
             ),
           ),
-          ...menuGroups.entries.map((entry) => _CompleteMenuCard(
-                menuNumber: entry.key,
-                recipes: entry.value,
-                onTap: (recipe) => _showRecipeDetail(context, recipe),
-                onSave: (suggestion) =>
-                    _saveAISuggestion(context, ref, aiNotifier, suggestion),
-                onCook: (suggestion) =>
-                    _cookAISuggestion(context, ref, aiNotifier, suggestion),
-                onDismiss: () =>
-                    aiNotifier.dismissRecipe(entry.value.first.recipe.id),
-              )),
+          ...menuGroups.entries.map((entry) {
+            // Calcular porcentaje global del menú (promedio de todas las recetas)
+            final menuMatchPercentage = entry.value.isNotEmpty
+                ? entry.value.fold<double>(
+                      0.0,
+                      (sum, suggestion) => sum + suggestion.matchPercentage,
+                    ) /
+                    entry.value.length
+                : 0.0;
+
+            return _CompleteMenuCard(
+              menuNumber: entry.key,
+              recipes: entry.value,
+              onTap: (recipe) => _showRecipeDetail(context, recipe),
+              onSave: (suggestion) =>
+                  _saveAISuggestion(context, ref, aiNotifier, suggestion),
+              onCook: (suggestion) =>
+                  _cookAISuggestion(context, ref, aiNotifier, suggestion),
+              onDismiss: () =>
+                  aiNotifier.dismissRecipe(entry.value.first.recipe.id),
+              menuMatchPercentage: menuMatchPercentage,
+            );
+          }),
         ],
       );
     }
@@ -734,6 +746,8 @@ class _MenuCreatorCard extends StatelessWidget {
               Expanded(child: _countButton(3, onMenuCountChanged, menuCount)),
               const SizedBox(width: 6),
               Expanded(child: _countButton(4, onMenuCountChanged, menuCount)),
+              const SizedBox(width: 6),
+              Expanded(child: _countButton(5, onMenuCountChanged, menuCount)),
             ],
           ),
 
@@ -803,6 +817,7 @@ class _CompleteMenuCard extends StatelessWidget {
   final Function(RecipeSuggestion) onSave;
   final Function(RecipeSuggestion) onCook;
   final VoidCallback? onDismiss;
+  final double menuMatchPercentage; // Porcentaje global del menú
 
   const _CompleteMenuCard({
     required this.menuNumber,
@@ -811,6 +826,7 @@ class _CompleteMenuCard extends StatelessWidget {
     required this.onSave,
     required this.onCook,
     this.onDismiss,
+    this.menuMatchPercentage = 0.0,
   });
 
   String _getMealTypeLabel(Recipe recipe) {
@@ -871,6 +887,76 @@ class _CompleteMenuCard extends StatelessWidget {
                     constraints: const BoxConstraints(),
                   ),
               ],
+            ),
+            const SizedBox(height: 8),
+            // Global menu match percentage
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E676).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFF00E676).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    menuMatchPercentage >= 70
+                        ? Icons.check_circle
+                        : menuMatchPercentage >= 40
+                            ? Icons.warning_amber
+                            : Icons.shopping_cart,
+                    color: menuMatchPercentage >= 70
+                        ? const Color(0xFF00E676)
+                        : menuMatchPercentage >= 40
+                            ? Colors.orangeAccent
+                            : Colors.redAccent,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ingredientes disponibles',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        LinearProgressIndicator(
+                          value: menuMatchPercentage / 100,
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            menuMatchPercentage >= 70
+                                ? const Color(0xFF00E676)
+                                : menuMatchPercentage >= 40
+                                    ? Colors.orangeAccent
+                                    : Colors.redAccent,
+                          ),
+                          minHeight: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${menuMatchPercentage.round()}%',
+                    style: TextStyle(
+                      color: menuMatchPercentage >= 70
+                          ? const Color(0xFF00E676)
+                          : menuMatchPercentage >= 40
+                              ? Colors.orangeAccent
+                              : Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             // Recipe list

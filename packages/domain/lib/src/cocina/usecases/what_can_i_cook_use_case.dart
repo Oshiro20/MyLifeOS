@@ -667,14 +667,20 @@ ${recentlyUsedRecipeNames.take(10).map((e) => '- $e').join('\n')}
     final totalRecipes = menuCount * components.length;
 
     final prompt = '''
-👨‍🍳 ERES UN CHEF PROFESIONAL.
+👨‍🍳 ERES UN CHEF PROFESIONAL PLANIFICADOR DE MENÚS.
 
 📋 TU MISIÓN:
-El usuario tiene estos ingredientes:
+El usuario tiene estos ingredientes en su despensa:
 
 $inventoryDescription
 
 Genera $menuCount MENÚS COMPLETOS para $emoji ${mealPeriodName.toUpperCase()}, cada uno con EXACTAMENTE estos componentes: $componentNames
+
+🎯 OBJETIVO:
+- SUGIERE RECETAS ATRACTIVAS para planificar la semana, aunque falten algunos ingredientes
+- PRIORIZA usar los ingredientes disponibles, pero NO te limites solo a ellos
+- El usuario quiere saber qué puede cocinar y qué le falta comprar
+- Cada menú debe ser variado y equilibrado
 
 Cada plato debe tener un tipo_comida específico:
 $mealTypeList
@@ -711,7 +717,7 @@ DEVUELVE SOLAMENTE el array JSON con TODOS los platos de los $menuCount menús.
     "ingredientes_disponibles": 8,
     "ingredientes_totales": 10,
     "nivel_confianza": "Alto",
-    "observaciones": "Puedes cocinar esto ahora"
+    "observaciones": "Tienes la mayoría de ingredientes"
   }
 ]
 
@@ -724,6 +730,9 @@ DEVUELVE SOLAMENTE el array JSON con TODOS los platos de los $menuCount menús.
 6. NO repitas recetas entre menús
 7. NO uses ingredientes que el usuario no le gusta
 8. "tiempo_total_min": 15-180, "porciones": 1-12
+9. Para "ingredientes_disponibles" estima cuántos ingredientes coinciden con la despensa del usuario
+10. PARA "ingredientes_totales" pon el total de ingredientes de la receta
+11. SÉ CREATIVO: sugiere platos deliciosos aunque falten algunos ingredientes
 
 ${cuisineContext}
 ${dislikedWarning}
