@@ -641,27 +641,25 @@ Mantén la respuesta en 3 líneas máximo en Markdown.
   }
 }
 
-// ── Provider ─────────────────────────────────────────────────────────────────
+// ── Provider ────────────────────────────────────────────────────────────────
 
-// Nota: Reemplazar con tu propia lógica de obtención de API KEY (secuencia de entorno, etc.)
 final geminiProvider = Provider<GeminiService>((ref) {
   final connectivity = ref.watch(connectivityProvider);
-  final cache = ref.watch(
-      offlineCacheProvider); // Asumiendo que offlineCacheProvider está en offline_cache_service.dart o exportado.
+  final cache = ref.watch(offlineCacheProvider);
 
-  // Try to get from dart-define first, fallback to dotenv, fallback to hardcoded
+  // SECURITY: API key must be loaded from .env (bundled as asset in APK)
+  // NEVER hardcode API keys in source code
   String apiKey = const String.fromEnvironment('GEMINI_API_KEY');
   if (apiKey.isEmpty) {
     apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
   }
-  // Fallback hardcoded key (bundled in APK)
+
   if (apiKey.isEmpty) {
-    apiKey = 'AIzaSyDk4QD-c8ti_96tsClL4O3V8QuK0u9b7qs';
-    debugPrint('⚠️ Using hardcoded GEMINI_API_KEY (env not available)');
+    debugPrint('❌ GEMINI_API_KEY not configured. Add it to apps/mobile/.env');
   }
 
   debugPrint(
-      '🔑 Gemini API Key loaded: ${apiKey.isNotEmpty ? "YES (${apiKey.length} chars)" : "NO"}');
+      '🔑 Gemini API Key: ${apiKey.isNotEmpty ? "LOADED (${apiKey.length} chars)" : "MISSING"}');
 
   return GeminiService(
     connectivity: connectivity,
