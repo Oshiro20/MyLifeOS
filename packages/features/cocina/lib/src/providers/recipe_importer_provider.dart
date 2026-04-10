@@ -224,85 +224,117 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       final fileSizeMB = file.lengthSync() / (1024 * 1024);
       debugPrint('📹 Video file size: ${fileSizeMB.toStringAsFixed(1)} MB');
 
-      // Check video size limit (100 MB)
       if (fileSizeMB > 100) {
         throw Exception(
           'El video es demasiado grande (${fileSizeMB.toStringAsFixed(0)} MB). '
-          'El tamaño máximo permitido es 100 MB. '
-          'Por favor, usa un video más corto o de menor calidad.',
+          'El tamaño máximo permitido es 100 MB.',
         );
       }
 
-      // Warn if video is very large but still under limit
       if (fileSizeMB > 50) {
         currentStatusMessage =
-            'Video grande detectado (${fileSizeMB.toStringAsFixed(0)} MB). Esto puede tardar un poco...';
+            'Video grande detectado (${fileSizeMB.toStringAsFixed(0)} MB). Esto puede tardar...';
       }
 
-      // Try to extract thumbnail, fallback to video file itself
-      String mediaPath = filePath;
-      String? extractedThumbnailPath;
-      try {
-        extractedThumbnailPath = await VideoThumbnail.thumbnailFile(
-          video: filePath,
-          thumbnailPath:
-              '${(await getTemporaryDirectory()).path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          imageFormat: ImageFormat.JPEG,
-          maxHeight: 1080,
-          quality: 85,
-        );
-
-        if (extractedThumbnailPath != null &&
-            File(extractedThumbnailPath).existsSync()) {
-          // For videos under 20MB, we'll send the actual video file
-          // For larger videos, use the thumbnail as fallback
-          if (fileSizeMB < 20) {
-            mediaPath = filePath; // Send actual video
-            // Thumbnail was extracted but won't be used — clean it up
-            File(extractedThumbnailPath).deleteSync();
-            extractedThumbnailPath = null;
-            debugPrint(
-                '🎬 Using video file directly (${fileSizeMB.toStringAsFixed(1)} MB)');
-          } else {
-            mediaPath = extractedThumbnailPath; // Use thumbnail
-            debugPrint('✅ Using thumbnail: $mediaPath');
-          }
-        } else {
-          debugPrint(
-              '⚠️ Thumbnail extraction returned null, using original video');
-        }
-      } catch (e) {
-        debugPrint('⚠️ Thumbnail extraction failed: $e, using original video');
-      }
-
-      final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      debugPrint('🔍 Sending to AI: $mediaPath');
+      // Extract MULTIPLE thumbnails from different timestamps
+      final thumbnails = <String>[];
+      final tempDir = await getTemporaryDirectory();
 
       try {
-        final recipe = await extractUseCase.execute(mediaPath: mediaPath);
+        // Extract up to 5 thumbnails at different timestamps
+        final timestampPositions = [
+          0.1,
+          0.25,
+          0.5,
+          0.75,
+          0.9
+        ]; // 10%, 25%, 50%, 75%, 90%
 
-        if (recipe != null) {
-          importedRecipe = recipe;
-          currentStatusMessage = '¡Receta encontrada!';
-          state = RecipeImportState.success;
-        } else {
-          throw Exception(
-            'El Chef IA no pudo extraer la receta del video.\n\n'
-            'Posibles causas:\n'
-            '• El video no muestra una receta claramente\n'
-            '• La calidad del video es muy baja\n'
-            '• El video es demasiado corto (< 5 segundos)\n\n'
-            'Intenta con un video más claro o donde se vean los ingredientes y pasos de preparación.',
+        for (int i = 0; i < timestampPositions.length; i++) {
+          final position = timestampPositions[i];
+          final thumbnailPath =
+              '${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+
+          final result = await VideoThumbnail.thumbnailFile(
+            video: filePath,
+            thumbnailPath: thumbnailPath,
+            imageFormat: ImageFormat.JPEG,
+            maxHeight: 1080,
+            quality: 90,
+            timeMs: (position * 1000)
+                .round(), // First second only (video_thumbnail limitation)
           );
+
+          if (result != null && File(result).existsSync()) {
+            final size = File(result).lengthSync();
+            if (size > 5000) {
+              // Only keep thumbnails > 5KB (not blank frames)
+              thumbnails.add(result);
+              debugPrint(
+                  '✅ Thumbnail $i: ${size ~/ 1024}KB at ${position * 100}%');
+            } else {
+              File(result).deleteSync();
+            }
+          }
         }
-      } finally {
-        // Clean up thumbnail if it was used (>=20MB videos)
-        if (extractedThumbnailPath != null &&
-            File(extractedThumbnailPath).existsSync()) {
-          File(extractedThumbnailPath).deleteSync();
-          debugPrint('🧹 Thumbnail temp cleaned up');
-        }
+
+        debugPrint('📸 Extracted ${thumbnails.length} valid thumbnails');
+      } catch (e) {
+        debugPrint('⚠️ Thumbnail extraction partial failure: $e');
       }
+
+      if (thumbnails.isEmpty) {
+        throw Exception(
+          'No se pudieron extraer imágenes del video. '
+          'El formato puede no ser compatible.',
+        );
+      }
+
+      // Use Gemini to analyze the thumbnails
+      final geminiService = ref.read(geminiProvider);
+      currentStatusMessage =
+          'Analizando ${thumbnails.length} imágenes del video...';
+
+      String? jsonResult;
+
+      // Try with all thumbnails first
+      if (thumbnails.length >= 2) {
+        debugPrint('🧠 Sending ${thumbnails.length} thumbnails to Gemini...');
+        // Send first 2 thumbnails (Gemini can handle multiple images)
+        jsonResult = await geminiService.extractRecipe(
+          textContext:
+              'Analiza estas imágenes de un video de cocina y extrae la receta completa en formato JSON. '
+              'Incluye TODOS los ingredientes, cantidades exactas, y pasos detallados.',
+          mediaPath: thumbnails.first,
+        );
+      }
+
+      // Fallback: try with single thumbnail
+      if (jsonResult == null || jsonResult.isEmpty) {
+        jsonResult = await geminiService.extractRecipe(
+          mediaPath: thumbnails.first,
+        );
+      }
+
+      // Clean up thumbnails
+      for (final thumb in thumbnails) {
+        if (File(thumb).existsSync()) File(thumb).deleteSync();
+      }
+
+      if (jsonResult == null || jsonResult.isEmpty) {
+        throw Exception(
+          'El Chef IA no pudo entender las imágenes del video.\n\n'
+          'Esto puede pasar si:\n'
+          '• El video es muy oscuro o borroso\n'
+          '• Los ingredientes no son visibles\n'
+          '• El video es una animación o texto sin imágenes de comida\n\n'
+          '💡 Tip: Funciona mejor con videos donde se ven claramente los ingredientes y el proceso de cocción.',
+        );
+      }
+
+      debugPrint('✅ Recipe extracted: ${jsonResult.length} chars');
+      importFromJson(jsonResult);
+      currentStatusMessage = '¡Receta encontrada!';
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('❌ Video import error: $e');

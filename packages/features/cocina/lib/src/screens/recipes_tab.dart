@@ -66,6 +66,13 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                 label: const Text('Agregar receta',
                     style: TextStyle(color: Color(0xFF00C896))),
               ),
+              const SizedBox(height: 4),
+              TextButton.icon(
+                onPressed: () => _showLocalRecipesSheet(context, ref),
+                icon: const Icon(Icons.menu_book, color: Color(0xFFFF9800)),
+                label: const Text('📚 Explorar 315 recetas locales',
+                    style: TextStyle(color: Color(0xFFFF9800))),
+              ),
             ],
           ),
         ),
@@ -137,6 +144,29 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                       ),
                     ),
               ],
+            ),
+          ),
+          // Explore local recipes button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showLocalRecipesSheet(context, ref),
+                icon: const Icon(Icons.menu_book,
+                    size: 18, color: Color(0xFFFF9800)),
+                label: const Text(
+                  '📚 Explorar 315 recetas locales',
+                  style: TextStyle(color: Color(0xFFFF9800), fontSize: 13),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFF9800), width: 1),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
             ),
           ),
           // Recipe list
@@ -225,6 +255,22 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _AddRecipeSheet(
+        onSave: (r) async {
+          await _saveRecipeWithDuplicateCheck(ctx, ref, r);
+        },
+      ),
+    );
+  }
+
+  Future<void> _showLocalRecipesSheet(BuildContext ctx, WidgetRef ref) async {
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _LocalRecipesSheet(
         onSave: (r) async {
           await _saveRecipeWithDuplicateCheck(ctx, ref, r);
         },
@@ -1263,6 +1309,332 @@ class _CategoryChip extends StatelessWidget {
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Local Recipes Browser ────────────────────────────────────────────────────
+
+class _LocalRecipesSheet extends StatefulWidget {
+  final Future<void> Function(Recipe) onSave;
+  const _LocalRecipesSheet({required this.onSave});
+
+  @override
+  State<_LocalRecipesSheet> createState() => _LocalRecipesSheetState();
+}
+
+class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
+    with AppFeedback {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  List<Recipe> _allRecipes = [];
+  bool _isLoading = true;
+  final Map<String, bool> _expandedGroups = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipes();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadRecipes() async {
+    final localDb = LocalRecipeDatabaseService();
+    final recipes = await localDb.loadRecipes();
+    setState(() {
+      _allRecipes = recipes;
+      _isLoading = false;
+    });
+  }
+
+  List<Recipe> _getFilteredRecipes() {
+    if (_searchQuery.isEmpty) return _allRecipes;
+    return _allRecipes.where((r) {
+      return r.name.toLowerCase().contains(_searchQuery) ||
+          r.description.toLowerCase().contains(_searchQuery) ||
+          r.ingredients.any(
+              (i) => i.ingredientName.toLowerCase().contains(_searchQuery));
+    }).toList();
+  }
+
+  Map<String, List<Recipe>> _groupByType(List<Recipe> recipes) {
+    final groups = <String, List<Recipe>>{};
+    for (final recipe in recipes) {
+      final typeName = recipe.tipoComida?.label ?? 'Otras';
+      groups.putIfAbsent(typeName, () => []).add(recipe);
+    }
+    // Sort each group by name
+    for (final key in groups.keys) {
+      groups[key]!.sort((a, b) => a.name.compareTo(b.name));
+    }
+    return groups;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (_, controller) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF00C896)),
+        ),
+      );
+    }
+
+    final filteredRecipes = _getFilteredRecipes();
+    final groupedRecipes = _groupByType(filteredRecipes);
+    final sortedGroupNames = groupedRecipes.keys.toList()..sort();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (_, controller) => Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '📚 Explorar recetas locales',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_allRecipes.length} recetas disponibles',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: TextField(
+              controller: _searchCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Buscar por nombre, descripcion o ingrediente...',
+                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          setState(() {
+                            _searchCtrl.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFF2A2A40),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+              onChanged: (value) =>
+                  setState(() => _searchQuery = value.toLowerCase()),
+            ),
+          ),
+          // Recipe count
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Row(
+              children: [
+                Text(
+                  '${filteredRecipes.length} receta${filteredRecipes.length == 1 ? '' : 's'} encontrada${filteredRecipes.length == 1 ? '' : 's'}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          // Recipe list
+          Expanded(
+            child: sortedGroupNames.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No se encontraron recetas',
+                      style: TextStyle(color: Colors.white38, fontSize: 14),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: controller,
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
+                    itemCount: sortedGroupNames.length,
+                    itemBuilder: (ctx, i) {
+                      final groupName = sortedGroupNames[i];
+                      final recipes = groupedRecipes[groupName]!;
+                      final isExpanded = _expandedGroups[groupName] ?? true;
+                      return _RecipeGroupTile(
+                        groupName: groupName,
+                        recipes: recipes,
+                        isExpanded: isExpanded,
+                        onToggle: () {
+                          setState(() {
+                            _expandedGroups[groupName] = !isExpanded;
+                          });
+                        },
+                        onSave: widget.onSave,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecipeGroupTile extends StatefulWidget {
+  final String groupName;
+  final List<Recipe> recipes;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final Future<void> Function(Recipe) onSave;
+
+  const _RecipeGroupTile({
+    required this.groupName,
+    required this.recipes,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onSave,
+  });
+
+  @override
+  State<_RecipeGroupTile> createState() => _RecipeGroupTileState();
+}
+
+class _RecipeGroupTileState extends State<_RecipeGroupTile> with AppFeedback {
+  final Set<String> _savingIds = {};
+
+  static const Map<String, String> _groupEmojis = {
+    'Desayunos': '🌅',
+    'Almuerzos': '🍲',
+    'Cenas': '🌙',
+    'Snacks': '🍿',
+    'Postres': '🍰',
+    'Bebidas': '🥤',
+    'Entradas': '🥗',
+    'Sopas': '🍜',
+    'Otras': '🍽️',
+  };
+
+  Future<void> _handleSave(Recipe recipe) async {
+    setState(() {
+      _savingIds.add(recipe.id);
+    });
+    try {
+      await widget.onSave(recipe);
+      if (mounted) {
+        showSuccess(context, '"${recipe.name}" guardada');
+      }
+    } catch (e) {
+      if (mounted) {
+        showError(context, 'Error al guardar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingIds.remove(recipe.id);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = _groupEmojis[widget.groupName] ?? '🍽️';
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: const Color(0xFF2A2A40),
+      child: ExpansionTile(
+        initiallyExpanded: widget.isExpanded,
+        onExpansionChanged: (_) => widget.onToggle(),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Text(emoji, style: const TextStyle(fontSize: 20)),
+        title: Text(
+          '${widget.groupName} (${widget.recipes.length})',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        children: widget.recipes.map((recipe) {
+          final isSaving = _savingIds.contains(recipe.id);
+          return ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            dense: true,
+            title: Text(
+              recipe.name,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              '${recipe.durationMinutes} min · ${recipe.ingredients.length} ingredientes',
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+            trailing: isSaving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF00C896),
+                      strokeWidth: 2,
+                    ),
+                  )
+                : TextButton(
+                    onPressed: () => _handleSave(recipe),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Guardar',
+                      style: TextStyle(
+                        color: Color(0xFF00C896),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+          );
+        }).toList(),
       ),
     );
   }
