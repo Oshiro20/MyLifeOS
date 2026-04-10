@@ -70,20 +70,47 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     try {
       final tikTokService = ref.read(tikTokServiceProvider);
       final info = await tikTokService.getTikTokVideoInfo(url);
-      if (info == null || !info.containsKey('data')) {
-        throw Exception(
-            'No se pudo resolver la información del video de TikTok.');
+      if (info == null) {
+        throw Exception('No se recibió respuesta del servicio de TikTok.');
       }
 
-      final data = info['data'] as Map<String, dynamic>;
-      final videoUrl = data['video_link_nwm'] ??
-          data['play'] ??
-          data['wmplay'] ??
-          data['hdplay'];
+      debugPrint('📦 TikTok API response keys: ${info.keys.toList()}');
+
+      // Try multiple extraction strategies
+      String? videoUrl;
+
+      // Strategy 1: Wrapped in 'data'
+      if (info.containsKey('data') && info['data'] is Map) {
+        final data = info['data'] as Map<String, dynamic>;
+        debugPrint('📦 Data keys: ${data.keys.toList()}');
+        videoUrl = data['video_link_nwm'] ??
+            data['play'] ??
+            data['wmplay'] ??
+            data['hdplay'] ??
+            data['url'];
+      }
+
+      // Strategy 2: Direct URL at root
+      if (videoUrl == null && info.containsKey('url')) {
+        videoUrl = info['url'] as String?;
+      }
+
+      // Strategy 3: Video keys at root level
+      if (videoUrl == null) {
+        videoUrl = info['video_link_nwm'] ??
+            info['play'] ??
+            info['wmplay'] ??
+            info['hdplay'];
+      }
 
       if (videoUrl == null) {
+        debugPrint(
+            '❌ TikTok API full response: ${info.toString().substring(0, info.toString().length > 500 ? 500 : info.toString().length)}');
         throw Exception(
-            'No se encontró URL de descarga del video. Keys: ${data.keys}');
+          'No se encontró URL de descarga del video. '
+          'La API devolvió: ${info.keys.toList()}. '
+          'Intenta con otro video o verifica la API key.',
+        );
       }
 
       debugPrint('🎬 Video URL found: $videoUrl');
@@ -260,7 +287,13 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
           state = RecipeImportState.success;
         } else {
           throw Exception(
-              'La IA no pudo estructurar la receta. Intenta con otro video más claro.');
+            'El Chef IA no pudo extraer la receta del video.\n\n'
+            'Posibles causas:\n'
+            '• El video no muestra una receta claramente\n'
+            '• La calidad del video es muy baja\n'
+            '• El video es demasiado corto (< 5 segundos)\n\n'
+            'Intenta con un video más claro o donde se vean los ingredientes y pasos de preparación.',
+          );
         }
       } finally {
         // Clean up thumbnail if it was used (>=20MB videos)

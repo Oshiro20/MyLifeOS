@@ -5,7 +5,7 @@ import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
 import '../utils/cooking_history_service.dart';
-import 'suggestions_tab.dart';
+import 'widgets/recipe_detail_sheet.dart';
 
 /// "Antojos" tab - Shows Cravings (Desserts, Snacks) from LOCAL Spanish recipes
 class AntojosTab extends ConsumerStatefulWidget {
@@ -313,7 +313,7 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
               ],
             ),
             backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(seconds: 5),
+            duration: const Duration(milliseconds: 1500),
             action: SnackBarAction(
               label: 'Deshacer',
               textColor: Colors.white,

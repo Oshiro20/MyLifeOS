@@ -379,7 +379,7 @@ class ShoppingTab extends ConsumerWidget {
             '📋 Lista copiada. Abre WhatsApp y pega la lista.',
           ),
           backgroundColor: const Color(0xFF25D366),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(milliseconds: 1500),
           action: SnackBarAction(
             label: 'OK',
             textColor: Colors.white,

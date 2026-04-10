@@ -7,104 +7,57 @@ import '../providers/user_food_preferences_provider.dart';
 import '../providers/chef_preferences_provider.dart';
 import '../utils/cooking_history_service.dart';
 import '../utils/suggestions_cache_service.dart';
+import '../screens/suggestions_tab.dart';
 
 enum WhatCanICookState { initial, loading, success, error }
-
-/// Determines current meal period based on time of day
-String _getCurrentMealPeriod() {
-  final hour = DateTime.now().hour;
-  if (hour < 10) return 'desayuno';
-  if (hour < 17) return 'almuerzo';
-  return 'cena';
-}
 
 class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
-  String? _lastMealPeriod;
   SuggestionMode _currentMode = SuggestionMode.now;
+  MealPeriod? _lastMealPeriod;
+  List<MenuComponent>? _lastComponents;
 
-  // Dismissed recipe IDs (user doesn't want to see these)
   final Set<String> _dismissedIds = {};
-
-  // Cooked recipe IDs (history)
-  final Set<String> _cookedIds = {};
-
-  // Cache service
   final _cacheService = SuggestionsCacheService();
 
-  /// Get currently visible suggestions (excluding dismissed)
   List<RecipeSuggestion> get visibleSuggestions =>
       suggestions.where((s) => !_dismissedIds.contains(s.recipe.id)).toList();
 
-  /// Dismiss a recipe (user doesn't want to see it)
   void dismissRecipe(String recipeId) {
     _dismissedIds.add(recipeId);
-    // Trigger UI update
     state = state;
   }
-
-  /// Mark a recipe as cooked
-  void markAsCooked(String recipeId) {
-    _cookedIds.add(recipeId);
-  }
-
-  /// Get current suggestion mode
 
   @override
   WhatCanICookState build() {
     return WhatCanICookState.initial;
   }
 
-  /// Checks if a refresh is needed based on meal period change
-  /// Auto-refresh only 3 times a day at meal transitions:
-  /// - Before 10:00 (breakfast)
-  /// - 10:00-17:00 (lunch)
-  /// - After 17:00 (dinner)
   bool get needsRefresh {
-    final currentPeriod = _getCurrentMealPeriod();
-    // First time ever - load
     if (_lastMealPeriod == null) return true;
-    // Only refresh when meal period changes (3 times a day max)
-    if (_lastMealPeriod != currentPeriod) return true;
-    // Don't auto-refresh otherwise - user can manually refresh
-    return false;
+    return _lastMealPeriod != _getCurrentMealPeriod();
   }
 
-  /// Returns current meal period label with emoji
-  String get currentMealLabel {
-    final period = _getCurrentMealPeriod();
-    switch (period) {
-      case 'desayuno':
-        return '🌅 Desayuno';
-      case 'almuerzo':
-        return '🍛 Almuerzo';
-      case 'cena':
-        return '🌙 Cena';
-      default:
-        return '🍽️ Recetas';
-    }
+  MealPeriod _getCurrentMealPeriod() {
+    final hour = DateTime.now().hour;
+    if (hour < 10) return MealPeriod.desayuno;
+    if (hour < 17) return MealPeriod.almuerzo;
+    return MealPeriod.cena;
   }
 
-  /// Current suggestion mode
-  SuggestionMode get currentMode => _currentMode;
-
-  /// Refresh suggestions with optional cuisine preference
   Future<void> generateSuggestions({
+    MealPeriod? mealPeriod,
+    List<MenuComponent>? components,
+    int menuCount = 3,
     String? cuisinePreference,
-    SuggestionMode? mode,
     bool forceRefresh = false,
   }) async {
-    if (mode != null) _currentMode = mode;
-
-    // Try to load from cache first (unless force refresh)
     if (!forceRefresh) {
-      final cachedSuggestions = await _cacheService.getCachedSuggestions();
-      if (cachedSuggestions != null && cachedSuggestions.isNotEmpty) {
-        suggestions = cachedSuggestions;
+      final cached = await _cacheService.getCachedSuggestions();
+      if (cached != null && cached.isNotEmpty) {
+        suggestions = cached;
         state = WhatCanICookState.success;
-        _lastMealPeriod = _getCurrentMealPeriod();
-        debugPrint('✅ Suggestions loaded from cache');
         return;
       }
     }
@@ -113,7 +66,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     errorMessage = null;
 
     try {
-      // Get inventory from cocina provider
       final inventoryNotifier = ref.read(inventoryProvider.notifier);
       await inventoryNotifier.load();
       final inventoryState = ref.read(inventoryProvider);
@@ -125,31 +77,28 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         );
       }
 
-      // Get disliked ingredients
       final prefsState = ref.read(userFoodPreferencesProvider);
-
-      // Get chef preferences (optional user profile)
       final chefPrefs = ref.read(chefPreferencesProvider);
-
-      // Get recently used recipes (last 7 days) for week variety
       final recentlyUsed = await _getRecentlyUsedRecipes();
-
-      // Create the use case with Gemini adapter
       final gemini = ref.read(geminiProvider);
       final useCase = WhatCanICookUseCase(_GeminiAdapter(gemini));
 
-      suggestions = await useCase.execute(
+      // Build the menu context from components
+      final menuComponents = components ?? [MenuComponent.platoFuerte];
+      final meal = mealPeriod ?? _getCurrentMealPeriod();
+
+      suggestions = await useCase.executeWithMenu(
         inventory: inventoryState.ingredients,
-        maxSuggestions: _currentMode == SuggestionMode.menu ? 4 : 5,
+        mealPeriod: meal,
+        components: menuComponents,
+        menuCount: menuCount,
         dislikedIngredients: prefsState.dislikedIngredients,
         cuisinePreference: cuisinePreference,
         recentlyUsedRecipeNames: recentlyUsed,
-        mode: _currentMode,
         userPreferences: chefPrefs,
       );
 
-      // Recalculate match percentages using local viability calculator
-      // instead of relying on AI-estimated numbers
+      // Recalculate match percentages
       final viabilityCalc = CalculateRecipeViabilityUseCase();
       suggestions = suggestions.map((s) {
         final viability = viabilityCalc.execute(
@@ -163,18 +112,18 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         );
       }).toList();
 
-      // Cache the suggestions
       await _cacheService.saveSuggestions(suggestions);
 
       state = WhatCanICookState.success;
-      _lastMealPeriod = _getCurrentMealPeriod();
+      _lastMealPeriod = meal;
+      _lastComponents = menuComponents;
     } catch (e) {
       errorMessage = e.toString();
       state = WhatCanICookState.error;
+      debugPrint('❌ WhatCanICook error: $e');
     }
   }
 
-  /// Get recipes used in the last 7 days (from persistent storage)
   Future<List<String>> _getRecentlyUsedRecipes() async {
     final historyService = CookingHistoryService();
     return await historyService.getRecentRecipeNames(days: 7);
@@ -184,21 +133,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     state = WhatCanICookState.initial;
     suggestions = [];
     errorMessage = null;
-    _cacheService.clearCache();
   }
 
-  /// Clear suggestions cache (user can call this manually)
-  Future<void> clearCache() async {
-    await _cacheService.clearCache();
-  }
-
-  /// Check if we have valid cached suggestions
-  Future<bool> hasCachedSuggestions() async {
-    return await _cacheService.hasValidCache();
-  }
-
-  /// Save a suggested recipe to the database with duplicate check.
-  /// Returns [SaveRecipeResult] indicating success or duplicates found.
   Future<SaveRecipeResult> saveSuggestion(RecipeSuggestion suggestion) async {
     try {
       final recipesNotifier = ref.read(recipesProvider.notifier);
@@ -210,7 +146,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     }
   }
 
-  /// Cook a suggested recipe (deduct ingredients from pantry)
   Future<CookResult> cookSuggestion(RecipeSuggestion suggestion) async {
     try {
       final inventoryNotifier = ref.read(inventoryProvider.notifier);
@@ -225,15 +160,12 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         );
       }
 
-      // Record in cooking history
       final historyService = CookingHistoryService();
       await historyService.recordCooked(suggestion.recipe.name);
-      _cookedIds.add(suggestion.recipe.id);
 
       return CookResult(
         success: true,
-        message:
-            '🍳 ¡Cocinando ${suggestion.recipe.name}! Ingredientes descontados.',
+        message: '🍳 ¡Cocinando ${suggestion.recipe.name}!',
         deducted: deducted,
       );
     } catch (e) {
@@ -246,7 +178,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   }
 }
 
-/// Result of cooking a recipe
 class CookResult {
   final bool success;
   final String message;
@@ -264,7 +195,6 @@ final whatCanICookProvider =
   return WhatCanICookNotifier();
 });
 
-// Adapter to use GeminiService with IAIRecipeExtractor interface
 class _GeminiAdapter implements IAIRecipeExtractor {
   final GeminiService gemini;
   _GeminiAdapter(this.gemini);

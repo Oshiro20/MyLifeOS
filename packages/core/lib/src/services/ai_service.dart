@@ -84,17 +84,32 @@ class GeminiService {
         final prompt = '''
 Eres un Chef experto y nutricionista. Tu tarea es extraer o crear una receta detallada basada en la información proporcionada.
 Si es una IMAGEN o VIDEO, analiza los ingredientes y el proceso.
-Si es TEXTO, estrcutura la receta.
+Si es TEXTO, estructura la receta.
 
-Devuelve la respuesta en formato JSON estructurado con:
-- nombre
-- tiempoPreparacion
-- dificultad (Fácil, Media, Difícil)
-- raciones
-- calorías (estimadas)
-- ingredientes (lista de objetos con nombre, cantidad, unidad)
-- pasos (lista de strings)
-- tips (lista de strings)
+La respuesta DEBE ser ÚNICAMENTE un objeto JSON válido (empezando con '{' y terminando con '}'). NO envuelvas en markdown (sin ` ```json `), ni incluyas explicaciones.
+
+Usa exactamente esta estructura:
+{
+  "name": "Nombre de la receta",
+  "description": "Breve descripción",
+  "durationMinutes": 30,
+  "servings": 2,
+  "calorias_aproximadas": 500,
+  "ingredients": [
+    {
+      "ingredientName": "Nombre ingrediente",
+      "quantity": 1.5,
+      "unit": "unidades"
+    }
+  ],
+  "instructions": [
+    "Paso 1...",
+    "Paso 2..."
+  ],
+  "tips_chef": [
+    "Tip 1"
+  ]
+}
 
 Contexto adicional: ${textContext ?? 'Ninguno'}
 ''';

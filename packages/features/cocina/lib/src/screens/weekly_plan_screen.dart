@@ -5,7 +5,7 @@ import 'package:domain/domain.dart';
 import 'package:data/data.dart';
 import '../providers/cocina_providers.dart';
 import '../utils/cooking_history_service.dart';
-import 'suggestions_tab.dart';
+import 'widgets/recipe_detail_sheet.dart';
 
 class WeeklyPlanScreen extends ConsumerStatefulWidget {
   const WeeklyPlanScreen({super.key});
@@ -223,7 +223,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
           content: Text(
               '🛒 $added ingredientes añadidos a la lista de compras ($recipeCount recetas)'),
           backgroundColor: const Color(0xFF00E676),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(milliseconds: 1500),
           action: SnackBarAction(
             label: 'VER',
             textColor: Colors.white,

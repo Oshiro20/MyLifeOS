@@ -257,15 +257,7 @@ class ExtractRecipeUseCase {
       return text.substring(firstBrace, lastBrace + 1);
     }
 
-    // If no braces found, try to find array
-    final firstBracket = text.indexOf('[');
-    final lastBracket = text.lastIndexOf(']');
-
-    if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
-      return text.substring(firstBracket, lastBracket + 1);
-    }
-
-    // Fallback: return trimmed text (will fail on parse, but at least we tried)
+    // Return trimmed text if no braces found
     return text;
   }
 
