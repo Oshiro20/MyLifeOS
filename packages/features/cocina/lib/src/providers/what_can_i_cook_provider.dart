@@ -14,9 +14,7 @@ enum WhatCanICookState { initial, loading, success, error }
 class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
-  SuggestionMode _currentMode = SuggestionMode.now;
   MealPeriod? _lastMealPeriod;
-  List<MenuComponent>? _lastComponents;
 
   final Set<String> _dismissedIds = {};
   final _cacheService = SuggestionsCacheService();
@@ -116,7 +114,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
 
       state = WhatCanICookState.success;
       _lastMealPeriod = meal;
-      _lastComponents = menuComponents;
+
     } catch (e) {
       errorMessage = e.toString();
       state = WhatCanICookState.error;
@@ -200,7 +198,7 @@ class _GeminiAdapter implements IAIRecipeExtractor {
   _GeminiAdapter(this.gemini);
 
   @override
-  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) {
-    return gemini.extractRecipe(textContext: textContext, mediaPath: mediaPath);
+  Future<String?> extractRecipeJson({String? textContext, List<String>? mediaPaths}) {
+    return gemini.extractRecipe(textContext: textContext, mediaPaths: mediaPaths);
   }
 }

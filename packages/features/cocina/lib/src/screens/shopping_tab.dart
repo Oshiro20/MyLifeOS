@@ -120,56 +120,57 @@ class ShoppingTab extends ConsumerWidget {
         // FABs
         Positioned(
           right: 16,
-          bottom: 240,
-          child: FloatingActionButton(
-            heroTag: 'share_shopping',
-            backgroundColor: const Color(0xFF25D366),
-            mini: true,
-            onPressed:
-                items.isNotEmpty ? () => _shareList(context, items) : null,
-            child: const Icon(Icons.share, color: Colors.white),
-          ),
-        ),
-        Positioned(
-          right: 16,
-          bottom: 160,
-          child: FloatingActionButton(
-            heroTag: 'clear_shopping',
-            backgroundColor: const Color(0xFFFF5252),
-            mini: true,
-            onPressed:
-                items.isNotEmpty ? () => _confirmClearAll(context, ref) : null,
-            child: const Icon(Icons.delete_sweep, color: Colors.white),
-          ),
-        ),
-        Positioned(
-          right: 16,
           bottom: 80,
-          child: FloatingActionButton.extended(
-            heroTag: 'gen_shopping',
-            backgroundColor: const Color(0xFF00C896),
-            icon: const Icon(Icons.auto_awesome, color: Colors.white),
-            label: const Text('Generar lista',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700)),
-            onPressed: () {
-              final recipesToUse = state.suggestions.isNotEmpty
-                  ? state.suggestions
-                  : state.recipes;
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (items.isNotEmpty) ...[
+                FloatingActionButton(
+                  heroTag: 'share_shopping',
+                  backgroundColor: const Color(0xFF25D366),
+                  mini: true,
+                  onPressed: () => _shareList(context, items),
+                  child: const Icon(Icons.share, color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                FloatingActionButton(
+                  heroTag: 'clear_shopping',
+                  backgroundColor: const Color(0xFFFF5252),
+                  mini: true,
+                  onPressed: () => _confirmClearAll(context, ref),
+                  child: const Icon(Icons.delete_sweep, color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+              ],
+              FloatingActionButton.extended(
+                heroTag: 'gen_shopping',
+                backgroundColor: const Color(0xFF00C896),
+                icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                label: const Text('Generar lista',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w700)),
+                onPressed: () {
+                  final recipesToUse = state.suggestions.isNotEmpty
+                      ? state.suggestions
+                      : state.recipes;
 
-              if (recipesToUse.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'No hay recetas disponibles. Agrega recetas primero.'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
+                  if (recipesToUse.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'No hay recetas disponibles. Agrega recetas primero.'),
+                        backgroundColor: Colors.orange,
+                        duration: Duration(milliseconds: 1000),
+                      ),
+                    );
+                    return;
+                  }
 
-              notifier.generateShoppingList(recipesToUse);
-            },
+                  notifier.generateShoppingList(recipesToUse);
+                },
+              ),
+            ],
           ),
         ),
       ],
@@ -380,7 +381,7 @@ class ShoppingTab extends ConsumerWidget {
             '📋 Lista copiada. Abre WhatsApp y pega la lista.',
           ),
           backgroundColor: const Color(0xFF25D366),
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
           action: SnackBarAction(
             label: 'OK',
             textColor: Colors.white,

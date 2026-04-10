@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'connectivity_service.dart';
 import 'offline_cache_service.dart';
 
@@ -16,7 +17,7 @@ class GeminiService {
   final OfflineCacheService _cache;
   final String _apiKey;
 
-  static const String _defaultModel = 'gemini-2.5-flash';
+  static const String _defaultModel = 'gemini-2.0-flash';
 
   GeminiService({
     required ConnectivityService connectivity,
@@ -65,19 +66,19 @@ class GeminiService {
     );
   }
 
-  /// Extrae una receta desde un texto o una imagen/video.
+  /// Extrae una receta desde un texto o una lista de imágenes/videos.
   Future<String?> extractRecipe({
     String? textContext,
-    String? mediaPath,
+    List<String>? mediaPaths,
   }) async {
-    final cacheKey = mediaPath != null
-        ? 'recipe_media_${mediaPath.hashCode}'
+    final cacheKey = mediaPaths != null && mediaPaths.isNotEmpty
+        ? 'recipe_media_${mediaPaths.join("_").hashCode}'
         : 'recipe_text_${textContext?.hashCode ?? 0}';
 
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final useVision = mediaPath != null;
+        final useVision = mediaPaths != null && mediaPaths.isNotEmpty;
         final model = await _getModel(useVision: useVision);
         if (model == null) return null;
 
@@ -97,7 +98,7 @@ Usa exactamente esta estructura:
   "calorias_aproximadas": 500,
   "ingredients": [
     {
-      "ingredientName": "Nombre ingrediente",
+      "ingredientName": "Nombre limpio (solo el producto base, ej: 'Tomate', 'Lomo fino de res'. NUNCA incluyas la forma de corte o cocción)",
       "quantity": 1.5,
       "unit": "unidades"
     }
@@ -120,15 +121,18 @@ Contexto adicional: ${textContext ?? 'Ninguno'}
 ''';
 
         final contentList = <Content>[];
-        if (mediaPath != null) {
-          final file = File(mediaPath);
-          if (await file.exists()) {
-            final bytes = await file.readAsBytes();
-            final mimeType = _getMimeType(mediaPath);
-            contentList.add(Content.multi([
-              TextPart(prompt),
-              DataPart(mimeType, bytes),
-            ]));
+        if (mediaPaths != null && mediaPaths.isNotEmpty) {
+          final parts = <Part>[TextPart(prompt)];
+          for (final path in mediaPaths) {
+            final file = File(path);
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
+              final mimeType = _getMimeType(path);
+              parts.add(DataPart(mimeType, bytes));
+            }
+          }
+          if (parts.length > 1) {
+            contentList.add(Content.multi(parts));
           } else {
             contentList.add(Content.text(prompt));
           }
@@ -379,8 +383,11 @@ final geminiProvider = Provider<GeminiService>((ref) {
   final cache = ref.watch(
       offlineCacheProvider); // Asumiendo que offlineCacheProvider está en offline_cache_service.dart o exportado.
 
-  // En una app real, esto vendría de --dart-define o un secret store
-  const apiKey = String.fromEnvironment('GEMINI_API_KEY');
+  // Try to get from dart-define first, fallback to dotenv
+  String apiKey = const String.fromEnvironment('GEMINI_API_KEY');
+  if (apiKey.isEmpty) {
+    apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+  }
 
   return GeminiService(
     connectivity: connectivity,

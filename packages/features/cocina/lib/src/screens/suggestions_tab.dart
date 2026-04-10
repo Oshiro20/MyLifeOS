@@ -2,8 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
-import 'package:core/core.dart';
-import 'package:uuid/uuid.dart';
+
 import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
 import '../providers/cooking_session_provider.dart';
@@ -24,9 +23,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     MenuComponent.platoFuerte,
   };
   int _menuCount = 3; // Número de menús a generar
-
-  // Estado para preferencia culinaria
-  String _selectedCuisine = 'Todas';
 
   // Listen for inventory changes
   void _listenInventoryChanges(WidgetRef ref) {
@@ -58,16 +54,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       }
     });
   }
-
-  final List<String> _cuisines = [
-    'Todas',
-    'Selvática 🌿',
-    'Serrana 🏔️',
-    'Costeña 🏖️',
-    'Italiana 🇮🇹',
-    'Asiática 🥢',
-    'Mexicana 🇲🇽',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +92,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             selectedMealPeriod: _selectedMealPeriod,
             selectedComponents: _selectedComponents,
             menuCount: _menuCount,
-            selectedCuisine: _selectedCuisine,
             onMealPeriodChanged: (period) =>
                 setState(() => _selectedMealPeriod = period),
             onComponentToggle: (component) {
@@ -122,15 +107,11 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               });
             },
             onMenuCountChanged: (count) => setState(() => _menuCount = count),
-            onCuisineChanged: (cuisine) =>
-                setState(() => _selectedCuisine = cuisine),
             onGenerate: () {
               aiNotifier.generateSuggestions(
                 mealPeriod: _selectedMealPeriod,
                 components: _selectedComponents.toList(),
                 menuCount: _menuCount,
-                cuisinePreference:
-                    _selectedCuisine == 'Todas' ? null : _selectedCuisine,
               );
             },
             isLoading: aiState == WhatCanICookState.loading,
@@ -228,8 +209,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     mealPeriod: _selectedMealPeriod,
                     components: _selectedComponents.toList(),
                     menuCount: _menuCount,
-                    cuisinePreference:
-                        _selectedCuisine == 'Todas' ? null : _selectedCuisine,
                   ),
                   icon: const Icon(Icons.refresh, size: 16),
                   label: const Text('Reintentar'),
@@ -309,8 +288,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     mealPeriod: _selectedMealPeriod,
                     components: _selectedComponents.toList(),
                     menuCount: _menuCount,
-                    cuisinePreference:
-                        _selectedCuisine == 'Todas' ? null : _selectedCuisine,
                   ),
                   icon: const Icon(Icons.refresh, size: 14),
                   label:
@@ -593,11 +570,9 @@ class _MenuCreatorCard extends StatelessWidget {
   final MealPeriod selectedMealPeriod;
   final Set<MenuComponent> selectedComponents;
   final int menuCount;
-  final String selectedCuisine;
   final Function(MealPeriod) onMealPeriodChanged;
   final Function(MenuComponent) onComponentToggle;
   final Function(int) onMenuCountChanged;
-  final Function(String) onCuisineChanged;
   final VoidCallback onGenerate;
   final bool isLoading;
 
@@ -605,11 +580,9 @@ class _MenuCreatorCard extends StatelessWidget {
     required this.selectedMealPeriod,
     required this.selectedComponents,
     required this.menuCount,
-    required this.selectedCuisine,
     required this.onMealPeriodChanged,
     required this.onComponentToggle,
     required this.onMenuCountChanged,
-    required this.onCuisineChanged,
     required this.onGenerate,
     required this.isLoading,
   });
@@ -745,75 +718,22 @@ class _MenuCreatorCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // 3. Number of menus + Cuisine
+          // 3. Number of menus
+          const Text('3. ¿Cuántos menús?',
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Row(
             children: [
-              // Menu count
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('3. ¿Cuántos menús?',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        _countButton(2, onMenuCountChanged, menuCount),
-                        const SizedBox(width: 6),
-                        _countButton(3, onMenuCountChanged, menuCount),
-                        const SizedBox(width: 6),
-                        _countButton(4, onMenuCountChanged, menuCount),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Cuisine preference
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('4. Cocina',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    DropdownButtonFormField<String>(
-                      value: selectedCuisine,
-                      dropdownColor: const Color(0xFF1A2F1A),
-                      items: _cuisineOptions
-                          .map((c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c,
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 11)),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) onCuisineChanged(v);
-                      },
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        filled: true,
-                        fillColor: const Color(0xFF2A2A40),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        isDense: true,
-                      ),
-                      icon: const Icon(Icons.arrow_drop_down,
-                          color: Colors.white54),
-                    ),
-                  ],
-                ),
-              ),
+              Expanded(child: _countButton(1, onMenuCountChanged, menuCount)),
+              const SizedBox(width: 6),
+              Expanded(child: _countButton(2, onMenuCountChanged, menuCount)),
+              const SizedBox(width: 6),
+              Expanded(child: _countButton(3, onMenuCountChanged, menuCount)),
+              const SizedBox(width: 6),
+              Expanded(child: _countButton(4, onMenuCountChanged, menuCount)),
             ],
           ),
 
@@ -849,16 +769,6 @@ class _MenuCreatorCard extends StatelessWidget {
       ),
     );
   }
-
-  static const List<String> _cuisineOptions = [
-    'Todas',
-    'Selvática 🌿',
-    'Serrana 🏔️',
-    'Costeña 🏖️',
-    'Italiana 🇮🇹',
-    'Asiática 🥢',
-    'Mexicana 🇲🇽',
-  ];
 
   Widget _countButton(int count, Function(int) onChanged, int selected) {
     final isSelected = selected == count;

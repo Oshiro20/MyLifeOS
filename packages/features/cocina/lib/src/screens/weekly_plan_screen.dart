@@ -223,7 +223,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
           content: Text(
               '🛒 $added ingredientes añadidos a la lista de compras ($recipeCount recetas)'),
           backgroundColor: const Color(0xFF00E676),
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
           action: SnackBarAction(
             label: 'VER',
             textColor: Colors.white,

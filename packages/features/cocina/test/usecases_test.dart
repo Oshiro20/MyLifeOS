@@ -10,7 +10,7 @@ class FakeAIExtractor implements IAIRecipeExtractor {
   FakeAIExtractor({this.jsonResponse, this.shouldThrow = false});
 
   @override
-  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) {
+  Future<String?> extractRecipeJson({String? textContext, List<String>? mediaPaths}) {
     if (shouldThrow) throw Exception('AI service unavailable');
     return Future.value(jsonResponse);
   }

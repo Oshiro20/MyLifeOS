@@ -96,12 +96,10 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       // Strategy 3: Video keys at root level
-      if (videoUrl == null) {
-        videoUrl = info['video_link_nwm'] ??
-            info['play'] ??
-            info['wmplay'] ??
-            info['hdplay'];
-      }
+      videoUrl ??= info['video_link_nwm'] ??
+          info['play'] ??
+          info['wmplay'] ??
+          info['hdplay'];
 
       if (videoUrl == null) {
         debugPrint(
@@ -154,43 +152,20 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         throw Exception('No se proporcionaron imágenes.');
       }
 
-      // Call Gemini with all images if multiple, or just one
-      final geminiService = ref.read(geminiProvider);
-      String? jsonResult;
-
-      if (imagePaths.length == 1) {
-        // Single image - use original method
-        jsonResult =
-            await geminiService.extractRecipe(mediaPath: imagePaths.first);
-      } else {
-        // Multiple images - combine them into a single context
-        debugPrint('📸 Processing ${imagePaths.length} images...');
-
-        // Extract recipe from first image
-        jsonResult =
-            await geminiService.extractRecipe(mediaPath: imagePaths.first);
-
-        // If there are more images, process them as additional context
-        if (jsonResult != null &&
-            jsonResult.isNotEmpty &&
-            imagePaths.length > 1) {
-          debugPrint(
-              '✅ First image processed, processing additional images...');
-          // For now, we use the first image result
-          // TODO: Implement multi-image combination when Gemini API supports it
-        }
-      }
-
-      if (jsonResult == null || jsonResult.isEmpty) {
+      final extractUseCase = ref.read(extractRecipeUseCaseProvider);
+      
+      debugPrint('📸 Processing ${imagePaths.length} images...');
+      
+      final recipe = await extractUseCase.execute(mediaPaths: imagePaths);
+      
+      if (recipe == null) {
         throw Exception(
             'La IA no pudo extraer la receta. Intenta con imágenes más claras.');
       }
-
-      debugPrint(
-          '📸 AI extracted recipe from images: ${jsonResult.length} chars');
-
-      // Parse the JSON response
-      importFromJson(jsonResult);
+      
+      importedRecipe = recipe;
+      currentStatusMessage = '¡Receta encontrada!';
+      state = RecipeImportState.success;
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('❌ Image import error: $e');
@@ -275,7 +250,39 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       debugPrint(
           '🔍 Sending to AI: $mediaPath (${fileSizeMB.toStringAsFixed(1)} MB)');
 
-      final recipe = await extractUseCase.execute(mediaPath: mediaPath);
+      Recipe? recipe = await extractUseCase.execute(mediaPaths: [mediaPath]);
+
+      if (recipe == null && mediaPath == filePath) {
+        debugPrint('⚠️ Initial video processing failed. Generating multiple thumbnails for fallback...');
+        currentStatusMessage = 'Analizando cuadros del video...';
+        
+        final List<String> fallbackThumbnails = [];
+        for (int timeMs in [1000, 5000, 10000]) {
+          try {
+            final path = await VideoThumbnail.thumbnailFile(
+              video: filePath,
+              thumbnailPath: '${(await getTemporaryDirectory()).path}/thumb_${timeMs}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              imageFormat: ImageFormat.JPEG,
+              timeMs: timeMs,
+              quality: 85,
+            );
+            if (path != null && File(path).existsSync()) {
+              fallbackThumbnails.add(path);
+            }
+          } catch (e) {
+            debugPrint('⚠️ Thumbnail generation failed at ${timeMs}ms: $e');
+          }
+        }
+        
+        if (fallbackThumbnails.isNotEmpty) {
+          debugPrint('📸 Fallback triggered. Sending ${fallbackThumbnails.length} thumbnails to AI...');
+          recipe = await extractUseCase.execute(mediaPaths: fallbackThumbnails);
+          
+          for (final thumb in fallbackThumbnails) {
+             if (File(thumb).existsSync()) File(thumb).deleteSync();
+          }
+        }
+      }
 
       if (recipe != null) {
         importedRecipe = recipe;
@@ -350,7 +357,7 @@ class _GeminiExtractorAdapter implements IAIRecipeExtractor {
   _GeminiExtractorAdapter(this.gemini);
 
   @override
-  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) {
-    return gemini.extractRecipe(textContext: textContext, mediaPath: mediaPath);
+  Future<String?> extractRecipeJson({String? textContext, List<String>? mediaPaths}) {
+    return gemini.extractRecipe(textContext: textContext, mediaPaths: mediaPaths);
   }
 }

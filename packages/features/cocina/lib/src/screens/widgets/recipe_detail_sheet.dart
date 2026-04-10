@@ -263,7 +263,7 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
               ],
             ),
             backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(milliseconds: 1500),
+            duration: const Duration(milliseconds: 1000),
             action: SnackBarAction(
               label: 'Deshacer',
               textColor: Colors.white,
