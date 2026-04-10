@@ -257,7 +257,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
         textContext: prompt,
-        mediaPath: null,
+        mediaPaths: null,
       );
 
       if (jsonString == null || jsonString.isEmpty) {
@@ -734,7 +734,7 @@ ${recentlyUsedWarning}
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
         textContext: prompt,
-        mediaPath: null,
+        mediaPaths: null,
       );
 
       if (jsonString == null || jsonString.isEmpty) {
