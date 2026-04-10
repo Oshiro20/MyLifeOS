@@ -110,6 +110,11 @@ Antes de cualquier cambio en archivos relacionados con Chef IA:
 3. Reabría y la categoría era `null`
 4. Los filtros de categoría no funcionaban para recetas de usuario
 
+### Corrección Adicional (v3.5.6): 'almuerzo' → 'seco'
+- Las 315 recetas locales tenían `tipoComida: 'almuerzo'` (incorrecto)
+- "Almuerzo" es un período de comida, NO una categoría de receta
+- Corregido a `tipoComida: 'seco'` (plato fuerte en cocina peruana)
+
 ### ✅ Prevención
 
 **Cuando se añade un campo nuevo a una entidad:**
@@ -141,6 +146,8 @@ Antes de cualquier cambio en archivos relacionados con Chef IA:
    ```
 
 7. **Verificar**: `flutter analyze` debe pasar sin errores
+
+**Documentación completa:** Ver `docs/RECIPES_TAB_DOCUMENTATION.md`
 
 ---
 
