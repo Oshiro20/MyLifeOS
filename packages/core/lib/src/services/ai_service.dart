@@ -274,6 +274,9 @@ Usa esta información como referencia adicional.
         }
 
         try {
+          debugPrint('🤖 Calling Gemini API with model: $_defaultModel');
+          debugPrint('📎 Media path: ${mediaPath ?? "none (text only)"}');
+
           final response = await model.generateContent(content).timeout(
             const Duration(seconds: 60),
             onTimeout: () {
@@ -283,7 +286,22 @@ Usa esta información como referencia adicional.
               );
             },
           );
+
           final result = response.text;
+
+          // Check for safety filter blocks
+          if (response.promptFeedback?.blockReason != null) {
+            debugPrint(
+                '🚫 Gemini blocked request: ${response.promptFeedback!.blockReason}');
+            throw Exception(
+                'Gemini bloqueó la solicitud: ${response.promptFeedback!.blockReason}');
+          }
+
+          if (response.candidates.isNotEmpty &&
+              response.candidates.first.finishReason != FinishReason.stop) {
+            debugPrint(
+                '⚠️ Gemini finished with reason: ${response.candidates.first.finishReason}');
+          }
 
           // Debug logging to see what Gemini returns
           if (result != null && result.isNotEmpty) {
@@ -293,6 +311,8 @@ Usa esta información como referencia adicional.
             } else {
               debugPrint('📄 First 500 chars: ${result.substring(0, 500)}');
             }
+          } else {
+            debugPrint('⚠️ Gemini returned null or empty response');
           }
 
           return result;
@@ -301,6 +321,12 @@ Usa esta información como referencia adicional.
             throw Exception(e.message ?? 'Timeout al extraer la receta');
           }
           debugPrint('❌ Gemini extractRecipe error: $e');
+          debugPrint('❌ Error type: ${e.runtimeType}');
+          if (e.toString().contains('DataInspection') ||
+              e.toString().contains('blocked')) {
+            throw Exception(
+                'Gemini bloqueó el análisis. Verifica que el video sea de cocina.');
+          }
           throw Exception('Error en Gemini al extraer la receta: $e');
         }
       },

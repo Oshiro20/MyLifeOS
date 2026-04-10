@@ -213,8 +213,6 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       // Strategy: ALWAYS extract a single thumbnail.
-      // The working v2.9.0 logic relied on sending a clear image to Gemini,
-      // which is faster and less error-prone than sending video files.
       String? thumbnailPath;
       try {
         thumbnailPath = await VideoThumbnail.thumbnailFile(
@@ -236,25 +234,42 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         throw Exception('Error al procesar el video: $e');
       }
 
-      final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      debugPrint('🔍 Sending to AI: $thumbnailPath');
+      // Direct call to GeminiService for better error visibility
+      final geminiService = ref.read(geminiProvider);
+      debugPrint('🔍 Calling Gemini directly with thumbnail...');
 
-      // Send only the thumbnail path
-      final recipe = await extractUseCase.execute(mediaPath: thumbnailPath);
+      try {
+        final jsonString =
+            await geminiService.extractRecipe(mediaPath: thumbnailPath);
+
+        debugPrint(
+            '📝 Gemini returned: ${jsonString?.substring(0, jsonString.length > 200 ? 200 : jsonString.length)}...');
+
+        if (jsonString == null || jsonString.isEmpty) {
+          throw Exception(
+            'Gemini devolvió una respuesta vacía.\n\n'
+            'Posibles causas:\n'
+            '1. API Key de Gemini no configurada en .env\n'
+            '2. Sin conexión a internet\n'
+            '3. Video no es de cocina\n\n'
+            'Revisa la consola para más detalles.',
+          );
+        }
+
+        // Parse the JSON response
+        final useCase = ref.read(extractRecipeUseCaseProvider);
+        importedRecipe = useCase.parseFromJson(jsonString);
+
+        currentStatusMessage = '¡Receta encontrada!';
+        state = RecipeImportState.success;
+      } catch (e) {
+        debugPrint('❌ Gemini extractRecipe failed: $e');
+        rethrow;
+      }
 
       // Clean up thumbnail after processing
       if (File(thumbnailPath).existsSync()) {
         File(thumbnailPath).deleteSync();
-      }
-
-      if (recipe != null) {
-        importedRecipe = recipe;
-        currentStatusMessage = '¡Receta encontrada!';
-        state = RecipeImportState.success;
-      } else {
-        throw Exception(
-          'La IA no pudo estructurar la receta. Intenta con otro video más claro.',
-        );
       }
     } catch (e) {
       errorMessage = e.toString();
