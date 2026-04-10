@@ -766,7 +766,7 @@ JSON: {"name":"...","typeIndex":0,"primaryColor":"#...","material":"...","brand"
 ''';
       final jsonStr = await ai.extractRecipe(
         textContext: prompt,
-        mediaPath: _photo!.path,
+        mediaPaths: _photo != null ? [_photo!.path] : null,
       );
       if (jsonStr != null && mounted) {
         final cleanJson =
@@ -900,7 +900,7 @@ JSON: {"name":"Short de ${garment.name}","typeIndex":3,"primaryColor":"#...","ma
 ''';
           final jsonStr = await ai.extractRecipe(
             textContext: promptShort,
-            mediaPath: xfile.path,
+            mediaPaths: [xfile.path],
           );
 
           WardrobeGarment shortGarment;
