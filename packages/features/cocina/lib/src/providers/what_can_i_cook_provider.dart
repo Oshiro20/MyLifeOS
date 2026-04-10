@@ -114,7 +114,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
 
       state = WhatCanICookState.success;
       _lastMealPeriod = meal;
-
     } catch (e) {
       errorMessage = e.toString();
       state = WhatCanICookState.error;
@@ -198,7 +197,7 @@ class _GeminiAdapter implements IAIRecipeExtractor {
   _GeminiAdapter(this.gemini);
 
   @override
-  Future<String?> extractRecipeJson({String? textContext, List<String>? mediaPaths}) {
-    return gemini.extractRecipe(textContext: textContext, mediaPaths: mediaPaths);
+  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) {
+    return gemini.extractRecipe(textContext: textContext, mediaPath: mediaPath);
   }
 }

@@ -8,10 +8,10 @@ class ExtractRecipeUseCase {
 
   ExtractRecipeUseCase(this.aiExtractor);
 
-  Future<Recipe?> execute({String? textContext, List<String>? mediaPaths}) async {
+  Future<Recipe?> execute({String? textContext, String? mediaPath}) async {
     final jsonString = await aiExtractor.extractRecipeJson(
       textContext: textContext,
-      mediaPaths: mediaPaths,
+      mediaPath: mediaPath,
     );
 
     if (jsonString == null || jsonString.isEmpty) return null;

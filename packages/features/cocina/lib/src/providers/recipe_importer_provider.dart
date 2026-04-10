@@ -152,20 +152,21 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         throw Exception('No se proporcionaron imágenes.');
       }
 
-      final extractUseCase = ref.read(extractRecipeUseCaseProvider);
+      // Call Gemini with all images using the dedicated method
+      final geminiService = ref.read(geminiProvider);
+      final jsonResult =
+          await geminiService.extractRecipeFromImages(imagePaths);
 
-      debugPrint('📸 Processing ${imagePaths.length} images...');
-
-      final recipe = await extractUseCase.execute(mediaPaths: imagePaths);
-
-      if (recipe == null) {
+      if (jsonResult == null || jsonResult.isEmpty) {
         throw Exception(
             'La IA no pudo extraer la receta. Intenta con imágenes más claras.');
       }
 
-      importedRecipe = recipe;
-      currentStatusMessage = '¡Receta encontrada!';
-      state = RecipeImportState.success;
+      debugPrint(
+          '📸 AI extracted recipe from images: ${jsonResult.length} chars');
+
+      // Parse the JSON response
+      importFromJson(jsonResult);
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('❌ Image import error: $e');
@@ -236,10 +237,10 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      debugPrint('🔍 Sending to AI...');
+      debugPrint('🔍 Sending to AI: $thumbnailPath');
 
       // Send only the thumbnail path
-      final recipe = await extractUseCase.execute(mediaPaths: [thumbnailPath]);
+      final recipe = await extractUseCase.execute(mediaPath: thumbnailPath);
 
       // Clean up thumbnail after processing
       if (File(thumbnailPath).existsSync()) {
@@ -314,9 +315,7 @@ class _GeminiExtractorAdapter implements IAIRecipeExtractor {
   _GeminiExtractorAdapter(this.gemini);
 
   @override
-  Future<String?> extractRecipeJson(
-      {String? textContext, List<String>? mediaPaths}) {
-    return gemini.extractRecipe(
-        textContext: textContext, mediaPaths: mediaPaths);
+  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) {
+    return gemini.extractRecipe(textContext: textContext, mediaPath: mediaPath);
   }
 }

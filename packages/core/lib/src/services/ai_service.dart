@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -66,84 +67,322 @@ class GeminiService {
     );
   }
 
-  /// Extrae una receta desde un texto o una lista de imágenes/videos.
+  /// Extrae una receta desde un texto o un archivo multimedia (video/imagen).
+  /// Instructs Gemini to act as a professional chef and return structured JSON.
   Future<String?> extractRecipe({
     String? textContext,
-    List<String>? mediaPaths,
+    String? mediaPath,
   }) async {
-    final cacheKey = mediaPaths != null && mediaPaths.isNotEmpty
-        ? 'recipe_media_${mediaPaths.join("_").hashCode}'
+    final cacheKey = mediaPath != null
+        ? 'recipe_media_${mediaPath.hashCode}'
         : 'recipe_text_${textContext?.hashCode ?? 0}';
 
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final useVision = mediaPaths != null && mediaPaths.isNotEmpty;
+        final useVision = mediaPath != null;
         final model = await _getModel(useVision: useVision);
         if (model == null) return null;
 
         final prompt = '''
-Eres un Chef experto y nutricionista. Tu tarea es extraer o crear una receta detallada basada en la información proporcionada.
-Si es una IMAGEN o VIDEO, analiza los ingredientes y el proceso.
-Si es TEXTO, estructura la receta.
+👨‍🍳 ROL DEL SISTEMA
 
-La respuesta DEBE ser ÚNICAMENTE un objeto JSON válido (empezando con '{' y terminando con '}'). NO envuelvas en markdown (sin ` ```json `), ni incluyas explicaciones.
+Actúa como un Chef Profesional + Analista de Video de Cocina.
 
-Usa exactamente esta estructura:
+Tu especialidad:
+• análisis de videos de cocina (TikTok, YouTube, Reels, Facebook, Instagram)
+• interpretación de recetas implícitas
+• inferencia culinaria profesional
+• estandarización de recetas para apps
+
+-----------------------------------------------------
+
+📋 TU MISIÓN
+
+Analiza DETENIDAMENTE el video/imagen de cocina proporcionado y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
+
+🔍 PASOS DE ANÁLISIS (SIGUE CADA UNO):
+
+PASO 0 - CONTEXTO DEL VIDEO
+
+Antes de extraer, determina:
+• ¿El video está completo, acelerado, resumido o es un timelapse?
+• ¿Hay cortes rápidos entre pasos?
+• ¿Los ingredientes son visibles o solo se mencionan brevemente?
+
+Si el video está RESUMIDO o ACELERADO:
+→ Reconstruye los pasos faltantes con lógica culinaria
+→ Infiere ingredientes ocultos pero esenciales para la receta
+→ Estima tiempos realistas basados en la técnica
+
+-----------------------------------------------------
+
+PASO 1 - IDENTIFICA EL PLATO
+• ¿Qué tipo de plato es? (desayuno, almuerzo, cena, snack, postre, mazamorra, bebida)
+• ¿Cuál es la cocina? (peruana, italiana, asiática, etc.)
+• ¿Cuál es el nombre de la receta?
+
+PASO 2 - DETECTA TODOS LOS INGREDIENTES
+• Observa CADA ingrediente que aparece en el video
+• Para CADA ingrediente identifica:
+  - NOMBRE exacto (en español)
+  - CANTIDAD como número (si dicen "una", pon 1; si no es claro, infiere)
+  - UNIDAD de medida válida
+  - PREPARACIÓN si es visible (entero, licuado, picado, molido, fresco, etc.)
+• Si no dicen cantidad exacta → INFIÉRELA lógicamente según porción/tamaño
+• NO inventes ingredientes que no aparecen EXCEPTO los esenciales
+• Si hacen arroz chaufa pero no mencionan aceite → agrega aceite como ingrediente INFERIDO
+• SÍ estima cantidades cuando no sean explícitas
+
+PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN
+• Identifica el ORDEN EXACTO de cada paso
+• Describe cada paso de forma CLARA y DETALLADA
+• Incluye: qué se hace, con qué ingrediente, a qué temperatura, por cuánto tiempo
+• Mínimo 3 pasos, máximo 15 pasos
+• Separa acciones importantes (no mezcles pasos)
+
+PASO 4 - ESTIMA TIEMPOS Y PORCIONES (¡CRÍTICO!)
+• ⏱️ TIEMPO PREPARACIÓN: minutos de corte/mezcla/preparación (NUNCA 0, mínimo 1)
+• 🔥 TIEMPO COCCIÓN: minutos de fuego/horno/etc. (NUNCA 0, mínimo 1)
+• ⏱️ TIEMPO TOTAL: preparación + cocción (en minutos, realista: 15-180)
+  - NO pongas 30 por defecto. CALCULA basándote en lo que ves.
+  - Si ves que corta vegetales → prep ~5-10 min
+  - Si ves que fríe/hornea → cocción ~10-45 min
+• 👥 PORCIONES: para cuántas personas alcanza (entero: 1-12)
+  - OBSERVA cuántos platos/porciones se sirven en el video
+  - Si no se ve claro, INFIERE según la cantidad de ingredientes:
+    * 1-2 tazas de arroz → 2-3 porciones
+    * 1 pollo entero → 4-6 porciones
+    * Postre individual → 1 porción
+  - NO pongas 4 por defecto. CALCULA o INFIERE lógicamente.
+
+PASO 5 - DETECTA UTENSILIOS
+• Observa qué herramientas usa: sartén, olla, horno, licuadora, etc.
+• Agrega 2-5 utensilios principales
+
+PASO 6 - CLASIFICACIÓN
+• Dificultad: "Fácil" (≤5 pasos), "Media" (6-10), "Difícil" (>10)
+• Tipo de comida: Debes usar EXACTAMENTE uno de estos valores:
+  "Desayuno" | "Almuerzo" | "Cena" | "Entrada" | "Sopa" | "Seco" | "Postre" | "Mazamorra" | "Bebida" | "Snack"
+  - Postre: tartas, flanes, alfajores, etc.
+  - Mazamorra: mazamorras, gelatinas, puddings
+  - Entrada: ceviches, causa, tiradito, etc.
+  - Sopa: caldos, cremas, aguaditos, etc.
+  - Seco: platos fuertes con salsa espesa
+  - Bebida: jugos, chicha, limonada, emoliente
+  - Snack: botanas, pasabocas
+• Cocina: según estilo (peruana, italiana, asiática, etc.)
+• Tags: 3-5 tags relevantes
+
+PASO 7 - ESTIMA CALORÍAS
+• Calcula calorías aproximadas por porción según ingredientes
+
+-----------------------------------------------------
+
+📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
+
 {
-  "name": "Nombre de la receta",
-  "description": "Breve descripción",
-  "durationMinutes": 30,
-  "servings": 2,
-  "calorias_aproximadas": 500,
-  "ingredients": [
+  "nombre_receta": "Nombre completo del plato",
+  "descripcion": "Descripción atractiva de 2-3 oraciones",
+  "porciones": 4,
+  "tiempo_preparacion_min": 15,
+  "tiempo_coccion_min": 30,
+  "tiempo_total_min": 45,
+  "dificultad": "Fácil",
+  "tipo_comida": "Postre",
+  "cocina": "Peruana",
+  "ingredientes": [
     {
-      "ingredientName": "Nombre limpio (solo el producto base, ej: 'Tomate', 'Lomo fino de res'. NUNCA incluyas la forma de corte o cocción)",
-      "quantity": 1.5,
-      "unit": "unidades"
+      "nombre": "Arroz",
+      "cantidad": 2.0,
+      "unidad": "tazas"
     }
   ],
-  "instructions": [
-    "Paso 1...",
-    "Paso 2..."
+  "ingredientes_inferidos": ["aceite", "sal", "pimienta"],
+  "pasos": [
+    {
+      "numero": 1,
+      "descripcion": "Descripción detallada del paso"
+    }
   ],
-  "tips_chef": [
-    "Tip 1"
-  ]
+  "utensilios": ["sartén", "cuchara de madera"],
+  "calorias_aproximadas": 350,
+  "tags": ["fácil", "rápido", "peruano"],
+  "video_context": "resumido",
+  "observaciones": "Los tiempos fueron inferidos según ingredientes.",
+  "nivel_confianza": "Alto"
 }
 
-IMPORTANTE para "ingredientName": Usa SOLO el nombre base del ingrediente como lo buscarías en un supermercado.
-- NO incluir instrucciones de corte, preparación, estado o forma (ej: 'cortado en cubitos', 'pelado', 'rallado', 'en tiras', 'de lomo fino cortado en tiras gruesas').
-- Ejemplo correcto: 'Tomate', 'Cebolla roja', 'Pechuga de pollo', 'Lomo fino de res'.
-- Ejemplo incorrecto: 'Tomate cortado en cubitos', 'Cebolla roja pelada', 'Lomo fino de res cortado en tiras gruesas'.
+-----------------------------------------------------
 
-Contexto adicional: ${textContext ?? 'Ninguno'}
-''';
+⚠️ REGLAS OBLIGATORIAS:
 
-        final contentList = <Content>[];
-        if (mediaPaths != null && mediaPaths.isNotEmpty) {
-          final parts = <Part>[TextPart(prompt)];
-          for (final path in mediaPaths) {
-            final file = File(path);
-            if (await file.exists()) {
-              final bytes = await file.readAsBytes();
-              final mimeType = _getMimeType(path);
-              parts.add(DataPart(mimeType, bytes));
-            }
-          }
-          if (parts.length > 1) {
-            contentList.add(Content.multi(parts));
+1. Devuelve ÚNICAMENTE el JSON. NADA de texto antes o después. Sin markdown. Sin backticks.
+2. TODOS los campos son obligatorios incluyendo "ingredientes_inferidos" y "video_context".
+3. "ingredientes" debe tener AL MENOS 2 ingredientes reales.
+4. "pasos" debe tener AL MENOS 3 pasos claros y detallados.
+5. "cantidad" debe ser un NÚMERO (float), no texto. Ejemplo: 2.0, 0.5, 1.0
+6. "unidad" en ESPAÑOL: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "litros", "al gusto"
+7. "tiempo_total_min" debe ser realista: entre 15 y 180 minutos. NO uses valores por defecto.
+8. "porciones" debe ser entero: 1 a 12. CALCULA o INFIERE, no uses 4 por defecto.
+9. "tiempo_preparacion_min" y "tiempo_coccion_min" deben ser >= 1. NUNCA 0.
+10. "nivel_confianza":
+   - "Alto" → video claro, ingredientes visibles, pasos completos
+   - "Medio" → video resumido, algunas inferencias necesarias
+   - "Bajo" → video muy corto, muchas suposiciones
+11. "video_context":
+    - "completo" → video muestra toda la preparación
+    - "resumido" → video acelerado o con cortes
+    - "timelapse" → video muy rápido tipo timelapse
+    - "solo_resultado" → solo muestra el plato final
+12. "observaciones" → indica qué datos fueron inferidos vs visibles y qué ingredientes esenciales se agregaron
+13. "ingredientes_inferidos" → lista de ingredientes esenciales que NO aparecen en el video pero son necesarios (aceite, sal, pimienta, agua, etc.)
+14. Si ves texto en el video (nombres, cantidades), ÚSALO.
+15. Si el video muestra postre/mazamorra/plato dulce, adáptalo accordingly.
+16. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
+17. Si el video está resumido → reconstruye pasos faltantes con lógica culinaria.
+
+${textContext != null && textContext.isNotEmpty ? '''
+📌 CONTEXTO ADICIONAL DEL USUARIO:
+"$textContext"
+Usa esta información como referencia adicional.
+''' : ''}
+
+🎥 AHORA ANALIZA EL VIDEO/IMAGEN ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
+
+        final content = <Content>[];
+        if (mediaPath != null) {
+          final file = File(mediaPath);
+          if (file.existsSync()) {
+            final bytes = await file.readAsBytes();
+            final mimeType = _getMimeType(mediaPath);
+            content.add(Content.multi([
+              TextPart(prompt),
+              DataPart(mimeType, bytes),
+            ]));
           } else {
-            contentList.add(Content.text(prompt));
+            content.add(Content.text(prompt));
           }
         } else {
-          contentList.add(Content.text(prompt));
+          content.add(Content.text(prompt));
         }
 
-        final response = await model.generateContent(contentList);
-        return response.text;
+        try {
+          final response = await model.generateContent(content).timeout(
+            const Duration(seconds: 60),
+            onTimeout: () {
+              throw TimeoutException(
+                'La IA tardó demasiado en responder. Intenta con un video más corto o imágenes más claras.',
+                const Duration(seconds: 60),
+              );
+            },
+          );
+          final result = response.text;
+
+          // Debug logging to see what Gemini returns
+          if (result != null && result.isNotEmpty) {
+            debugPrint('✅ Gemini response length: ${result.length} chars');
+            if (result.length < 2000) {
+              debugPrint('📄 Full response: $result');
+            } else {
+              debugPrint('📄 First 500 chars: ${result.substring(0, 500)}');
+            }
+          }
+
+          return result;
+        } catch (e) {
+          if (e is TimeoutException) {
+            throw Exception(e.message ?? 'Timeout al extraer la receta');
+          }
+          debugPrint('❌ Gemini extractRecipe error: $e');
+          throw Exception('Error en Gemini al extraer la receta: $e');
+        }
       },
     );
+  }
+
+  /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
+  /// Returns structured JSON with the recipe.
+  Future<String?> extractRecipeFromImages(List<String> imagePaths) async {
+    final model = await _getModel(useVision: true);
+    if (model == null) return null;
+
+    final prompt = '''
+👨‍ ERES UN CHEF PROFESIONAL + EXPERTO EN OCR Y ANÁLISIS DE IMÁGENES.
+
+📋 TU MISIÓN:
+Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
+
+🔍 INSTRUCCIONES:
+1. Lee TODO el texto visible en las imágenes (OCR)
+2. Identifica ingredientes, cantidades, unidades y pasos
+3. Si hay múltiples imágenes, combina la información de todas
+4. Si falta información, infiérelo con lógica culinaria
+
+📝 FORMATO JSON:
+{
+  "nombre_receta": "Nombre del plato",
+  "descripcion": "Descripción de 2-3 oraciones",
+  "porciones": 4,
+  "tiempo_preparacion_min": 15,
+  "tiempo_coccion_min": 30,
+  "tiempo_total_min": 45,
+  "dificultad": "Fácil",
+  "tipo_comida": "Almuerzo",
+  "cocina": "Peruana",
+  "ingredientes": [
+    {"nombre": "Arroz", "cantidad": 2.0, "unidad": "tazas"}
+  ],
+  "pasos": [
+    {"numero": 1, "descripcion": "Paso detallado"}
+  ],
+  "utensilios": ["olla", "cuchara"],
+  "calorias_aproximadas": 350,
+  "tags": ["fácil", "peruano"],
+  "observaciones": "Texto extraído de imagen.",
+  "nivel_confianza": "Alto",
+  "ingredientes_inferidos": [],
+  "video_context": "imagen"
+}
+
+⚠️ REGLAS:
+- Devuelve SOLO JSON, sin markdown ni backticks
+- TODOS los campos obligatorios
+- "cantidad" debe ser NÚMERO (float)
+- "unidad" en español
+- Mínimo 2 ingredientes, 3 pasos
+
+📸 ANALIZA LAS IMÁGENES Y DEVUELVE LA RECETA EN JSON.''';
+
+    final parts = <Part>[TextPart(prompt)];
+
+    for (final path in imagePaths) {
+      final file = File(path);
+      if (file.existsSync()) {
+        final bytes = await file.readAsBytes();
+        final mimeType = _getMimeType(path);
+        parts.add(DataPart(mimeType, bytes));
+      }
+    }
+
+    try {
+      final response =
+          await model.generateContent([Content.multi(parts)]).timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          throw TimeoutException(
+            'La IA tardó demasiado en responder. Intenta con imágenes más claras.',
+            const Duration(seconds: 45),
+          );
+        },
+      );
+      return response.text;
+    } catch (e) {
+      if (e is TimeoutException) {
+        throw Exception(e.message ?? 'Timeout al extraer receta de imágenes');
+      }
+      throw Exception('Error en Gemini al extraer receta de imágenes: $e');
+    }
   }
 
   /// Analiza una foto de múltiples productos de despensa.

@@ -13,16 +13,20 @@ class TikTokService {
   Future<Map<String, dynamic>?> getTikTokVideoInfo(String tiktokUrl) async {
     final encodedUrl = Uri.encodeComponent(tiktokUrl);
 
-    // Try multiple possible endpoints
+    debugPrint('🔍 TikTokService: Trying to get video info for: $tiktokUrl');
+    debugPrint(
+        '🔑 Using API Key: ${apiKey.isNotEmpty ? '***${apiKey.substring(apiKey.length - 8)}' : 'EMPTY'}');
+
+    // Try the official endpoint as shown in RapidAPI docs
     final endpoints = [
-      '/api?url=$encodedUrl',
-      '/tiktok?url=$encodedUrl',
       '/tiktok/info?url=$encodedUrl',
+      '/tiktok?url=$encodedUrl',
+      '/api?url=$encodedUrl',
     ];
 
     for (final endpoint in endpoints) {
       final uri = Uri.parse('https://$_apiHost$endpoint');
-      debugPrint('🔍 Trying endpoint: $endpoint');
+      debugPrint(' Trying endpoint: $endpoint');
 
       try {
         final response = await http.get(
@@ -32,19 +36,34 @@ class TikTokService {
             'x-rapidapi-key': apiKey,
             'Content-Type': 'application/json',
           },
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            debugPrint('⏱️ Timeout for endpoint: $endpoint');
+            throw Exception('Timeout al conectar con TikTok API');
+          },
         );
 
-        debugPrint('📡 Response status: ${response.statusCode}');
-        debugPrint('📦 Response body: ${response.body}');
+        debugPrint('📦 Response status: ${response.statusCode}');
+        debugPrint(
+            '📦 Response body (first 500 chars): ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
 
         if (response.statusCode == 200) {
           final decoded = json.decode(response.body) as Map<String, dynamic>;
 
           // Check if response has valid data
-          if (decoded.containsKey('data') || decoded.containsKey('url')) {
+          if (decoded.containsKey('data') ||
+              decoded.containsKey('url') ||
+              decoded.containsKey('video_link_nwm')) {
             debugPrint('✅ Success with endpoint: $endpoint');
+            debugPrint('📦 Response keys: ${decoded.keys.toList()}');
             return decoded;
           }
+
+          debugPrint(
+              '⚠️ Response missing expected keys. Keys found: ${decoded.keys.toList()}');
+        } else {
+          debugPrint('❌ HTTP ${response.statusCode} for endpoint: $endpoint');
         }
       } catch (e) {
         debugPrint('❌ Exception with endpoint $endpoint: $e');
