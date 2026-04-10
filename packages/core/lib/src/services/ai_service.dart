@@ -18,7 +18,7 @@ class GeminiService {
   final OfflineCacheService _cache;
   final String _apiKey;
 
-  static const String _defaultModel = 'gemini-1.5-flash';
+  static const String _defaultModel = 'gemini-2.5-flash';
 
   GeminiService({
     required ConnectivityService connectivity,
