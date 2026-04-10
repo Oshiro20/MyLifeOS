@@ -79,18 +79,15 @@ class GeminiService {
     String? textContext,
     String? mediaPath,
   }) async {
-    final cacheKey = mediaPath != null
-        ? 'recipe_media_${mediaPath.hashCode}'
-        : 'recipe_text_${textContext?.hashCode ?? 0}';
+    // DISABLE CACHE for recipe extraction to avoid stale empty responses
+    final useVision = mediaPath != null;
+    final model = await _getModel(useVision: useVision);
+    if (model == null) {
+      debugPrint('❌ Gemini model is null - API key may be empty');
+      return null;
+    }
 
-    return _generateWithCache(
-      cacheKey: cacheKey,
-      apiCall: () async {
-        final useVision = mediaPath != null;
-        final model = await _getModel(useVision: useVision);
-        if (model == null) return null;
-
-        final prompt = '''
+    final prompt = '''
 👨‍🍳 ROL DEL SISTEMA
 
 Actúa como un Chef Profesional + Analista de Video de Cocina.
@@ -256,81 +253,79 @@ Usa esta información como referencia adicional.
 
 🎥 AHORA ANALIZA EL VIDEO/IMAGEN ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
 
-        final content = <Content>[];
-        if (mediaPath != null) {
-          final file = File(mediaPath);
-          if (file.existsSync()) {
-            final bytes = await file.readAsBytes();
-            final mimeType = _getMimeType(mediaPath);
-            content.add(Content.multi([
-              TextPart(prompt),
-              DataPart(mimeType, bytes),
-            ]));
-          } else {
-            content.add(Content.text(prompt));
-          }
-        } else {
-          content.add(Content.text(prompt));
-        }
+    final content = <Content>[];
+    if (mediaPath != null) {
+      final file = File(mediaPath);
+      if (file.existsSync()) {
+        final bytes = await file.readAsBytes();
+        final mimeType = _getMimeType(mediaPath);
+        content.add(Content.multi([
+          TextPart(prompt),
+          DataPart(mimeType, bytes),
+        ]));
+      } else {
+        content.add(Content.text(prompt));
+      }
+    } else {
+      content.add(Content.text(prompt));
+    }
 
-        try {
-          debugPrint('🤖 Calling Gemini API with model: $_defaultModel');
-          debugPrint('📎 Media path: ${mediaPath ?? "none (text only)"}');
+    try {
+      debugPrint('🤖 Calling Gemini API with model: $_defaultModel');
+      debugPrint('📎 Media path: ${mediaPath ?? "none (text only)"}');
 
-          final response = await model.generateContent(content).timeout(
+      final response = await model.generateContent(content).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          throw TimeoutException(
+            'La IA tardó demasiado en responder. Intenta con un video más corto o imágenes más claras.',
             const Duration(seconds: 60),
-            onTimeout: () {
-              throw TimeoutException(
-                'La IA tardó demasiado en responder. Intenta con un video más corto o imágenes más claras.',
-                const Duration(seconds: 60),
-              );
-            },
           );
+        },
+      );
 
-          final result = response.text;
+      final result = response.text;
 
-          // Check for safety filter blocks
-          if (response.promptFeedback?.blockReason != null) {
-            debugPrint(
-                '🚫 Gemini blocked request: ${response.promptFeedback!.blockReason}');
-            throw Exception(
-                'Gemini bloqueó la solicitud: ${response.promptFeedback!.blockReason}');
-          }
+      // Check for safety filter blocks
+      if (response.promptFeedback?.blockReason != null) {
+        debugPrint(
+            '🚫 Gemini blocked request: ${response.promptFeedback!.blockReason}');
+        throw Exception(
+            'Gemini bloqueó la solicitud: ${response.promptFeedback!.blockReason}');
+      }
 
-          if (response.candidates.isNotEmpty &&
-              response.candidates.first.finishReason != FinishReason.stop) {
-            debugPrint(
-                '⚠️ Gemini finished with reason: ${response.candidates.first.finishReason}');
-          }
+      if (response.candidates.isNotEmpty &&
+          response.candidates.first.finishReason != FinishReason.stop) {
+        debugPrint(
+            '⚠️ Gemini finished with reason: ${response.candidates.first.finishReason}');
+      }
 
-          // Debug logging to see what Gemini returns
-          if (result != null && result.isNotEmpty) {
-            debugPrint('✅ Gemini response length: ${result.length} chars');
-            if (result.length < 2000) {
-              debugPrint('📄 Full response: $result');
-            } else {
-              debugPrint('📄 First 500 chars: ${result.substring(0, 500)}');
-            }
-          } else {
-            debugPrint('⚠️ Gemini returned null or empty response');
-          }
-
-          return result;
-        } catch (e) {
-          if (e is TimeoutException) {
-            throw Exception(e.message ?? 'Timeout al extraer la receta');
-          }
-          debugPrint('❌ Gemini extractRecipe error: $e');
-          debugPrint('❌ Error type: ${e.runtimeType}');
-          if (e.toString().contains('DataInspection') ||
-              e.toString().contains('blocked')) {
-            throw Exception(
-                'Gemini bloqueó el análisis. Verifica que el video sea de cocina.');
-          }
-          throw Exception('Error en Gemini al extraer la receta: $e');
+      // Debug logging to see what Gemini returns
+      if (result != null && result.isNotEmpty) {
+        debugPrint('✅ Gemini response length: ${result.length} chars');
+        if (result.length < 2000) {
+          debugPrint('📄 Full response: $result');
+        } else {
+          debugPrint('📄 First 500 chars: ${result.substring(0, 500)}');
         }
-      },
-    );
+      } else {
+        debugPrint('⚠️ Gemini returned null or empty response');
+      }
+
+      return result;
+    } catch (e) {
+      if (e is TimeoutException) {
+        throw Exception(e.message ?? 'Timeout al extraer la receta');
+      }
+      debugPrint('❌ Gemini extractRecipe error: $e');
+      debugPrint('❌ Error type: ${e.runtimeType}');
+      if (e.toString().contains('DataInspection') ||
+          e.toString().contains('blocked')) {
+        throw Exception(
+            'Gemini bloqueó el análisis. Verifica que el video sea de cocina.');
+      }
+      throw Exception('Error en Gemini al extraer la receta: $e');
+    }
   }
 
   /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
@@ -646,7 +641,7 @@ Mantén la respuesta en 3 líneas máximo en Markdown.
   }
 }
 
-// ── Provider ──────────────────────────────────────────────────────────────────
+// ── Provider ─────────────────────────────────────────────────────────────────
 
 // Nota: Reemplazar con tu propia lógica de obtención de API KEY (secuencia de entorno, etc.)
 final geminiProvider = Provider<GeminiService>((ref) {
@@ -654,11 +649,19 @@ final geminiProvider = Provider<GeminiService>((ref) {
   final cache = ref.watch(
       offlineCacheProvider); // Asumiendo que offlineCacheProvider está en offline_cache_service.dart o exportado.
 
-  // Try to get from dart-define first, fallback to dotenv
+  // Try to get from dart-define first, fallback to dotenv, fallback to hardcoded
   String apiKey = const String.fromEnvironment('GEMINI_API_KEY');
   if (apiKey.isEmpty) {
     apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
   }
+  // Fallback hardcoded key (bundled in APK)
+  if (apiKey.isEmpty) {
+    apiKey = 'AIzaSyDk4QD-c8ti_96tsClL4O3V8QuK0u9b7qs';
+    debugPrint('⚠️ Using hardcoded GEMINI_API_KEY (env not available)');
+  }
+
+  debugPrint(
+      '🔑 Gemini API Key loaded: ${apiKey.isNotEmpty ? "YES (${apiKey.length} chars)" : "NO"}');
 
   return GeminiService(
     connectivity: connectivity,
