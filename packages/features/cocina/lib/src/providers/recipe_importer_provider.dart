@@ -153,16 +153,16 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       }
 
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      
+
       debugPrint('📸 Processing ${imagePaths.length} images...');
-      
+
       final recipe = await extractUseCase.execute(mediaPaths: imagePaths);
-      
+
       if (recipe == null) {
         throw Exception(
             'La IA no pudo extraer la receta. Intenta con imágenes más claras.');
       }
-      
+
       importedRecipe = recipe;
       currentStatusMessage = '¡Receta encontrada!';
       state = RecipeImportState.success;
@@ -211,10 +211,10 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
             'Video grande detectado (${fileSizeMB.toStringAsFixed(0)} MB). Esto puede tardar...';
       }
 
-      // Strategy: Extract 1 thumbnail, send video directly if <20MB (Gemini supports it)
-      String mediaPath = filePath;
+      // Strategy: ALWAYS extract a single thumbnail.
+      // The working v2.9.0 logic relied on sending a clear image to Gemini,
+      // which is faster and less error-prone than sending video files.
       String? thumbnailPath;
-
       try {
         thumbnailPath = await VideoThumbnail.thumbnailFile(
           video: filePath,
@@ -225,63 +225,25 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
           quality: 85,
         );
 
-        if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
-          if (fileSizeMB < 20) {
-            // Gemini CAN process video files directly under ~20MB
-            mediaPath = filePath;
-            File(thumbnailPath).deleteSync();
-            thumbnailPath = null;
-            debugPrint(
-                '🎬 Using video file directly (${fileSizeMB.toStringAsFixed(1)} MB)');
-          } else {
-            // Use thumbnail for larger videos
-            mediaPath = thumbnailPath;
-            debugPrint('✅ Using thumbnail: $mediaPath');
-          }
-        } else {
-          debugPrint(
-              '⚠️ Thumbnail extraction returned null, using original video');
+        if (thumbnailPath == null || !File(thumbnailPath).existsSync()) {
+          throw Exception('No se pudo extraer la imagen del video.');
         }
+
+        debugPrint('📸 Using thumbnail: $thumbnailPath');
       } catch (e) {
-        debugPrint('⚠️ Thumbnail extraction failed: $e, using original video');
+        debugPrint('⚠️ Thumbnail extraction failed: $e');
+        throw Exception('Error al procesar el video: $e');
       }
 
       final extractUseCase = ref.read(extractRecipeUseCaseProvider);
-      debugPrint(
-          '🔍 Sending to AI: $mediaPath (${fileSizeMB.toStringAsFixed(1)} MB)');
+      debugPrint('🔍 Sending to AI...');
 
-      Recipe? recipe = await extractUseCase.execute(mediaPaths: [mediaPath]);
+      // Send only the thumbnail path
+      final recipe = await extractUseCase.execute(mediaPaths: [thumbnailPath]);
 
-      if (recipe == null && mediaPath == filePath) {
-        debugPrint('⚠️ Initial video processing failed. Generating multiple thumbnails for fallback...');
-        currentStatusMessage = 'Analizando cuadros del video...';
-        
-        final List<String> fallbackThumbnails = [];
-        for (int timeMs in [1000, 5000, 10000]) {
-          try {
-            final path = await VideoThumbnail.thumbnailFile(
-              video: filePath,
-              thumbnailPath: '${(await getTemporaryDirectory()).path}/thumb_${timeMs}_${DateTime.now().millisecondsSinceEpoch}.jpg',
-              imageFormat: ImageFormat.JPEG,
-              timeMs: timeMs,
-              quality: 85,
-            );
-            if (path != null && File(path).existsSync()) {
-              fallbackThumbnails.add(path);
-            }
-          } catch (e) {
-            debugPrint('⚠️ Thumbnail generation failed at ${timeMs}ms: $e');
-          }
-        }
-        
-        if (fallbackThumbnails.isNotEmpty) {
-          debugPrint('📸 Fallback triggered. Sending ${fallbackThumbnails.length} thumbnails to AI...');
-          recipe = await extractUseCase.execute(mediaPaths: fallbackThumbnails);
-          
-          for (final thumb in fallbackThumbnails) {
-             if (File(thumb).existsSync()) File(thumb).deleteSync();
-          }
-        }
+      // Clean up thumbnail after processing
+      if (File(thumbnailPath).existsSync()) {
+        File(thumbnailPath).deleteSync();
       }
 
       if (recipe != null) {
@@ -292,11 +254,6 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         throw Exception(
           'La IA no pudo estructurar la receta. Intenta con otro video más claro.',
         );
-      }
-
-      // Clean up thumbnail
-      if (thumbnailPath != null && File(thumbnailPath).existsSync()) {
-        File(thumbnailPath).deleteSync();
       }
     } catch (e) {
       errorMessage = e.toString();
@@ -357,7 +314,9 @@ class _GeminiExtractorAdapter implements IAIRecipeExtractor {
   _GeminiExtractorAdapter(this.gemini);
 
   @override
-  Future<String?> extractRecipeJson({String? textContext, List<String>? mediaPaths}) {
-    return gemini.extractRecipe(textContext: textContext, mediaPaths: mediaPaths);
+  Future<String?> extractRecipeJson(
+      {String? textContext, List<String>? mediaPaths}) {
+    return gemini.extractRecipe(
+        textContext: textContext, mediaPaths: mediaPaths);
   }
 }
