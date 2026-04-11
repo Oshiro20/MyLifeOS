@@ -667,78 +667,24 @@ ${recentlyUsedRecipeNames.take(10).map((e) => '- $e').join('\n')}
     final totalRecipes = menuCount * components.length;
 
     final prompt = '''
-👨‍🍳 ERES UN CHEF PROFESIONAL PLANIFICADOR DE MENÚS.
+Genera ${totalRecipes} recetas peruanas en formato JSON array.
 
-📋 TU MISIÓN:
-El usuario tiene estos ingredientes en su despensa:
+COMPONENTES REQUERIDOS: $componentNames
+Cada receta debe ser de tipo: $mealTypeList
 
-$inventoryDescription
+REGLAS:
+- Recetas peruanas reales y conocidas
+- No repetir recetas
+- Formato JSON puro, sin texto adicional
 
-Genera $menuCount MENÚS COMPLETOS para $emoji ${mealPeriodName.toUpperCase()}, cada uno con EXACTAMENTE estos componentes: $componentNames
+FORMATO:
+[{"nombre_receta":"Nombre","descripcion":"Desc","porciones":4,"tiempo_preparacion_min":10,"tiempo_coccion_min":20,"tiempo_total_min":30,"dificultad":"Fácil","tipo_comida":"seco","cocina":"Peruana","ingredientes":[{"nombre":"Ingrediente","cantidad":1,"unidad":"unidades"}],"ingredientes_inferidos":["sal"],"pasos":[{"numero":1,"descripcion":"Paso"}],"utensilios":["olla"],"calorias_aproximadas":300,"tags":["tag"],"ingredientes_disponibles":2,"ingredientes_totales":3,"nivel_confianza":"Alto","observaciones":"Nota"}]
 
-🎯 OBJETIVO:
-- SUGIERE RECETAS ATRACTIVAS para planificar la semana, aunque falten algunos ingredientes
-- PRIORIZA usar los ingredientes disponibles, pero NO te limites solo a ellos
-- El usuario quiere saber qué puede cocinar y qué le falta comprar
-- Cada menú debe ser variado y equilibrado
+TIPOS VÁLIDOS: entrada, sopa, seco, postre, bebida, mazamorra
 
-Cada plato debe tener un tipo_comida específico:
-$mealTypeList
-
-FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
-DEVUELVE SOLAMENTE el array JSON con TODOS los platos de los $menuCount menús.
-
-[
-  {
-    "nombre_receta": "Ceviche de pollo",
-    "descripcion": "Fresco ceviche con pollo y cebolla",
-    "porciones": 4,
-    "tiempo_preparacion_min": 15,
-    "tiempo_coccion_min": 20,
-    "tiempo_total_min": 35,
-    "dificultad": "Fácil",
-    "tipo_comida": "entrada",
-    "cocina": "Peruana",
-    "cuisine_style": "Peruana-costa",
-    "ingredientes": [
-      {"nombre": "Pollo", "cantidad": 2, "unidad": "tazas"},
-      {"nombre": "Cebolla", "cantidad": 1, "unidad": "unidades"},
-      {"nombre": "Limón", "cantidad": 3, "unidad": "unidades"}
-    ],
-    "ingredientes_inferidos": ["sal", "pimienta"],
-    "pasos": [
-      {"numero": 1, "descripcion": "Cocinar el pollo y desmenuzar"},
-      {"numero": 2, "descripcion": "Cortar la cebolla en juliana"},
-      {"numero": 3, "descripcion": "Mezclar todo con limón"}
-    ],
-    "utensilios": ["olla", "cuchillo"],
-    "calorias_aproximadas": 250,
-    "tags": ["fácil", "fresco"],
-    "ingredientes_disponibles": 8,
-    "ingredientes_totales": 10,
-    "nivel_confianza": "Alto",
-    "observaciones": "Tienes la mayoría de ingredientes"
-  }
-]
-
-⚠️ REGLAS OBLIGATORIAS:
-1. Devuelve SOLAMENTE el array JSON, sin markdown ni backticks
-2. Cada menú debe tener EXACTAMENTE los componentes solicitados
-3. El "tipo_comida" de cada plato debe coincidir con: $mealTypeList
-4. CADA receta debe tener AL MENOS 3 ingredientes y 3 pasos
-5. "cantidad" debe ser NÚMERO, "unidad" en ESPAÑOL
-6. NO repitas recetas entre menús
-7. NO uses ingredientes que el usuario no le gusta
-8. "tiempo_total_min": 15-180, "porciones": 1-12
-9. Para "ingredientes_disponibles" estima cuántos ingredientes coinciden con la despensa del usuario
-10. PARA "ingredientes_totales" pon el total de ingredientes de la receta
-11. SÉ CREATIVO: sugiere platos deliciosos aunque falten algunos ingredientes
-
-${cuisineContext}
 ${dislikedWarning}
-${recentlyUsedWarning}
 
-🍳 AHORA DEVUELVE SOLAMENTE EL ARRAY JSON CON LOS $totalRecipes PLATOS ($menuCount menús x ${components.length} componentes):''';
+Genera AHORA el JSON array:''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
