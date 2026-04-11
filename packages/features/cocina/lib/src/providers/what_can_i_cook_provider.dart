@@ -51,13 +51,14 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     String? cuisinePreference,
     bool forceRefresh = false,
   }) async {
-    if (!forceRefresh) {
-      final cached = await _cacheService.getCachedSuggestions();
-      if (cached != null && cached.isNotEmpty) {
-        suggestions = cached;
-        state = WhatCanICookState.success;
-        return;
-      }
+    // ALWAYS force refresh when user explicitly generates
+    // The cache was causing stale results when parameters changed
+    final cached =
+        forceRefresh ? null : await _cacheService.getCachedSuggestions();
+    if (cached != null && cached.isNotEmpty) {
+      suggestions = cached;
+      state = WhatCanICookState.success;
+      return;
     }
 
     state = WhatCanICookState.loading;
@@ -85,6 +86,10 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       final menuComponents = components ?? [MenuComponent.platoFuerte];
       final meal = mealPeriod ?? _getCurrentMealPeriod();
 
+      debugPrint('🔄 Generating new menu suggestions...');
+      debugPrint(
+          '   Meal: ${meal.label}, Components: ${menuComponents.length}, Count: $menuCount');
+
       suggestions = await useCase.executeWithMenu(
         inventory: inventoryState.ingredients,
         mealPeriod: meal,
@@ -95,6 +100,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         recentlyUsedRecipeNames: recentlyUsed,
         userPreferences: chefPrefs,
       );
+
+      debugPrint('✅ Generated ${suggestions.length} recipes');
 
       // Recalculate match percentages
       final viabilityCalc = CalculateRecipeViabilityUseCase();

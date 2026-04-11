@@ -120,6 +120,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                         mealPeriod: _selectedMealPeriod,
                         components: _selectedComponents.toList(),
                         menuCount: _menuCount,
+                        forceRefresh:
+                            true, // Always force refresh on explicit generate
                       );
                       // Colapsar la tarjeta después de generar
                       setState(() => _isMenuCreatorExpanded = false);
@@ -244,6 +246,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     mealPeriod: _selectedMealPeriod,
                     components: _selectedComponents.toList(),
                     menuCount: _menuCount,
+                    forceRefresh: true,
                   ),
                   icon: const Icon(Icons.refresh, size: 16),
                   label: const Text('Reintentar'),
@@ -323,6 +326,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     mealPeriod: _selectedMealPeriod,
                     components: _selectedComponents.toList(),
                     menuCount: _menuCount,
+                    forceRefresh: true,
                   ),
                   icon: const Icon(Icons.refresh, size: 14),
                   label:
