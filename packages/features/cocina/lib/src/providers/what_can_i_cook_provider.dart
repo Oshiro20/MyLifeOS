@@ -192,9 +192,28 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       debugPrint(
           '💨 Generating rapid menus: $menuCount menus, ${components.length} components');
 
-      // Get all local recipes from the recipes provider state
+      // Get user-saved recipes from provider
       final recipesState = ref.read(recipesProvider);
-      final allRecipes = recipesState.recipes;
+      final userRecipes = recipesState.recipes;
+
+      // Get 315 MyLifeOS local recipes from asset
+      final localDb = LocalRecipeDatabaseService();
+      final myLifeOSRecipes = await localDb.loadRecipes();
+
+      // Combine both sources (MyLifeOS + user recipes)
+      final allRecipes = <Recipe>[];
+      allRecipes.addAll(myLifeOSRecipes);
+      // Add user recipes that aren't duplicates
+      for (final userRecipe in userRecipes) {
+        if (!allRecipes.any((r) =>
+            r.name == userRecipe.name &&
+            r.tipoComida == userRecipe.tipoComida)) {
+          allRecipes.add(userRecipe);
+        }
+      }
+
+      debugPrint(
+          '   📚 Total recipes: ${allRecipes.length} (${myLifeOSRecipes.length} MyLifeOS + ${userRecipes.length} usuario)');
 
       // Filter by component type (match tipoComida)
       final recipesByComponent = <MenuComponent, List<Recipe>>{};

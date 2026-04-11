@@ -9,7 +9,6 @@ import 'antojos_tab.dart';
 import 'shopping_tab.dart';
 import 'weekly_plan_screen.dart';
 import '../providers/cocina_providers.dart';
-import '../providers/what_can_i_cook_provider.dart';
 
 class CocinaScreen extends ConsumerStatefulWidget {
   const CocinaScreen({super.key});
@@ -35,25 +34,6 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
   void dispose() {
     _tab.dispose();
     super.dispose();
-  }
-
-  void _generateFromPantry() {
-    // Switch to suggestions tab
-    setState(() => _tab.index = 2);
-    // Trigger rapid menu generation (local recipes, NO AI)
-    // Uses default config: platoFuerte, 3 menus
-    ref.read(menuConfigProvider.notifier).update(
-      components: [MenuComponent.platoFuerte],
-      menuCount: 3,
-    );
-    ref.read(whatCanICookProvider.notifier).generateRapidMenus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('💨 Generando menús rápidos desde tu biblioteca...'),
-        backgroundColor: Color(0xFF2196F3),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   List<Widget> _buildTabs(WidgetRef ref) {
@@ -88,7 +68,6 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
   @override
   Widget build(BuildContext context) {
     final showFabs = _tab.index == 1;
-    final showGenerate = _tab.index == 2;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -179,71 +158,61 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           const WeeklyPlanScreen(),
         ],
       ),
-      floatingActionButton: showGenerate
-          ? FloatingActionButton.extended(
-              heroTag: 'generate_from_pantry',
-              backgroundColor: const Color(0xFF00C896),
-              onPressed: _generateFromPantry,
-              icon: const Icon(Icons.restaurant_menu, color: Colors.white),
-              label: const Text('Recetas Rápidas',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-            )
-          : showFabs
-              ? Column(
+      floatingActionButton: showFabs
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Chef IA FAB with label
+                Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Chef IA FAB with label
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Chef IA',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        FloatingActionButton(
-                          heroTag: 'import_tiktok',
-                          backgroundColor: const Color(0xFFFF4D4D),
-                          onPressed: () {
-                            context.go('/cocina/import');
-                          },
-                          child: const Icon(Icons.movie_outlined,
-                              color: Colors.white),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Chef IA',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    // Add recipe FAB
+                    const SizedBox(height: 6),
                     FloatingActionButton(
-                      heroTag: 'add_recipe',
-                      backgroundColor: const Color(0xFF00C896),
+                      heroTag: 'import_tiktok',
+                      backgroundColor: const Color(0xFFFF4D4D),
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'Desliza hacia abajo en la lista de recetas para ver opciones'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        context.go('/cocina/import');
                       },
-                      child: const Icon(Icons.add, color: Colors.white),
+                      child:
+                          const Icon(Icons.movie_outlined, color: Colors.white),
                     ),
                   ],
-                )
-              : null,
+                ),
+                const SizedBox(height: 12),
+                // Add recipe FAB
+                FloatingActionButton(
+                  heroTag: 'add_recipe',
+                  backgroundColor: const Color(0xFF00C896),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Desliza hacia abajo en la lista de recetas para ver opciones'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+              ],
+            )
+          : null,
     );
   }
 }

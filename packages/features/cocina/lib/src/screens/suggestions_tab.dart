@@ -115,8 +115,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     },
                     onMenuCountChanged: (count) =>
                         setState(() => _menuCount = count),
-                    onGenerate: () {
-                      // Sync config for potential FAB rapid generation
+                    onGenerateAI: () {
                       ref.read(menuConfigProvider.notifier).update(
                             mealPeriod: _selectedMealPeriod,
                             components: _selectedComponents.toList(),
@@ -126,10 +125,17 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                         mealPeriod: _selectedMealPeriod,
                         components: _selectedComponents.toList(),
                         menuCount: _menuCount,
-                        forceRefresh:
-                            true, // Always force refresh on explicit generate
+                        forceRefresh: true,
                       );
-                      // Colapsar la tarjeta después de generar
+                      setState(() => _isMenuCreatorExpanded = false);
+                    },
+                    onGenerateLocal: () {
+                      ref.read(menuConfigProvider.notifier).update(
+                            mealPeriod: _selectedMealPeriod,
+                            components: _selectedComponents.toList(),
+                            menuCount: _menuCount,
+                          );
+                      aiNotifier.generateRapidMenus();
                       setState(() => _isMenuCreatorExpanded = false);
                     },
                     isLoading: aiState == WhatCanICookState.loading,
@@ -630,9 +636,10 @@ class _MenuCreatorCard extends StatelessWidget {
   final Function(MealPeriod) onMealPeriodChanged;
   final Function(MenuComponent) onComponentToggle;
   final Function(int) onMenuCountChanged;
-  final VoidCallback onGenerate;
+  final VoidCallback onGenerateAI;
+  final VoidCallback onGenerateLocal;
   final bool isLoading;
-  final VoidCallback? onCollapse; // Callback para colapsar la tarjeta
+  final VoidCallback? onCollapse;
 
   const _MenuCreatorCard({
     required this.selectedMealPeriod,
@@ -641,7 +648,8 @@ class _MenuCreatorCard extends StatelessWidget {
     required this.onMealPeriodChanged,
     required this.onComponentToggle,
     required this.onMenuCountChanged,
-    required this.onGenerate,
+    required this.onGenerateAI,
+    required this.onGenerateLocal,
     required this.isLoading,
     this.onCollapse,
   });
@@ -814,31 +822,48 @@ class _MenuCreatorCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Generate button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isLoading ? null : onGenerate,
-              icon: isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.black),
-                    )
-                  : const Icon(Icons.auto_awesome, size: 18),
-              label:
-                  Text(isLoading ? 'Generando...' : '✨ Generar Menús con IA'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9800),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                textStyle:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          // Two generate buttons: IA (orange) and Local (blue)
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: isLoading ? null : onGenerateAI,
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.black),
+                        )
+                      : const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(isLoading ? 'Generando...' : '✨ Menús IA',
+                      style: const TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9800),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: isLoading ? null : onGenerateLocal,
+                  icon: const Icon(Icons.restaurant_menu, size: 16),
+                  label: const Text('📚 Menú Local',
+                      style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2196F3),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

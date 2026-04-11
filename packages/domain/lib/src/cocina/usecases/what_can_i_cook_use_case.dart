@@ -678,24 +678,18 @@ ${recentlyUsedRecipeNames.take(10).map((e) => '- $e').join('\n')}
     final totalRecipes = menuCount * components.length;
 
     final prompt = '''
-Eres un chef peruano. Genera ${totalRecipes} recetas en formato JSON array.
+Chef peruano. Genera ${totalRecipes} recetas JSON.
 
 COMPONENTES: $componentNames
 TIPOS: $mealTypeList
 ${dinnerNote}
-REGLAS:
-- Recetas peruanas reales (Lomo Saltado, Ceviche, Ají de Gallina, etc.)
-- NO repetir recetas
-- tipos válidos: entrada, sopa, seco, postre, bebida, mazamorra
-- minimo 3 ingredientes y 3 pasos por receta
-- cantidad como NUMERO, unidad en español
-- tiempo_total_min: 15-180, porciones: 1-12
+REGLAS: recetas peruanas reales, NO repetir, tipos validos: entrada/sopa/seco/postre/bebida/mazamorra, min 3 ingredientes y 3 pasos, cantidad NUMERO, unidad espanol, tiempo 15-180, porciones 1-12.
 
-FORMATO EXACTO (array JSON, sin texto adicional):
+FORMATO JSON array exacto:
 [{"nombre_receta":"Nombre","descripcion":"Desc","porciones":4,"tiempo_preparacion_min":10,"tiempo_coccion_min":20,"tiempo_total_min":30,"dificultad":"Facil","tipo_comida":"seco","cocina":"Peruana","cuisine_style":"Peruana","ingredientes":[{"nombre":"Ing","cantidad":1,"unidad":"unidades"}],"ingredientes_inferidos":["sal"],"pasos":[{"numero":1,"descripcion":"Paso"}],"utensilios":["olla"],"calorias_aproximadas":300,"tags":["tag"],"ingredientes_disponibles":2,"ingredientes_totales":3,"nivel_confianza":"Alto","observaciones":"Nota"}]
 
 ${dislikedWarning}
-Genera AHORA el JSON array con ${totalRecipes} recetas:''';
+Genera SOLO el array JSON con ${totalRecipes} recetas:''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
