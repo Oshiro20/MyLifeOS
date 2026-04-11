@@ -640,6 +640,17 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     };
     final emoji = mealPeriodEmoji[mealPeriodName] ?? '🍽️';
 
+    // Dinner-specific note: light dishes only
+    String dinnerNote = '';
+    if (mealPeriodName == 'cena') {
+      dinnerNote = '''
+🌙 IMPORTANTE: Es para la CENA. Sugiere platos LIGEROS y fáciles de digerir:
+- Sopas livianas, ensaladas, sandwiches, tortillas, ceviches pequeños
+- EVITA platos pesados: frituras, carnes rojas grandes, guisos pesados
+- Porciones moderadas, tiempos de preparación cortos
+''';
+    }
+
     String dislikedWarning = '';
     if (dislikedIngredients != null && dislikedIngredients.isNotEmpty) {
       dislikedWarning = '''
@@ -733,7 +744,7 @@ DEVUELVE SOLAMENTE el array JSON.
 9. Para ingredientes_totales: total de ingredientes de la receta
 10. SÉ CREATIVO con recetas peruanas reales y conocidas
 
-${dislikedWarning}
+${dinnerNote}${dislikedWarning}
 
 🍳 Genera las recetas AHORA en formato JSON:''';
 
