@@ -236,39 +236,37 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         recipesByComponent[component] = matching;
       }
 
-      // Organize into menus - pick DIFFERENT recipes for each menu
+      // Organize into menus - pick different recipes when possible, allow repeats if needed
       final suggestions = <RecipeSuggestion>[];
       final viabilityCalc = CalculateRecipeViabilityUseCase();
-      final usedRecipeIds =
-          <String>{}; // Track used recipes to avoid duplicates
+      final usedRecipeIds = <String>{};
 
       for (int menuIdx = 0; menuIdx < menuCount; menuIdx++) {
         for (final component in components) {
-          final available = (recipesByComponent[component] ?? [])
+          // Get all recipes for this component
+          final allForComponent = recipesByComponent[component] ?? [];
+          if (allForComponent.isEmpty) continue;
+
+          // Prefer unused recipes, but allow repeats
+          final available = allForComponent
               .where((r) => !usedRecipeIds.contains(r.id))
               .toList();
 
-          // If no unused recipes, reset and allow repeats
-          if (available.isEmpty) {
-            usedRecipeIds.clear();
-            available.addAll(recipesByComponent[component] ?? []);
-          }
+          final pool = available.isNotEmpty ? available : allForComponent;
+          if (pool.isEmpty) continue;
 
-          if (available.isEmpty) continue;
+          // Shuffle for variety
+          pool.shuffle();
 
-          // Shuffle to add variety, then pick one
-          available.shuffle();
-
-          // Pick recipe with best inventory match from shuffled list
           final inventoryNames = inventoryState.ingredients
               .map((i) => i.name.toLowerCase())
               .toSet();
 
+          // Pick best match from shuffled batch
           Recipe? bestRecipe;
           double bestMatch = -1;
 
-          // Check first 5 shuffled recipes for best match
-          for (final recipe in available.take(5)) {
+          for (final recipe in pool.take(5)) {
             final viability = viabilityCalc.execute(
               recipeIngredients: recipe.ingredients,
               inventory: inventoryState.ingredients,
@@ -279,25 +277,22 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
             }
           }
 
-          // Fallback to first shuffled if none matched well
-          bestRecipe ??= available.first;
+          bestRecipe ??= pool.first;
+          usedRecipeIds.add(bestRecipe.id);
 
-          if (bestRecipe != null) {
-            usedRecipeIds.add(bestRecipe.id);
-            final viability = viabilityCalc.execute(
-              recipeIngredients: bestRecipe.ingredients,
-              inventory: inventoryState.ingredients,
-            );
-            final missingCount = bestRecipe.ingredients.where((ing) {
-              return !inventoryNames.contains(ing.ingredientName.toLowerCase());
-            }).length;
+          final viability = viabilityCalc.execute(
+            recipeIngredients: bestRecipe.ingredients,
+            inventory: inventoryState.ingredients,
+          );
+          final missingCount = bestRecipe.ingredients.where((ing) {
+            return !inventoryNames.contains(ing.ingredientName.toLowerCase());
+          }).length;
 
-            suggestions.add(RecipeSuggestion(
-              recipe: bestRecipe,
-              matchPercentage: (viability * 100).round(),
-              missingIngredients: missingCount,
-            ));
-          }
+          suggestions.add(RecipeSuggestion(
+            recipe: bestRecipe,
+            matchPercentage: (viability * 100).round(),
+            missingIngredients: missingCount,
+          ));
         }
       }
 
