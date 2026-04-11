@@ -9,6 +9,7 @@ import 'antojos_tab.dart';
 import 'shopping_tab.dart';
 import 'weekly_plan_screen.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/what_can_i_cook_provider.dart';
 
 class CocinaScreen extends ConsumerStatefulWidget {
   const CocinaScreen({super.key});
@@ -39,8 +40,13 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
   void _generateFromPantry() {
     // Switch to suggestions tab
     setState(() => _tab.index = 2);
-    // Trigger local recipe suggestions (NO AI - uses existing recipe library)
-    ref.read(recipesProvider.notifier).refreshSuggestions();
+    // Trigger rapid menu generation (local recipes, NO AI)
+    // Uses default config: platoFuerte, 3 menus
+    ref.read(menuConfigProvider.notifier).update(
+      components: [MenuComponent.platoFuerte],
+      menuCount: 3,
+    );
+    ref.read(whatCanICookProvider.notifier).generateRapidMenus();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('💨 Generando menús rápidos desde tu biblioteca...'),

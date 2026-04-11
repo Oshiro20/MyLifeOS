@@ -116,6 +116,12 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     onMenuCountChanged: (count) =>
                         setState(() => _menuCount = count),
                     onGenerate: () {
+                      // Sync config for potential FAB rapid generation
+                      ref.read(menuConfigProvider.notifier).update(
+                            mealPeriod: _selectedMealPeriod,
+                            components: _selectedComponents.toList(),
+                            menuCount: _menuCount,
+                          );
                       aiNotifier.generateSuggestions(
                         mealPeriod: _selectedMealPeriod,
                         components: _selectedComponents.toList(),

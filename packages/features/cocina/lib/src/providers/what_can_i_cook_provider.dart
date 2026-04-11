@@ -11,6 +11,39 @@ import '../screens/suggestions_tab.dart';
 
 enum WhatCanICookState { initial, loading, success, error }
 
+/// Shared menu configuration for FAB and SuggestionsTab
+class MenuConfig {
+  final MealPeriod? mealPeriod;
+  final List<MenuComponent> components;
+  final int menuCount;
+
+  const MenuConfig({
+    this.mealPeriod,
+    this.components = const [MenuComponent.platoFuerte],
+    this.menuCount = 3,
+  });
+}
+
+class MenuConfigNotifier extends Notifier<MenuConfig> {
+  @override
+  MenuConfig build() => const MenuConfig();
+
+  void update(
+      {MealPeriod? mealPeriod,
+      List<MenuComponent>? components,
+      int? menuCount}) {
+    state = MenuConfig(
+      mealPeriod: mealPeriod ?? state.mealPeriod,
+      components: components ?? state.components,
+      menuCount: menuCount ?? state.menuCount,
+    );
+  }
+}
+
+final menuConfigProvider = NotifierProvider<MenuConfigNotifier, MenuConfig>(() {
+  return MenuConfigNotifier();
+});
+
 class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
@@ -131,6 +164,115 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   Future<List<String>> _getRecentlyUsedRecipes() async {
     final historyService = CookingHistoryService();
     return await historyService.getRecentRecipeNames(days: 7);
+  }
+
+  /// Generate menus from LOCAL recipes (no AI), respecting selected components
+  Future<void> generateRapidMenus() async {
+    state = WhatCanICookState.loading;
+    errorMessage = null;
+
+    try {
+      final inventoryNotifier = ref.read(inventoryProvider.notifier);
+      await inventoryNotifier.load();
+      final inventoryState = ref.read(inventoryProvider);
+
+      if (inventoryState.ingredients.isEmpty) {
+        throw Exception(
+          'No tienes ingredientes en tu inventario. '
+          'Agrega algunos en la pestaña de Inventario primero.',
+        );
+      }
+
+      // Get menu config
+      final config = ref.read(menuConfigProvider);
+      final meal = config.mealPeriod ?? _getCurrentMealPeriod();
+      final components = config.components;
+      final menuCount = config.menuCount;
+
+      debugPrint(
+          '💨 Generating rapid menus: $menuCount menus, ${components.length} components');
+
+      // Get all local recipes from the recipes provider state
+      final recipesState = ref.read(recipesProvider);
+      final allRecipes = recipesState.recipes;
+
+      // Filter by component type (match tipoComida)
+      final recipesByComponent = <MenuComponent, List<Recipe>>{};
+      for (final component in components) {
+        final targetType = component
+            .mealTypeName; // 'entrada', 'sopa', 'almuerzo', 'postre', 'bebida'
+        final matching = allRecipes.where((r) {
+          final tipoComida = r.tipoComida?.name;
+          if (tipoComida == null) return false;
+          // Map 'almuerzo' to 'seco' for matching
+          final effectiveType = tipoComida == 'almuerzo' ? 'seco' : tipoComida;
+          return effectiveType == targetType;
+        }).toList();
+        recipesByComponent[component] = matching;
+      }
+
+      // Organize into menus
+      final suggestions = <RecipeSuggestion>[];
+      final viabilityCalc = CalculateRecipeViabilityUseCase();
+
+      for (int menuIdx = 0; menuIdx < menuCount; menuIdx++) {
+        for (final component in components) {
+          final available = recipesByComponent[component] ?? [];
+          if (available.isEmpty) continue;
+
+          // Pick recipe with highest inventory match for this menu slot
+          final inventoryNames = inventoryState.ingredients
+              .map((i) => i.name.toLowerCase())
+              .toSet();
+
+          Recipe? bestRecipe;
+          double bestMatch = 0;
+
+          for (final recipe in available) {
+            final viability = viabilityCalc.execute(
+              recipeIngredients: recipe.ingredients,
+              inventory: inventoryState.ingredients,
+            );
+            // Add some randomness to vary between menus
+            final score = viability + (menuIdx * 0.05);
+            if (score > bestMatch) {
+              bestMatch = score;
+              bestRecipe = recipe;
+            }
+          }
+
+          if (bestRecipe != null) {
+            final viability = viabilityCalc.execute(
+              recipeIngredients: bestRecipe.ingredients,
+              inventory: inventoryState.ingredients,
+            );
+            final missingCount = bestRecipe.ingredients.where((ing) {
+              return !inventoryNames.contains(ing.ingredientName.toLowerCase());
+            }).length;
+
+            suggestions.add(RecipeSuggestion(
+              recipe: bestRecipe,
+              matchPercentage: (viability * 100).round(),
+              missingIngredients: missingCount,
+            ));
+          }
+        }
+      }
+
+      if (suggestions.isEmpty) {
+        throw Exception(
+            'No se encontraron recetas locales para los componentes seleccionados.\n\nAgrega más recetas con diferentes tipos de comida.');
+      }
+
+      debugPrint('✅ Generated ${suggestions.length} rapid menu items');
+      this.suggestions = suggestions;
+      state = WhatCanICookState.success;
+      _lastMealPeriod = meal;
+    } catch (e) {
+      errorMessage = e.toString();
+      state = WhatCanICookState.error;
+      debugPrint('❌ Rapid menus error: $e');
+    }
   }
 
   void reset() {
