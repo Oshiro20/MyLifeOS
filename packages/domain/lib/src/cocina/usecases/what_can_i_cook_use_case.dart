@@ -678,75 +678,24 @@ ${recentlyUsedRecipeNames.take(10).map((e) => '- $e').join('\n')}
     final totalRecipes = menuCount * components.length;
 
     final prompt = '''
-👨‍🍳 ERES UN CHEF PROFESIONAL PERUANO.
+Eres un chef peruano. Genera ${totalRecipes} recetas en formato JSON array.
 
-📋 TU MISIÓN:
-Genera exactamente ${totalRecipes} recetas para armar $menuCount MENÚS COMPLETOS.
+COMPONENTES: $componentNames
+TIPOS: $mealTypeList
+${dinnerNote}
+REGLAS:
+- Recetas peruanas reales (Lomo Saltado, Ceviche, Ají de Gallina, etc.)
+- NO repetir recetas
+- tipos válidos: entrada, sopa, seco, postre, bebida, mazamorra
+- minimo 3 ingredientes y 3 pasos por receta
+- cantidad como NUMERO, unidad en español
+- tiempo_total_min: 15-180, porciones: 1-12
 
-COMPONENTES REQUERIDOS: $componentNames
-Cada receta debe ser de tipo_comida: $mealTypeList
+FORMATO EXACTO (array JSON, sin texto adicional):
+[{"nombre_receta":"Nombre","descripcion":"Desc","porciones":4,"tiempo_preparacion_min":10,"tiempo_coccion_min":20,"tiempo_total_min":30,"dificultad":"Facil","tipo_comida":"seco","cocina":"Peruana","cuisine_style":"Peruana","ingredientes":[{"nombre":"Ing","cantidad":1,"unidad":"unidades"}],"ingredientes_inferidos":["sal"],"pasos":[{"numero":1,"descripcion":"Paso"}],"utensilios":["olla"],"calorias_aproximadas":300,"tags":["tag"],"ingredientes_disponibles":2,"ingredientes_totales":3,"nivel_confianza":"Alto","observaciones":"Nota"}]
 
-🎯 REGLAS:
-- SUGIERE RECETAS PERUANAS TÍPICAS y reconocibles (Lomo Saltado, Ají de Gallina, Ceviche, Seco de Pollo, etc.)
-- Cada receta debe ser REAL (existente en la gastronomía peruana)
-- NO repitas recetas entre los menús
-- Varía los tipos: sopas, segundos, entradas, postres, bebidas según los componentes
-
-FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
-DEVUELVE SOLAMENTE el array JSON.
-
-[
-  {
-    "nombre_receta": "Lomo Saltado",
-    "descripcion": "Clásico plato peruano con carne salteada, cebolla y papas fritas",
-    "porciones": 4,
-    "tiempo_preparacion_min": 15,
-    "tiempo_coccion_min": 20,
-    "tiempo_total_min": 35,
-    "dificultad": "Fácil",
-    "tipo_comida": "seco",
-    "cocina": "Peruana",
-    "cuisine_style": "Peruana-costeña",
-    "ingredientes": [
-      {"nombre": "Lomo de res", "cantidad": 500, "unidad": "gramos"},
-      {"nombre": "Cebolla roja", "cantidad": 2, "unidad": "unidades"},
-      {"nombre": "Tomate", "cantidad": 2, "unidad": "unidades"},
-      {"nombre": "Papa", "cantidad": 4, "unidad": "unidades"},
-      {"nombre": "Sillao", "cantidad": 2, "unidad": "cucharadas"}
-    ],
-    "ingredientes_inferidos": ["aceite", "sal", "pimienta"],
-    "pasos": [
-      {"numero": 1, "descripcion": "Cortar la carne en tiras y sazonar con sal y pimienta"},
-      {"numero": 2, "descripcion": "Freír las papas en bastones hasta dorar"},
-      {"numero": 3, "descripcion": "Saltear la carne a fuego alto en wok"},
-      {"numero": 4, "descripcion": "Agregar cebolla y tomate, saltear 1 minuto"},
-      {"numero": 5, "descripcion": "Añadir sillao, mezclar y servir con papas"}
-    ],
-    "utensilios": ["sartén o wok", "cuchillo"],
-    "calorias_aproximadas": 450,
-    "tags": ["clásico", "rápido"],
-    "ingredientes_disponibles": 3,
-    "ingredientes_totales": 5,
-    "nivel_confianza": "Alto",
-    "observaciones": "Receta clásica de la cocina peruana"
-  }
-]
-
-⚠️ REQUISITOS OBLIGATORIOS:
-1. SOLAMENTE el array JSON, sin texto antes ni después
-2. Exactamente ${totalRecipes} recetas (${menuCount} menús x ${components.length} componentes)
-3. Tipos válidos: entrada, sopa, seco, postre, bebida, mazamorra
-4. CADA receta: mínimo 3 ingredientes y 3 pasos
-5. "cantidad" como NÚMERO (int o float), "unidad" en español
-6. NO repitas recetas
-7. "tiempo_total_min": 15-180, "porciones": 1-12
-8. Para ingredientes_disponibles: estima cuántos coinciden con la despensa
-9. Para ingredientes_totales: total de ingredientes de la receta
-10. SÉ CREATIVO con recetas peruanas reales y conocidas
-
-${dinnerNote}${dislikedWarning}
-
-🍳 Genera las recetas AHORA en formato JSON:''';
+${dislikedWarning}
+Genera AHORA el JSON array con ${totalRecipes} recetas:''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(

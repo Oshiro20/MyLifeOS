@@ -199,15 +199,21 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       // Filter by component type (match tipoComida)
       final recipesByComponent = <MenuComponent, List<Recipe>>{};
       for (final component in components) {
-        final targetType = component
-            .mealTypeName; // 'entrada', 'sopa', 'almuerzo', 'postre', 'bebida'
+        // Map component's mealTypeName to actual recipe tipoComida values
+        // 'almuerzo' component → 'seco' recipes (plato fuerte)
+        String targetType = component.mealTypeName;
+        if (targetType == 'almuerzo') targetType = 'seco';
+
+        debugPrint(
+            '   🔍 Component ${component.label} → targetType: $targetType');
+
         final matching = allRecipes.where((r) {
           final tipoComida = r.tipoComida?.name;
           if (tipoComida == null) return false;
-          // Map 'almuerzo' to 'seco' for matching
-          final effectiveType = tipoComida == 'almuerzo' ? 'seco' : tipoComida;
-          return effectiveType == targetType;
+          return tipoComida == targetType;
         }).toList();
+
+        debugPrint('      Found ${matching.length} recipes');
         recipesByComponent[component] = matching;
       }
 
