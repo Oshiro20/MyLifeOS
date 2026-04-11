@@ -178,8 +178,8 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
               heroTag: 'generate_from_pantry',
               backgroundColor: const Color(0xFF00C896),
               onPressed: _generateFromPantry,
-              icon: const Icon(Icons.auto_awesome, color: Colors.white),
-              label: const Text('Generar desde Despensa',
+              icon: const Icon(Icons.restaurant_menu, color: Colors.white),
+              label: const Text('Recetas Rápidas',
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
             )

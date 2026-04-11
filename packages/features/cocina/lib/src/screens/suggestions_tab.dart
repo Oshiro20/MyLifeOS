@@ -23,6 +23,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     MenuComponent.platoFuerte,
   };
   int _menuCount = 5; // Número de menús a generar (por defecto 5)
+  bool _isMenuCreatorExpanded = true; // Controlar si la tarjeta está expandida
 
   // Listen for inventory changes
   void _listenInventoryChanges(WidgetRef ref) {
@@ -87,35 +88,69 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             ),
           ),
 
-          // Creador de Menú
-          _MenuCreatorCard(
-            selectedMealPeriod: _selectedMealPeriod,
-            selectedComponents: _selectedComponents,
-            menuCount: _menuCount,
-            onMealPeriodChanged: (period) =>
-                setState(() => _selectedMealPeriod = period),
-            onComponentToggle: (component) {
-              setState(() {
-                if (_selectedComponents.contains(component)) {
-                  // Don't allow deselecting the last component
-                  if (_selectedComponents.length > 1) {
-                    _selectedComponents.remove(component);
-                  }
-                } else {
-                  _selectedComponents.add(component);
-                }
-              });
-            },
-            onMenuCountChanged: (count) => setState(() => _menuCount = count),
-            onGenerate: () {
-              aiNotifier.generateSuggestions(
-                mealPeriod: _selectedMealPeriod,
-                components: _selectedComponents.toList(),
-                menuCount: _menuCount,
-              );
-            },
-            isLoading: aiState == WhatCanICookState.loading,
+          // Creador de Menú (colapsable)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            constraints: BoxConstraints(
+              maxHeight: _isMenuCreatorExpanded ? 500.0 : 0.0,
+            ),
+            child: _isMenuCreatorExpanded
+                ? _MenuCreatorCard(
+                    selectedMealPeriod: _selectedMealPeriod,
+                    selectedComponents: _selectedComponents,
+                    menuCount: _menuCount,
+                    onMealPeriodChanged: (period) =>
+                        setState(() => _selectedMealPeriod = period),
+                    onComponentToggle: (component) {
+                      setState(() {
+                        if (_selectedComponents.contains(component)) {
+                          if (_selectedComponents.length > 1) {
+                            _selectedComponents.remove(component);
+                          }
+                        } else {
+                          _selectedComponents.add(component);
+                        }
+                      });
+                    },
+                    onMenuCountChanged: (count) =>
+                        setState(() => _menuCount = count),
+                    onGenerate: () {
+                      aiNotifier.generateSuggestions(
+                        mealPeriod: _selectedMealPeriod,
+                        components: _selectedComponents.toList(),
+                        menuCount: _menuCount,
+                      );
+                      // Colapsar la tarjeta después de generar
+                      setState(() => _isMenuCreatorExpanded = false);
+                    },
+                    isLoading: aiState == WhatCanICookState.loading,
+                    onCollapse: () =>
+                        setState(() => _isMenuCreatorExpanded = false),
+                  )
+                : const SizedBox.shrink(),
           ),
+          // Botón para expandir el creador de menú cuando está colapsado
+          if (!_isMenuCreatorExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _isMenuCreatorExpanded = true),
+                icon: const Icon(Icons.expand_more,
+                    size: 18, color: Color(0xFFFF9800)),
+                label: const Text(
+                  '✏️ Armar nuevo menú',
+                  style: TextStyle(color: Color(0xFFFF9800), fontSize: 13),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFF9800), width: 1),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
 
           // AI Suggestions
           Expanded(
@@ -587,6 +622,7 @@ class _MenuCreatorCard extends StatelessWidget {
   final Function(int) onMenuCountChanged;
   final VoidCallback onGenerate;
   final bool isLoading;
+  final VoidCallback? onCollapse; // Callback para colapsar la tarjeta
 
   const _MenuCreatorCard({
     required this.selectedMealPeriod,
@@ -597,6 +633,7 @@ class _MenuCreatorCard extends StatelessWidget {
     required this.onMenuCountChanged,
     required this.onGenerate,
     required this.isLoading,
+    this.onCollapse,
   });
 
   @override
@@ -617,13 +654,27 @@ class _MenuCreatorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          const Text(
-            '🍽️ Arma tu Menú',
-            style: TextStyle(
-                color: Color(0xFF00E676),
-                fontSize: 16,
-                fontWeight: FontWeight.bold),
+          // Title with collapse button
+          Row(
+            children: [
+              const Text(
+                '🍽️ Arma tu Menú',
+                style: TextStyle(
+                    color: Color(0xFF00E676),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              if (onCollapse != null)
+                IconButton(
+                  onPressed: onCollapse,
+                  icon: const Icon(Icons.expand_less,
+                      size: 20, color: Color(0xFF00E676)),
+                  tooltip: 'Colapsar',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
 
