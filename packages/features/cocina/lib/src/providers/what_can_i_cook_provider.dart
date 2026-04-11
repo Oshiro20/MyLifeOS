@@ -236,37 +236,54 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         recipesByComponent[component] = matching;
       }
 
-      // Organize into menus
+      // Organize into menus - pick DIFFERENT recipes for each menu
       final suggestions = <RecipeSuggestion>[];
       final viabilityCalc = CalculateRecipeViabilityUseCase();
+      final usedRecipeIds =
+          <String>{}; // Track used recipes to avoid duplicates
 
       for (int menuIdx = 0; menuIdx < menuCount; menuIdx++) {
         for (final component in components) {
-          final available = recipesByComponent[component] ?? [];
+          final available = (recipesByComponent[component] ?? [])
+              .where((r) => !usedRecipeIds.contains(r.id))
+              .toList();
+
+          // If no unused recipes, reset and allow repeats
+          if (available.isEmpty) {
+            usedRecipeIds.clear();
+            available.addAll(recipesByComponent[component] ?? []);
+          }
+
           if (available.isEmpty) continue;
 
-          // Pick recipe with highest inventory match for this menu slot
+          // Shuffle to add variety, then pick one
+          available.shuffle();
+
+          // Pick recipe with best inventory match from shuffled list
           final inventoryNames = inventoryState.ingredients
               .map((i) => i.name.toLowerCase())
               .toSet();
 
           Recipe? bestRecipe;
-          double bestMatch = 0;
+          double bestMatch = -1;
 
-          for (final recipe in available) {
+          // Check first 5 shuffled recipes for best match
+          for (final recipe in available.take(5)) {
             final viability = viabilityCalc.execute(
               recipeIngredients: recipe.ingredients,
               inventory: inventoryState.ingredients,
             );
-            // Add some randomness to vary between menus
-            final score = viability + (menuIdx * 0.05);
-            if (score > bestMatch) {
-              bestMatch = score;
+            if (viability > bestMatch) {
+              bestMatch = viability;
               bestRecipe = recipe;
             }
           }
 
+          // Fallback to first shuffled if none matched well
+          bestRecipe ??= available.first;
+
           if (bestRecipe != null) {
+            usedRecipeIds.add(bestRecipe.id);
             final viability = viabilityCalc.execute(
               recipeIngredients: bestRecipe.ingredients,
               inventory: inventoryState.ingredients,

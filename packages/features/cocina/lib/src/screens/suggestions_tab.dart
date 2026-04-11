@@ -227,79 +227,66 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     }
 
     if (aiState == WhatCanICookState.error) {
-      return _buildFallbackWithSuggestions(
-        context,
-        ref,
-        availableNames,
-        aiNotifier,
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline,
-                    color: Colors.redAccent, size: 48),
-                const SizedBox(height: 12),
-                Text(
-                  aiNotifier.errorMessage ?? 'Error desconocido',
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-                  textAlign: TextAlign.center,
+      return Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  color: Colors.redAccent, size: 48),
+              const SizedBox(height: 12),
+              Text(
+                aiNotifier.errorMessage ?? 'Error desconocido',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => aiNotifier.generateSuggestions(
+                  mealPeriod: _selectedMealPeriod,
+                  components: _selectedComponents.toList(),
+                  menuCount: _menuCount,
+                  forceRefresh: true,
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => aiNotifier.generateSuggestions(
-                    mealPeriod: _selectedMealPeriod,
-                    components: _selectedComponents.toList(),
-                    menuCount: _menuCount,
-                    forceRefresh: true,
-                  ),
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Reintentar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF9800),
-                    foregroundColor: Colors.black,
-                  ),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9800),
+                  foregroundColor: Colors.black,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );
     }
 
     if (aiState == WhatCanICookState.success && visibleSuggestions.isEmpty) {
-      return _buildFallbackWithSuggestions(
-        context,
-        ref,
-        availableNames,
-        aiNotifier,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.no_meals_outlined,
-                  size: 64, color: Colors.orange),
-              const SizedBox(height: 12),
-              const Text(
-                'No se encontraron menús con esos componentes.',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Intenta con menos componentes o agrega más ingredientes a tu despensa.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.no_meals_outlined, size: 64, color: Colors.orange),
+            const SizedBox(height: 12),
+            const Text(
+              'No se encontraron menús con esos componentes.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Intenta con menos componentes o agrega más ingredientes a tu despensa.',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
@@ -381,120 +368,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     }
 
     return const SizedBox.shrink();
-  }
-
-  Widget _buildFallbackWithSuggestions(
-    BuildContext context,
-    WidgetRef ref,
-    Set<String> availableNames,
-    WhatCanICookNotifier aiNotifier, {
-    required Widget child,
-  }) {
-    final invState = ref.watch(inventoryProvider);
-    final hybridAsync = ref.watch(hybridSuggestionsProvider);
-
-    if (invState.ingredients.isEmpty) {
-      return child;
-    }
-
-    return hybridAsync.when(
-      data: (localSuggestions) {
-        if (localSuggestions.isEmpty) return child;
-
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 80),
-          children: [
-            // Header for local fallback
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A2F3A),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    ' 💨 Recetas Rápidas (sin IA)',
-                    style: TextStyle(
-                      color: Color(0xFF2196F3),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${localSuggestions.length} recetas de tu biblioteca local',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // AI error or empty message (if any)
-            child,
-            // Local recipe cards
-            const SizedBox(height: 8),
-            ...localSuggestions.map((suggestion) => _LocalRecipeCard(
-                  suggestion: suggestion,
-                  onTap: (recipe) => _showRecipeDetail(context, recipe),
-                  onSave: (s) =>
-                      _saveLocalSuggestion(context, ref, aiNotifier, s),
-                )),
-          ],
-        );
-      },
-      loading: () => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          child,
-          const SizedBox(height: 16),
-          const CircularProgressIndicator(
-              color: Color(0xFFFF9800), strokeWidth: 2),
-          const SizedBox(height: 8),
-          Text(
-            'Buscando en recetas locales...',
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-          ),
-        ],
-      ),
-      error: (_, __) => child,
-    );
-  }
-
-  Future<void> _saveLocalSuggestion(
-    BuildContext context,
-    WidgetRef ref,
-    WhatCanICookNotifier notifier,
-    RecipeSuggestion suggestion,
-  ) async {
-    final recipeNotifier = ref.read(recipesProvider.notifier);
-    try {
-      await recipeNotifier.saveRecipe(suggestion.recipe);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(' "${suggestion.recipe.name}" guardada'),
-          backgroundColor: const Color(0xFF00E676),
-          duration: const Duration(milliseconds: 1500),
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar: $e'),
-          backgroundColor: Colors.redAccent,
-          duration: const Duration(milliseconds: 2000),
-        ),
-      );
-    }
   }
 
   void _showRecipeDetail(BuildContext context, Recipe recipe) {
@@ -1245,95 +1118,6 @@ class _CookingSessionBannerState extends State<_CookingSessionBanner> {
             tooltip: 'Terminar sesión',
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Local Recipe Card (Fallback when AI has no results) ──────────────────────
-
-class _LocalRecipeCard extends StatelessWidget {
-  final RecipeSuggestion suggestion;
-  final Function(Recipe) onTap;
-  final Function(RecipeSuggestion) onSave;
-
-  const _LocalRecipeCard({
-    required this.suggestion,
-    required this.onTap,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final recipe = suggestion.recipe;
-    return GestureDetector(
-      onTap: () => onTap(recipe),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A2F3A),
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: const Color(0xFF2196F3).withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    recipe.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time,
-                          size: 12, color: Colors.white54),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${recipe.durationMinutes} min',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 11),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.food_bank,
-                          size: 12, color: Colors.white54),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${recipe.ingredients.length} ingredientes',
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () => onSave(suggestion),
-              icon: const Icon(Icons.save_outlined, size: 14),
-              label: const Text('Guardar', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                minimumSize: const Size(0, 30),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

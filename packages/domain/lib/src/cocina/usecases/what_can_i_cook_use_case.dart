@@ -683,13 +683,12 @@ Chef peruano. Genera ${totalRecipes} recetas JSON.
 COMPONENTES: $componentNames
 TIPOS: $mealTypeList
 ${dinnerNote}
-REGLAS: recetas peruanas reales, NO repetir, tipos validos: entrada/sopa/seco/postre/bebida/mazamorra, min 3 ingredientes y 3 pasos, cantidad NUMERO, unidad espanol, tiempo 15-180, porciones 1-12.
+REGLAS: recetas peruanas reales, NO repetir, tipos validos: entrada/sopa/seco/postre/bebida/mazamorra, min 3 ingredientes y 3 pasos.
 
 FORMATO JSON array exacto:
 [{"nombre_receta":"Nombre","descripcion":"Desc","porciones":4,"tiempo_preparacion_min":10,"tiempo_coccion_min":20,"tiempo_total_min":30,"dificultad":"Facil","tipo_comida":"seco","cocina":"Peruana","cuisine_style":"Peruana","ingredientes":[{"nombre":"Ing","cantidad":1,"unidad":"unidades"}],"ingredientes_inferidos":["sal"],"pasos":[{"numero":1,"descripcion":"Paso"}],"utensilios":["olla"],"calorias_aproximadas":300,"tags":["tag"],"ingredientes_disponibles":2,"ingredientes_totales":3,"nivel_confianza":"Alto","observaciones":"Nota"}]
 
-${dislikedWarning}
-Genera SOLO el array JSON con ${totalRecipes} recetas:''';
+Genera SOLO el array JSON:''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
