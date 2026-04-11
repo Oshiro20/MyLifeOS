@@ -397,25 +397,25 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF2A2A40),
+                color: const Color(0xFF1A2F3A),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: const Color(0xFF00E676).withValues(alpha: 0.25)),
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    ' Sugerencias sin IA (instantaneas)',
+                    ' 💨 Recetas Rápidas (sin IA)',
                     style: TextStyle(
-                      color: Color(0xFFFF9800),
+                      color: Color(0xFF2196F3),
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${localSuggestions.length} recetas encontradas en tu biblioteca local',
+                    '${localSuggestions.length} recetas de tu biblioteca local',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 11,
@@ -1241,10 +1241,10 @@ class _LocalRecipeCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A2F1A),
+          color: const Color(0xFF1A2F3A),
           borderRadius: BorderRadius.circular(12),
           border:
-              Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.2)),
+              Border.all(color: const Color(0xFF2196F3).withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -1292,8 +1292,8 @@ class _LocalRecipeCard extends StatelessWidget {
               icon: const Icon(Icons.save_outlined, size: 14),
               label: const Text('Guardar', style: TextStyle(fontSize: 11)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00E676),
-                foregroundColor: Colors.black,
+                backgroundColor: const Color(0xFF2196F3),
+                foregroundColor: Colors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 minimumSize: const Size(0, 30),

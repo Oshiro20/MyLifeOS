@@ -9,6 +9,7 @@ import 'antojos_tab.dart';
 import 'shopping_tab.dart';
 import 'weekly_plan_screen.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/what_can_i_cook_provider.dart';
 
 class CocinaScreen extends ConsumerStatefulWidget {
   const CocinaScreen({super.key});
@@ -39,11 +40,18 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
   void _generateFromPantry() {
     // Switch to suggestions tab
     setState(() => _tab.index = 2);
-    // Refresh suggestions
-    ref.read(recipesProvider.notifier).refreshSuggestions();
+    // Trigger AI menu generation with default parameters (platoFuerte, 3 menus)
+    Future.delayed(const Duration(milliseconds: 300), () {
+      ref.read(whatCanICookProvider.notifier).generateSuggestions(
+            mealPeriod: null, // Auto-detect based on time
+            components: [MenuComponent.platoFuerte],
+            menuCount: 3,
+            forceRefresh: true,
+          );
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('🍳 Generando recetas desde tu despensa...'),
+        content: Text('🍳 Generando menús rápidos con IA...'),
         backgroundColor: Color(0xFF00C896),
         duration: Duration(seconds: 2),
       ),
