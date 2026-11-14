@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'ai_service.dart';
 import 'offline_cache_service.dart';
 import 'connectivity_service.dart';
@@ -93,14 +92,16 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
     try {
       final online = await _conn.isOnline();
       if (!online) {
-        aiResponse = '📡 Sin conexión. Por favor revisa tu red e inténtalo de nuevo.';
+        aiResponse =
+            '📡 Sin conexión. Por favor revisa tu red e inténtalo de nuevo.';
       } else {
         final raw = await _callGemini(
           text,
           walletContext: walletContext,
           outfitContext: outfitContext,
         );
-        aiResponse = raw ?? 'No pude procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
+        aiResponse =
+            raw ?? 'No pude procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
         await _cache.saveString(
           'chat_last',
           '{"q":${_esc(text)},"a":${_esc(aiResponse)}}',
@@ -138,25 +139,24 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
         .take(state.length > 1 ? state.length - 1 : 0)
         .toList();
 
+    final historyPayload = historyMessages
+        .map((m) => {
+              'role': m.isUser ? 'user' : 'model',
+              'text': m.content,
+            })
+        .toList();
+
     final apiKey = _gemini.apiKey;
     if (apiKey.isNotEmpty) {
       try {
-        final model = GenerativeModel(
-          model: 'gemini-2.5-flash',
+        final directText = await GeminiService.callGeminiDirectRest(
           apiKey: apiKey,
-          systemInstruction: Content.system(systemText),
+          systemPrompt: systemText,
+          userMessage: userMessage,
+          history: historyPayload,
         );
-
-        final history = historyMessages
-            .map((m) => m.isUser
-                ? Content.text(m.content)
-                : Content.model([TextPart(m.content)]))
-            .toList();
-
-        final chat = model.startChat(history: history);
-        final result = await chat.sendMessage(Content.text(userMessage));
-        if (result.text != null && result.text!.isNotEmpty) {
-          return result.text;
+        if (directText != null && directText.isNotEmpty) {
+          return directText;
         }
       } catch (e) {
         debugPrint('[AiChat] Direct Gemini error, trying Render proxy: $e');
@@ -166,23 +166,23 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
     return WalletCloudService.generateAI(
       systemPrompt: systemText,
       userMessage: userMessage,
-      history: historyMessages
-          .map((m) => {
-                'role': m.isUser ? 'user' : 'model',
-                'text': m.content,
-              })
-          .toList(),
+      history: historyPayload,
     );
   }
 
   String _systemWithContext({String? walletContext, String? outfitContext}) {
     final sb = StringBuffer(_kSystemPrompt);
-    if (walletContext != null) sb.writeln('\nContexto financiero: $walletContext');
-    if (outfitContext != null) sb.writeln('Outfit del día: $outfitContext');
+    if (walletContext != null) {
+      sb.writeln('\nContexto financiero: $walletContext');
+    }
+    if (outfitContext != null) {
+      sb.writeln('Outfit del día: $outfitContext');
+    }
     return sb.toString();
   }
 
-  String _esc(String t) => '"${t.replaceAll('"', '\\"').replaceAll('\n', '\\n')}"';
+  String _esc(String t) =>
+      '"${t.replaceAll('"', '\\"').replaceAll('\n', '\\n')}"';
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────

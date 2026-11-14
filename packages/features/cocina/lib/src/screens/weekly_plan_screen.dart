@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:domain/domain.dart';
-import 'package:data/data.dart';
 import '../providers/cocina_providers.dart';
 import '../utils/cooking_history_service.dart';
 import 'widgets/recipe_detail_sheet.dart';
@@ -310,7 +309,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     }
   }
 
-  void _showRecipeDetail(BuildContext context, dynamic entry) {
+  void _showRecipeDetail(BuildContext context, WeeklyMenuEntry entry) {
     // entry is a WeeklyMenuEntry, we need to fetch the actual Recipe
     final recipes = ref.read(recipesProvider).recipes;
     final recipe = recipes.firstWhere(
@@ -340,7 +339,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
   }
 
   Future<void> _showRecipePicker(BuildContext context, int day, String mealType,
-      List<dynamic> currentEntries) async {
+      List<WeeklyMenuEntry> currentEntries) async {
     final recipesState = ref.read(recipesProvider);
     final allRecipes = recipesState.recipes;
 

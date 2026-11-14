@@ -920,9 +920,6 @@ class _AdvancedSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
     final subtitleColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
-    final dividerColor = isDark
-        ? Colors.white10
-        : const Color(0xFF00A37A).withValues(alpha: 0.12);
     final chevronColor = isDark
         ? Colors.white24
         : const Color(0xFF4A7A65).withValues(alpha: 0.4);
@@ -932,39 +929,6 @@ class _AdvancedSection extends StatelessWidget {
       title: 'Preferencias Avanzadas',
       child: Column(
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF29B6F6).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.widgets_outlined,
-                  color: Color(0xFF29B6F6), size: 18),
-            ),
-            title: Text(
-              'Widget de Home Screen',
-              style: TextStyle(
-                  color: textColor, fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              'Configurar widget en pantalla de inicio',
-              style: TextStyle(color: subtitleColor, fontSize: 11),
-            ),
-            trailing: Icon(Icons.chevron_right, color: chevronColor),
-            onTap: () {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🚧 Widget de Home Screen - Próximamente'),
-                    backgroundColor: Color(0xFF00C896),
-                  ),
-                );
-              }
-            },
-          ),
-          Divider(height: 1, color: dividerColor),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Container(

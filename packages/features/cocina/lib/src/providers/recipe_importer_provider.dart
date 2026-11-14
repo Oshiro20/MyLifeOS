@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -310,10 +309,7 @@ final extractRecipeUseCaseProvider = Provider<ExtractRecipeUseCase>((ref) {
 });
 
 final tikTokServiceProvider = Provider<TikTokService>((ref) {
-  String apiKey = const String.fromEnvironment('TIKTOK_API_KEY');
-  if (apiKey.isEmpty && dotenv.isInitialized) {
-    apiKey = dotenv.env['TIKTOK_API_KEY'] ?? '';
-  }
+  const apiKey = String.fromEnvironment('TIKTOK_API_KEY');
   if (apiKey.isEmpty) {
     debugPrint('ℹ️ TIKTOK_API_KEY no configurada (usando extracción alternativa).');
   }

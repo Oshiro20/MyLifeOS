@@ -2,54 +2,59 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:domain/domain.dart';
 
 void main() {
-  group('Ingredient', () {
-    test('equality por id', () {
-      const a = Ingredient(
+  group('InventoryIngredient y WeeklyMenuEntry', () {
+    test('InventoryIngredient equality por id', () {
+      const a = InventoryIngredient(
         id: '1',
         name: 'Tomate',
-        category: IngredientCategory.vegetable,
+        primaryCategory: 'Verduras',
         quantity: 2,
         unit: 'kg',
       );
-      const b = Ingredient(
+      const b = InventoryIngredient(
         id: '1',
         name: 'Tomate',
-        category: IngredientCategory.vegetable,
+        primaryCategory: 'Verduras',
         quantity: 2,
         unit: 'kg',
       );
       expect(a, equals(b));
     });
 
-    test('ingredientes distintos no son iguales', () {
-      const a = Ingredient(
+    test('InventoryIngredient distintos no son iguales', () {
+      const a = InventoryIngredient(
         id: '1',
         name: 'Tomate',
-        category: IngredientCategory.vegetable,
+        primaryCategory: 'Verduras',
         quantity: 2,
         unit: 'kg',
       );
-      const b = Ingredient(
+      const b = InventoryIngredient(
         id: '2',
         name: 'Cebolla',
-        category: IngredientCategory.vegetable,
+        primaryCategory: 'Verduras',
         quantity: 1,
-        unit: 'unidad',
+        unit: 'unidades',
       );
       expect(a, isNot(equals(b)));
     });
 
-    test('label de categoría en español', () {
-      expect(IngredientCategory.fruit.label, 'Fruta');
-      expect(IngredientCategory.protein.label, 'Proteína');
-      expect(IngredientCategory.dairy.label, 'Lácteo');
+    test('WeeklyMenuEntry equality y copyWith', () {
+      const entry = WeeklyMenuEntry(
+        id: 'w1',
+        dayOfWeek: 1,
+        mealType: 1,
+        recipeId: 'r1',
+      );
+      expect(entry.isCustom, isFalse);
+      expect(entry.copyWith(isCustom: true).isCustom, isTrue);
     });
 
     test('expirationDate puede ser null', () {
-      const i = Ingredient(
+      const i = InventoryIngredient(
         id: '1',
         name: 'Sal',
-        category: IngredientCategory.spice,
+        primaryCategory: 'Condimentos y especias',
         quantity: 500,
         unit: 'g',
       );

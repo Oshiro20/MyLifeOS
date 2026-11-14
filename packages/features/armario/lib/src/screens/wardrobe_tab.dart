@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:domain/domain.dart';
 import 'dart:convert';
 import 'package:core/core.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../providers/armario_provider.dart';
 
 class WardrobeTab extends ConsumerWidget with AppFeedback {
@@ -710,41 +709,6 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
     );
   }
 
-  Future<File> _compressImage(File originalFile) async {
-    try {
-      final dir = Directory('${originalFile.parent.path}/compressed');
-      if (!await dir.exists()) {
-        await dir.create();
-      }
-
-      final compressedPath =
-          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final result = await FlutterImageCompress.compressAndGetFile(
-        originalFile.path,
-        compressedPath,
-        quality: 70,
-        minWidth: 1024,
-        minHeight: 1024,
-      );
-
-      if (result != null) {
-        final compressedFile = File(result.path);
-        // Delete original file to save space
-        if (await originalFile.exists()) {
-          await originalFile.delete();
-        }
-        return compressedFile;
-      }
-
-      // If compression fails, return original file
-      return originalFile;
-    } catch (e) {
-      // If compression fails, return original file
-      return originalFile;
-    }
-  }
-
   Future<void> _takePhoto({bool isDetails = false}) async {
     final picker = ImagePicker();
     final source = await showModalBottomSheet<ImageSource>(
@@ -777,8 +741,12 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
     final xfile = await picker.pickImage(source: source, maxWidth: 800);
     if (xfile == null || !mounted) return;
 
-    // Compress the image
-    final compressedFile = await _compressImage(File(xfile.path));
+    // Compress and persist the image inside Documents/media/garments
+    final compressedFile = await ImageCompressionUtil.compressImage(
+      originalFile: File(xfile.path),
+      subfolder: 'garments',
+      deleteOriginal: true,
+    );
     if (!mounted) return;
 
     final file = compressedFile;

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../providers/foodcoach_provider.dart';
 
 class EvaluateTab extends ConsumerStatefulWidget with AppFeedback {
@@ -384,44 +383,14 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
     final picked = await ImagePicker()
         .pickImage(source: ImageSource.camera, imageQuality: 80);
     if (picked != null) {
-      // Compress the image
-      final compressedFile = await _compressImage(File(picked.path));
-      setState(() => _photoPath = compressedFile.path);
-    }
-  }
-
-  Future<File> _compressImage(File originalFile) async {
-    try {
-      final dir = Directory('${originalFile.parent.path}/compressed');
-      if (!await dir.exists()) {
-        await dir.create();
-      }
-
-      final compressedPath =
-          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final result = await FlutterImageCompress.compressAndGetFile(
-        originalFile.path,
-        compressedPath,
-        quality: 70,
-        minWidth: 1024,
-        minHeight: 1024,
+      final compressedFile = await ImageCompressionUtil.compressImage(
+        originalFile: File(picked.path),
+        subfolder: 'meals',
+        deleteOriginal: true,
       );
-
-      if (result != null) {
-        final compressedFile = File(result.path);
-        // Delete original file to save space
-        if (await originalFile.exists()) {
-          await originalFile.delete();
-        }
-        return compressedFile;
+      if (mounted) {
+        setState(() => _photoPath = compressedFile.path);
       }
-
-      // If compression fails, return original file
-      return originalFile;
-    } catch (e) {
-      // If compression fails, return original file
-      return originalFile;
     }
   }
 }

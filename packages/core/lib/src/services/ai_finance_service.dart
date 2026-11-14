@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:domain/domain.dart';
 import 'ai_service.dart';
 import 'offline_cache_service.dart';
 import 'connectivity_service.dart';
@@ -144,12 +144,7 @@ Devuelve EXACTAMENTE este JSON sin markdown ni texto adicional:
       final result = await _gemini.generateText(prompt: prompt);
       if (result == null) return FinanceInsight.empty();
 
-      final clean = result
-          .replaceAll(RegExp(r'```json\s*'), '')
-          .replaceAll(RegExp(r'```\s*'), '')
-          .trim();
-
-      final decoded = _tryDecode(clean);
+      final decoded = AiJsonParser.decodeMap(result);
       if (decoded == null) return FinanceInsight.empty();
 
       await _cache.saveMap(cacheKey, decoded);
@@ -167,14 +162,6 @@ Devuelve EXACTAMENTE este JSON sin markdown ni texto adicional:
   static String _currentMonth() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}';
-  }
-
-  Map<String, dynamic>? _tryDecode(String raw) {
-    try {
-      return jsonDecode(raw) as Map<String, dynamic>;
-    } catch (_) {
-      return null;
-    }
   }
 
   /// Predice el gasto del próximo mes basado en el historial.
@@ -216,15 +203,10 @@ Solo devuelve el JSON array.
     try {
       final result = await _gemini.generateText(prompt: prompt);
       if (result == null) return [];
-      
-      final clean = result
-          .replaceAll(RegExp(r'```json\s*'), '')
-          .replaceAll(RegExp(r'```\s*'), '')
-          .trim();
-          
-      final decoded = jsonDecode(clean);
-      if (decoded is List) {
-        return List<String>.from(decoded);
+
+      final decoded = AiJsonParser.decodeList(result);
+      if (decoded != null) {
+        return decoded.map((e) => e.toString()).toList();
       }
       return [];
     } catch (e) {

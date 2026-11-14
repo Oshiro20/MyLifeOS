@@ -23,7 +23,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^3.2.1
   go_router: ^17.1.0
-  fpdart: ^1.2.0
   domain:
     path: ../../packages/domain
   data:
@@ -42,17 +41,11 @@ dependencies:
     path: ../../packages/features/settings
   file_picker: ^8.3.4
   sqlite3_flutter_libs: ^0.5.41
-  google_generative_ai: ^0.4.7
-  flutter_dotenv: ^6.0.0
   flutter_secure_storage: ^10.0.0
   flutter_local_notifications: ^18.0.1
   shared_preferences: ^2.5.4
   receive_sharing_intent: ^1.8.1
-  workmanager: ^0.9.0
   flutter_animate: ^4.5.2
-  animations: ^2.0.11
-  shimmer: ^3.0.0
-  home_widget: ^0.7.0
   url_launcher: ^6.3.2
   connectivity_plus: ^7.1.0
   image_picker: ^1.2.1

@@ -4525,7 +4525,7 @@ class UserProfileCompanion extends UpdateCompanion<UserProfileEntry> {
 }
 
 class $WeeklyMenuEntriesTable extends WeeklyMenuEntries
-    with TableInfo<$WeeklyMenuEntriesTable, WeeklyMenuEntry> {
+    with TableInfo<$WeeklyMenuEntriesTable, WeeklyMenuRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -4575,7 +4575,7 @@ class $WeeklyMenuEntriesTable extends WeeklyMenuEntries
   String get actualTableName => $name;
   static const String $name = 'weekly_menu_entries';
   @override
-  VerificationContext validateIntegrity(Insertable<WeeklyMenuEntry> instance,
+  VerificationContext validateIntegrity(Insertable<WeeklyMenuRow> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
@@ -4614,9 +4614,9 @@ class $WeeklyMenuEntriesTable extends WeeklyMenuEntries
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  WeeklyMenuEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+  WeeklyMenuRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return WeeklyMenuEntry(
+    return WeeklyMenuRow(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       dayOfWeek: attachedDatabase.typeMapping
@@ -4636,13 +4636,13 @@ class $WeeklyMenuEntriesTable extends WeeklyMenuEntries
   }
 }
 
-class WeeklyMenuEntry extends DataClass implements Insertable<WeeklyMenuEntry> {
+class WeeklyMenuRow extends DataClass implements Insertable<WeeklyMenuRow> {
   final String id;
   final int dayOfWeek;
   final int mealType;
   final String recipeId;
   final bool isCustom;
-  const WeeklyMenuEntry(
+  const WeeklyMenuRow(
       {required this.id,
       required this.dayOfWeek,
       required this.mealType,
@@ -4669,10 +4669,10 @@ class WeeklyMenuEntry extends DataClass implements Insertable<WeeklyMenuEntry> {
     );
   }
 
-  factory WeeklyMenuEntry.fromJson(Map<String, dynamic> json,
+  factory WeeklyMenuRow.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return WeeklyMenuEntry(
+    return WeeklyMenuRow(
       id: serializer.fromJson<String>(json['id']),
       dayOfWeek: serializer.fromJson<int>(json['dayOfWeek']),
       mealType: serializer.fromJson<int>(json['mealType']),
@@ -4692,21 +4692,21 @@ class WeeklyMenuEntry extends DataClass implements Insertable<WeeklyMenuEntry> {
     };
   }
 
-  WeeklyMenuEntry copyWith(
+  WeeklyMenuRow copyWith(
           {String? id,
           int? dayOfWeek,
           int? mealType,
           String? recipeId,
           bool? isCustom}) =>
-      WeeklyMenuEntry(
+      WeeklyMenuRow(
         id: id ?? this.id,
         dayOfWeek: dayOfWeek ?? this.dayOfWeek,
         mealType: mealType ?? this.mealType,
         recipeId: recipeId ?? this.recipeId,
         isCustom: isCustom ?? this.isCustom,
       );
-  WeeklyMenuEntry copyWithCompanion(WeeklyMenuEntriesCompanion data) {
-    return WeeklyMenuEntry(
+  WeeklyMenuRow copyWithCompanion(WeeklyMenuEntriesCompanion data) {
+    return WeeklyMenuRow(
       id: data.id.present ? data.id.value : this.id,
       dayOfWeek: data.dayOfWeek.present ? data.dayOfWeek.value : this.dayOfWeek,
       mealType: data.mealType.present ? data.mealType.value : this.mealType,
@@ -4717,7 +4717,7 @@ class WeeklyMenuEntry extends DataClass implements Insertable<WeeklyMenuEntry> {
 
   @override
   String toString() {
-    return (StringBuffer('WeeklyMenuEntry(')
+    return (StringBuffer('WeeklyMenuRow(')
           ..write('id: $id, ')
           ..write('dayOfWeek: $dayOfWeek, ')
           ..write('mealType: $mealType, ')
@@ -4732,7 +4732,7 @@ class WeeklyMenuEntry extends DataClass implements Insertable<WeeklyMenuEntry> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is WeeklyMenuEntry &&
+      (other is WeeklyMenuRow &&
           other.id == this.id &&
           other.dayOfWeek == this.dayOfWeek &&
           other.mealType == this.mealType &&
@@ -4740,7 +4740,7 @@ class WeeklyMenuEntry extends DataClass implements Insertable<WeeklyMenuEntry> {
           other.isCustom == this.isCustom);
 }
 
-class WeeklyMenuEntriesCompanion extends UpdateCompanion<WeeklyMenuEntry> {
+class WeeklyMenuEntriesCompanion extends UpdateCompanion<WeeklyMenuRow> {
   final Value<String> id;
   final Value<int> dayOfWeek;
   final Value<int> mealType;
@@ -4766,7 +4766,7 @@ class WeeklyMenuEntriesCompanion extends UpdateCompanion<WeeklyMenuEntry> {
         dayOfWeek = Value(dayOfWeek),
         mealType = Value(mealType),
         recipeId = Value(recipeId);
-  static Insertable<WeeklyMenuEntry> custom({
+  static Insertable<WeeklyMenuRow> custom({
     Expression<String>? id,
     Expression<int>? dayOfWeek,
     Expression<int>? mealType,
@@ -5426,7 +5426,7 @@ final class $$RecipesTableReferences
         manager.$state.copyWith(prefetchedData: cache));
   }
 
-  static MultiTypedResultKey<$WeeklyMenuEntriesTable, List<WeeklyMenuEntry>>
+  static MultiTypedResultKey<$WeeklyMenuEntriesTable, List<WeeklyMenuRow>>
       _weeklyMenuEntriesRefsTable(_$AppDatabase db) =>
           MultiTypedResultKey.fromTable(db.weeklyMenuEntries,
               aliasName: $_aliasNameGenerator(
@@ -5850,7 +5850,7 @@ class $$RecipesTableTableManager extends RootTableManager<
                         typedResults: items),
                   if (weeklyMenuEntriesRefs)
                     await $_getPrefetchedData<RecipeEntry, $RecipesTable,
-                            WeeklyMenuEntry>(
+                            WeeklyMenuRow>(
                         currentTable: table,
                         referencedTable: $$RecipesTableReferences
                             ._weeklyMenuEntriesRefsTable(db),
@@ -7383,7 +7383,7 @@ typedef $$WeeklyMenuEntriesTableUpdateCompanionBuilder
 });
 
 final class $$WeeklyMenuEntriesTableReferences extends BaseReferences<
-    _$AppDatabase, $WeeklyMenuEntriesTable, WeeklyMenuEntry> {
+    _$AppDatabase, $WeeklyMenuEntriesTable, WeeklyMenuRow> {
   $$WeeklyMenuEntriesTableReferences(
       super.$_db, super.$_table, super.$_typedResult);
 
@@ -7532,14 +7532,14 @@ class $$WeeklyMenuEntriesTableAnnotationComposer
 class $$WeeklyMenuEntriesTableTableManager extends RootTableManager<
     _$AppDatabase,
     $WeeklyMenuEntriesTable,
-    WeeklyMenuEntry,
+    WeeklyMenuRow,
     $$WeeklyMenuEntriesTableFilterComposer,
     $$WeeklyMenuEntriesTableOrderingComposer,
     $$WeeklyMenuEntriesTableAnnotationComposer,
     $$WeeklyMenuEntriesTableCreateCompanionBuilder,
     $$WeeklyMenuEntriesTableUpdateCompanionBuilder,
-    (WeeklyMenuEntry, $$WeeklyMenuEntriesTableReferences),
-    WeeklyMenuEntry,
+    (WeeklyMenuRow, $$WeeklyMenuEntriesTableReferences),
+    WeeklyMenuRow,
     PrefetchHooks Function({bool recipeId})> {
   $$WeeklyMenuEntriesTableTableManager(
       _$AppDatabase db, $WeeklyMenuEntriesTable table)
@@ -7633,14 +7633,14 @@ class $$WeeklyMenuEntriesTableTableManager extends RootTableManager<
 typedef $$WeeklyMenuEntriesTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
     $WeeklyMenuEntriesTable,
-    WeeklyMenuEntry,
+    WeeklyMenuRow,
     $$WeeklyMenuEntriesTableFilterComposer,
     $$WeeklyMenuEntriesTableOrderingComposer,
     $$WeeklyMenuEntriesTableAnnotationComposer,
     $$WeeklyMenuEntriesTableCreateCompanionBuilder,
     $$WeeklyMenuEntriesTableUpdateCompanionBuilder,
-    (WeeklyMenuEntry, $$WeeklyMenuEntriesTableReferences),
-    WeeklyMenuEntry,
+    (WeeklyMenuRow, $$WeeklyMenuEntriesTableReferences),
+    WeeklyMenuRow,
     PrefetchHooks Function({bool recipeId})>;
 
 class $AppDatabaseManager {

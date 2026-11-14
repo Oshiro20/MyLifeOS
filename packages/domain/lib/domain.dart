@@ -2,12 +2,12 @@
 library;
 
 // Cocina
-export 'src/cocina/entities/ingredient.dart';
 export 'src/cocina/entities/ingredient_units.dart';
 export 'src/cocina/entities/inventory_ingredient.dart';
 export 'src/cocina/entities/recipe.dart';
 export 'src/cocina/entities/user_food_preferences.dart';
 export 'src/cocina/entities/chef_preferences.dart';
+export 'src/cocina/entities/weekly_menu_entry.dart';
 export 'src/cocina/usecases/extract_recipe_use_case.dart';
 export 'src/cocina/usecases/calculate_recipe_viability_use_case.dart';
 export 'src/cocina/usecases/generate_shopping_list_use_case.dart';
@@ -28,3 +28,6 @@ export 'src/foodcoach/repositories/i_foodcoach_repository.dart';
 // Sync
 export 'src/sync/i_sync_service.dart';
 export 'src/sync/sync_data_use_case.dart';
+
+// Utils
+export 'src/utils/ai_json_parser.dart';

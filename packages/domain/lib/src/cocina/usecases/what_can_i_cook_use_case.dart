@@ -4,6 +4,7 @@ import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
 import '../entities/chef_preferences.dart';
 import '../repositories/i_ai_recipe_extractor.dart';
+import '../../utils/ai_json_parser.dart';
 
 /// Suggestion mode: what type of recipes to suggest
 enum SuggestionMode {
@@ -408,78 +409,18 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
   }
 
   /// Robustly extracts JSON from a response string
-  String _extractJsonFromResponse(String response, {bool expectList = false}) {
-    String text = response.trim();
-
-    if (text.contains('```')) {
-      text = text.replaceAll(RegExp(r'^```json\s*', multiLine: true), '');
-      text = text.replaceAll(RegExp(r'^```\s*', multiLine: true), '');
-      text = text.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
-    }
-
-    // If we expect a list, look for brackets first
-    if (expectList) {
-      final firstBracket = text.indexOf('[');
-      final lastBracket = text.lastIndexOf(']');
-
-      if (firstBracket != -1 &&
-          lastBracket != -1 &&
-          lastBracket > firstBracket) {
-        return text.substring(firstBracket, lastBracket + 1);
-      }
-    }
-
-    // Fallback to braces (object)
-    final firstBrace = text.indexOf('{');
-    final lastBrace = text.lastIndexOf('}');
-
-    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-      return text.substring(firstBrace, lastBrace + 1);
-    }
-
-    // Last resort: try brackets anyway
-    final firstBracket = text.indexOf('[');
-    final lastBracket = text.lastIndexOf(']');
-
-    if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
-      return text.substring(firstBracket, lastBracket + 1);
-    }
-
-    return text;
-  }
+  String _extractJsonFromResponse(String response, {bool expectList = false}) =>
+      AiJsonParser.extractJson(response, expectList: expectList);
 
   /// Aggressive JSON cleaning for when normal extraction fails
   String _aggressiveJsonClean(String response) {
-    String text = response.trim();
-
-    // Remove ALL markdown code blocks completely
-    text = text.replaceAll(RegExp(r'```[\s\S]*?```'), '');
-    text = text.replaceAll(RegExp(r'```json\s*'), '');
-    text = text.replaceAll(RegExp(r'```\s*'), '');
-
-    // Find the first [ and last ] that could be a valid JSON array
-    final firstBracket = text.indexOf('[');
-    final lastBracket = text.lastIndexOf(']');
-
-    if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
-      var candidate = text.substring(firstBracket, lastBracket + 1);
-      // Remove any trailing text after ]
-      final trailingNewline = candidate.indexOf('\n]');
-      if (trailingNewline != -1) {
-        candidate = candidate.substring(0, candidate.lastIndexOf(']') + 1);
-      }
-      return candidate;
+    final text = AiJsonParser.stripMarkdownFences(response);
+    final candidate = AiJsonParser.extractJson(text, expectList: true);
+    final trailingNewline = candidate.indexOf('\n]');
+    if (trailingNewline != -1) {
+      return candidate.substring(0, candidate.lastIndexOf(']') + 1);
     }
-
-    // Try braces as fallback
-    final firstBrace = text.indexOf('{');
-    final lastBrace = text.lastIndexOf('}');
-
-    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-      return text.substring(firstBrace, lastBrace + 1);
-    }
-
-    return text;
+    return candidate;
   }
 
   /// Brute force: finds the outermost matching bracket/brace pair

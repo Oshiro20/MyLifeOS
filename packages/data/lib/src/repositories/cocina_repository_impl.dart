@@ -523,7 +523,15 @@ class CocinaRepository implements ICocinaRepository {
             (t) => OrderingTerm.asc(t.mealType)
           ]))
         .get();
-    return rows;
+    return rows
+        .map((r) => WeeklyMenuEntry(
+              id: r.id,
+              dayOfWeek: r.dayOfWeek,
+              mealType: r.mealType,
+              recipeId: r.recipeId,
+              isCustom: r.isCustom,
+            ))
+        .toList();
   }
 
   @override

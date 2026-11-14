@@ -1,6 +1,6 @@
-import 'package:data/data.dart';
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
+import '../entities/weekly_menu_entry.dart';
 
 /// Interfaz del repositorio de Cocina (puerto hexagonal)
 abstract interface class ICocinaRepository {

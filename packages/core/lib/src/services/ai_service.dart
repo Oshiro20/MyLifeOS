@@ -1,19 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'connectivity_service.dart';
 import 'offline_cache_service.dart';
 import 'wallet_cloud_service.dart';
-
-enum GenerativeModelType {
-  gemini15Flash,
-  gemini15Pro,
-  gemini20Flash,
-}
 
 class GeminiService {
   final ConnectivityService _connectivity;
@@ -32,27 +26,92 @@ class GeminiService {
 
   String get apiKey => _apiKey;
 
-  Future<GenerativeModel?> _getModel({bool useVision = false}) async {
-    if (_apiKey.isEmpty) {
-      debugPrint('[GeminiService] Error: API Key is empty');
-      return null;
+  /// Llama directamente a la API REST de Gemini cuando existe [apiKey] local (`--dart-define`).
+  static Future<String?> callGeminiDirectRest({
+    required String apiKey,
+    required String userMessage,
+    String? systemPrompt,
+    List<Map<String, String>> mediaItems = const [],
+    List<Map<String, String>> history = const [],
+    bool expectJson = false,
+  }) async {
+    if (apiKey.isEmpty) return null;
+
+    final contents = <Map<String, dynamic>>[];
+    for (final msg in history) {
+      final text = msg['text'] ?? '';
+      if (text.isEmpty) continue;
+      contents.add({
+        'role': msg['role'] == 'model' ? 'model' : 'user',
+        'parts': [
+          {'text': text}
+        ],
+      });
     }
-    return GenerativeModel(
-      model: _defaultModel,
-      apiKey: _apiKey,
-      generationConfig: GenerationConfig(
-        temperature: 0.4,
-        topK: 32,
-        topP: 1,
-        maxOutputTokens: 4096,
-      ),
-      safetySettings: [
-        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.none),
-        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.none),
-        SafetySetting(HarmCategory.sexuallyExplicit, HarmBlockThreshold.none),
-        SafetySetting(HarmCategory.dangerousContent, HarmBlockThreshold.none),
-      ],
+
+    final currentParts = <Map<String, dynamic>>[
+      {'text': userMessage},
+      for (final item in mediaItems)
+        if ((item['base64'] ?? '').isNotEmpty)
+          {
+            'inlineData': {
+              'mimeType': item['mimeType'] ?? 'image/jpeg',
+              'data': item['base64'],
+            }
+          },
+    ];
+    contents.add({
+      'role': 'user',
+      'parts': currentParts,
+    });
+
+    final uri = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/$_defaultModel:generateContent?key=$apiKey',
     );
+    final payload = <String, dynamic>{
+      if (systemPrompt != null && systemPrompt.isNotEmpty)
+        'systemInstruction': {
+          'parts': [
+            {'text': systemPrompt}
+          ],
+        },
+      'contents': contents,
+      'generationConfig': {
+        'temperature': 0.4,
+        'topK': 32,
+        'topP': 1,
+        'maxOutputTokens': 4096,
+        if (expectJson) 'responseMimeType': 'application/json',
+      },
+    };
+
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(payload),
+        )
+        .timeout(const Duration(seconds: 60));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException(
+        'Gemini REST HTTP ${response.statusCode}',
+        uri: uri,
+      );
+    }
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! Map<String, dynamic>) return null;
+    final candidates = decoded['candidates'] as List<dynamic>?;
+    if (candidates == null || candidates.isEmpty) return null;
+    final content =
+        (candidates.first as Map<String, dynamic>)['content'] as Map<String, dynamic>?;
+    final parts = content?['parts'] as List<dynamic>?;
+    if (parts == null || parts.isEmpty) return null;
+    return parts
+        .whereType<Map<String, dynamic>>()
+        .map((p) => p['text']?.toString() ?? '')
+        .join();
   }
 
   /// Genera texto simple con soporte de caché offline y fallback vía Render Cloud.
@@ -77,26 +136,6 @@ class GeminiService {
     List<String> mediaPaths = const [],
     bool expectJson = false,
   }) async {
-    if (_apiKey.isNotEmpty) {
-      try {
-        final model = await _getModel(useVision: mediaPaths.isNotEmpty);
-        if (model != null) {
-          final parts = <Part>[TextPart(prompt)];
-          for (final path in mediaPaths) {
-            final file = File(path);
-            if (await file.exists()) {
-              parts.add(DataPart(_getMimeType(path), await file.readAsBytes()));
-            }
-          }
-          final response = await model.generateContent([Content.multi(parts)]);
-          final text = response.text;
-          if (text != null && text.isNotEmpty) return text;
-        }
-      } catch (e) {
-        debugPrint('[GeminiService] Direct call failed, trying Render proxy: $e');
-      }
-    }
-
     final mediaItems = <Map<String, String>>[];
     for (final path in mediaPaths) {
       final file = File(path);
@@ -106,6 +145,20 @@ class GeminiService {
           'base64': base64Encode(bytes),
           'mimeType': _getMimeType(path),
         });
+      }
+    }
+
+    if (_apiKey.isNotEmpty) {
+      try {
+        final text = await callGeminiDirectRest(
+          apiKey: _apiKey,
+          userMessage: prompt,
+          mediaItems: mediaItems,
+          expectJson: expectJson,
+        );
+        if (text != null && text.isNotEmpty) return text;
+      } catch (e) {
+        debugPrint('[GeminiService] Direct call failed, trying Render proxy: $e');
       }
     }
 
@@ -122,8 +175,6 @@ class GeminiService {
     String? textContext,
     String? mediaPath,
   }) async {
-    final useVision = mediaPath != null;
-    final model = _apiKey.isNotEmpty ? await _getModel(useVision: useVision) : null;
 
     final prompt = '''
 👨‍🍳 ROL DEL SISTEMA
@@ -291,36 +342,13 @@ Usa esta información como referencia adicional.
 
 🎥 AHORA ANALIZA EL VIDEO/IMAGEN ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
 
-    final content = <Content>[];
-    if (mediaPath != null) {
-      final file = File(mediaPath);
-      if (file.existsSync()) {
-        final bytes = await file.readAsBytes();
-        final mimeType = _getMimeType(mediaPath);
-        content.add(Content.multi([
-          TextPart(prompt),
-          DataPart(mimeType, bytes),
-        ]));
-      } else {
-        content.add(Content.text(prompt));
-      }
-    } else {
-      content.add(Content.text(prompt));
-    }
-
-    if (model == null) {
-      return _executePrompt(
+    try {
+      debugPrint('🤖 Calling Gemini recipe extraction (${mediaPath ?? "text only"})');
+      final result = await _executePrompt(
         prompt: prompt,
         mediaPaths: mediaPath != null ? [mediaPath] : const [],
         expectJson: true,
-      );
-    }
-
-    try {
-      debugPrint('🤖 Calling Gemini API with model: $_defaultModel');
-      debugPrint('📎 Media path: ${mediaPath ?? "none (text only)"}');
-
-      final response = await model.generateContent(content).timeout(
+      ).timeout(
         const Duration(seconds: 60),
         onTimeout: () {
           throw TimeoutException(
@@ -330,30 +358,8 @@ Usa esta información como referencia adicional.
         },
       );
 
-      final result = response.text;
-
-      // Check for safety filter blocks
-      if (response.promptFeedback?.blockReason != null) {
-        debugPrint(
-            '🚫 Gemini blocked request: ${response.promptFeedback!.blockReason}');
-        throw Exception(
-            'Gemini bloqueó la solicitud: ${response.promptFeedback!.blockReason}');
-      }
-
-      if (response.candidates.isNotEmpty &&
-          response.candidates.first.finishReason != FinishReason.stop) {
-        debugPrint(
-            '⚠️ Gemini finished with reason: ${response.candidates.first.finishReason}');
-      }
-
-      // Debug logging to see what Gemini returns
       if (result != null && result.isNotEmpty) {
         debugPrint('✅ Gemini response length: ${result.length} chars');
-        if (result.length < 2000) {
-          debugPrint('📄 Full response: $result');
-        } else {
-          debugPrint('📄 First 500 chars: ${result.substring(0, 500)}');
-        }
       } else {
         debugPrint('⚠️ Gemini returned null or empty response');
       }
@@ -364,7 +370,6 @@ Usa esta información como referencia adicional.
         throw Exception(e.message ?? 'Timeout al extraer la receta');
       }
       debugPrint('❌ Gemini extractRecipe error: $e');
-      debugPrint('❌ Error type: ${e.runtimeType}');
       if (e.toString().contains('DataInspection') ||
           e.toString().contains('blocked')) {
         throw Exception(
@@ -450,7 +455,7 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
   Future<String?> analyzePantryItems({
     required String photoPath,
   }) async {
-    const cacheKey = 'pantry_analysis_multiple';
+    final cacheKey = await _mediaCacheKey('pantry_multiple', photoPath);
 
     return _generateWithCache(
       cacheKey: cacheKey,
@@ -484,7 +489,7 @@ La respuesta DEBE ser solo el JSON, sin bloques de código markdown ni texto adi
   Future<String?> analyzeSinglePantryItem({
     required String photoPath,
   }) async {
-    const cacheKey = 'pantry_analysis_single';
+    final cacheKey = await _mediaCacheKey('pantry_single', photoPath);
 
     return _generateWithCache(
       cacheKey: cacheKey,
@@ -550,7 +555,11 @@ Incluye:
     String? photoPath,
     String? description,
   }) async {
-    final cacheKey = 'meal_eval_${photoPath.hashCode}_${description.hashCode}';
+    final cacheKey = await _mediaCacheKey(
+      'meal_eval',
+      photoPath ?? '',
+      extra: description,
+    );
 
     return _generateWithCache(
       cacheKey: cacheKey,
@@ -707,6 +716,24 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (usa los "id" ex
     }
   }
 
+  Future<String> _mediaCacheKey(
+    String prefix,
+    String path, {
+    String? extra,
+  }) async {
+    String contentSignature = path;
+    if (path.isNotEmpty) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          contentSignature = sha256.convert(bytes).toString();
+        }
+      } catch (_) {}
+    }
+    return '${prefix}_${contentSignature}_${extra ?? ''}';
+  }
+
   String _getMimeType(String path) {
     if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg';
     if (path.endsWith('.png')) return 'image/png';
@@ -721,15 +748,12 @@ final geminiProvider = Provider<GeminiService>((ref) {
   final connectivity = ref.watch(connectivityProvider);
   final cache = ref.watch(offlineCacheProvider);
 
-  // Opcional en desarrollo (--dart-define=GEMINI_API_KEY o .env local).
+  // Opcional en desarrollo (--dart-define=GEMINI_API_KEY).
   // En producción sin key local, GeminiService usa automáticamente el proxy seguro en Render.
-  String apiKey = const String.fromEnvironment('GEMINI_API_KEY');
-  if (apiKey.isEmpty && dotenv.isInitialized) {
-    apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
-  }
+  const apiKey = String.fromEnvironment('GEMINI_API_KEY');
 
   debugPrint(
-      '🔑 Gemini Mode: ${apiKey.isNotEmpty ? "Direct API (${apiKey.length} chars) + Render fallback" : "Render Cloud Proxy"}');
+      '🔑 Gemini Mode: ${apiKey.isNotEmpty ? "Direct REST + Render fallback" : "Render Cloud Proxy"}');
 
   return GeminiService(
     connectivity: connectivity,

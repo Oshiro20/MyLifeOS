@@ -74,12 +74,11 @@ class WalletCloudService {
           )
           .timeout(const Duration(seconds: 35));
 
-      final body =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      final body = _tryDecodeMap(response.bodyBytes);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final token = body['token'] as String?;
-        final userMap = body['user'] as Map<String, dynamic>?;
+        final token = body?['token'] as String?;
+        final userMap = body?['user'] as Map<String, dynamic>?;
         final resolvedUser = userMap?['username'] as String? ?? username.trim();
         if (token != null && token.isNotEmpty) {
           await _storage.write(key: _tokenKey, value: token);
@@ -96,10 +95,7 @@ class WalletCloudService {
 
       return (
         success: false,
-        message: (body['error'] ??
-                body['message'] ??
-                'Error HTTP ${response.statusCode}')
-            .toString(),
+        message: _friendlyErrorMessage(response.statusCode, body),
         username: null,
       );
     } catch (e) {
@@ -131,9 +127,8 @@ class WalletCloudService {
       }
 
       if (response.statusCode == 200) {
-        final decoded =
-            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-        final summary = decoded['summary'];
+        final decoded = _tryDecodeMap(response.bodyBytes);
+        final summary = decoded?['summary'];
         if (summary is Map<String, dynamic>) {
           return summary;
         }
@@ -199,11 +194,10 @@ class WalletCloudService {
         );
       }
 
-      final body =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      final body = _tryDecodeMap(response.bodyBytes);
       return (
         success: false,
-        message: (body['error'] ?? 'HTTP ${response.statusCode}').toString(),
+        message: _friendlyErrorMessage(response.statusCode, body),
       );
     } catch (e) {
       return (
@@ -243,8 +237,8 @@ class WalletCloudService {
           .timeout(const Duration(seconds: 60));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded =
-            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final decoded = _tryDecodeMap(response.bodyBytes);
+        if (decoded == null) return null;
         final directText = decoded['text'] as String?;
         if (directText != null && directText.isNotEmpty) return directText;
 
@@ -261,5 +255,29 @@ class WalletCloudService {
       debugPrint('[WalletCloudService] generateAI error: $e');
       return null;
     }
+  }
+
+  static Map<String, dynamic>? _tryDecodeMap(List<int> bodyBytes) {
+    if (bodyBytes.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(utf8.decode(bodyBytes));
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String _friendlyErrorMessage(
+    int statusCode,
+    Map<String, dynamic>? body,
+  ) {
+    final serverMessage = body?['error'] ?? body?['message'];
+    if (serverMessage != null && serverMessage.toString().trim().isNotEmpty) {
+      return serverMessage.toString();
+    }
+    if (statusCode == 502 || statusCode == 503 || statusCode == 504) {
+      return 'El servidor en la nube está despertando ($statusCode). Inténtalo nuevamente en unos segundos.';
+    }
+    return 'Error HTTP $statusCode';
   }
 }

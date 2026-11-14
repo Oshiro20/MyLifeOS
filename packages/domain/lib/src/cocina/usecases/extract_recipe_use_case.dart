@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../entities/recipe.dart';
 import '../repositories/i_ai_recipe_extractor.dart';
+import '../../utils/ai_json_parser.dart';
 
 class ExtractRecipeUseCase {
   final IAIRecipeExtractor aiExtractor;
@@ -237,29 +238,8 @@ class ExtractRecipeUseCase {
   }
 
   /// Robustly extracts JSON from a response string that may contain markdown, extra text, etc.
-  String _extractJsonFromResponse(String response) {
-    String text = response.trim();
-
-    // Remove markdown code blocks
-    if (text.contains('```')) {
-      // Remove ```json or ``` at start
-      text = text.replaceAll(RegExp(r'^```json\s*', multiLine: true), '');
-      text = text.replaceAll(RegExp(r'^```\s*', multiLine: true), '');
-      // Remove ``` at end
-      text = text.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
-    }
-
-    // Try to find JSON object by looking for the first { and last }
-    final firstBrace = text.indexOf('{');
-    final lastBrace = text.lastIndexOf('}');
-
-    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-      return text.substring(firstBrace, lastBrace + 1);
-    }
-
-    // Return trimmed text if no braces found
-    return text;
-  }
+  String _extractJsonFromResponse(String response) =>
+      AiJsonParser.extractJson(response);
 
   /// Parses a meal type string from Gemini response to MealType enum
   MealType? _parseMealType(String value) {

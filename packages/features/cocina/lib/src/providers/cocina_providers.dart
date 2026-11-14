@@ -498,7 +498,7 @@ class WeeklyMenuInitial extends WeeklyMenuState {}
 class WeeklyMenuLoading extends WeeklyMenuState {}
 
 class WeeklyMenuLoaded extends WeeklyMenuState {
-  final List<dynamic> entries; // Use dynamic
+  final List<WeeklyMenuEntry> entries;
   WeeklyMenuLoaded(this.entries);
 }
 

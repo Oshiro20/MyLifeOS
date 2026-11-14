@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-export 'ingredient.dart';
 
 class InventoryIngredient extends Equatable {
   final String id;

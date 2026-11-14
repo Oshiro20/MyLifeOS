@@ -2,13 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:domain/domain.dart';
 
 void main() {
-  group('Ingredient entity', () {
+  group('InventoryIngredient entity', () {
     test('ingrediente con fecha de vencimiento', () {
       final expiry = DateTime(2026, 12, 31);
-      final i = Ingredient(
+      final i = InventoryIngredient(
         id: '1',
         name: 'Leche',
-        category: IngredientCategory.dairy,
+        primaryCategory: 'Lácteos',
         quantity: 1,
         unit: 'L',
         expirationDate: expiry,
@@ -16,10 +16,9 @@ void main() {
       expect(i.expirationDate, expiry);
     });
 
-    test('todas las categorías tienen label en español', () {
-      for (final cat in IngredientCategory.values) {
-        expect(cat.label, isNotEmpty);
-      }
+    test('AiJsonParser limpia bloques markdown y extrae JSON', () {
+      const raw = '```json\n{"ok": true}\n```';
+      expect(AiJsonParser.decodeMap(raw), {'ok': true});
     });
   });
 }

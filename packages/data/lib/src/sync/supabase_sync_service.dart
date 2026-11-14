@@ -12,9 +12,15 @@ class SupabaseSyncService implements ISyncService {
         return SyncFailure('Credenciales inválidas');
       }
 
-      // Asegurar que no re-inicialicemos inútilmente
+      // Reutilizar cliente ya inicializado si existe
       if (_client != null) {
         return SyncSuccess();
+      }
+      try {
+        _client = Supabase.instance.client;
+        return SyncSuccess();
+      } catch (_) {
+        // Aún no inicializado
       }
 
       await Supabase.initialize(url: url, anonKey: anonKey);
@@ -84,6 +90,7 @@ class SupabaseSyncService implements ISyncService {
                 'is_clean': g.isClean,
                 'has_removable_hood': g.hasRemovableHood,
                 'rating': g.rating,
+                'times_worn': g.timesWorn,
                 'size': g.size,
                 'brand': g.brand,
                 'price': g.price,
@@ -114,7 +121,9 @@ class SupabaseSyncService implements ISyncService {
           .map((l) => {
                 'id': l.id,
                 'timestamp': l.timestamp.toIso8601String(),
+                'photo_path': l.photoPath,
                 'classification_index': l.classificationIndex,
+                'health_score': l.healthScore,
                 'feedback': l.feedback,
                 'detected_ingredients_csv': l.detectedIngredientsCsv,
               })
@@ -144,6 +153,7 @@ class SupabaseSyncService implements ISyncService {
                 'occasion': o.occasion,
                 'season': o.season,
                 'times_worn': o.timesWorn,
+                'last_worn_date': o.lastWornDate?.toIso8601String(),
                 'created_at': o.createdAt.toIso8601String(),
               })
           .toList();
@@ -202,6 +212,7 @@ class SupabaseSyncService implements ISyncService {
                 'name': i.name,
                 'primary_category': i.primaryCategory,
                 'sub_category': i.subCategory,
+                'preparation': i.preparation,
                 'quantity': i.quantity,
                 'unit': i.unit,
                 'expiration_date': i.expirationDate?.toIso8601String(),
@@ -226,6 +237,8 @@ class SupabaseSyncService implements ISyncService {
                 'tags_csv': r.tagsCsv,
                 'image_asset_id': r.imageAssetId,
                 'goal_index': r.goalIndex,
+                'source_index': r.sourceIndex,
+                'region': r.region,
                 'is_favorite': r.isFavorite,
                 'created_at': r.createdAt.toIso8601String(),
               })
@@ -250,8 +263,20 @@ class SupabaseSyncService implements ISyncService {
         await _client!.from('shopping_items').upsert(shopPayload);
       }
 
-      // RecipeIngredients (Relationships) skip to avoid bloat for now,
-      // but conceptually you'd sync it similarly if desired.
+      // 4. Weekly Menu
+      final weeklyMenu = await db.select(db.weeklyMenuEntries).get();
+      final menuPayload = weeklyMenu
+          .map((m) => {
+                'id': m.id,
+                'day_of_week': m.dayOfWeek,
+                'meal_type': m.mealType,
+                'recipe_id': m.recipeId,
+                'is_custom': m.isCustom,
+              })
+          .toList();
+      if (menuPayload.isNotEmpty) {
+        await _client!.from('weekly_menu_entries').upsert(menuPayload);
+      }
 
       return SyncSuccess();
     } catch (e) {

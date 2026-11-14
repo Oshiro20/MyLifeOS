@@ -1,7 +1,7 @@
 import 'package:uuid/uuid.dart';
-import 'package:data/data.dart';
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
+import '../entities/weekly_menu_entry.dart';
 import 'calculate_recipe_viability_use_case.dart';
 import '../repositories/i_cocina_repository.dart';
 

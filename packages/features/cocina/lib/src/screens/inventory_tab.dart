@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1141,16 +1140,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         throw Exception("No se recibió respuesta de Gemini");
       }
 
-      // Limpiar markdown
-      var cleanJson = jsonResponse.trim();
-      if (cleanJson.startsWith('```json')) cleanJson = cleanJson.substring(7);
-      if (cleanJson.startsWith('```')) cleanJson = cleanJson.substring(3);
-      if (cleanJson.endsWith('```')) {
-        cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+      final data = AiJsonParser.decodeList(jsonResponse);
+      if (data == null) {
+        throw const FormatException('La IA no devolvió una lista JSON válida');
       }
-      cleanJson = cleanJson.trim();
-
-      final List<dynamic> data = json.decode(cleanJson);
       final newItems = <InventoryIngredient>[];
 
       for (var item in data) {
@@ -1230,15 +1223,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         throw Exception("No se recibió respuesta de Gemini");
       }
 
-      var cleanJson = jsonResponse.trim();
-      if (cleanJson.startsWith('```json')) cleanJson = cleanJson.substring(7);
-      if (cleanJson.startsWith('```')) cleanJson = cleanJson.substring(3);
-      if (cleanJson.endsWith('```')) {
-        cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+      final item = AiJsonParser.decodeMap(jsonResponse);
+      if (item == null) {
+        throw const FormatException('La IA no devolvió un objeto JSON válido');
       }
-      cleanJson = cleanJson.trim();
-
-      final Map<String, dynamic> item = json.decode(cleanJson);
       final catString = item['primaryCategory']?.toString() ?? 'Otros';
       final subCatString = item['subCategory']?.toString();
       final unitStr = item['unit']?.toString() ?? 'unidades';

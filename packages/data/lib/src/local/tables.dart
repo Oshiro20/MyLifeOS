@@ -18,7 +18,7 @@ class MealLogs extends Table {
 
 // ───────────────────────── COCINA ────────────────────────────────────────────
 
-@DataClassName('WeeklyMenuEntry')
+@DataClassName('WeeklyMenuRow')
 @TableIndex(
   name: 'idx_menu_day_type',
   columns: {#dayOfWeek, #mealType},

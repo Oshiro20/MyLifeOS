@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
@@ -107,11 +106,6 @@ Future<void> main() async {
   // Capturar errores de Zone (errores asíncronos no manejados)
   runZonedGuarded(
     () async {
-      // Cargar variables de entorno opcionales sin fallar si .env no está en assets
-      try {
-        await dotenv.load(fileName: '.env');
-      } catch (_) {}
-
       // Inicializar notificaciones locales con handler de navegación
       await _notifications.initialize(
         const InitializationSettings(

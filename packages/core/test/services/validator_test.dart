@@ -88,13 +88,4 @@ void main() {
       expect(service, isNotNull);
     });
   });
-
-  group('Home Widget Service Tests', () {
-    test('should have correct widget IDs', () {
-      expect(HomeWidgetService.outfitOfDay, 'widget_outfit_of_day');
-      expect(HomeWidgetService.suggestedRecipe, 'widget_suggested_recipe');
-      expect(HomeWidgetService.financeBalance, 'widget_finance_balance');
-      expect(HomeWidgetService.mealScore, 'widget_meal_score');
-    });
-  });
 }
