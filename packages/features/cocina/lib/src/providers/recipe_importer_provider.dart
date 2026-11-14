@@ -310,12 +310,12 @@ final extractRecipeUseCaseProvider = Provider<ExtractRecipeUseCase>((ref) {
 });
 
 final tikTokServiceProvider = Provider<TikTokService>((ref) {
-  final apiKey = dotenv.env['TIKTOK_API_KEY'] ?? '';
+  String apiKey = const String.fromEnvironment('TIKTOK_API_KEY');
+  if (apiKey.isEmpty && dotenv.isInitialized) {
+    apiKey = dotenv.env['TIKTOK_API_KEY'] ?? '';
+  }
   if (apiKey.isEmpty) {
-    // Log warning in development but don't crash
-    debugPrint('⚠️ WARNING: TIKTOK_API_KEY not set in .env file');
-    debugPrint(
-        'Get your key from: https://rapidapi.com/DataCrawler/api/tiktok-scraper7');
+    debugPrint('ℹ️ TIKTOK_API_KEY no configurada (usando extracción alternativa).');
   }
   return TikTokService(apiKey);
 });

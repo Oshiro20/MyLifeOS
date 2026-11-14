@@ -59,10 +59,21 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Future<void> _tryAutoConnect() async {
-    const url = 'https://opxwfwtsdiktjuaajvexp.supabase.co';
-    const key =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9weHdmd3NkaWt0anVhYWp2ZXhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzc2OTksImV4cCI6MjA4Nzk1MzY5OX0.x1inE4FzaP6WG_tNTTka0aX9bs2Jw5rhkt3z8ejOp3U';
-    await connect(url, key);
+    String? url = await _storage.read(key: _urlKey);
+    String? key = await _storage.read(key: _anonKey);
+
+    if (url == null || url.isEmpty) {
+      const envUrl = String.fromEnvironment('SUPABASE_URL');
+      if (envUrl.isNotEmpty) url = envUrl;
+    }
+    if (key == null || key.isEmpty) {
+      const envKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+      if (envKey.isNotEmpty) key = envKey;
+    }
+
+    if (url != null && url.isNotEmpty && key != null && key.isNotEmpty) {
+      await connect(url, key);
+    }
   }
 
   Future<bool> connect(String url, String anonKey) async {

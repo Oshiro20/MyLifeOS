@@ -11,6 +11,7 @@ export 'src/services/tiktok_service.dart';
 export 'src/services/the_meal_db_service.dart';
 export 'src/services/import_history_service.dart';
 export 'src/services/wallet_summary_reader.dart';
+export 'src/services/wallet_cloud_service.dart';
 export 'src/services/wallet_update_notifier.dart';
 export 'src/services/mylifeos_update_notifier.dart';
 export 'src/usecases/hybrid_suggestion_use_case.dart';

@@ -4,6 +4,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'ai_service.dart';
 import 'offline_cache_service.dart';
 import 'connectivity_service.dart';
+import 'wallet_cloud_service.dart';
 
 // ── Modelo de mensaje ─────────────────────────────────────────────────────────
 
@@ -127,32 +128,51 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
     String? walletContext,
     String? outfitContext,
   }) async {
-    final apiKey = _gemini.apiKey;
-    if (apiKey.isEmpty) return null;
-
     final systemText = _systemWithContext(
       walletContext: walletContext,
       outfitContext: outfitContext,
     );
 
-    final model = GenerativeModel(
-      model: 'gemini-2.0-flash',
-      apiKey: apiKey,
-      systemInstruction: Content.system(systemText),
-    );
-
-    // Construye historial multi-turno (excluye el loading actual)
-    final history = state
+    final historyMessages = state
         .where((m) => !m.isLoading && m.content.isNotEmpty)
-        .take(state.length - 1)
-        .map((m) => m.isUser
-            ? Content.text(m.content)
-            : Content.model([TextPart(m.content)]))
+        .take(state.length > 1 ? state.length - 1 : 0)
         .toList();
 
-    final chat = model.startChat(history: history);
-    final result = await chat.sendMessage(Content.text(userMessage));
-    return result.text;
+    final apiKey = _gemini.apiKey;
+    if (apiKey.isNotEmpty) {
+      try {
+        final model = GenerativeModel(
+          model: 'gemini-2.5-flash',
+          apiKey: apiKey,
+          systemInstruction: Content.system(systemText),
+        );
+
+        final history = historyMessages
+            .map((m) => m.isUser
+                ? Content.text(m.content)
+                : Content.model([TextPart(m.content)]))
+            .toList();
+
+        final chat = model.startChat(history: history);
+        final result = await chat.sendMessage(Content.text(userMessage));
+        if (result.text != null && result.text!.isNotEmpty) {
+          return result.text;
+        }
+      } catch (e) {
+        debugPrint('[AiChat] Direct Gemini error, trying Render proxy: $e');
+      }
+    }
+
+    return WalletCloudService.generateAI(
+      systemPrompt: systemText,
+      userMessage: userMessage,
+      history: historyMessages
+          .map((m) => {
+                'role': m.isUser ? 'user' : 'model',
+                'text': m.content,
+              })
+          .toList(),
+    );
   }
 
   String _systemWithContext({String? walletContext, String? outfitContext}) {

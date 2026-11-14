@@ -25,32 +25,48 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
     });
 
     try {
-      // Por ahora, como no tenemos la lista completa de transacciones aquí,
-      // enviamos una lista vacía y el servicio debería manejarlo o podemos
-      // expandirlo para que acepte el resumen.
-      // NOTA: En una versión futura, WalletAI debería exportar 'transactions' también.
-      
       final financeService = ref.read(aiFinanceProvider);
-      
-      // Intentamos simular las transacciones desde el resumen si es posible
-      final mockTransactions = [
-        {
-          'name': 'Resumen del mes',
-          'category': 'General',
-          'amount': -widget.summary!.expenses,
-          'date': widget.summary!.month,
-        },
-        {
-          'name': 'Ingresos totales',
-          'category': 'Ingresos',
-          'amount': widget.summary!.income,
-          'date': widget.summary!.month,
-        }
-      ];
+      final s = widget.summary!;
+
+      final List<Map<String, dynamic>> transactionsForAi;
+      if (s.recentTransactions.isNotEmpty) {
+        transactionsForAi = s.recentTransactions;
+      } else if (s.byCategory.isNotEmpty) {
+        transactionsForAi = [
+          ...s.byCategory.map((c) => {
+                'name': 'Gastos en ${c.name}',
+                'category': c.name,
+                'amount': -c.amount,
+                'date': s.month,
+              }),
+          if (s.income > 0)
+            {
+              'name': 'Ingresos del mes',
+              'category': 'Ingresos',
+              'amount': s.income,
+              'date': s.month,
+            },
+        ];
+      } else {
+        transactionsForAi = [
+          {
+            'name': 'Resumen del mes',
+            'category': 'General',
+            'amount': -s.expenses,
+            'date': s.month,
+          },
+          {
+            'name': 'Ingresos totales',
+            'category': 'Ingresos',
+            'amount': s.income,
+            'date': s.month,
+          },
+        ];
+      }
 
       final result = await financeService.analyzeExpenses(
-        transactions: mockTransactions,
-        month: widget.summary!.month,
+        transactions: transactionsForAi,
+        month: s.month,
       );
 
       if (mounted) {

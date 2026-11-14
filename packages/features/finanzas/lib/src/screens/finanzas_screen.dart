@@ -27,6 +27,15 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
     }
   }
 
+  Future<void> _openConnectionSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const WalletAIConnectionSettingsScreen(),
+      ),
+    );
+    await _loadSummary();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -47,14 +56,7 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
                 IconButton(
                   icon: const Icon(Icons.link),
                   tooltip: 'Conexión con WalletAI',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const WalletAIConnectionSettingsScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _openConnectionSettings,
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -156,18 +158,17 @@ class _WeeklyChart extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final surface = isDark ? const Color(0xFF152019) : Colors.white;
 
-    // Generar valores basados en el resumen real si está disponible
-    final dailyAvg =
-        summary != null && summary!.expenses > 0 ? summary!.expenses / 30 : 0.0;
-    final values = summary != null
-        ? List.generate(7, (i) {
-            final variation = 0.5 + (i * 0.1);
-            return dailyAvg > 0
-                ? (dailyAvg * variation / (summary!.expenses / 7))
-                    .clamp(0.1, 1.0)
-                : 0.3 + (i * 0.1);
-          })
-        : [0.4, 0.6, 0.9, 0.3, 0.7, 0.5, 0.2];
+    // Usar gastos reales de la semana si WalletAI los publicó
+    final hasWeeklyData = summary != null && summary!.weeklyExpenses.length == 7;
+    final rawWeekly = hasWeeklyData
+        ? summary!.weeklyExpenses
+        : const [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    final maxWeekly = rawWeekly.fold<double>(0.0, (m, v) => v > m ? v : m);
+    final values = hasWeeklyData
+        ? rawWeekly
+            .map((v) => maxWeekly > 0 ? (v / maxWeekly).clamp(0.08, 1.0) : 0.08)
+            .toList()
+        : const [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
 
     final today = DateTime.now().weekday - 1;
 
@@ -357,6 +358,92 @@ class _CategorySummary extends StatelessWidget {
               minHeight: 6,
             ),
           ),
+          if (summary != null && summary!.byCategory.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: Colors.white12),
+            const SizedBox(height: 12),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Top categorías del mes',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...summary!.byCategory.take(5).map((cat) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Text(cat.icon, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          cat.name,
+                          style: const TextStyle(fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '${summary!.currency} ${cat.amount.toStringAsFixed(2)} (${cat.percentage.toStringAsFixed(0)}%)',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+          if (summary != null && summary!.recentTransactions.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: Colors.white12),
+            const SizedBox(height: 12),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Movimientos recientes',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...summary!.recentTransactions.take(5).map((tx) {
+              final amt = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+              final isIncome = amt >= 0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 14,
+                      color: isIncome
+                          ? const Color(0xFF00C896)
+                          : const Color(0xFFFF6B6B),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${tx['name'] ?? 'Movimiento'} · ${tx['category'] ?? ''}',
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${summary!.currency} ${amt.abs().toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isIncome
+                            ? const Color(0xFF00C896)
+                            : const Color(0xFFFF6B6B),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

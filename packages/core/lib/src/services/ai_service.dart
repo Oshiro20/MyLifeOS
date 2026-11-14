@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'connectivity_service.dart';
 import 'offline_cache_service.dart';
+import 'wallet_cloud_service.dart';
 
 enum GenerativeModelType {
   gemini15Flash,
@@ -53,7 +55,7 @@ class GeminiService {
     );
   }
 
-  /// Genera texto simple con soporte de caché offline.
+  /// Genera texto simple con soporte de caché offline y fallback vía Render Cloud.
   Future<String?> generateText({
     required String prompt,
     String? cacheKey,
@@ -63,13 +65,54 @@ class GeminiService {
     return _generateWithCache(
       cacheKey: effectiveCacheKey,
       apiCall: () async {
-        final model = await _getModel();
-        if (model == null) return null;
-
-        final content = [Content.text(prompt)];
-        final response = await model.generateContent(content);
-        return response.text;
+        return _executePrompt(prompt: prompt);
       },
+    );
+  }
+
+  /// Ejecuta un prompt (y opcionalmente archivos multimedia) usando API key local si está
+  /// configurada, o el proxy seguro de Render (`/api/ai/generate`) como canal principal/fallback.
+  Future<String?> _executePrompt({
+    required String prompt,
+    List<String> mediaPaths = const [],
+    bool expectJson = false,
+  }) async {
+    if (_apiKey.isNotEmpty) {
+      try {
+        final model = await _getModel(useVision: mediaPaths.isNotEmpty);
+        if (model != null) {
+          final parts = <Part>[TextPart(prompt)];
+          for (final path in mediaPaths) {
+            final file = File(path);
+            if (await file.exists()) {
+              parts.add(DataPart(_getMimeType(path), await file.readAsBytes()));
+            }
+          }
+          final response = await model.generateContent([Content.multi(parts)]);
+          final text = response.text;
+          if (text != null && text.isNotEmpty) return text;
+        }
+      } catch (e) {
+        debugPrint('[GeminiService] Direct call failed, trying Render proxy: $e');
+      }
+    }
+
+    final mediaItems = <Map<String, String>>[];
+    for (final path in mediaPaths) {
+      final file = File(path);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        mediaItems.add({
+          'base64': base64Encode(bytes),
+          'mimeType': _getMimeType(path),
+        });
+      }
+    }
+
+    return WalletCloudService.generateAI(
+      userMessage: prompt,
+      expectJson: expectJson,
+      mediaItems: mediaItems.isNotEmpty ? mediaItems : null,
     );
   }
 
@@ -79,13 +122,8 @@ class GeminiService {
     String? textContext,
     String? mediaPath,
   }) async {
-    // DISABLE CACHE for recipe extraction to avoid stale empty responses
     final useVision = mediaPath != null;
-    final model = await _getModel(useVision: useVision);
-    if (model == null) {
-      debugPrint('❌ Gemini model is null - API key may be empty');
-      return null;
-    }
+    final model = _apiKey.isNotEmpty ? await _getModel(useVision: useVision) : null;
 
     final prompt = '''
 👨‍🍳 ROL DEL SISTEMA
@@ -270,6 +308,14 @@ Usa esta información como referencia adicional.
       content.add(Content.text(prompt));
     }
 
+    if (model == null) {
+      return _executePrompt(
+        prompt: prompt,
+        mediaPaths: mediaPath != null ? [mediaPath] : const [],
+        expectJson: true,
+      );
+    }
+
     try {
       debugPrint('🤖 Calling Gemini API with model: $_defaultModel');
       debugPrint('📎 Media path: ${mediaPath ?? "none (text only)"}');
@@ -331,9 +377,6 @@ Usa esta información como referencia adicional.
   /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
   /// Returns structured JSON with the recipe.
   Future<String?> extractRecipeFromImages(List<String> imagePaths) async {
-    final model = await _getModel(useVision: true);
-    if (model == null) return null;
-
     final prompt = '''
 👨‍ ERES UN CHEF PROFESIONAL + EXPERTO EN OCR Y ANÁLISIS DE IMÁGENES.
 
@@ -381,20 +424,12 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
 
 📸 ANALIZA LAS IMÁGENES Y DEVUELVE LA RECETA EN JSON.''';
 
-    final parts = <Part>[TextPart(prompt)];
-
-    for (final path in imagePaths) {
-      final file = File(path);
-      if (file.existsSync()) {
-        final bytes = await file.readAsBytes();
-        final mimeType = _getMimeType(path);
-        parts.add(DataPart(mimeType, bytes));
-      }
-    }
-
     try {
-      final response =
-          await model.generateContent([Content.multi(parts)]).timeout(
+      return await _executePrompt(
+        prompt: prompt,
+        mediaPaths: imagePaths,
+        expectJson: true,
+      ).timeout(
         const Duration(seconds: 45),
         onTimeout: () {
           throw TimeoutException(
@@ -403,12 +438,11 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
           );
         },
       );
-      return response.text;
     } catch (e) {
       if (e is TimeoutException) {
         throw Exception(e.message ?? 'Timeout al extraer receta de imágenes');
       }
-      throw Exception('Error en Gemini al extraer receta de imágenes: $e');
+      throw Exception('Error en IA al extraer receta de imágenes: $e');
     }
   }
 
@@ -421,8 +455,8 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final model = await _getModel(useVision: true);
-        if (model == null) return null;
+        final file = File(photoPath);
+        if (!await file.exists()) return null;
 
         final prompt = '''
 Analiza esta imagen de productos de despensa (pueden ser varios). 
@@ -437,18 +471,11 @@ Identifica cada producto y extrae la siguiente información en un formato JSON (
 
 La respuesta DEBE ser solo el JSON, sin bloques de código markdown ni texto adicional.
 ''';
-
-        final file = File(photoPath);
-        if (!await file.exists()) return null;
-
-        final bytes = await file.readAsBytes();
-        final content = Content.multi([
-          TextPart(prompt),
-          DataPart(_getMimeType(photoPath), bytes),
-        ]);
-
-        final response = await model.generateContent([content]);
-        return response.text;
+        return _executePrompt(
+          prompt: prompt,
+          mediaPaths: [photoPath],
+          expectJson: true,
+        );
       },
     );
   }
@@ -462,8 +489,8 @@ La respuesta DEBE ser solo el JSON, sin bloques de código markdown ni texto adi
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final model = await _getModel(useVision: true);
-        if (model == null) return null;
+        final file = File(photoPath);
+        if (!await file.exists()) return null;
 
         final prompt = '''
 Analiza este producto de despensa en detalle. 
@@ -481,18 +508,11 @@ Extrae la información en formato JSON (un solo objeto):
 
 La respuesta DEBE ser solo el JSON.
 ''';
-
-        final file = File(photoPath);
-        if (!await file.exists()) return null;
-
-        final bytes = await file.readAsBytes();
-        final content = Content.multi([
-          TextPart(prompt),
-          DataPart(_getMimeType(photoPath), bytes),
-        ]);
-
-        final response = await model.generateContent([content]);
-        return response.text;
+        return _executePrompt(
+          prompt: prompt,
+          mediaPaths: [photoPath],
+          expectJson: true,
+        );
       },
     );
   }
@@ -508,9 +528,6 @@ La respuesta DEBE ser solo el JSON.
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final model = await _getModel();
-        if (model == null) return null;
-
         final prompt = '''
 Eres un asesor de imagen personal (Styler AI). 
 Basado en la ocasión: "$occasion" y el perfil del usuario: "${userProfileContext ?? 'Desconocido'}",
@@ -523,10 +540,7 @@ Incluye:
 - Por qué funciona.
 - Un tip de accesorio.
 ''';
-
-        final content = [Content.text(prompt)];
-        final response = await model.generateContent(content);
-        return response.text;
+        return _executePrompt(prompt: prompt);
       },
     );
   }
@@ -541,9 +555,6 @@ Incluye:
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final model = await _getModel(useVision: photoPath != null);
-        if (model == null) return null;
-
         final prompt = '''
 Eres un Food Coach experto. Analiza la comida proporcionada.
 Si hay imagen, identifícala. Si hay descripción: "${description ?? ''}".
@@ -555,25 +566,11 @@ Dime:
 
 Responde en formato Markdown amigable y conciso.
 ''';
-
-        final contentList = <Content>[];
-        if (photoPath != null) {
-          final file = File(photoPath);
-          if (await file.exists()) {
-            final bytes = await file.readAsBytes();
-            contentList.add(Content.multi([
-              TextPart(prompt),
-              DataPart(_getMimeType(photoPath), bytes),
-            ]));
-          } else {
-            contentList.add(Content.text(prompt));
-          }
-        } else {
-          contentList.add(Content.text(prompt));
+        final mediaPaths = <String>[];
+        if (photoPath != null && await File(photoPath).exists()) {
+          mediaPaths.add(photoPath);
         }
-
-        final response = await model.generateContent(contentList);
-        return response.text;
+        return _executePrompt(prompt: prompt, mediaPaths: mediaPaths);
       },
     );
   }
@@ -586,18 +583,12 @@ Responde en formato Markdown amigable y conciso.
     return _generateWithCache(
       cacheKey: cacheKey,
       apiCall: () async {
-        final model = await _getModel();
-        if (model == null) return null;
-
         final prompt = '''
 Genera un "Insight MyLifeOS" para hoy.
 Selecciona aleatoriamente entre: un pensamiento estoico, un tip de productividad técnica o una frase de bienestar.
 Mantén la respuesta en 3 líneas máximo en Markdown.
 ''';
-
-        final content = [Content.text(prompt)];
-        final response = await model.generateContent(content);
-        return response.text;
+        return _executePrompt(prompt: prompt);
       },
     );
   }
@@ -647,19 +638,15 @@ final geminiProvider = Provider<GeminiService>((ref) {
   final connectivity = ref.watch(connectivityProvider);
   final cache = ref.watch(offlineCacheProvider);
 
-  // SECURITY: API key must be loaded from .env (bundled as asset in APK)
-  // NEVER hardcode API keys in source code
+  // Opcional en desarrollo (--dart-define=GEMINI_API_KEY o .env local).
+  // En producción sin key local, GeminiService usa automáticamente el proxy seguro en Render.
   String apiKey = const String.fromEnvironment('GEMINI_API_KEY');
-  if (apiKey.isEmpty) {
+  if (apiKey.isEmpty && dotenv.isInitialized) {
     apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
   }
 
-  if (apiKey.isEmpty) {
-    debugPrint('❌ GEMINI_API_KEY not configured. Add it to apps/mobile/.env');
-  }
-
   debugPrint(
-      '🔑 Gemini API Key: ${apiKey.isNotEmpty ? "LOADED (${apiKey.length} chars)" : "MISSING"}');
+      '🔑 Gemini Mode: ${apiKey.isNotEmpty ? "Direct API (${apiKey.length} chars) + Render fallback" : "Render Cloud Proxy"}');
 
   return GeminiService(
     connectivity: connectivity,

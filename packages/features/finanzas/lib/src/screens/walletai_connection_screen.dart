@@ -22,9 +22,14 @@ class _WalletAIConnectionSettingsScreenState
     extends State<WalletAIConnectionSettingsScreen> {
   WalletConnectionStatus? _connectionStatus;
   Map<String, dynamic>? _identityInfo;
+  String? _cloudUsername;
   bool _loading = true;
   bool _syncing = false;
+  bool _cloudAuthLoading = false;
+  bool _isRegisterMode = false;
   final _customIdController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -35,23 +40,74 @@ class _WalletAIConnectionSettingsScreenState
   @override
   void dispose() {
     _customIdController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _loadInfo() async {
     setState(() => _loading = true);
-    
+
     final status = await WalletAICommunicationService.checkConnectionStatus();
     final identity = await SharedIdentityService.getIdentityInfo();
     final customId = await SharedIdentityService.getWalletAICustomId();
-    
+    final cloudSession = await WalletCloudService.getSession();
+
     if (mounted) {
       setState(() {
         _connectionStatus = status;
         _identityInfo = identity;
+        _cloudUsername = cloudSession.username;
         _customIdController.text = customId ?? '';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _authenticateCloud() async {
+    final user = _usernameController.text.trim();
+    final pass = _passwordController.text;
+    if (user.length < 3 || pass.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ingresa usuario (mín. 3 chars) y contraseña (mín. 6).'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _cloudAuthLoading = true);
+    final res = await WalletCloudService.authenticate(
+      username: user,
+      password: pass,
+      isRegister: _isRegisterMode,
+    );
+    if (res.success) {
+      _passwordController.clear();
+      await WalletSummaryReader.read();
+    }
+    await _loadInfo();
+
+    if (mounted) {
+      setState(() => _cloudAuthLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.message),
+          backgroundColor:
+              res.success ? const Color(0xFF00C896) : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _signOutCloud() async {
+    await WalletCloudService.signOut();
+    await _loadInfo();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sesión en WalletAI Cloud cerrada')),
+      );
     }
   }
 
@@ -171,6 +227,21 @@ class _WalletAIConnectionSettingsScreenState
                   padding: const EdgeInsets.all(16),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
+                      // Cuenta WalletAI en la Nube (Render)
+                      _CloudAccountCard(
+                        username: _cloudUsername,
+                        isRegisterMode: _isRegisterMode,
+                        loading: _cloudAuthLoading,
+                        usernameController: _usernameController,
+                        passwordController: _passwordController,
+                        onToggleMode: () => setState(
+                          () => _isRegisterMode = !_isRegisterMode,
+                        ),
+                        onAuthenticate: _authenticateCloud,
+                        onSignOut: _signOutCloud,
+                      ),
+                      const SizedBox(height: 16),
+
                       // Estado de conexión
                       _ConnectionStatusCard(status: _connectionStatus),
                       const SizedBox(height: 16),
@@ -655,6 +726,138 @@ class _InfoStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CloudAccountCard extends StatelessWidget {
+  final String? username;
+  final bool isRegisterMode;
+  final bool loading;
+  final TextEditingController usernameController;
+  final TextEditingController passwordController;
+  final VoidCallback onToggleMode;
+  final VoidCallback onAuthenticate;
+  final VoidCallback onSignOut;
+
+  const _CloudAccountCard({
+    required this.username,
+    required this.isRegisterMode,
+    required this.loading,
+    required this.usernameController,
+    required this.passwordController,
+    required this.onToggleMode,
+    required this.onAuthenticate,
+    required this.onSignOut,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF152019) : Colors.white;
+    final isSignedIn = username != null && username!.isNotEmpty;
+
+    return Card(
+      color: surfaceColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isSignedIn ? Icons.cloud_done : Icons.cloud_sync,
+                  color: isSignedIn ? const Color(0xFF00C896) : Colors.amber,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isSignedIn
+                        ? 'WalletAI Cloud vinculado ($username)'
+                        : 'Vincular Cuenta WalletAI (Nube)',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isSignedIn
+                  ? 'MyLifeOS lee categorías, actividad semanal y movimientos reales desde Render y puede enviar gastos a WalletAI.'
+                  : 'Usa el mismo usuario y contraseña que configuraste en WalletAI > Respaldos para saltar las restricciones del sandbox Android.',
+              style: const TextStyle(fontSize: 12, color: Colors.white60),
+            ),
+            const SizedBox(height: 12),
+            if (isSignedIn)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onSignOut,
+                  icon: const Icon(Icons.logout, size: 16),
+                  label: const Text('Desvincular cuenta'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF6B6B),
+                    side: const BorderSide(color: Color(0xFFFF6B6B)),
+                  ),
+                ),
+              )
+            else ...[
+              TextField(
+                controller: usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Usuario o correo WalletAI',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: loading ? null : onAuthenticate,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00C896),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: loading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(isRegisterMode
+                              ? 'Crear Cuenta'
+                              : 'Iniciar Sesión'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: loading ? null : onToggleMode,
+                    child: Text(isRegisterMode ? 'Ya tengo cuenta' : 'Crear'),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

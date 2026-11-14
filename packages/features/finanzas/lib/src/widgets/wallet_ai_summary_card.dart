@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:core/core.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../screens/walletai_connection_screen.dart';
 
 /// Card que muestra el resumen ejecutivo de WalletAI en el módulo de Finanzas.
 /// Si WalletAI no está instalado o no ha exportado datos, muestra un estado vacío.
@@ -68,6 +69,14 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
         status: _connectionStatus!,
         onRetry: _refresh,
         onOpenWalletAI: _openWalletAI,
+        onConfigureCloud: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const WalletAIConnectionSettingsScreen(),
+            ),
+          );
+          await _refresh();
+        },
       );
     }
 
@@ -92,6 +101,14 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
             ),
         onRetry: _refresh,
         onOpenWalletAI: _openWalletAI,
+        onConfigureCloud: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const WalletAIConnectionSettingsScreen(),
+            ),
+          );
+          await _refresh();
+        },
       );
     }
 
@@ -281,11 +298,13 @@ class _WalletNotConnectedCard extends StatelessWidget {
   final WalletConnectionStatus status;
   final VoidCallback onRetry;
   final VoidCallback onOpenWalletAI;
+  final VoidCallback onConfigureCloud;
 
   const _WalletNotConnectedCard({
     required this.status,
     required this.onRetry,
     required this.onOpenWalletAI,
+    required this.onConfigureCloud,
   });
 
   @override
@@ -318,11 +337,11 @@ class _WalletNotConnectedCard extends StatelessWidget {
                     color: Color(0xFFFF6B6B), size: 20),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'WalletAI no conectado',
                       style: TextStyle(
                         color: Colors.white70,
@@ -330,11 +349,12 @@ class _WalletNotConnectedCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Abre WalletAI para sincronizar tus datos financieros',
-                      style: TextStyle(
-                        color: Colors.white38,
+                      status.error ??
+                          'Vincula tu Cuenta WalletAI o abre WalletAI para sincronizar',
+                      style: const TextStyle(
+                        color: Colors.white54,
                         fontSize: 11,
                       ),
                     ),
@@ -343,7 +363,21 @@ class _WalletNotConnectedCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onConfigureCloud,
+              icon: const Icon(Icons.cloud_sync, size: 16),
+              label: const Text('Vincular Cuenta WalletAI (Nube)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           _isWalletAIUpdateNeeded()
               ? _UpdateWalletButton()
               : Row(
@@ -362,13 +396,13 @@ class _WalletNotConnectedCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: OutlinedButton.icon(
                         onPressed: onRetry,
                         icon: const Icon(Icons.refresh, size: 16),
                         label: const Text('Reintentar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00C896),
-                          foregroundColor: Colors.white,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white24),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                       ),

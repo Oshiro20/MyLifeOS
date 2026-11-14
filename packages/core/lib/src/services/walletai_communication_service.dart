@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 import 'shared_identity_service.dart';
+import 'wallet_cloud_service.dart';
 import 'wallet_summary_reader.dart';
 
 /// Servicio de comunicación bidireccional con WalletAI.
@@ -119,63 +120,73 @@ class WalletAICommunicationService {
     }
   }
 
+  /// Abre WalletAI con un gasto pre-rellenado (por ejemplo desde Cocina > Compras).
+  static Future<bool> openQuickExpense({
+    required double amount,
+    required String description,
+    String category = 'Alimentación',
+    String type = 'expense',
+  }) async {
+    return openWalletAI(
+      context: 'quick-expense',
+      extraParams: {
+        'amount': amount.toStringAsFixed(2),
+        'description': description,
+        'category': category,
+        'type': type,
+      },
+    );
+  }
+
   /// Verifica el estado de conexión con WalletAI
   static Future<WalletConnectionStatus> checkConnectionStatus() async {
     final isInstalled = await isWalletAIInstalled();
     final isPackageInstalled = await isWalletAIPackageInstalled();
-    final hasSummary = await WalletSummaryReader.isWalletAIAvailable();
+    final isCloudSignedIn = await WalletCloudService.isSignedIn();
     final summaryResult = await WalletSummaryReader.readWithValidation();
+    final hasSummary = summaryResult.isConnected;
 
-    // Caso 1: WalletAI no está instalado de ninguna forma
-    if (!isInstalled && !isPackageInstalled && !hasSummary) {
+    // Caso 1: Ni instalado ni conectado por Nube ni con caché
+    if (!isInstalled && !isPackageInstalled && !isCloudSignedIn && !hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
         isWalletAIAvailable: false,
         isProjectIdMatched: false,
         lastSync: null,
-        error: 'WalletAI no está instalado',
+        error: 'WalletAI no está instalado ni vinculado en la nube',
       );
     }
 
-    // Caso 2: WalletAI instalado pero versión vieja (sin deep link soporte)
-    if (!isInstalled && isPackageInstalled && !hasSummary) {
+    // Caso 2: WalletAI instalado pero versión vieja (sin deep link soporte) y sin nube
+    if (!isInstalled && isPackageInstalled && !isCloudSignedIn && !hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
         isWalletAIAvailable: true,
         isProjectIdMatched: false,
         lastSync: null,
-        error: 'WalletAI necesita actualizarse a v1.3.0+ para la integración',
+        error: 'WalletAI necesita actualizarse o vincular tu Cuenta WalletAI',
       );
     }
 
-    // Caso 3: WalletAI instalado (nuevo) pero no ha exportado datos aún
-    if (isInstalled && !hasSummary) {
+    // Caso 3: Nube o app lista pero aún sin resumen publicado
+    if (!hasSummary) {
       return WalletConnectionStatus(
         isConnected: false,
-        isWalletAIAvailable: true,
-        isProjectIdMatched: false,
+        isWalletAIAvailable: isInstalled || isCloudSignedIn,
+        isProjectIdMatched: isCloudSignedIn,
         lastSync: null,
-        error: 'Abre WalletAI para que exporte los datos automáticamente',
+        error: isCloudSignedIn
+            ? 'Abre WalletAI una vez para publicar tu primer resumen en la nube'
+            : 'Inicia sesión con tu Cuenta WalletAI para sincronizar datos reales',
       );
     }
 
-    // Caso 4: Hay datos pero error de lectura
-    if (!summaryResult.isConnected) {
-      return WalletConnectionStatus(
-        isConnected: false,
-        isWalletAIAvailable: true,
-        isProjectIdMatched: false,
-        lastSync: null,
-        error: summaryResult.error ?? 'Error al leer datos',
-      );
-    }
-
-    // Caso 5: Datos leídos correctamente
+    // Caso 4: Datos leídos correctamente (Nube o Caché local)
     final lastSync = await SharedIdentityService.getLastSync();
 
     return WalletConnectionStatus(
       isConnected: true,
-      isWalletAIAvailable: true,
+      isWalletAIAvailable: isInstalled || isCloudSignedIn || hasSummary,
       isProjectIdMatched: summaryResult.isProjectIdMatched,
       lastSync: lastSync,
       summary: summaryResult.summary,
@@ -241,7 +252,7 @@ class WalletAICommunicationService {
     try {
       // Intentar abrir con package name directo
       final uri = Uri.parse(
-          'intent://wallet_ai#Intent;scheme=walletai;package=com.oshiro.wallet_ai;end');
+          'intent://wallet_ai#Intent;scheme=walletai;package=com.finanzas.aplicativo_gastos;end');
       return await canLaunchUrl(uri);
     } catch (_) {
       return false;

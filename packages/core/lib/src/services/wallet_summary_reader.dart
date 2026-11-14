@@ -3,6 +3,37 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'shared_identity_service.dart';
+import 'wallet_cloud_service.dart';
+
+/// Gasto agregado por categoría exportado desde WalletAI.
+class WalletCategorySummary {
+  final String name;
+  final String icon;
+  final double amount;
+  final double percentage;
+
+  const WalletCategorySummary({
+    required this.name,
+    required this.icon,
+    required this.amount,
+    required this.percentage,
+  });
+
+  factory WalletCategorySummary.fromJson(Map<String, dynamic> json) =>
+      WalletCategorySummary(
+        name: json['name'] as String? ?? 'Otros',
+        icon: json['icon'] as String? ?? '💸',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+        percentage: (json['percentage'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'icon': icon,
+        'amount': amount,
+        'percentage': percentage,
+      };
+}
 
 /// Modelo del resumen exportado por WalletAI.
 class WalletSummary {
@@ -15,6 +46,10 @@ class WalletSummary {
   final DateTime exportedAt;
   final String? projectId;
   final Map<String, dynamic>? rawMetadata;
+  final List<WalletCategorySummary> byCategory;
+  final List<double> weeklyExpenses;
+  final List<Map<String, dynamic>> recentTransactions;
+  final String source;
 
   const WalletSummary({
     required this.version,
@@ -26,9 +61,17 @@ class WalletSummary {
     required this.exportedAt,
     this.projectId,
     this.rawMetadata,
+    this.byCategory = const [],
+    this.weeklyExpenses = const [],
+    this.recentTransactions = const [],
+    this.source = 'local',
   });
 
-  factory WalletSummary.fromJson(Map<String, dynamic> json) => WalletSummary(
+  factory WalletSummary.fromJson(
+    Map<String, dynamic> json, {
+    String? overrideSource,
+  }) =>
+      WalletSummary(
         version: json['version'] as String? ?? '',
         month: json['month'] as String? ?? '',
         balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
@@ -39,6 +82,19 @@ class WalletSummary {
             DateTime.now(),
         projectId: json['projectId'] as String?,
         rawMetadata: json['metadata'] as Map<String, dynamic>?,
+        byCategory: (json['byCategory'] as List<dynamic>? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .map(WalletCategorySummary.fromJson)
+            .toList(),
+        weeklyExpenses: (json['weeklyExpenses'] as List<dynamic>? ?? [])
+            .whereType<num>()
+            .map((e) => e.toDouble())
+            .toList(),
+        recentTransactions:
+            (json['recentTransactions'] as List<dynamic>? ?? [])
+                .whereType<Map<String, dynamic>>()
+                .toList(),
+        source: overrideSource ?? (json['source'] as String? ?? 'local'),
       );
 
   Map<String, dynamic> toJson() => {
@@ -51,6 +107,12 @@ class WalletSummary {
         'exportedAt': exportedAt.toIso8601String(),
         if (projectId != null) 'projectId': projectId,
         if (rawMetadata != null) 'metadata': rawMetadata,
+        if (byCategory.isNotEmpty)
+          'byCategory': byCategory.map((e) => e.toJson()).toList(),
+        if (weeklyExpenses.isNotEmpty) 'weeklyExpenses': weeklyExpenses,
+        if (recentTransactions.isNotEmpty)
+          'recentTransactions': recentTransactions,
+        'source': source,
       };
 }
 
@@ -99,12 +161,24 @@ class WalletSummaryReader {
     return result.summary;
   }
 
-  /// Lee el resumen con información de validación y Project ID
+  /// Lee el resumen con información de validación y soporte Cloud + caché local.
   static Future<WalletReadResult> readWithValidation() async {
     try {
       final myLifeOSProjectId = await SharedIdentityService.getProjectId();
 
-      // Intentar leer desde múltiples ubicaciones
+      // 1. Intentar desde Render Cloud si hay sesión vinculada
+      if (await WalletCloudService.isSignedIn()) {
+        final cloudJson = await WalletCloudService.fetchSummaryJson();
+        if (cloudJson != null) {
+          final summary =
+              WalletSummary.fromJson(cloudJson, overrideSource: 'cloud');
+          await _cacheSummaryLocally(summary);
+          await SharedIdentityService.updateLastSync();
+          return WalletReadResult.success(summary, projectIdMatched: true);
+        }
+      }
+
+      // 2. Fallback a caché local / directorio sandbox
       final file = await _findSummaryFile();
       if (file == null) {
         return WalletReadResult.disconnected(
@@ -131,6 +205,14 @@ class WalletSummaryReader {
         error: 'Error al leer: ${e.toString()}',
       );
     }
+  }
+
+  static Future<void> _cacheSummaryLocally(WalletSummary summary) async {
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final file = File(p.join(docDir.path, _fileName));
+      await file.writeAsString(jsonEncode(summary.toJson()));
+    } catch (_) {}
   }
 
   /// Busca el archivo de resumen en múltiples ubicaciones

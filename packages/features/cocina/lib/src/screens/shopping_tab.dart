@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';
@@ -556,6 +557,7 @@ class ShoppingTab extends ConsumerWidget {
                 content: Text('✅ Items movidos a despensa'),
                 backgroundColor: Color(0xFF00E676)),
           );
+          await _offerLogExpenseToWalletAI(context, bought);
         }
       } catch (e) {
         if (context.mounted) {
@@ -566,6 +568,116 @@ class ShoppingTab extends ConsumerWidget {
           );
         }
       }
+    }
+  }
+
+  Future<void> _offerLogExpenseToWalletAI(
+    BuildContext context,
+    List<ShoppingItem> bought,
+  ) async {
+    final amountCtrl = TextEditingController();
+    final descCtrl = TextEditingController(
+      text: 'Compra despensa (${bought.length} items)',
+    );
+    final signedIn = await WalletCloudService.isSignedIn();
+    if (!context.mounted) return;
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF152019),
+        title: const Text('💸 ¿Registrar gasto en WalletAI?',
+            style: TextStyle(color: Colors.white, fontSize: 17)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Moviste ${bought.length} productos a tu despensa. Ingresa el total pagado si deseas enviarlo a WalletAI:',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Monto total (PEN)',
+                hintText: 'Ej: 45.50',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: descCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Descripción',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'skip'),
+            child: const Text('Omitir'),
+          ),
+          if (signedIn)
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'cloud'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Enviar en la nube'),
+            )
+          else
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'deeplink'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Abrir WalletAI'),
+            ),
+        ],
+      ),
+    );
+
+    final amount =
+        double.tryParse(amountCtrl.text.trim().replaceAll(',', '.')) ?? 0.0;
+    final description = descCtrl.text.trim().isEmpty
+        ? 'Compra despensa (${bought.length} items)'
+        : descCtrl.text.trim();
+    amountCtrl.dispose();
+    descCtrl.dispose();
+
+    if (action == 'cloud' && amount > 0) {
+      final res = await WalletCloudService.sendPendingTransaction(
+        amount: amount,
+        description: description,
+        categoryHint: 'Alimentación',
+        items: bought
+            .map((e) => {'name': e.name, 'quantity': e.quantity, 'unit': e.unit})
+            .toList(),
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.message),
+            backgroundColor:
+                res.success ? const Color(0xFF00C896) : Colors.redAccent,
+          ),
+        );
+      }
+    } else if (action == 'deeplink') {
+      await WalletAICommunicationService.openQuickExpense(
+        amount: amount,
+        description: description,
+      );
     }
   }
 
