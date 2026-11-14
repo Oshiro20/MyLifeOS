@@ -40,11 +40,13 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('📅 Menú Semanal',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('📅 Menú Semanal',
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         actions: [
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined,
@@ -102,22 +104,25 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
   Future<void> _generateMenu(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF152019),
-        title: const Text('¿Generar Menú Semanal?',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
-            'Se armará un menú variado para la semana usando tus recetas guardadas. ¿Continuar?',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Generar')),
-        ],
-      ),
+      builder: (ctx) {
+        final onSurface = Theme.of(ctx).colorScheme.onSurface;
+        return AlertDialog(
+          backgroundColor: Theme.of(ctx).cardColor,
+          title: Text('¿Generar Menú Semanal?',
+              style: TextStyle(color: onSurface)),
+          content: Text(
+              'Se armará un menú variado para la semana usando tus recetas guardadas. ¿Continuar?',
+              style: TextStyle(color: onSurface.withValues(alpha: 0.72))),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar')),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Generar')),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -350,7 +355,7 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
 
     final selected = await showModalBottomSheet<Recipe>(
       context: context,
-      backgroundColor: const Color(0xFF152019),
+      backgroundColor: Theme.of(context).cardColor,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -369,15 +374,19 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: allRecipes.length,
-                itemBuilder: (ctx, i) => ListTile(
-                  title: Text(allRecipes[i].name,
-                      style: const TextStyle(color: Colors.white)),
-                  subtitle: Text('${allRecipes[i].durationMinutes} min',
-                      style: const TextStyle(color: Colors.white54)),
-                  trailing: const Icon(Icons.add_circle_outline,
-                      color: Color(0xFF00E676)),
-                  onTap: () => Navigator.pop(ctx, allRecipes[i]),
-                ),
+                itemBuilder: (ctx, i) {
+                  final onSurface = Theme.of(ctx).colorScheme.onSurface;
+                  return ListTile(
+                    title: Text(allRecipes[i].name,
+                        style: TextStyle(color: onSurface)),
+                    subtitle: Text('${allRecipes[i].durationMinutes} min',
+                        style: TextStyle(
+                            color: onSurface.withValues(alpha: 0.6))),
+                    trailing: const Icon(Icons.add_circle_outline,
+                        color: Color(0xFF00E676)),
+                    onTap: () => Navigator.pop(ctx, allRecipes[i]),
+                  );
+                },
               ),
             ),
           ],
@@ -532,8 +541,8 @@ class _MealTile extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: hasRecipe
-              ? const Color(0xFF152019)
-              : const Color(0xFF2A2A40).withAlpha(100),
+              ? Theme.of(context).cardColor
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
               color: hasRecipe
@@ -549,8 +558,11 @@ class _MealTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(mealLabel,
-                      style: const TextStyle(
-                          color: Colors.white54,
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.6),
                           fontSize: 12,
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
@@ -558,7 +570,12 @@ class _MealTile extends StatelessWidget {
                       recipeName ??
                           (hasRecipe ? 'Receta asignada' : 'Sin planificar'),
                       style: TextStyle(
-                          color: hasRecipe ? Colors.white : Colors.white38,
+                          color: hasRecipe
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.45),
                           fontSize: 14,
                           fontWeight:
                               hasRecipe ? FontWeight.w500 : FontWeight.normal),
@@ -568,7 +585,12 @@ class _MealTile extends StatelessWidget {
               ),
             ),
             Icon(hasRecipe ? Icons.check_circle : Icons.add_circle_outline,
-                color: hasRecipe ? const Color(0xFF00E676) : Colors.white24),
+                color: hasRecipe
+                    ? const Color(0xFF00E676)
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.3)),
             if (hasRecipe) ...[
               const SizedBox(width: 8),
               Text(
@@ -615,22 +637,26 @@ class _CookingHistoryBannerState extends State<_CookingHistoryBanner> {
         }
         final recentRecipes = snapshot.data!;
         if (recentRecipes.isEmpty) {
+          final theme = Theme.of(context);
+          final onSurface = theme.colorScheme.onSurface;
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF2A2A40),
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: onSurface.withValues(alpha: 0.1)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.history, color: Colors.white38, size: 20),
-                SizedBox(width: 8),
+                Icon(Icons.history,
+                    color: onSurface.withValues(alpha: 0.45), size: 20),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Aún no has cocinado esta semana. ¡Empieza a planificar!',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.6), fontSize: 13),
                   ),
                 ),
               ],
@@ -669,8 +695,11 @@ class _CookingHistoryBannerState extends State<_CookingHistoryBanner> {
                 children: recentRecipes
                     .map((name) => Chip(
                           label: Text(name,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Colors.white)),
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface)),
                           backgroundColor:
                               const Color(0xFFFF9800).withAlpha(40),
                           labelPadding: const EdgeInsets.symmetric(

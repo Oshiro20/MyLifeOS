@@ -54,40 +54,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Ya se notificó, pero aún mostrar banner si hay actualización pendiente
         final packageInfo = await PackageInfo.fromPlatform();
         final currentVersion = packageInfo.version;
-        final latestVersion = release.tagName.replaceAll('v', '');
 
-        if (_isVersionGreater(latestVersion, currentVersion) && mounted) {
+        if (MyLifeOSUpdateService.isVersionGreater(
+                release.tagName, currentVersion) &&
+            mounted) {
           setState(() => _newVersion = release.tagName);
         }
       }
     }
   }
 
-  bool _isVersionGreater(String latest, String current) {
-    final latestParts =
-        latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-    final currentParts =
-        current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-
-    for (var i = 0; i < latestParts.length; i++) {
-      if (i >= currentParts.length) return true;
-      if (latestParts[i] > currentParts[i]) return true;
-      if (latestParts[i] < currentParts[i]) return false;
-    }
-    return false;
-  }
-
   void _showNotificationsDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final mutedColor = isDark ? Colors.white70 : const Color(0xFF35594A);
+    final inv = ref.read(inventoryProvider).ingredients;
+    final garments = ref.read(armarioProvider).garments;
+
+    final now = DateTime.now();
+    final expiring = inv
+        .where((i) =>
+            i.expirationDate != null &&
+            i.expirationDate!.difference(now).inDays <= 3)
+        .length;
+    final dirty = garments.where((g) => !g.isClean).length;
+
+    final alerts = <({IconData icon, Color color, String text, String? route})>[
+      if (_newVersion != null)
+        (
+          icon: Icons.system_update,
+          color: const Color(0xFF00C896),
+          text: 'Nueva actualización $_newVersion disponible.',
+          route: null,
+        ),
+      if (expiring > 0)
+        (
+          icon: Icons.warning_amber_rounded,
+          color: const Color(0xFFF59E0B),
+          text: '$expiring ingrediente(s) por vencer o vencidos en Cocina.',
+          route: '/cocina',
+        ),
+      if (dirty > 0)
+        (
+          icon: Icons.local_laundry_service_outlined,
+          color: const Color(0xFF29B6F6),
+          text: '$dirty prenda(s) pendientes por lavar en Armario.',
+          route: '/armario',
+        ),
+    ];
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF152019),
-        title: const Text('🔔 Notificaciones',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'No hay notificaciones nuevas.\n\nLas notificaciones de actualizaciones y recordatorios aparecerán aquí.',
-          style: TextStyle(color: Colors.white70),
-        ),
+        backgroundColor: Theme.of(ctx).cardColor,
+        title: Text('🔔 Notificaciones', style: TextStyle(color: textColor)),
+        content: alerts.isEmpty
+            ? Text(
+                'Todo está al día. Las alertas de actualizaciones, despensa y armario aparecerán aquí.',
+                style: TextStyle(color: mutedColor),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: alerts
+                    .map((a) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(a.icon, color: a.color),
+                          title: Text(a.text,
+                              style: TextStyle(color: mutedColor, fontSize: 13)),
+                          onTap: a.route == null
+                              ? null
+                              : () {
+                                  Navigator.pop(ctx);
+                                  context.go(a.route!);
+                                },
+                        ))
+                    .toList(),
+              ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -103,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -139,8 +181,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onRefresh: () async {
           ref.invalidate(armarioProvider);
           ref.invalidate(recipesProvider);
+          ref.invalidate(inventoryProvider);
           ref.invalidate(foodCoachProvider);
-          await Future.delayed(const Duration(milliseconds: 800));
+          ref.invalidate(whatCanICookProvider);
+          ref.invalidate(walletSummaryProvider);
+          await _checkOtaUpdates();
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(
@@ -428,42 +473,28 @@ class _StatPill extends StatelessWidget {
 }
 
 // ── Quick access grid ─────────────────────────────────────────────────────────
-class _QuickAccessGrid extends ConsumerStatefulWidget {
+class _QuickAccessGrid extends ConsumerWidget {
   @override
-  ConsumerState<_QuickAccessGrid> createState() => _QuickAccessGridState();
-}
-
-class _QuickAccessGridState extends ConsumerState<_QuickAccessGrid> {
-  WalletSummary? _walletSummary;
-
-  @override
-  void initState() {
-    super.initState();
-    WalletSummaryReader.read().then((v) {
-      if (mounted) setState(() => _walletSummary = v);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF152019) : Colors.white;
 
     final armarioState = ref.watch(armarioProvider);
     final recipesState = ref.watch(recipesProvider);
     final foodCoachState = ref.watch(foodCoachProvider);
+    final walletSummary = ref.watch(walletSummaryProvider).asData?.value;
 
     final String armarioData = '${armarioState.outfits.length} outfits';
     final String cocinaData = '${recipesState.recipes.length} recetas';
 
-    // Count meals in history for now (since MealLog doesn't have nutritionInfo directly)
+    // Count meals in history for now
     final mealCount = foodCoachState.history.length;
     final String foodCoachData =
-        mealCount > 0 ? '$mealCount comidas registradas' : '0 kcal';
+        mealCount > 0 ? '$mealCount comidas registradas' : 'Sin registros';
 
-    final String finanzasData = _walletSummary != null
-        ? '${_walletSummary!.currency} ${_walletSummary!.balance.toStringAsFixed(0)}'
-        : 'S/ 0';
+    final String finanzasData = walletSummary != null
+        ? '${walletSummary.currency} ${walletSummary.balance.toStringAsFixed(0)}'
+        : 'Sin sincronizar';
 
     final modules = [
       (
@@ -552,31 +583,17 @@ class _QuickAccessGridState extends ConsumerState<_QuickAccessGrid> {
 }
 
 // ── Finance summary ───────────────────────────────────────────────────────────
-class _FinanceSummary extends StatefulWidget {
+class _FinanceSummary extends ConsumerWidget {
   final bool isDark;
   final Color primary;
   const _FinanceSummary({required this.isDark, required this.primary});
 
   @override
-  State<_FinanceSummary> createState() => _FinanceSummaryState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final surface = isDark ? const Color(0xFF152019) : Colors.white;
+    final summary = ref.watch(walletSummaryProvider).asData?.value;
 
-class _FinanceSummaryState extends State<_FinanceSummary> {
-  WalletSummary? _summary;
-
-  @override
-  void initState() {
-    super.initState();
-    WalletSummaryReader.read().then((s) {
-      if (mounted) setState(() => _summary = s);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final surface = widget.isDark ? const Color(0xFF152019) : Colors.white;
-
-    if (_summary == null) {
+    if (summary == null) {
       return GestureDetector(
         onTap: () => context.go('/finanzas'),
         child: Container(
@@ -584,12 +601,12 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
           decoration: BoxDecoration(
             color: surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: widget.primary.withValues(alpha: 0.15)),
+            border: Border.all(color: primary.withValues(alpha: 0.15)),
           ),
           child: Row(
             children: [
               Icon(Icons.account_balance_wallet_outlined,
-                  color: widget.primary, size: 22),
+                  color: primary, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Text('Ver resumen financiero',
@@ -597,15 +614,14 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
                         color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w600)),
               ),
-              Icon(Icons.chevron_right, color: widget.primary),
+              Icon(Icons.chevron_right, color: primary),
             ],
           ),
         ),
       );
     }
 
-    final s = _summary!;
-    final isPositive = s.balance >= 0;
+    final isPositive = summary.balance >= 0;
 
     return GestureDetector(
       onTap: () => context.go('/finanzas'),
@@ -614,25 +630,25 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: widget.primary.withValues(alpha: 0.15)),
+          border: Border.all(color: primary.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
             Icon(Icons.account_balance_wallet_outlined,
-                color: widget.primary, size: 22),
+                color: primary, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${s.currency} ${s.balance.toStringAsFixed(2)}',
+                  Text('${summary.currency} ${summary.balance.toStringAsFixed(2)}',
                       style: TextStyle(
                           color: isPositive
                               ? const Color(0xFF00C896)
                               : const Color(0xFFFF6B6B),
                           fontWeight: FontWeight.w700,
                           fontSize: 18)),
-                  Text('Balance · ${s.month}',
+                  Text('Balance · ${summary.month}',
                       style: TextStyle(
                           color: Theme.of(context)
                               .colorScheme
@@ -642,7 +658,7 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: widget.primary),
+            Icon(Icons.chevron_right, color: primary),
           ],
         ),
       ),
@@ -682,7 +698,7 @@ class _RecentActivity extends ConsumerWidget {
       DateTime date,
       String route,
     })>[
-      for (final meal in foodCoachState.history.take(3))
+      for (final meal in foodCoachState.history)
         (
           emoji: '🥗',
           title: switch (meal.classification) {
@@ -694,7 +710,7 @@ class _RecentActivity extends ConsumerWidget {
           date: meal.timestamp,
           route: '/foodcoach',
         ),
-      for (final outfit in armarioState.outfits.take(3))
+      for (final outfit in armarioState.outfits)
         (
           emoji: '👗',
           title: "Outfit '${outfit.name}'",
@@ -702,7 +718,7 @@ class _RecentActivity extends ConsumerWidget {
           date: outfit.createdAt,
           route: '/armario',
         ),
-      for (final garment in armarioState.garments.take(3))
+      for (final garment in armarioState.garments)
         (
           emoji: '👕',
           title: garment.name,
@@ -710,7 +726,7 @@ class _RecentActivity extends ConsumerWidget {
           date: garment.addedAt,
           route: '/armario',
         ),
-      for (final recipe in recipesState.recipes.take(3))
+      for (final recipe in recipesState.recipes)
         (
           emoji: '🍽️',
           title: recipe.name,
@@ -863,6 +879,14 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
   Widget build(BuildContext context) {
     final messages = ref.watch(aiChatProvider);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final mutedColor = isDark ? Colors.white70 : const Color(0xFF35594A);
+    final subtleColor = isDark ? Colors.white54 : const Color(0xFF5D7A6E);
+    final bubbleBotColor =
+        isDark ? const Color(0xFF1E293B) : const Color(0xFFEAF4F0);
+    final inputFillColor =
+        isDark ? const Color(0xFF1E293B) : const Color(0xFFF0F9F5);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -875,7 +899,7 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: isDark ? Colors.white24 : Colors.black12,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -886,11 +910,11 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                   const Icon(Icons.auto_awesome,
                       color: Color(0xFF00C896), size: 22),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Asistente MyLifeOS',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: textColor,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                       ),
@@ -898,8 +922,8 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                   ),
                   if (messages.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.white54, size: 20),
+                      icon: Icon(Icons.delete_outline,
+                          color: subtleColor, size: 20),
                       tooltip: 'Limpiar chat',
                       onPressed: () =>
                           ref.read(aiChatProvider.notifier).clearHistory(),
@@ -907,7 +931,7 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                 ],
               ),
             ),
-            const Divider(color: Colors.white12, height: 1),
+            Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
             Expanded(
               child: messages.isEmpty
                   ? Center(
@@ -916,11 +940,10 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
+                            Text(
                               'Pregúntame sobre tu armario, recetas, nutrición o finanzas.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 14),
+                              style: TextStyle(color: mutedColor, fontSize: 14),
                             ),
                             const SizedBox(height: 16),
                             Wrap(
@@ -969,7 +992,7 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                             decoration: BoxDecoration(
                               color: msg.isUser
                                   ? const Color(0xFF00C896)
-                                  : const Color(0xFF1E293B),
+                                  : bubbleBotColor,
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: msg.isLoading
@@ -986,7 +1009,7 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                                     style: TextStyle(
                                       color: msg.isUser
                                           ? Colors.black
-                                          : Colors.white,
+                                          : textColor,
                                       fontSize: 13.5,
                                       height: 1.4,
                                     ),
@@ -1003,14 +1026,14 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: textColor),
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: 'Escribe tu consulta...',
-                        hintStyle: const TextStyle(color: Colors.white38),
+                        hintStyle: TextStyle(color: subtleColor),
                         filled: true,
-                        fillColor: const Color(0xFF1E293B),
+                        fillColor: inputFillColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -1054,6 +1077,10 @@ class _UpdateBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final mutedColor = isDark ? Colors.white60 : const Color(0xFF35594A);
+
     return GestureDetector(
       onTap: () => _startUpdate(context),
       child: Container(
@@ -1088,10 +1115,10 @@ class _UpdateBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '✨ Actualización disponible',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
@@ -1099,8 +1126,8 @@ class _UpdateBanner extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Versión $version lista para descargar',
-                    style: const TextStyle(
-                      color: Colors.white60,
+                    style: TextStyle(
+                      color: mutedColor,
                       fontSize: 11,
                     ),
                   ),

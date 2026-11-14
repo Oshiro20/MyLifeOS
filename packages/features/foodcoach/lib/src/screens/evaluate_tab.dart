@@ -49,21 +49,31 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF152019), Color(0xFF1A2E22)],
+              gradient: LinearGradient(
+                colors: Theme.of(context).brightness == Brightness.dark
+                    ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+                    : [
+                        const Color(0xFF00C896).withValues(alpha: 0.12),
+                        const Color(0xFF00C896).withValues(alpha: 0.05),
+                      ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFF00C896).withAlpha(40)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.tips_and_updates_outlined,
+                const Icon(Icons.tips_and_updates_outlined,
                     color: Color(0xFF00C896), size: 22),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Ingresa los ingredientes de tu comida y te diré si es saludable.',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.78),
+                        fontSize: 13),
                   ),
                 ),
               ],
@@ -72,9 +82,12 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
           const SizedBox(height: 20),
 
           // Foto opcional
-          const Text('Foto (opcional)',
+          Text('Foto (opcional)',
               style: TextStyle(
-                  color: Colors.white54,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
                   fontSize: 12,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -85,7 +98,11 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
               decoration: BoxDecoration(
                 color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.12)),
               ),
               child: _photoPath != null
                   ? ClipRRect(
@@ -93,16 +110,24 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                       child: Image.file(File(_photoPath!),
                           fit: BoxFit.cover, width: double.infinity),
                     )
-                  : const Center(
+                  : Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.add_a_photo_outlined,
-                              color: Colors.white24, size: 32),
-                          SizedBox(height: 6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.35),
+                              size: 32),
+                          const SizedBox(height: 6),
                           Text('Toca para añadir foto',
                               style: TextStyle(
-                                  color: Colors.white24, fontSize: 12)),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.4),
+                                  fontSize: 12)),
                         ],
                       ),
                     ),
@@ -111,9 +136,12 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
           const SizedBox(height: 20),
 
           // Input de ingredientes
-          const Text('Ingredientes',
+          Text('Ingredientes',
               style: TextStyle(
-                  color: Colors.white54,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
                   fontSize: 12,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -128,7 +156,11 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                   onSubmitted: _addIngredient,
                   decoration: InputDecoration(
                     hintText: 'ej: pollo, brócoli, arroz…',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.38)),
                     prefixIcon: const Icon(Icons.add_circle_outline,
                         color: Color(0xFF00C896), size: 20),
                     filled: true,
@@ -172,9 +204,14 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                       style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 12)),
-                  backgroundColor: const Color(0xFF2A2A40),
-                  deleteIcon:
-                      const Icon(Icons.close, size: 14, color: Colors.white38),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  deleteIcon: Icon(Icons.close,
+                      size: 14,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.45)),
                   onDeleted: () => ref
                       .read(foodCoachProvider.notifier)
                       .removeIngredient(ing),
@@ -186,23 +223,40 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
             TextButton.icon(
               onPressed: () =>
                   ref.read(foodCoachProvider.notifier).clearIngredients(),
-              icon:
-                  const Icon(Icons.clear_all, size: 16, color: Colors.white38),
-              label: const Text('Limpiar todo',
-                  style: TextStyle(color: Colors.white38, fontSize: 12)),
+              icon: Icon(Icons.clear_all,
+                  size: 16,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5)),
+              label: Text('Limpiar todo',
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
+                      fontSize: 12)),
             ),
           ] else
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text('Aún no hay ingredientes.',
-                  style: TextStyle(color: Colors.white24, fontSize: 13)),
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.38),
+                      fontSize: 13)),
             ),
 
           // Sugerencias rápidas
           const SizedBox(height: 8),
-          const Text('Sugerencias rápidas',
+          Text('Sugerencias rápidas',
               style: TextStyle(
-                  color: Colors.white54,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
                   fontSize: 12,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -260,7 +314,10 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: !canEvaluate
-                    ? Colors.white12
+                    ? Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.12)
                     : const Color(0xFF00C896),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -454,7 +511,10 @@ class _ResultView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: evaluation.healthScore,
-                    backgroundColor: Colors.white10,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(_classColor),
                     minHeight: 10,
                   ),
@@ -536,28 +596,30 @@ class _InfoCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String content;
-  final Color color;
+  final Color? color;
 
   const _InfoCard({
     required this.icon,
     required this.title,
     required this.content,
-    this.color = Colors.white54,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor =
+        color ?? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border(left: BorderSide(color: color, width: 3)),
+        border: Border(left: BorderSide(color: effectiveColor, width: 3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 18),
+          Icon(icon, color: effectiveColor, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -565,7 +627,7 @@ class _InfoCard extends StatelessWidget {
               children: [
                 Text(title,
                     style: TextStyle(
-                        color: color,
+                        color: effectiveColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 12)),
                 const SizedBox(height: 4),

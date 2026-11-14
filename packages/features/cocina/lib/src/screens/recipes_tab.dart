@@ -142,11 +142,20 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.menu_book_outlined,
-                  size: 64, color: Colors.white12),
+              Icon(Icons.menu_book_outlined,
+                  size: 64,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.18)),
               const SizedBox(height: 12),
-              const Text('Sin recetas guardadas',
-                  style: TextStyle(color: Colors.white38, fontSize: 17)),
+              Text('Sin recetas guardadas',
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.45),
+                      fontSize: 17)),
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: () => _showAddRecipeSheet(context, ref),
@@ -179,14 +188,26 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: TextField(
               controller: _searchCtrl,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Buscar recetas...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                hintStyle: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45)),
+                prefixIcon: Icon(Icons.search,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        icon: Icon(Icons.clear,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.55)),
                         onPressed: () {
                           setState(() {
                             _searchCtrl.clear();
@@ -196,7 +217,8 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFF2A2A40),
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -297,13 +319,23 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.filter_list_off, size: 48, color: Colors.white24),
+            Icon(Icons.filter_list_off,
+                size: 48,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.28)),
             const SizedBox(height: 8),
             Text(
               _searchQuery.isNotEmpty || _selectedCategory != null
                   ? 'No se encontraron recetas con estos filtros'
                   : 'Sin recetas guardadas',
-              style: const TextStyle(color: Colors.white38, fontSize: 14),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45),
+                  fontSize: 14),
             ),
           ],
         ),
@@ -422,7 +454,8 @@ class _RecipeTile extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: const Color(0xFF2A2A40),
+            backgroundColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Text(_goalEmoji[recipe.goal] ?? '🍽️',
                 style: const TextStyle(fontSize: 22)),
           ),
@@ -471,13 +504,20 @@ class _RecipeTile extends StatelessWidget {
                     recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: recipe.isFavorite
                         ? const Color(0xFFFF4D4D)
-                        : Colors.white24,
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.35),
                     size: 20),
                 onPressed: onFavorite,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline,
-                    color: Colors.white24, size: 20),
+                icon: Icon(Icons.delete_outline,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.35),
+                    size: 20),
                 onPressed: onDelete,
               ),
             ],
@@ -536,7 +576,10 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.24),
                       borderRadius: BorderRadius.circular(2)))),
           Text(widget.recipe.name,
               style: TextStyle(
@@ -559,17 +602,30 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.people, size: 16, color: Colors.white54),
+                Icon(Icons.people,
+                    size: 16,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6)),
                 const SizedBox(width: 8),
                 Text('Porciones: $_scaledServings',
                     style: TextStyle(
-                        color:
-                            isScaled ? const Color(0xFFFF9800) : Colors.white54,
+                        color: isScaled
+                            ? const Color(0xFFFF9800)
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
                         fontWeight: FontWeight.bold)),
                 const Spacer(),
                 Text('${widget.recipe.servings} orig',
-                    style:
-                        const TextStyle(color: Colors.white38, fontSize: 11)),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.45),
+                        fontSize: 11)),
               ],
             ),
           ),
@@ -579,7 +635,10 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             divisions: maxServings - 1,
             value: _scaledServings.clamp(1, maxServings).toDouble(),
             activeColor: const Color(0xFFFF9800),
-            inactiveColor: Colors.white12,
+            inactiveColor: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.14),
             onChanged: (v) => setState(() => _scaledServings = v.toInt()),
           ),
           const SizedBox(height: 8),
@@ -595,9 +654,12 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             const SizedBox(height: 20),
             Row(
               children: [
-                const Text('INGREDIENTES',
+                Text('INGREDIENTES',
                     style: TextStyle(
-                        color: Colors.white38,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.45),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5)),
@@ -652,9 +714,12 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           ],
           if (widget.recipe.instructions.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text('INSTRUCCIONES',
+            Text('INSTRUCCIONES',
                 style: TextStyle(
-                    color: Colors.white38,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.5)),
@@ -709,11 +774,14 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '💡 Al cocinar, se descontarán los ingredientes de tu despensa',
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: Colors.white54,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
                 fontSize: 11,
                 fontStyle: FontStyle.italic),
           ),
@@ -721,7 +789,11 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           if (widget.recipe.fuenteUrl != null ||
               widget.recipe.fuenteLabel != null) ...[
             const SizedBox(height: 20),
-            const Divider(color: Colors.white24),
+            Divider(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.16)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -851,7 +923,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   Widget _chip(BuildContext context, String text) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-            color: const Color(0xFF2A2A40),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8)),
         child: Text(text,
             style: TextStyle(
@@ -910,11 +982,14 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24),
                         borderRadius: BorderRadius.circular(2)))),
-            const Text('Nueva receta',
+            Text('Nueva receta',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 14),
@@ -941,23 +1016,27 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
               dropdownColor: Theme.of(context).cardColor,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: _deco('Objetivo nutricional', Icons.flag_outlined),
-              items: const [
+              items: [
                 DropdownMenuItem(
                     value: NutritionGoal.loseWeight,
                     child: Text('🥗 Adelgazar',
-                        style: TextStyle(color: Colors.white))),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface))),
                 DropdownMenuItem(
                     value: NutritionGoal.maintain,
                     child: Text('⚖️ Mantener',
-                        style: TextStyle(color: Colors.white))),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface))),
                 DropdownMenuItem(
                     value: NutritionGoal.gainMuscle,
                     child: Text('💪 Ganar músculo',
-                        style: TextStyle(color: Colors.white))),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface))),
                 DropdownMenuItem(
                     value: NutritionGoal.other,
                     child: Text('🍽️ Otro',
-                        style: TextStyle(color: Colors.white))),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface))),
               ],
               onChanged: (v) => setState(() => _goal = v!),
             ),
@@ -968,9 +1047,9 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
               const Icon(Icons.restaurant_outlined,
                   color: Color(0xFF00C896), size: 18),
               const SizedBox(width: 8),
-              const Text('Ingredientes',
+              Text('Ingredientes',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w700)),
               const Spacer(),
@@ -982,10 +1061,15 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
               ),
             ]),
             if (_ingredients.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text('Agrega ingredientes para mejorar las sugerencias',
-                    style: TextStyle(color: Colors.white24, fontSize: 12)),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.38),
+                        fontSize: 12)),
               ),
             ..._ingredients.asMap().entries.map((e) => _IngredientRow(
                   entry: e.value,
@@ -998,9 +1082,9 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
               const Icon(Icons.format_list_numbered,
                   color: Color(0xFF00C896), size: 18),
               const SizedBox(width: 8),
-              const Text('Instrucciones',
+              Text('Instrucciones',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w700)),
               const Spacer(),
@@ -1013,10 +1097,15 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
               ),
             ]),
             if (_instructions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text('Opcional: añade los pasos de preparación',
-                    style: TextStyle(color: Colors.white24, fontSize: 12)),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.38),
+                        fontSize: 12)),
               ),
             ..._instructions.asMap().entries.map((e) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
@@ -1043,7 +1132,11 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
                           fontSize: 13),
                       decoration: InputDecoration(
                         hintText: 'Paso ${e.key + 1}...',
-                        hintStyle: const TextStyle(color: Colors.white24),
+                        hintStyle: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.38)),
                         filled: true,
                         fillColor: Theme.of(context).scaffoldBackgroundColor,
                         border: OutlineInputBorder(
@@ -1187,7 +1280,10 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
                 .colorScheme
                 .onSurface
                 .withValues(alpha: 0.38)),
-        prefixIcon: Icon(icon, color: Colors.white38, size: 18),
+        prefixIcon: Icon(icon,
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+            size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(
@@ -1250,7 +1346,11 @@ class _IngredientRowState extends State<_IngredientRow> {
                 color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Ingrediente',
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintStyle: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38)),
               filled: true,
               fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(
@@ -1272,7 +1372,11 @@ class _IngredientRowState extends State<_IngredientRow> {
                 color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Cant.',
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintStyle: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38)),
               filled: true,
               fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(
@@ -1315,9 +1419,14 @@ class _IngredientRowState extends State<_IngredientRow> {
         // Eliminar
         GestureDetector(
           onTap: widget.onRemove,
-          child: const Padding(
-            padding: EdgeInsets.only(left: 4),
-            child: Icon(Icons.close, color: Colors.white24, size: 16),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Icon(Icons.close,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.35),
+                size: 16),
           ),
         ),
       ]),
@@ -1458,16 +1567,19 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.24),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   '📚 Explorar recetas locales',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1475,7 +1587,12 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
                 const SizedBox(height: 4),
                 Text(
                   '${_allRecipes.length} recetas disponibles',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                      fontSize: 12),
                 ),
               ],
             ),
@@ -1485,14 +1602,27 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: TextField(
               controller: _searchCtrl,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Buscar por nombre, descripcion o ingrediente...',
-                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                hintStyle: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45),
+                    fontSize: 12),
+                prefixIcon: Icon(Icons.search,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        icon: Icon(Icons.clear,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.55)),
                         onPressed: () {
                           setState(() {
                             _searchCtrl.clear();
@@ -1502,7 +1632,8 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFF2A2A40),
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1520,7 +1651,12 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
               children: [
                 Text(
                   '${filteredRecipes.length} receta${filteredRecipes.length == 1 ? '' : 's'} encontrada${filteredRecipes.length == 1 ? '' : 's'}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                      fontSize: 12),
                 ),
               ],
             ),
@@ -1528,10 +1664,15 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
           // Recipe list
           Expanded(
             child: sortedGroupNames.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No se encontraron recetas',
-                      style: TextStyle(color: Colors.white38, fontSize: 14),
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.45),
+                          fontSize: 14),
                     ),
                   )
                 : ListView.builder(
@@ -1622,9 +1763,10 @@ class _RecipeGroupTileState extends State<_RecipeGroupTile> with AppFeedback {
   Widget build(BuildContext context) {
     final emoji = _groupEmojis[widget.groupName] ?? '🍽️';
 
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      color: const Color(0xFF2A2A40),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: ExpansionTile(
         initiallyExpanded: widget.isExpanded,
         onExpansionChanged: (_) => widget.onToggle(),
@@ -1632,8 +1774,8 @@ class _RecipeGroupTileState extends State<_RecipeGroupTile> with AppFeedback {
         leading: Text(emoji, style: const TextStyle(fontSize: 20)),
         title: Text(
           '${widget.groupName} (${widget.recipes.length})',
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -1646,13 +1788,14 @@ class _RecipeGroupTileState extends State<_RecipeGroupTile> with AppFeedback {
             dense: true,
             title: Text(
               recipe.name,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: onSurface, fontSize: 13),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(
               '${recipe.durationMinutes} min · ${recipe.ingredients.length} ingredientes',
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
+              style: TextStyle(
+                  color: onSurface.withValues(alpha: 0.6), fontSize: 11),
             ),
             trailing: isSaving
                 ? const SizedBox(

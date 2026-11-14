@@ -139,9 +139,14 @@ Formato JSON:
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Tómate una foto de cuerpo completo con ropa ajustada y luz natural para que Gemini pueda determinar tu tipo de cuerpo y colorimetría (Estación).',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.72),
+                  fontSize: 14),
             ),
             const SizedBox(height: 20),
             Row(
@@ -178,7 +183,12 @@ Formato JSON:
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white24, width: 2),
+                    border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24),
+                        width: 2),
                     image: _imageFile != null
                         ? DecorationImage(
                             image: FileImage(_imageFile!),
@@ -187,14 +197,22 @@ Formato JSON:
                         : null,
                   ),
                   child: _imageFile == null
-                      ? const Column(
+                      ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.camera_alt,
-                                size: 48, color: Colors.white54),
-                            SizedBox(height: 8),
+                                size: 48,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.55)),
+                            const SizedBox(height: 8),
                             Text('Tocar para añadir foto',
-                                style: TextStyle(color: Colors.white54)),
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.55))),
                           ],
                         )
                       : null,
@@ -231,31 +249,33 @@ Formato JSON:
   void _showPickerOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-      builder: (ctx) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.white),
-              title: const Text('Tomar Foto',
-                  style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.white),
-              title: const Text('Elegir de Galería',
-                  style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.of(context).pop();
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: Theme.of(context).cardColor,
+      builder: (ctx) {
+        final onSurface = Theme.of(ctx).colorScheme.onSurface;
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: onSurface),
+                title: Text('Tomar Foto', style: TextStyle(color: onSurface)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: onSurface),
+                title: Text('Elegir de Galería',
+                    style: TextStyle(color: onSurface)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

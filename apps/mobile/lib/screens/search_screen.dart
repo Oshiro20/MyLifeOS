@@ -85,40 +85,50 @@ class MyLifeOSSearchDelegate extends SearchDelegate<String> {
   String get searchFieldLabel => 'Buscar en MyLifeOS...';
 
   @override
-  TextStyle get searchFieldStyle => const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-      );
+  TextStyle get searchFieldStyle => const TextStyle(fontSize: 16);
 
   @override
   ThemeData appBarTheme(BuildContext context) {
-    return Theme.of(context).copyWith(
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0F2017),
-        iconTheme: IconThemeData(color: Colors.white70),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final bg = isDark ? const Color(0xFF0F2017) : Colors.white;
+    return theme.copyWith(
+      appBarTheme: AppBarTheme(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        iconTheme: IconThemeData(color: fg.withValues(alpha: 0.75)),
         elevation: 0,
       ),
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+        hintStyle: TextStyle(color: fg.withValues(alpha: 0.45)),
         border: InputBorder.none,
       ),
     );
   }
 
   @override
-  List<Widget> buildActions(BuildContext context) => [
-        if (query.isNotEmpty)
-          IconButton(
-            icon: const Icon(Icons.clear, color: Colors.white54),
-            onPressed: () => query = '',
-          ),
-      ];
+  List<Widget> buildActions(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
+    return [
+      if (query.isNotEmpty)
+        IconButton(
+          icon: Icon(Icons.clear, color: iconColor),
+          onPressed: () => query = '',
+        ),
+    ];
+  }
 
   @override
-  Widget buildLeading(BuildContext context) => IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70),
-        onPressed: () => close(context, ''),
-      );
+  Widget buildLeading(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.white70 : const Color(0xFF0A1F16);
+    return IconButton(
+      icon: Icon(Icons.arrow_back_ios_new, color: iconColor),
+      onPressed: () => close(context, ''),
+    );
+  }
 
   @override
   Widget buildResults(BuildContext context) => _buildResultsList(context);
@@ -187,6 +197,7 @@ class MyLifeOSSearchDelegate extends SearchDelegate<String> {
 
   Widget _buildResultsList(BuildContext context) {
     final results = _search();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (results.isEmpty) {
       return _EmptyResults(query: query);
@@ -198,7 +209,7 @@ class MyLifeOSSearchDelegate extends SearchDelegate<String> {
     final modules = results.where((r) => r.type == SearchResultType.module).toList();
 
     return Container(
-      color: const Color(0xFF0A1410),
+      color: isDark ? const Color(0xFF0A1410) : const Color(0xFFF4FBF8),
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
@@ -221,8 +232,12 @@ class MyLifeOSSearchDelegate extends SearchDelegate<String> {
   }
 
   void _navigate(BuildContext context, SearchResult result) {
+    final router = GoRouter.of(context);
+    if (result.type == SearchResultType.recipe) {
+      ref.read(cocinaTabProvider.notifier).setTab(1);
+    }
     close(context, result.route);
-    context.go(result.route);
+    router.go(result.route);
   }
 }
 
@@ -235,6 +250,8 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
       child: Row(
@@ -242,7 +259,7 @@ class _SectionHeader extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: fg.withValues(alpha: 0.5),
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.4,
@@ -252,13 +269,13 @@ class _SectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: fg.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '$count',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: fg.withValues(alpha: 0.6),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
@@ -278,6 +295,8 @@ class _ResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -288,7 +307,7 @@ class _ResultTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.07),
+                color: fg.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -303,8 +322,8 @@ class _ResultTile extends StatelessWidget {
                 children: [
                   Text(
                     result.title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: fg,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -313,7 +332,7 @@ class _ResultTile extends StatelessWidget {
                   Text(
                     result.subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: fg.withValues(alpha: 0.55),
                       fontSize: 12,
                     ),
                     maxLines: 1,
@@ -324,7 +343,7 @@ class _ResultTile extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right,
-              color: Colors.white.withValues(alpha: 0.2),
+              color: fg.withValues(alpha: 0.3),
               size: 20,
             ),
           ],
@@ -340,18 +359,20 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
     return Container(
-      color: const Color(0xFF0A1410),
+      color: isDark ? const Color(0xFF0A1410) : const Color(0xFFF4FBF8),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('🔍', style: const TextStyle(fontSize: 48)),
+            const Text('🔍', style: TextStyle(fontSize: 48)),
             const SizedBox(height: 16),
             Text(
               'Sin resultados para "$query"',
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: fg.withValues(alpha: 0.8),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -360,7 +381,7 @@ class _EmptyResults extends StatelessWidget {
             Text(
               'Prueba con otro término',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
+                color: fg.withValues(alpha: 0.5),
                 fontSize: 14,
               ),
             ),

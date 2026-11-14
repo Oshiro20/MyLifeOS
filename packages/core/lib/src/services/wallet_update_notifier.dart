@@ -62,6 +62,7 @@ class WalletUpdateNotifier {
       '💰 WalletAI actualizado',
       'Nueva versión $version disponible. Actualiza para obtener las últimas mejoras.',
       details,
+      payload: 'update_walletai',
     );
   }
 }

@@ -134,8 +134,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           // Greeting Card
           Text(
             '${_getGreeting()}, Joel',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -158,8 +158,13 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF152019), Color(0xFF1A2E22)],
+                gradient: LinearGradient(
+                  colors: Theme.of(context).brightness == Brightness.dark
+                      ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+                      : [
+                          themeColor.withValues(alpha: 0.14),
+                          themeColor.withValues(alpha: 0.05),
+                        ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: themeColor.withAlpha(40)),
@@ -176,7 +181,11 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                         Text(
                           'Clima en Lima',
                           style: TextStyle(
-                              color: Colors.white.withAlpha(130), fontSize: 12),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
+                              fontSize: 12),
                         ),
                         const SizedBox(height: 2),
                         Text(_currentWeather,
@@ -188,7 +197,11 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     ),
                   ),
                   Icon(Icons.refresh,
-                      color: Colors.white.withAlpha(100), size: 18),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
+                      size: 18),
                 ],
               ),
             ),
@@ -205,10 +218,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             children: [
               Icon(Icons.auto_awesome, color: themeColor, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Outfit del Día (AI Stylist)',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700),
               ),
@@ -230,23 +243,25 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 
   Widget _buildLoadingOotd() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: Theme.of(context).appBarTheme.backgroundColor,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: onSurface.withValues(alpha: 0.1)),
       ),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: Color(0xFF00C896)),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: Color(0xFF00C896)),
+            const SizedBox(height: 16),
             Text('Analizando tu armario...',
-                style: TextStyle(color: Colors.white54)),
+                style: TextStyle(color: onSurface.withValues(alpha: 0.6))),
             Text('Gemini está creando tu outfit ideal',
-                style: TextStyle(color: Colors.white38, fontSize: 12)),
+                style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.45), fontSize: 12)),
           ],
         ),
       ),
@@ -288,19 +303,21 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 
   Widget _buildEmptyOotd(Color themeColor) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).appBarTheme.backgroundColor,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: onSurface.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
-          const Icon(Icons.checkroom_outlined, color: Colors.white38, size: 40),
+          Icon(Icons.checkroom_outlined,
+              color: onSurface.withValues(alpha: 0.45), size: 40),
           const SizedBox(height: 12),
-          const Text('No hay sugerencia disponible',
-              style: TextStyle(color: Colors.white70)),
+          Text('No hay sugerencia disponible',
+              style: TextStyle(color: onSurface.withValues(alpha: 0.72))),
           const SizedBox(height: 16),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: themeColor),
@@ -399,10 +416,14 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: hasData ? themeColor.withAlpha(20) : const Color(0xFF152019),
+          color: hasData
+              ? themeColor.withAlpha(20)
+              : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: hasData ? themeColor.withAlpha(80) : Colors.white10,
+            color: hasData
+                ? themeColor.withAlpha(80)
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
             width: 1.5,
           ),
         ),
@@ -411,14 +432,24 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: hasData ? themeColor.withAlpha(40) : Colors.white10,
+                color: hasData
+                    ? themeColor.withAlpha(40)
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 hasData
                     ? Icons.accessibility_new_rounded
                     : Icons.camera_front_outlined,
-                color: hasData ? themeColor : Colors.white54,
+                color: hasData
+                    ? themeColor
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
                 size: 28,
               ),
             ),
@@ -432,7 +463,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                         ? 'Perfil Físico IA Activo'
                         : 'Escáner Físico con I.A.',
                     style: TextStyle(
-                      color: hasData ? Colors.white : Colors.white70,
+                      color: hasData
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.8),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -463,7 +499,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               ),
             ),
             Icon(Icons.chevron_right,
-                color: hasData ? themeColor : Colors.white38),
+                color: hasData
+                    ? themeColor
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45)),
           ],
         ),
       ),
@@ -471,12 +512,13 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 
   Widget _garmentMiniCard(WardrobeGarment g) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: onSurface.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -488,7 +530,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             decoration: BoxDecoration(
               color: _parseColor(g.primaryColor),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24),
+              border: Border.all(color: onSurface.withValues(alpha: 0.25)),
             ),
           ),
           const SizedBox(height: 6),

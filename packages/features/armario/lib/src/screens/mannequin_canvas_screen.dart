@@ -155,12 +155,15 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: Theme.of(ctx)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24),
                         borderRadius: BorderRadius.circular(2))),
                 const SizedBox(height: 16),
-                const Text('Selecciona prendas',
+                Text('Selecciona prendas',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(ctx).colorScheme.onSurface,
                         fontSize: 18,
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
@@ -196,7 +199,11 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                           decoration: BoxDecoration(
                             color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white10),
+                            border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.12)),
                           ),
                           alignment: Alignment.center,
                           child: garment.imageAssetId != null &&
@@ -206,14 +213,21 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                                   child: Image.file(
                                     File(garment.imageAssetId!),
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(
+                                    errorBuilder: (_, __, ___) => Icon(
                                         Icons.checkroom,
-                                        color: Colors.white38,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.45),
                                         size: 40),
                                   ),
                                 )
-                              : const Icon(Icons.checkroom,
-                                  color: Colors.white38, size: 40),
+                              : Icon(Icons.checkroom,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.45),
+                                  size: 40),
                         ),
                       );
                     },
@@ -242,25 +256,27 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
+          final onSurface = Theme.of(context).colorScheme.onSurface;
           return AlertDialog(
             backgroundColor: Theme.of(context).cardColor,
-            title: const Text('Guardar Outfit 📸',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+            title: Text('Guardar Outfit 📸',
+                style:
+                    TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: onSurface),
+                    decoration: InputDecoration(
                       labelText: 'Nombre del Outfit',
-                      labelStyle: TextStyle(color: Colors.white54),
+                      labelStyle:
+                          TextStyle(color: onSurface.withValues(alpha: 0.6)),
                       enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white24)),
-                      focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: onSurface.withValues(alpha: 0.24))),
+                      focusedBorder: const UnderlineInputBorder(
                           borderSide: BorderSide(color: Color(0xFF00C896))),
                     ),
                   ),
@@ -268,32 +284,33 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                   DropdownButtonFormField<String>(
                     dropdownColor: Theme.of(context).cardColor,
                     initialValue: occasion,
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                           value: 'casual',
-                          child: Text('Casual',
-                              style: TextStyle(color: Colors.white))),
+                          child:
+                              Text('Casual', style: TextStyle(color: onSurface))),
                       DropdownMenuItem(
                           value: 'sport',
                           child: Text('Deporte',
-                              style: TextStyle(color: Colors.white))),
+                              style: TextStyle(color: onSurface))),
                       DropdownMenuItem(
                           value: 'formal',
-                          child: Text('Formal',
-                              style: TextStyle(color: Colors.white))),
+                          child:
+                              Text('Formal', style: TextStyle(color: onSurface))),
                       DropdownMenuItem(
                           value: 'party',
-                          child: Text('Fiesta',
-                              style: TextStyle(color: Colors.white))),
+                          child:
+                              Text('Fiesta', style: TextStyle(color: onSurface))),
                       DropdownMenuItem(
                           value: 'work',
                           child: Text('Trabajo',
-                              style: TextStyle(color: Colors.white))),
+                              style: TextStyle(color: onSurface))),
                     ],
                     onChanged: (v) => setModalState(() => occasion = v!),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                         labelText: 'Ocasión',
-                        labelStyle: TextStyle(color: Colors.white54)),
+                        labelStyle:
+                            TextStyle(color: onSurface.withValues(alpha: 0.6))),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<Season>(
@@ -303,15 +320,13 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                         .map((s) => DropdownMenuItem(
                             value: s,
                             child: Text(s.name.toUpperCase(),
-                                style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface))))
+                                style: TextStyle(color: onSurface))))
                         .toList(),
                     onChanged: (v) => setModalState(() => season = v!),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                         labelText: 'Temporada',
-                        labelStyle: TextStyle(color: Colors.white54)),
+                        labelStyle:
+                            TextStyle(color: onSurface.withValues(alpha: 0.6))),
                   ),
                 ],
               ),
@@ -319,8 +334,8 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancelar',
-                    style: TextStyle(color: Colors.white54)),
+                child: Text('Cancelar',
+                    style: TextStyle(color: onSurface.withValues(alpha: 0.6))),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -376,8 +391,9 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        title: const Text('Creador de Outfits 🎨',
-            style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: Text('Creador de Outfits 🎨',
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface, fontSize: 18)),
         actions: [
           IconButton(
             icon: const Icon(Icons.save_alt_rounded, color: Color(0xFF00C896)),
@@ -390,20 +406,33 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
         children: [
           // Background instructions
           if (_items.isEmpty)
-            const Center(
+            Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.touch_app_outlined,
-                      size: 60, color: Colors.white12),
-                  SizedBox(height: 16),
+                      size: 60,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.18)),
+                  const SizedBox(height: 16),
                   Text('Lienzo vacío',
-                      style: TextStyle(color: Colors.white38, fontSize: 18)),
-                  SizedBox(height: 8),
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5),
+                          fontSize: 18)),
+                  const SizedBox(height: 8),
                   Text(
                       'Toca el botón + para añadir prendas\ny armar tu atuendo.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white24)),
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.35))),
                 ],
               ),
             ),
@@ -445,19 +474,30 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                             ? Image.file(
                                 File(item.garment.imageAssetId!),
                                 fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const Center(
+                                errorBuilder: (_, __, ___) => Center(
                                   child: Icon(Icons.checkroom,
-                                      color: Colors.white54, size: 40),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.55),
+                                      size: 40),
                                 ),
                               )
                             : Center(
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.white10),
-                                  child: const Icon(Icons.checkroom,
-                                      color: Colors.white54, size: 40),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.08)),
+                                  child: Icon(Icons.checkroom,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.55),
+                                      size: 40),
                                 ),
                               ),
                       ),

@@ -10,6 +10,7 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(foodCoachProvider).history;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
     if (history.isEmpty) {
       return RefreshIndicator(
@@ -22,19 +23,23 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
             physics: const AlwaysScrollableScrollPhysics(),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.history_outlined,
-                        size: 64, color: Colors.white12),
-                    SizedBox(height: 12),
+                        size: 64, color: onSurface.withValues(alpha: 0.15)),
+                    const SizedBox(height: 12),
                     Text('Sin evaluaciones aún',
-                        style: TextStyle(color: Colors.white38, fontSize: 17)),
-                    SizedBox(height: 6),
+                        style: TextStyle(
+                            color: onSurface.withValues(alpha: 0.45),
+                            fontSize: 17)),
+                    const SizedBox(height: 6),
                     Text('Evalúa tu primera comida en la pestaña "Evaluar".',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white24, fontSize: 13)),
+                        style: TextStyle(
+                            color: onSurface.withValues(alpha: 0.35),
+                            fontSize: 13)),
                   ],
                 ),
               ),
@@ -146,8 +151,11 @@ class _HistoryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(dateStr,
-                    style: const TextStyle(
-                        color: Colors.white70,
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.8),
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
@@ -158,7 +166,7 @@ class _HistoryTile extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withValues(alpha: 0.38),
+                            .withValues(alpha: 0.5),
                         fontSize: 11)),
                 const SizedBox(height: 6),
                 // mini barra de salud
@@ -166,7 +174,10 @@ class _HistoryTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: log.healthScore,
-                    backgroundColor: Colors.white10,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(_color),
                     minHeight: 5,
                   ),
@@ -178,8 +189,12 @@ class _HistoryTile extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline,
-                color: Colors.white24, size: 20),
+            icon: Icon(Icons.delete_outline,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.35),
+                size: 20),
             onPressed: onDelete,
           ),
         ],

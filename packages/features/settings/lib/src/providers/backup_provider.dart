@@ -30,12 +30,13 @@ class BackupState {
   BackupState copyWith({
     BackupStatus? status,
     String? lastMessage,
+    bool clearMessage = false,
     int? dbSizeBytes,
     DateTime? lastModified,
   }) =>
       BackupState(
         status: status ?? this.status,
-        lastMessage: lastMessage,
+        lastMessage: clearMessage ? null : (lastMessage ?? this.lastMessage),
         dbSizeBytes: dbSizeBytes ?? this.dbSizeBytes,
         lastModified: lastModified ?? this.lastModified,
       );
@@ -58,7 +59,10 @@ class BackupNotifier extends Notifier<BackupState> {
   }
 
   Future<BackupResult> exportBackup() async {
-    state = state.copyWith(status: BackupStatus.exportingInProgress);
+    state = state.copyWith(
+      status: BackupStatus.exportingInProgress,
+      clearMessage: true,
+    );
     final result = await _service.exportBackup();
     switch (result) {
       case BackupSuccess():
@@ -80,7 +84,10 @@ class BackupNotifier extends Notifier<BackupState> {
   }
 
   Future<BackupResult> importBackup(String filePath) async {
-    state = state.copyWith(status: BackupStatus.importingInProgress);
+    state = state.copyWith(
+      status: BackupStatus.importingInProgress,
+      clearMessage: true,
+    );
     final result = await _service.importBackup(filePath);
     switch (result) {
       case RestoreSuccess():
@@ -101,7 +108,8 @@ class BackupNotifier extends Notifier<BackupState> {
     return result;
   }
 
-  void clearStatus() => state = state.copyWith(status: BackupStatus.idle);
+  void clearStatus() =>
+      state = state.copyWith(status: BackupStatus.idle, clearMessage: true);
 
   Future<void> refreshInfo() => _loadInfo();
 

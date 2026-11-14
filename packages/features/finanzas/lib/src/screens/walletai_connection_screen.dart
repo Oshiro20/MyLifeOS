@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:core/core.dart';
 
 /// Pantalla de configuración de conexión con WalletAI.
-/// 
+///
 /// Permite al usuario:
 /// - Ver el estado de conexión actual
 /// - Ver y copiar el Project ID
@@ -70,7 +70,8 @@ class _WalletAIConnectionSettingsScreenState
     if (user.length < 3 || pass.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ingresa usuario (mín. 3 chars) y contraseña (mín. 6).'),
+          content:
+              Text('Ingresa usuario (mín. 3 chars) y contraseña (mín. 6).'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -113,11 +114,11 @@ class _WalletAIConnectionSettingsScreenState
 
   Future<void> _forceSync() async {
     setState(() => _syncing = true);
-    
+
     await WalletAICommunicationService.requestSync();
     await Future.delayed(const Duration(seconds: 2));
     await _loadInfo();
-    
+
     if (mounted) {
       setState(() => _syncing = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,15 +132,15 @@ class _WalletAIConnectionSettingsScreenState
 
   Future<void> _saveCustomId() async {
     final customId = _customIdController.text.trim();
-    
+
     if (customId.isEmpty) {
       await SharedIdentityService.setWalletAICustomId('');
     } else {
       await SharedIdentityService.setWalletAICustomId(customId);
     }
-    
+
     await _loadInfo();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -174,11 +175,11 @@ class _WalletAIConnectionSettingsScreenState
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       await SharedIdentityService.resetIdentity();
       await _loadInfo();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -272,7 +273,10 @@ class _WalletAIConnectionSettingsScreenState
                               Text(
                                 'Si configuraste un ID específico en WalletAI, ingrésalo aquí.',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
                                   fontSize: 12,
                                 ),
                               ),
@@ -408,12 +412,12 @@ class _ConnectionStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isConnected = status?.isConnected ?? false;
     final isMatched = status?.isProjectIdMatched ?? false;
-    
+
     Color borderColor;
     IconData icon;
     String title;
     String subtitle;
-    
+
     if (!isConnected) {
       borderColor = const Color(0xFFFF6B6B);
       icon = Icons.link_off;
@@ -460,7 +464,10 @@ class _ConnectionStatusCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white54,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                       fontSize: 12,
                     ),
                   ),
@@ -539,7 +546,10 @@ class _IdentityInfoCard extends StatelessWidget {
               Text(
                 'Creado: ${DateTime.parse(createdAt).day}/${DateTime.parse(createdAt).month}/${DateTime.parse(createdAt).year}',
                 style: TextStyle(
-                  color: Colors.white38,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45),
                   fontSize: 11,
                 ),
               ),
@@ -567,9 +577,10 @@ class _IdentityField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.white54),
+        Icon(icon, size: 20, color: onSurface.withValues(alpha: 0.6)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -578,7 +589,7 @@ class _IdentityField extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: onSurface.withValues(alpha: 0.6),
                   fontSize: 11,
                 ),
               ),
@@ -718,7 +729,10 @@ class _InfoStep extends StatelessWidget {
               Text(
                 description,
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -789,7 +803,12 @@ class _CloudAccountCard extends StatelessWidget {
               isSignedIn
                   ? 'MyLifeOS lee categorías, actividad semanal y movimientos reales desde Render y puede enviar gastos a WalletAI.'
                   : 'Usa el mismo usuario y contraseña que configuraste en WalletAI > Respaldos para saltar las restricciones del sandbox Android.',
-              style: const TextStyle(fontSize: 12, color: Colors.white60),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.65)),
             ),
             const SizedBox(height: 12),
             if (isSignedIn)

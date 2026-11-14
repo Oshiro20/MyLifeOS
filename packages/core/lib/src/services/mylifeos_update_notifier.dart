@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
@@ -10,7 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 class MyLifeOSUpdateNotifier {
   static const _repoOwner = 'Oshiro20';
   static const _repoName = 'MyLifeOS';
-  static const _prefKey = 'mylifeos_last_notified_version';
+  static const _prefKey = 'mylifeos_notif_last_notified_version';
   static const _notifId = 9002;
 
   final FlutterLocalNotificationsPlugin _notifications;
@@ -32,7 +33,7 @@ class MyLifeOSUpdateNotifier {
           latestTag.replaceAll('v', ''); // Ej: "v1.1.4" -> "1.1.4"
 
       // Comparación semántica (igual que WalletAI)
-      if (!_isVersionGreater(latestVersion, currentVersion)) {
+      if (!isVersionGreater(latestVersion, currentVersion)) {
         return null; // Ya estamos en la versión más reciente
       }
 
@@ -52,18 +53,24 @@ class MyLifeOSUpdateNotifier {
     }
   }
 
-  /// Compara dos versiones semánticas.
+  /// Compara dos versiones semánticas ignorando sufijos +build / -pre.
   /// Retorna true si latest > current.
-  bool _isVersionGreater(String latest, String current) {
-    final latestParts =
-        latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-    final currentParts =
-        current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+  static bool isVersionGreater(String latest, String current) {
+    List<int> parse(String raw) {
+      final clean = raw.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+      final base = clean.split('+').first.split('-').first;
+      return base.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+    }
 
-    for (var i = 0; i < latestParts.length; i++) {
-      if (i >= currentParts.length) return true;
-      if (latestParts[i] > currentParts[i]) return true;
-      if (latestParts[i] < currentParts[i]) return false;
+    final latestParts = parse(latest);
+    final currentParts = parse(current);
+    final maxLen = math.max(latestParts.length, currentParts.length);
+
+    for (var i = 0; i < maxLen; i++) {
+      final l = i < latestParts.length ? latestParts[i] : 0;
+      final c = i < currentParts.length ? currentParts[i] : 0;
+      if (l > c) return true;
+      if (l < c) return false;
     }
     return false;
   }
@@ -105,6 +112,7 @@ class MyLifeOSUpdateNotifier {
       '✨ Nueva versión disponible',
       'MyLifeOS $version está lista. Toca para descargar e instalar.',
       details,
+      payload: 'update_mylifeos',
     );
   }
 }

@@ -110,7 +110,10 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
                                   ? Icons.snowshoeing
                                   : Icons.checkroom_outlined,
                               size: 64,
-                              color: Colors.white12),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.18)),
                           const SizedBox(height: 12),
                           Text('No hay ${isShoesTab ? 'calzado' : 'ropa'} aquí',
                               style: TextStyle(
@@ -155,7 +158,11 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white10),
+                                border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.1)),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -327,8 +334,12 @@ class _GarmentCard extends StatelessWidget {
                 icon: garment.isClean
                     ? Icons.local_laundry_service
                     : Icons.local_laundry_service_outlined,
-                color:
-                    garment.isClean ? Colors.white24 : const Color(0xFFFFB74D),
+                color: garment.isClean
+                    ? Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.35)
+                    : const Color(0xFFFFB74D),
                 tooltip: garment.isClean ? 'Marcar sucia' : 'Marcar limpia',
                 onTap: onToggleClean,
               ),
@@ -337,13 +348,19 @@ class _GarmentCard extends StatelessWidget {
                     garment.isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: garment.isFavorite
                     ? const Color(0xFFFF4D4D)
-                    : Colors.white24,
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.35),
                 tooltip: 'Favorito',
                 onTap: onToggleFav,
               ),
               _SmallBtn(
                   icon: Icons.delete_outline,
-                  color: Colors.white24,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.35),
                   tooltip: 'Eliminar',
                   onTap: onDelete),
             ]),
@@ -451,11 +468,14 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24),
                         borderRadius: BorderRadius.circular(2)))),
-            const Text('Nueva prenda',
+            Text('Nueva prenda',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 14),
@@ -558,8 +578,10 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeThumbColor: const Color(0xFF00C896),
-                title: const Text('¿Tiene capucha desmontable?',
-                    style: TextStyle(color: Colors.white, fontSize: 13)),
+                title: Text('¿Tiene capucha desmontable?',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 13)),
                 value: _hasRemovableHood,
                 onChanged: (val) => setState(() => _hasRemovableHood = val),
               ),
@@ -579,8 +601,10 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
             ]),
             const SizedBox(height: 8),
             Row(children: [
-              const Text('Rating:',
-                  style: TextStyle(color: Colors.white, fontSize: 13)),
+              Text('Rating:',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 13)),
               const SizedBox(width: 8),
               ...List.generate(
                   5,
@@ -728,21 +752,25 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
       backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt, color: Color(0xFF00C896)),
-            title: const Text('Cámara', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(ctx, ImageSource.camera),
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_library, color: Color(0xFF00C896)),
-            title: const Text('Galería', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-          ),
-        ]),
-      ),
+      builder: (ctx) {
+        final onSurface = Theme.of(ctx).colorScheme.onSurface;
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF00C896)),
+              title: Text('Cámara', style: TextStyle(color: onSurface)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.photo_library, color: Color(0xFF00C896)),
+              title: Text('Galería', style: TextStyle(color: onSurface)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ]),
+        );
+      },
     );
     if (source == null) return;
 
@@ -876,25 +904,30 @@ JSON: {"name":"...","typeIndex":1,"primaryColor":"#FFFFFF","material":"Algodón"
         wantShort = await showDialog<bool>(
                 context: context,
                 barrierDismissible: false,
-                builder: (ctx) => AlertDialog(
-                        backgroundColor: Theme.of(context).cardColor,
-                        title: const Text('🏃 Conjunto Deportivo',
-                            style: TextStyle(color: Colors.white)),
-                        content: const Text(
-                            'Has guardado un top deportivo. ¿Deseas escanear el short ahora para armar tu conjunto automáticamente?',
-                            style: TextStyle(color: Colors.white70)),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('No por ahora',
-                                  style: TextStyle(color: Colors.white38))),
-                          ElevatedButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00C896)),
-                              child: const Text('Sí, escanear',
-                                  style: TextStyle(color: Colors.white))),
-                        ])) ??
+                builder: (ctx) {
+                  final onSurface = Theme.of(ctx).colorScheme.onSurface;
+                  return AlertDialog(
+                      backgroundColor: Theme.of(ctx).cardColor,
+                      title: Text('🏃 Conjunto Deportivo',
+                          style: TextStyle(color: onSurface)),
+                      content: Text(
+                          'Has guardado un top deportivo. ¿Deseas escanear el short ahora para armar tu conjunto automáticamente?',
+                          style: TextStyle(
+                              color: onSurface.withValues(alpha: 0.72))),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text('No por ahora',
+                                style: TextStyle(
+                                    color: onSurface.withValues(alpha: 0.5)))),
+                        ElevatedButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00C896)),
+                            child: const Text('Sí, escanear',
+                                style: TextStyle(color: Colors.white))),
+                      ]);
+                }) ??
             false;
       }
 
@@ -1025,7 +1058,10 @@ JSON: {"name":"Short de ${garment.name}","typeIndex":8,"primaryColor":"#000000",
                 .colorScheme
                 .onSurface
                 .withValues(alpha: 0.38)),
-        prefixIcon: Icon(icon, color: Colors.white38, size: 18),
+        prefixIcon: Icon(icon,
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+            size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(
@@ -1061,7 +1097,8 @@ class WardrobeCategoryScreen extends ConsumerWidget with AppFeedback {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme:
+            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         title: Text(
             '${WardrobeTab._typeEmoji[type] ?? '🎽'} ${type.label} (${items.length})',
             style: TextStyle(
@@ -1070,9 +1107,13 @@ class WardrobeCategoryScreen extends ConsumerWidget with AppFeedback {
                 fontWeight: FontWeight.w600)),
       ),
       body: items.isEmpty
-          ? const Center(
+          ? Center(
               child: Text('No quedan prendas.',
-                  style: TextStyle(color: Colors.white38)))
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.45))))
           : GridView.builder(
               padding: const EdgeInsets.all(16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

@@ -42,7 +42,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                       style: TextStyle(fontSize: 12)),
                 ],
               ),
-              backgroundColor: const Color(0xFF152019),
+              backgroundColor: Theme.of(context).cardColor,
               duration: const Duration(milliseconds: 1500),
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.all(8),
@@ -81,8 +81,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Text(
               _greeting(),
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 22,
                   fontWeight: FontWeight.w700),
             ),
@@ -191,19 +191,31 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.restaurant_menu,
-                size: 64, color: Colors.white.withValues(alpha: 0.15)),
+                size: 64,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.18)),
             const SizedBox(height: 16),
             Text(
               'Arma tu menú arriba y toca "Generar"',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4), fontSize: 14),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5),
+                  fontSize: 14),
             ),
             const SizedBox(height: 8),
             Text(
               'El Chef IA sugerirá menús completos\nbasados en tu despensa',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.3), fontSize: 12),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38),
+                  fontSize: 12),
             ),
           ],
         ),
@@ -211,15 +223,20 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     }
 
     if (aiState == WhatCanICookState.loading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: Color(0xFFFF9800)),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: Color(0xFFFF9800)),
+            const SizedBox(height: 16),
             Text(
               'El Chef IA está armando tu menú...',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
+                  fontSize: 14),
             ),
           ],
         ),
@@ -275,15 +292,25 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
           children: [
             const Icon(Icons.no_meals_outlined, size: 64, color: Colors.orange),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No se encontraron menús con esos componentes.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.72),
+                  fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Intenta con menos componentes o agrega más ingredientes a tu despensa.',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.55),
+                  fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -682,9 +709,12 @@ class _MenuCreatorCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // 1. Meal Period Selector
-          const Text('1. ¿Qué comida es?',
+          Text('1. ¿Qué comida es?',
               style: TextStyle(
-                  color: Colors.white70,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.75),
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
@@ -701,14 +731,21 @@ class _MenuCreatorCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFFFF9800)
-                            : const Color(0xFF2A2A40),
+                            : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${period.emoji} ${period.label}',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white70,
+                          color: isSelected
+                              ? Colors.black
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.75),
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,
                           fontSize: 11,
@@ -724,9 +761,12 @@ class _MenuCreatorCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // 2. Menu Components
-          const Text('2. ¿Qué partes quieres?',
+          Text('2. ¿Qué partes quieres?',
               style: TextStyle(
-                  color: Colors.white70,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.75),
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
@@ -743,8 +783,10 @@ class _MenuCreatorCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF00E676).withValues(alpha: 0.3)
-                        : const Color(0xFF2A2A40),
+                        ? const Color(0xFF00E676).withValues(alpha: 0.25)
+                        : Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
@@ -763,8 +805,13 @@ class _MenuCreatorCard extends StatelessWidget {
                         component.label,
                         style: TextStyle(
                           color: isSelected
-                              ? const Color(0xFF00E676)
-                              : Colors.white70,
+                              ? (Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xFF00E676)
+                                  : const Color(0xFF008955))
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.75),
                           fontSize: 11,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,
@@ -785,9 +832,12 @@ class _MenuCreatorCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // 3. Number of menus
-          const Text('3. ¿Cuántos menús?',
+          Text('3. ¿Cuántos menús?',
               style: TextStyle(
-                  color: Colors.white70,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.75),
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
@@ -857,21 +907,30 @@ class _MenuCreatorCard extends StatelessWidget {
 
   Widget _countButton(int count, Function(int) onChanged, int selected) {
     final isSelected = selected == count;
-    return GestureDetector(
-      onTap: () => onChanged(count),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF9800) : const Color(0xFF2A2A40),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '$count',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? Colors.black : Colors.white70,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
+    return Builder(
+      builder: (context) => GestureDetector(
+        onTap: () => onChanged(count),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFFFF9800)
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            '$count',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.black
+                  : Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.75),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
           ),
         ),
       ),
@@ -912,11 +971,19 @@ class _CompleteMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A2F1A), Color(0xFF0F1F0F)],
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF1A2F1A), Color(0xFF0F1F0F)]
+              : [
+                  const Color(0xFF00E676).withValues(alpha: 0.08),
+                  theme.cardColor,
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -951,7 +1018,8 @@ class _CompleteMenuCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${recipes.length} platos · ${recipes.fold(0, (sum, r) => sum + r.recipe.durationMinutes)} min total',
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.58), fontSize: 11),
                 ),
                 if (onDismiss != null)
                   IconButton(
@@ -997,14 +1065,14 @@ class _CompleteMenuCard extends StatelessWidget {
                         Text(
                           'Ingredientes disponibles',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: onSurface.withValues(alpha: 0.65),
                             fontSize: 10,
                           ),
                         ),
                         const SizedBox(height: 2),
                         LinearProgressIndicator(
                           value: menuMatchPercentage / 100,
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          backgroundColor: onSurface.withValues(alpha: 0.1),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             menuMatchPercentage >= 70
                                 ? const Color(0xFF00E676)
@@ -1044,7 +1112,7 @@ class _CompleteMenuCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: onSurface.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                           color:
@@ -1066,8 +1134,8 @@ class _CompleteMenuCard extends StatelessWidget {
                             children: [
                               Text(
                                 recipe.name,
-                                style: const TextStyle(
-                                    color: Colors.white,
+                                style: TextStyle(
+                                    color: onSurface,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500),
                                 maxLines: 1,
@@ -1091,8 +1159,9 @@ class _CompleteMenuCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           '${recipe.durationMinutes}min',
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 10),
+                          style: TextStyle(
+                              color: onSurface.withValues(alpha: 0.58),
+                              fontSize: 10),
                         ),
                       ],
                     ),

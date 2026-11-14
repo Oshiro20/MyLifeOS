@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:core/core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:open_filex/open_filex.dart';
@@ -21,18 +23,37 @@ class GithubRelease {
   });
 
   factory GithubRelease.fromJson(Map<String, dynamic> json) {
-    final assets = json['assets'] as List<dynamic>;
-    final apkAsset = assets.firstWhere(
-      (asset) => asset['name'].toString().endsWith('.apk'),
-      orElse: () =>
-          throw Exception('No se encontró un archivo APK en el release.'),
+    final assets = (json['assets'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final apks = assets
+        .where((asset) =>
+            (asset['name']?.toString().toLowerCase() ?? '').endsWith('.apk'))
+        .toList();
+    if (apks.isEmpty) {
+      throw Exception('No se encontró un archivo APK en el release.');
+    }
+
+    // Preferir APK arm64 o universal antes que builds x86 / armeabi
+    final abiHint = Platform.version.toLowerCase();
+    final preferArm64 = !abiHint.contains('arm_x64') &&
+        (abiHint.contains('arm64') || abiHint.contains('aarch64'));
+    final apkAsset = apks.firstWhere(
+      (a) {
+        final name = a['name'].toString().toLowerCase();
+        if (preferArm64 && name.contains('arm64')) return true;
+        return !name.contains('armeabi') &&
+            !name.contains('x86') &&
+            !name.contains('arm64');
+      },
+      orElse: () => apks.first,
     );
 
     return GithubRelease(
-      tagName: json['tag_name'],
-      body: json['body'] ?? '',
-      apkUrl: apkAsset['browser_download_url'],
-      fileName: apkAsset['name'],
+      tagName: json['tag_name']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      apkUrl: apkAsset['browser_download_url']?.toString() ?? '',
+      fileName: apkAsset['name']?.toString() ?? 'MyLifeOS-update.apk',
     );
   }
 }
@@ -42,7 +63,7 @@ class GithubRelease {
 class MyLifeOSUpdateService {
   static const _repoOwner = 'Oshiro20';
   static const _repoName = 'MyLifeOS';
-  static const _prefKey = 'mylifeos_last_notified_version';
+  static const _prefKey = 'mylifeos_dialog_last_notified_version';
 
   final Dio _dio = Dio();
 
@@ -59,10 +80,7 @@ class MyLifeOSUpdateService {
         final release = GithubRelease.fromJson(response.data);
         final packageInfo = await PackageInfo.fromPlatform();
 
-        final latestVersion = release.tagName.replaceAll('v', '');
-        final currentVersion = packageInfo.version;
-
-        if (_isVersionGreater(latestVersion, currentVersion)) {
+        if (isVersionGreater(release.tagName, packageInfo.version)) {
           return release;
         }
       }
@@ -74,20 +92,9 @@ class MyLifeOSUpdateService {
     return null;
   }
 
-  /// Compara dos versiones semánticas.
-  bool _isVersionGreater(String latest, String current) {
-    final latestParts =
-        latest.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-    final currentParts =
-        current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-
-    for (var i = 0; i < latestParts.length; i++) {
-      if (i >= currentParts.length) return true;
-      if (latestParts[i] > currentParts[i]) return true;
-      if (latestParts[i] < currentParts[i]) return false;
-    }
-    return false;
-  }
+  /// Compara dos versiones semánticas delegando al helper compartido en core.
+  static bool isVersionGreater(String latest, String current) =>
+      MyLifeOSUpdateNotifier.isVersionGreater(latest, current);
 
   /// Descarga e instala el APK automáticamente.
   /// Llama a onProgress con valores de 0.0 a 1.0.
@@ -110,8 +117,13 @@ class MyLifeOSUpdateService {
         },
       );
 
-      // Abrir el instalador del sistema
-      await OpenFilex.open(savePath);
+      // Abrir el instalador del sistema y verificar resultado
+      final openResult = await OpenFilex.open(savePath);
+      if (openResult.type != ResultType.done) {
+        throw Exception(
+          'No se pudo abrir el instalador (${openResult.message}).',
+        );
+      }
     } catch (e) {
       debugPrint(
           '[MyLifeOSUpdateService] Error durante descarga/instalación: $e');

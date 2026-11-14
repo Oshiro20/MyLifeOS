@@ -153,11 +153,14 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF031411), // Emerald Night Deep Background
       appBar: AppBar(
-        title: const Text('Chef IA',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Chef IA',
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme:
+            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: Stack(
         children: [
@@ -209,8 +212,8 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
             const SizedBox(height: 24),
             Text(
               notifier.currentStatusMessage,
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
@@ -222,6 +225,7 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
 
     if (state == RecipeImportState.success && notifier.importedRecipe != null) {
       final recipe = notifier.importedRecipe!;
+      final onSurface = Theme.of(context).colorScheme.onSurface;
       return SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -229,11 +233,11 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
             const Icon(Icons.check_circle_outline,
                 color: Color(0xFF00E676), size: 64),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '¡Receta Importada!',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white,
+                  color: onSurface,
                   fontSize: 24,
                   fontWeight: FontWeight.bold),
             ),
@@ -243,7 +247,8 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [                    Text(recipe.name,
+                  children: [
+                    Text(recipe.name,
                         style: const TextStyle(
                             color: Color(0xFF00F0FF),
                             fontSize: 22,
@@ -252,7 +257,9 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                     MarkdownBody(
                       data: recipe.description,
                       styleSheet: MarkdownStyleSheet(
-                        p: const TextStyle(color: Colors.white70, fontSize: 14),
+                        p: TextStyle(
+                            color: onSurface.withValues(alpha: 0.75),
+                            fontSize: 14),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -262,17 +269,20 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                             color: Color(0xFF00E676), size: 18),
                         const SizedBox(width: 8),
                         Text('${recipe.durationMinutes} min',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                color: onSurface, fontWeight: FontWeight.w600)),
                         const SizedBox(width: 24),
                         const Icon(Icons.restaurant_outlined,
                             color: Color(0xFF00E676), size: 18),
                         const SizedBox(width: 8),
                         Text('${recipe.servings} porciones',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                color: onSurface, fontWeight: FontWeight.w600)),
                       ],
                     ),
-                    const Divider(color: Colors.white12, height: 40),
-                    
+                    Divider(
+                        color: onSurface.withValues(alpha: 0.12), height: 40),
+
                     // Ingredients
                     _buildSectionHeader('📝 Ingredientes'),
                     const SizedBox(height: 12),
@@ -280,58 +290,77 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: Row(
                             children: [
-                              const Icon(Icons.add_circle_outline, color: Color(0xFF00E676), size: 14),
+                              const Icon(Icons.add_circle_outline,
+                                  color: Color(0xFF00E676), size: 14),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                     '${ing.quantity} ${ing.unit} de ${ing.ingredientName}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 13)),
+                                    style: TextStyle(
+                                        color: onSurface, fontSize: 13)),
                               ),
                             ],
                           ),
                         )),
-                    
+
                     if (recipe.instructions.isNotEmpty) ...[
-                      const Divider(color: Colors.white12, height: 40),
+                      Divider(
+                          color: onSurface.withValues(alpha: 0.12), height: 40),
                       _buildSectionHeader('🍳 Instrucciones'),
                       const SizedBox(height: 12),
                       MarkdownBody(
-                        data: recipe.instructions.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n'),
+                        data: recipe.instructions
+                            .asMap()
+                            .entries
+                            .map((e) => '${e.key + 1}. ${e.value}')
+                            .join('\n'),
                         styleSheet: MarkdownStyleSheet(
-                          p: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                          p: TextStyle(
+                              color: onSurface.withValues(alpha: 0.75),
+                              fontSize: 13,
+                              height: 1.5),
                         ),
                       ),
                     ],
 
                     if (recipe.tipsChef.isNotEmpty) ...[
-                      const Divider(color: Colors.white12, height: 40),
+                      Divider(
+                          color: onSurface.withValues(alpha: 0.12), height: 40),
                       _buildSectionHeader('👨‍🍳 Tips del Chef'),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E676).withValues(alpha: 0.05),
+                          color:
+                              const Color(0xFF00E676).withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.1)),
+                          border: Border.all(
+                              color:
+                                  const Color(0xFF00E676).withValues(alpha: 0.1)),
                         ),
                         child: MarkdownBody(
                           data: recipe.tipsChef.map((t) => '* $t').join('\n'),
                           styleSheet: MarkdownStyleSheet(
-                            listBullet: const TextStyle(color: Color(0xFF00E676)),
-                            p: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic),
+                            listBullet:
+                                const TextStyle(color: Color(0xFF00E676)),
+                            p: TextStyle(
+                                color: onSurface,
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic),
                           ),
                         ),
                       ),
                     ],
 
                     if (recipe.ingredientesInferidos.isNotEmpty) ...[
-                      const Divider(color: Colors.white12, height: 40),
-                      Row(
+                      Divider(
+                          color: onSurface.withValues(alpha: 0.12), height: 40),
+                      const Row(
                         children: [
-                          const Icon(Icons.auto_fix_high,
+                          Icon(Icons.auto_fix_high,
                               color: Color(0xFFFF9800), size: 16),
-                          const SizedBox(width: 8),
-                          const Text(
+                          SizedBox(width: 8),
+                          Text(
                             'Ingredientes inferidos:',
                             style: TextStyle(
                                 color: Color(0xFFFF9800),
@@ -351,8 +380,8 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                                 Expanded(
                                   child: Text(
                                     ing,
-                                    style: const TextStyle(
-                                        color: Colors.white70,
+                                    style: TextStyle(
+                                        color: onSurface.withValues(alpha: 0.72),
                                         fontStyle: FontStyle.italic,
                                         fontSize: 13),
                                   ),
@@ -466,27 +495,34 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
             ),
             TextButton(
               onPressed: notifier.reset,
-              child: const Text('Empezar de nuevo',
-                  style: TextStyle(color: Colors.white54)),
+              child: Text('Empezar de nuevo',
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55))),
             ),
           ],
         ),
       );
     }
 
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Inspiración al Alcance',
             style: TextStyle(
-                color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                color: onSurface, fontSize: 32, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Pega un link de TikTok o sube un video para convertirlo mágicamente en una receta estructurada.',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: TextStyle(
+                color: onSurface.withValues(alpha: 0.72), fontSize: 16),
           ),
           const SizedBox(height: 40),
           if (state == RecipeImportState.error) ...[
@@ -507,10 +543,11 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                 children: [
                   TextField(
                     controller: _urlController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: onSurface),
                     decoration: InputDecoration(
                       hintText: 'https://vm.tiktok.com/...',
-                      hintStyle: const TextStyle(color: Colors.white38),
+                      hintStyle:
+                          TextStyle(color: onSurface.withValues(alpha: 0.45)),
                       prefixIcon:
                           const Icon(Icons.link, color: Color(0xFF00F0FF)),
                       suffixIcon: IconButton(
@@ -519,7 +556,8 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                         onPressed: _pasteFromClipboard,
                       ),
                       filled: true,
-                      fillColor: Colors.black26,
+                      fillColor: theme.scaffoldBackgroundColor
+                          .withValues(alpha: 0.6),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
@@ -561,14 +599,15 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                                 _showHistory
                                     ? Icons.expand_less
                                     : Icons.expand_more,
-                                color: Colors.white54,
+                                color: onSurface.withValues(alpha: 0.58),
                                 size: 18,
                               ),
                               const SizedBox(width: 4),
-                              const Text(
+                              Text(
                                 'Historial reciente',
                                 style: TextStyle(
-                                    color: Colors.white54, fontSize: 12),
+                                    color: onSurface.withValues(alpha: 0.58),
+                                    fontSize: 12),
                               ),
                             ],
                           ),
@@ -671,7 +710,7 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: onSurface.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                     color: const Color(0xFF00E676).withValues(alpha: 0.3)),
@@ -680,8 +719,9 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${_selectedImages.length} imagen(es) seleccionada(s)',
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 13)),
+                      style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.72),
+                          fontSize: 13)),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 80,
@@ -765,12 +805,14 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
+    return Builder(
+      builder: (context) => Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
       ),
     );
   }
@@ -782,15 +824,19 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Theme.of(context).cardColor.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            border: Border.all(color: onSurface.withValues(alpha: 0.1)),
           ),
           child: child,
         ),

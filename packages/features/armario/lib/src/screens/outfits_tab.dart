@@ -13,21 +13,26 @@ class OutfitsTab extends ConsumerWidget {
     final outfits = state.outfits;
     final garmentMap = {for (final g in state.garments) g.id: g};
 
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     Widget content;
     if (outfits.isEmpty) {
-      content = const Center(
+      content = Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.style_outlined, size: 64, color: Colors.white12),
-            SizedBox(height: 12),
+            Icon(Icons.style_outlined,
+                size: 64, color: onSurface.withValues(alpha: 0.15)),
+            const SizedBox(height: 12),
             Text('Sin outfits guardados',
-                style: TextStyle(color: Colors.white38, fontSize: 17)),
-            SizedBox(height: 6),
+                style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.45), fontSize: 17)),
+            const SizedBox(height: 6),
             Text(
               'Guarda un outfit desde "Sugeridos"\no créalo aquí con el botón +.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white24, fontSize: 13),
+              style: TextStyle(
+                  color: onSurface.withValues(alpha: 0.35), fontSize: 13),
             ),
           ],
         ),
@@ -56,8 +61,8 @@ class OutfitsTab extends ConsumerWidget {
                 Row(children: [
                   Expanded(
                     child: Text(outfit.name,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: onSurface,
                             fontWeight: FontWeight.w700,
                             fontSize: 15)),
                   ),
@@ -130,7 +135,15 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
   final Season _season = Season.all;
 
   @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       padding: EdgeInsets.only(
         left: 20,
@@ -142,31 +155,31 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Crear Outfit',
+          Text('Crear Outfit',
               style: TextStyle(
-                  color: Colors.white,
+                  color: onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(
             controller: _name,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            style: TextStyle(color: onSurface),
             decoration: InputDecoration(
               hintText: 'Nombre (ej: Outfit de playa)',
               hintStyle: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.38)),
+                  color: onSurface.withValues(alpha: 0.38)),
               filled: true,
-              fillColor: const Color(0xFF2A2A40),
+              fillColor: isDark
+                  ? const Color(0xFF2A2A40)
+                  : const Color(0xFFEAF4F0),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none),
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Prendas:', style: TextStyle(color: Colors.white70)),
+          Text('Prendas:',
+              style: TextStyle(color: onSurface.withValues(alpha: 0.7))),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
@@ -177,19 +190,15 @@ class _CreateOutfitSheetState extends State<_CreateOutfitSheet> {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: _ColorDot(hex: g.primaryColor),
-                  title: Text(g.name,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface)),
+                  title: Text(g.name, style: TextStyle(color: onSurface)),
                   subtitle: Text(g.type.label,
-                      style: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.38))),
+                      style:
+                          TextStyle(color: onSurface.withValues(alpha: 0.45))),
                   trailing: Icon(
                     isSelected ? Icons.check_circle : Icons.circle_outlined,
-                    color:
-                        isSelected ? const Color(0xFF00C896) : Colors.white38,
+                    color: isSelected
+                        ? const Color(0xFF00C896)
+                        : onSurface.withValues(alpha: 0.38),
                   ),
                   onTap: () => setState(() {
                     if (isSelected) {
@@ -243,7 +252,12 @@ class _ColorDot extends StatelessWidget {
         decoration: BoxDecoration(
           color: _color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white12, width: 1),
+          border: Border.all(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.15),
+              width: 1),
         ),
       );
 }
@@ -252,18 +266,21 @@ class _Tag extends StatelessWidget {
   final String text;
   const _Tag(this.text);
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A2A40),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(text,
-            style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.38),
-                fontSize: 10)),
-      );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A40) : const Color(0xFFE0F7F0),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.65),
+              fontSize: 10)),
+    );
+  }
 }

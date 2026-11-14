@@ -32,7 +32,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         setState(() => _appVersion = 'v${info.version}+${info.buildNumber}');
       }
     } catch (_) {
-      if (mounted) setState(() => _appVersion = 'v1.0.4');
+      if (mounted) setState(() => _appVersion = 'Versión local');
     }
   }
 
@@ -96,6 +96,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _showAboutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
     return showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -119,19 +121,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const Icon(Icons.dashboard, color: Colors.white, size: 32),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'MyLifeOS',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: fg,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 _appVersion,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: fg.withValues(alpha: 0.55),
                   fontSize: 13,
                 ),
               ),
@@ -140,7 +142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 'Tu sistema operativo personal potenciado por IA. Centraliza tu vida: finanzas, armario, cocina y nutrición en un solo lugar.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: fg.withValues(alpha: 0.75),
                   fontSize: 13,
                   height: 1.5,
                 ),
@@ -465,7 +467,9 @@ class _BackupSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Tamaño actual: ${_formatSize(backup.dbSizeBytes)}',
+                    backup.lastModified != null
+                        ? 'Tamaño actual: ${_formatSize(backup.dbSizeBytes)} · Último: ${backup.lastModified!.day.toString().padLeft(2, '0')}/${backup.lastModified!.month.toString().padLeft(2, '0')} ${backup.lastModified!.hour.toString().padLeft(2, '0')}:${backup.lastModified!.minute.toString().padLeft(2, '0')}'
+                        : 'Tamaño actual: ${_formatSize(backup.dbSizeBytes)}',
                     style: const TextStyle(
                       color: Color(0xFF00C896),
                       fontSize: 12,
@@ -478,11 +482,9 @@ class _BackupSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Auto backup toggle
-          FutureBuilder<bool>(
-            future: AutoBackupService.isEnabled(),
-            builder: (context, snapshot) {
-              final isEnabled = snapshot.data ?? false;
+          // Estado real de backup automático
+          Builder(
+            builder: (context) {
               final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
               final subtitleColor =
                   isDark ? Colors.white54 : const Color(0xFF4A7A65);
@@ -506,19 +508,24 @@ class _BackupSection extends StatelessWidget {
                   ),
                 ),
                 subtitle: Text(
-                  'Cada 24 horas en background',
+                  'En desarrollo · Usa Exportar backup para respaldar tus datos',
                   style: TextStyle(color: subtitleColor, fontSize: 11),
                 ),
-                trailing: Switch(
-                  value: isEnabled,
-                  activeThumbColor: const Color(0xFF00C896),
-                  onChanged: (val) async {
-                    if (val) {
-                      await AutoBackupService.enable();
-                    } else {
-                      await AutoBackupService.disable();
-                    }
-                  },
+                trailing: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Pronto',
+                    style: TextStyle(
+                      color: Color(0xFFFFB74D),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               );
             },
@@ -654,26 +661,26 @@ class _BackupSection extends StatelessWidget {
     required Color confirmColor,
     bool isDestructive = false,
   }) async {
+    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
     final result = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(title,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w700)),
+            style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
         content: Text(
           message,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: fg.withValues(alpha: 0.7),
             height: 1.5,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+            child: Text('Cancelar',
+                style: TextStyle(color: fg.withValues(alpha: 0.5))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -895,7 +902,8 @@ class _ModuleTile extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+          const Icon(Icons.check_circle_outline,
+              color: Color(0xFF00C896), size: 18),
         ],
       ),
     );
@@ -1059,6 +1067,8 @@ Widget _DangerZone(BuildContext context, WidgetRef ref) {
 }
 
 Future<void> _confirmDeleteAll(BuildContext context, WidgetRef ref) async {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
   final step1 = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
@@ -1066,19 +1076,20 @@ Future<void> _confirmDeleteAll(BuildContext context, WidgetRef ref) async {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       title: const Text('🗑️ Borrar TODO',
           style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
-      content: const Text(
+      content: Text(
         'Se eliminarán PERMANENTEMENTE todos tus datos. Esta acción no tiene marcha atrás.',
-        style: TextStyle(color: Colors.white60, height: 1.5),
+        style: TextStyle(color: fg.withValues(alpha: 0.7), height: 1.5),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child:
-              const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+          child: Text('Cancelar',
+              style: TextStyle(color: fg.withValues(alpha: 0.5))),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -1097,24 +1108,29 @@ Future<void> _confirmDeleteAll(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _confirmDeleteAllFinal(BuildContext context, WidgetRef ref) async {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: const Color(0xFF152019),
+      backgroundColor: Theme.of(ctx).cardColor,
       title: const Text('⚠️ Confirmar borrado total',
           style: TextStyle(color: Colors.red)),
-      content: const Text(
+      content: Text(
         'Esto eliminará TODOS tus datos locales: ingredientes, recetas, menú semanal, prendas, outfits, evaluaciones nutricionales y ajustes. ¿Estás completamente seguro?',
-        style: TextStyle(color: Colors.white70),
+        style: TextStyle(color: fg.withValues(alpha: 0.75)),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child:
-              const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+          child: Text('Cancelar',
+              style: TextStyle(color: fg.withValues(alpha: 0.5))),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
           onPressed: () => Navigator.pop(ctx, true),
           child: const Text('Borrar todo'),
         ),
@@ -1132,6 +1148,7 @@ Future<void> _confirmDeleteAllFinal(BuildContext context, WidgetRef ref) async {
       await prefs.clear();
       await ref.read(secureStorageProvider).deleteAll();
       await ref.read(userDisplayNameProvider.notifier).reset();
+      ref.invalidate(themeModeProvider);
       await ref.read(backupProvider.notifier).refreshInfo();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

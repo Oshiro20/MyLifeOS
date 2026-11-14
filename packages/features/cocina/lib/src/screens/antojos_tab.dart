@@ -85,16 +85,18 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           child: CircularProgressIndicator(color: Color(0xFFFF9800)));
     }
 
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     if (_cravings.isEmpty && _allCravings.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cookie, size: 64, color: Colors.white24),
+            Icon(Icons.cookie,
+                size: 64, color: onSurface.withValues(alpha: 0.24)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No se encontraron antojos.',
-              style: TextStyle(color: Colors.white38),
+              style: TextStyle(color: onSurface.withValues(alpha: 0.45)),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -119,11 +121,11 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('🍫 Antojos',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('🍫 Antojos',
+            style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: onSurface),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFFFF9800)),
@@ -156,7 +158,8 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
                         _applyFilter();
                       });
                     },
-                    backgroundColor: const Color(0xFF2A2A40),
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     selectedColor: const Color(0xFFFF9800).withAlpha(60),
                     checkmarkColor: const Color(0xFFFF9800),
                   );
@@ -171,7 +174,8 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
               children: [
                 Text(
                   '${_cravings.length} receta${_cravings.length != 1 ? 's' : ''}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 13),
+                  style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.6), fontSize: 13),
                 ),
               ],
             ),
@@ -179,9 +183,10 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           // Grid
           Expanded(
             child: _cravings.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text('No hay antojos en esta categoría',
-                        style: TextStyle(color: Colors.white38)),
+                        style:
+                            TextStyle(color: onSurface.withValues(alpha: 0.45))),
                   )
                 : Padding(
                     padding: const EdgeInsets.all(12),
@@ -367,12 +372,17 @@ class _AntojoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final mealType = recipe.tipoComida ?? MealType.postre;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2A1F0D), Color(0xFF1F1709)],
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF2A1F0D), Color(0xFF1F1709)]
+                : const [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -394,15 +404,19 @@ class _AntojoCard extends StatelessWidget {
                           style: const TextStyle(fontSize: 24)),
                       const Spacer(),
                       Text('${recipe.durationMinutes} min',
-                          style: const TextStyle(
-                              color: Color(0xFF00E676), fontSize: 10)),
+                          style: TextStyle(
+                              color: isDark
+                                  ? const Color(0xFF00E676)
+                                  : const Color(0xFF008955),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
                     recipe.name,
-                    style: const TextStyle(
-                        color: Colors.white,
+                    style: TextStyle(
+                        color: onSurface,
                         fontWeight: FontWeight.w700,
                         fontSize: 13),
                     maxLines: 2,
@@ -417,7 +431,7 @@ class _AntojoCard extends StatelessWidget {
                               .join(', ') +
                           (recipe.ingredients.length > 2 ? '...' : ''),
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: onSurface.withValues(alpha: 0.65),
                           fontSize: 10),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

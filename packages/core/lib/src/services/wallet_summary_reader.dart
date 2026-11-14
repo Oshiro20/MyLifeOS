@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'shared_identity_service.dart';
@@ -276,3 +277,7 @@ class WalletSummaryReader {
     return await readWithValidation();
   }
 }
+
+/// Provider compartido para el resumen actual de WalletAI (evita múltiples lecturas independientes).
+final walletSummaryProvider =
+    FutureProvider<WalletSummary?>((ref) => WalletSummaryReader.read());

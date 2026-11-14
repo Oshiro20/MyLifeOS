@@ -145,10 +145,10 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: _buildBody(),
-          ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildBody(isDark),
+            ),
 
           if (_insight == null && !_loading)
             Padding(
@@ -175,7 +175,7 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(bool isDark) {
     if (_loading) {
       return const Center(
         child: Padding(
@@ -238,8 +238,11 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
                     const SizedBox(width: 8),
                     Expanded(
                         child: Text(a,
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.white70))),
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF35594A)))),
                   ],
                 ),
               )),
@@ -260,7 +263,9 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
           child: MarkdownBody(
             data: _insight!.consejo,
             styleSheet: MarkdownStyleSheet(
-              p: const TextStyle(fontSize: 13, color: Colors.white),
+              p: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white : const Color(0xFF0A1F16)),
             ),
           ),
         ),

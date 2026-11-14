@@ -78,9 +78,12 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        title: const Text(
+        title: Text(
           'Cocina 🍳',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           // Nutrition goal selector - always visible
@@ -145,7 +148,8 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           controller: _tab,
           indicatorColor: const Color(0xFF00C896),
           labelColor: const Color(0xFF00C896),
-          unselectedLabelColor: Colors.white38,
+          unselectedLabelColor:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
           isScrollable: false,
           labelStyle:
               const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),

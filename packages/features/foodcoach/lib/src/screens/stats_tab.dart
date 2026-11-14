@@ -10,15 +10,19 @@ class StatsTab extends ConsumerWidget {
     final state = ref.watch(foodCoachProvider);
     final stats = state.weeklyStats;
 
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     if (stats == null || stats.totalMeals == 0) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bar_chart_outlined, size: 64, color: Colors.white12),
-            SizedBox(height: 12),
+            Icon(Icons.bar_chart_outlined,
+                size: 64, color: onSurface.withValues(alpha: 0.15)),
+            const SizedBox(height: 12),
             Text('Aún no hay datos esta semana',
-                style: TextStyle(color: Colors.white38, fontSize: 17)),
+                style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.45), fontSize: 17)),
           ],
         ),
       );
@@ -32,9 +36,9 @@ class StatsTab extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Resumen semanal
-          const Text('RESUMEN SEMANAL',
+          Text('RESUMEN SEMANAL',
               style: TextStyle(
-                  color: Colors.white38,
+                  color: onSurface.withValues(alpha: 0.45),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5)),
@@ -70,7 +74,7 @@ class StatsTab extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: stats.averageHealthScore,
-                    backgroundColor: Colors.white10,
+                    backgroundColor: onSurface.withValues(alpha: 0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(
                         _scoreColor(stats.averageHealthScore)),
                     minHeight: 12,
@@ -82,9 +86,9 @@ class StatsTab extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Distribución
-          const Text('DISTRIBUCIÓN',
+          Text('DISTRIBUCIÓN',
               style: TextStyle(
-                  color: Colors.white38,
+                  color: onSurface.withValues(alpha: 0.45),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5)),
@@ -190,7 +194,8 @@ class StatsTab extends ConsumerWidget {
           // Total de comidas
           Text(
             '${stats.totalMeals} comidas evaluadas esta semana',
-            style: const TextStyle(color: Colors.white24, fontSize: 12),
+            style: TextStyle(
+                color: onSurface.withValues(alpha: 0.4), fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ],

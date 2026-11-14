@@ -59,15 +59,15 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF152019),
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFF00C896).withAlpha(40)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _StatBadge(
-                  '🟢 ${state.ingredients.length}', 'Total', Colors.white),
+              _StatBadge('🟢 ${state.ingredients.length}', 'Total',
+                  Theme.of(context).colorScheme.onSurface),
               _StatBadge(
                   '🟡 $expiringCount', 'Por vencer', const Color(0xFFFFB300)),
               _StatBadge(
@@ -87,19 +87,31 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
       Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF2A2A40),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(
           controller: _searchCtrl,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: '🔍 Buscar en tu despensa...',
-            hintStyle: const TextStyle(color: Colors.white38),
-            prefixIcon: const Icon(Icons.search, color: Colors.white54),
+            hintStyle: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.45)),
+            prefixIcon: Icon(Icons.search,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.55)),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white54),
+                    icon: Icon(Icons.clear,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55)),
                     onPressed: () {
                       setState(() {
                         _searchCtrl.clear();
@@ -120,11 +132,16 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
     );
 
     if (_searchQuery.isNotEmpty && filteredIngredients.isEmpty) {
-      listChildren.add(const Center(
+      listChildren.add(Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text('No se encontraron ingredientes',
-              style: TextStyle(color: Colors.white54, fontSize: 14)),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.55),
+                  fontSize: 14)),
         ),
       ));
     }
@@ -169,11 +186,16 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
             ],
           ),
           if (foodPrefs.dislikedIngredients.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'Agrega ingredientes que no te gustan para que el Chef IA los evite.',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                    fontSize: 11),
               ),
             )
           else
@@ -264,15 +286,23 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
           child: filteredIngredients.isEmpty
               ? Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.kitchen_outlined,
-                        size: 64, color: Colors.white12),
+                    Icon(Icons.kitchen_outlined,
+                        size: 64,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.18)),
                     const SizedBox(height: 12),
                     Text(
                         _searchQuery.isNotEmpty
                             ? 'No se encontraron resultados para "$_searchQuery"'
                             : 'Tu despensa está vacía',
-                        style: const TextStyle(
-                            color: Colors.white38, fontSize: 17)),
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.45),
+                            fontSize: 17)),
                     const SizedBox(height: 8),
                     TextButton.icon(
                       onPressed: () => _showAddDialog(context, ref),
@@ -320,39 +350,43 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
     final controller = TextEditingController();
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF152019),
-        title: const Text('🚫 Ingrediente que NO te gusta',
-            style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Ej: cebolla, cilantro, pescado...',
-            hintStyle: TextStyle(color: Colors.white54),
-            border: OutlineInputBorder(),
+      builder: (ctx) {
+        final onSurface = Theme.of(ctx).colorScheme.onSurface;
+        return AlertDialog(
+          backgroundColor: Theme.of(ctx).cardColor,
+          title: Text('🚫 Ingrediente que NO te gusta',
+              style: TextStyle(color: onSurface)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: TextStyle(color: onSurface),
+            decoration: InputDecoration(
+              hintText: 'Ej: cebolla, cilantro, pescado...',
+              hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.55)),
+              border: const OutlineInputBorder(),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child:
-                const Text('Cancelar', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                notifier.addDislikedIngredient(text);
-                Navigator.pop(ctx);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('Agregar'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancelar',
+                  style: TextStyle(color: onSurface.withValues(alpha: 0.55))),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                if (text.isNotEmpty) {
+                  notifier.addDislikedIngredient(text);
+                  Navigator.pop(ctx);
+                }
+              },
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('Agregar'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -438,21 +472,22 @@ class _IngredientTile extends StatelessWidget {
     return '📦';
   }
 
-  Color get _expiryColor {
+  Color _expiryColor(BuildContext context) {
     if (ingredient.isExpired) return const Color(0xFFFF4D4D);
     if (ingredient.isExpiringSoon) return const Color(0xFFFFB74D);
-    return Colors.white54;
+    return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
   }
 
   @override
   Widget build(BuildContext context) {
+    final expiryColor = _expiryColor(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: ingredient.isExpiringSoon
-            ? Border.all(color: _expiryColor.withAlpha(100), width: 1)
+            ? Border.all(color: expiryColor.withAlpha(100), width: 1)
             : null,
       ),
       child: ListTile(
@@ -466,11 +501,15 @@ class _IngredientTile extends StatelessWidget {
         subtitle: Text(
           '${ingredient.subCategory != null ? "${ingredient.subCategory} • " : ""}${ingredient.quantity} ${ingredient.unit}'
           '${ingredient.expirationDate != null ? " · cad. ${_fmt(ingredient.expirationDate!)}" : ""}',
-          style: TextStyle(color: _expiryColor, fontSize: 12),
+          style: TextStyle(color: expiryColor, fontSize: 12),
         ),
         trailing: IconButton(
-          icon:
-              const Icon(Icons.delete_outline, color: Colors.white24, size: 20),
+          icon: Icon(Icons.delete_outline,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.35),
+              size: 20),
           onPressed: onDelete,
         ),
       ),
@@ -797,15 +836,18 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24),
                         borderRadius: BorderRadius.circular(2)))),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Agregar ingrediente',
+                Text('Agregar ingrediente',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 18,
                         fontWeight: FontWeight.w700)),
                 Row(
@@ -999,13 +1041,25 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
             // Fecha de caducidad
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.today_outlined, color: Colors.white38),
+              leading: Icon(Icons.today_outlined,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45)),
               title: Text(
                 _expiry == null
                     ? 'Sin fecha de caducidad'
                     : 'Caduca: ${_expiry!.day}/${_expiry!.month}/${_expiry!.year}',
                 style: TextStyle(
-                    color: _expiry == null ? Colors.white38 : Colors.white70,
+                    color: _expiry == null
+                        ? Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.45)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.78),
                     fontSize: 14),
               ),
               trailing: TextButton(
@@ -1314,7 +1368,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 .colorScheme
                 .onSurface
                 .withValues(alpha: 0.38)),
-        prefixIcon: Icon(icon, color: Colors.white38, size: 18),
+        prefixIcon: Icon(icon,
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+            size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(
@@ -1358,9 +1415,9 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🔍 Revisar Productos (IA)',
+            Text('🔍 Revisar Productos (IA)',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
@@ -1433,8 +1490,11 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                         ],
                       ),
                       trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline,
-                            color: Colors.white38),
+                        icon: Icon(Icons.delete_outline,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.45)),
                         onPressed: () => setState(() => items.removeAt(i)),
                       ),
                     ),
@@ -1473,8 +1533,8 @@ class _StatBadge extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(label,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.bold)),
         const SizedBox(height: 2),

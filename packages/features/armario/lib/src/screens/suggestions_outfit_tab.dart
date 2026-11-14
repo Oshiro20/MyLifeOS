@@ -94,18 +94,28 @@ class _NoProfileBanner extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.person_outline, size: 72, color: Colors.white12),
+          Icon(Icons.person_outline,
+              size: 72,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.18)),
           const SizedBox(height: 16),
-          const Text('Configura tu perfil',
+          Text('Configura tu perfil',
               style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 20,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Para sugerirte los mejores outfits necesito conocer tu estatura, peso, tono de piel y contextura.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 14),
+            style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
+                fontSize: 14),
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
@@ -145,9 +155,9 @@ class _OccasionPicker extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         const SizedBox(height: 8),
-        const Text('¿A dónde irás hoy?',
+        Text('¿A dónde irás hoy?',
             style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 22,
                 fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
@@ -181,14 +191,19 @@ class _OccasionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final onSurface = theme.colorScheme.onSurface;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 5),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF152019), Color(0xFF1A2E22)],
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+                : [theme.cardColor, theme.cardColor],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -199,13 +214,13 @@ class _OccasionCard extends StatelessWidget {
             Icon(icon, color: const Color(0xFF00C896), size: 24),
             const SizedBox(width: 16),
             Text(label,
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w500)),
             const Spacer(),
-            const Icon(Icons.arrow_forward_ios,
-                color: Colors.white24, size: 14),
+            Icon(Icons.arrow_forward_ios,
+                color: onSurface.withValues(alpha: 0.35), size: 14),
           ],
         ),
       ),
@@ -364,13 +379,17 @@ class _OutfitResults extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: onBack,
-                child: const Icon(Icons.arrow_back_ios,
-                    color: Colors.white54, size: 18),
+                child: Icon(Icons.arrow_back_ios,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                    size: 18),
               ),
               const SizedBox(width: 8),
               Text(_occasionLabel[occasion] ?? occasion,
-                  style: const TextStyle(
-                      color: Colors.white,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w700)),
               const Spacer(),
@@ -386,23 +405,33 @@ class _OutfitResults extends StatelessWidget {
         ),
         Expanded(
           child: filtered.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                       'No hay suficientes prendas para esta ocasión.\nAgrega más prendas limpias.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white38, fontSize: 14)),
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.45),
+                          fontSize: 14)),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
                     final combo = filtered[i];
+                    final theme = Theme.of(ctx);
+                    final isDark = theme.brightness == Brightness.dark;
+                    final onSurface = theme.colorScheme.onSurface;
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF152019), Color(0xFF1A2E22)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+                              : [theme.cardColor, theme.cardColor],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
@@ -434,19 +463,22 @@ class _OutfitResults extends StatelessWidget {
                                                   _parseColor(g.primaryColor),
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                  color: Colors.white24),
+                                                  color: onSurface.withValues(
+                                                      alpha: 0.25)),
                                             ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(g.name,
-                                              style: const TextStyle(
-                                                  color: Colors.white70,
+                                              style: TextStyle(
+                                                  color: onSurface.withValues(
+                                                      alpha: 0.78),
                                                   fontSize: 11),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis),
                                           Text(g.type.label,
-                                              style: const TextStyle(
-                                                  color: Colors.white30,
+                                              style: TextStyle(
+                                                  color: onSurface.withValues(
+                                                      alpha: 0.45),
                                                   fontSize: 9)),
                                         ],
                                       ),
@@ -468,8 +500,8 @@ class _OutfitResults extends StatelessWidget {
                                 final messenger = ScaffoldMessenger.of(context);
                                 final ids = combo.map((g) => g.id).toList();
                                 try {
-                                  await onSave(
-                                      'Outfit $occasion ${i + 1}', occasion, ids);
+                                  await onSave('Outfit $occasion ${i + 1}',
+                                      occasion, ids);
                                   messenger.showSnackBar(
                                     const SnackBar(
                                         content: Text('Outfit guardado ✓'),
@@ -570,17 +602,25 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24),
                         borderRadius: BorderRadius.circular(2)))),
-            const Text('Tu perfil físico',
+            Text('Tu perfil físico',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            const Text(
+            Text(
                 'Esta información se guarda localmente y se usa solo para sugerirte outfits.',
-                style: TextStyle(color: Colors.white38, fontSize: 12)),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45),
+                    fontSize: 12)),
             const SizedBox(height: 16),
 
             // Estatura y Peso
@@ -697,7 +737,10 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
                 .colorScheme
                 .onSurface
                 .withValues(alpha: 0.38)),
-        prefixIcon: Icon(icon, color: Colors.white38, size: 18),
+        prefixIcon: Icon(icon,
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+            size: 18),
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(

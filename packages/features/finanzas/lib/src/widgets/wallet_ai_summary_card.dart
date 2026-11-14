@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../screens/walletai_connection_screen.dart';
 
 /// Card que muestra el resumen ejecutivo de WalletAI en el módulo de Finanzas.
 /// Si WalletAI no está instalado o no ha exportado datos, muestra un estado vacío.
-class WalletAiSummaryCard extends StatefulWidget {
+class WalletAiSummaryCard extends ConsumerStatefulWidget {
   const WalletAiSummaryCard({super.key});
 
   @override
-  State<WalletAiSummaryCard> createState() => _WalletAiSummaryCardState();
+  ConsumerState<WalletAiSummaryCard> createState() =>
+      _WalletAiSummaryCardState();
 }
 
-class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
+class _WalletAiSummaryCardState extends ConsumerState<WalletAiSummaryCard> {
   WalletSummary? _summary;
   WalletConnectionStatus? _connectionStatus;
   bool _loading = true;
@@ -25,7 +27,7 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
   }
 
   Future<void> _load() async {
-    final summary = await WalletSummaryReader.read();
+    final summary = await ref.read(walletSummaryProvider.future);
     final status = await WalletAICommunicationService.checkConnectionStatus();
     if (mounted) {
       setState(() {
@@ -38,12 +40,17 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
 
   Future<void> _refresh() async {
     setState(() => _refreshing = true);
+    ref.invalidate(walletSummaryProvider);
     await _load();
-    setState(() => _refreshing = false);
+    if (mounted) {
+      setState(() => _refreshing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mutedColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
     if (_loading) {
       return SizedBox(
         height: 120,
@@ -55,7 +62,7 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
               const SizedBox(height: 8),
               Text(
                 'Conectando con WalletAI...',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: mutedColor, fontSize: 12),
               ),
             ],
           ),
@@ -114,122 +121,120 @@ class _WalletAiSummaryCardState extends State<WalletAiSummaryCard> {
 
     final s = _summary!;
     final isPositive = s.balance >= 0;
+    final titleColor = isDark ? Colors.white70 : const Color(0xFF0A1F16);
+    final subtleColor = isDark ? Colors.white38 : const Color(0xFF4A7A65);
+    final faintColor = isDark ? Colors.white24 : const Color(0xFF6B8F7E);
 
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: [const Color(0xFF152019), const Color(0xFF1A2E22)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: const Color(0xFF00C896).withValues(alpha: 0.2),
-            ),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+              : const [Colors.white, Color(0xFFEEF5F2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: const Color(0xFF00C896).withValues(alpha: 0.2),
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00C896).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Stack(
-                      children: [
-                        const Icon(Icons.account_balance_wallet_outlined,
-                            color: Color(0xFF00C896), size: 18),
-                        if (_refreshing)
-                          Positioned.fill(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                const Color(0xFF00C896),
-                              ),
-                            ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C896).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Stack(
+                  children: [
+                    const Icon(Icons.account_balance_wallet_outlined,
+                        color: Color(0xFF00C896), size: 18),
+                    if (_refreshing)
+                      const Positioned.fill(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF00C896),
                           ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('WalletAI',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                  const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('v${s.version}',
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 11)),
-                      Text(
-                        _getStatusText(),
-                        style:
-                            const TextStyle(color: Colors.white24, fontSize: 9),
+                        ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '${s.currency} ${s.balance.toStringAsFixed(2)}',
-                style: TextStyle(
-                  color: isPositive
-                      ? const Color(0xFF00E5FF)
-                      : const Color(0xFFFF6B6B),
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text('Balance disponible · ${s.month}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 12)),
-              const SizedBox(height: 12),
-              Row(
+              const SizedBox(width: 8),
+              Text('WalletAI',
+                  style: TextStyle(
+                      color: titleColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _MetricChip(
-                    label: 'Ingresos',
-                    value: '+${s.currency} ${s.income.toStringAsFixed(0)}',
-                    color: const Color(0xFF00E5FF),
-                  ),
-                  const SizedBox(width: 8),
-                  _MetricChip(
-                    label: 'Gastos',
-                    value: '-${s.currency} ${s.expenses.toStringAsFixed(0)}',
-                    color: const Color(0xFFFF6B6B),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: _openWalletAI,
-                    icon: const Icon(Icons.open_in_new,
-                        size: 14, color: Color(0xFF00C896)),
-                    label: const Text('Abrir',
-                        style:
-                            TextStyle(color: Color(0xFF00C896), fontSize: 12)),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                  Text('v${s.version}',
+                      style: TextStyle(color: subtleColor, fontSize: 11)),
+                  Text(
+                    _getStatusText(),
+                    style: TextStyle(color: faintColor, fontSize: 9),
                   ),
                 ],
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          Text(
+            '${s.currency} ${s.balance.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: isPositive
+                  ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
+                  : const Color(0xFFFF6B6B),
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text('Balance disponible · ${s.month}',
+              style: TextStyle(color: subtleColor, fontSize: 12)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _MetricChip(
+                label: 'Ingresos',
+                value: '+${s.currency} ${s.income.toStringAsFixed(0)}',
+                color: isDark
+                    ? const Color(0xFF00E5FF)
+                    : const Color(0xFF00838F),
+              ),
+              const SizedBox(width: 8),
+              _MetricChip(
+                label: 'Gastos',
+                value: '-${s.currency} ${s.expenses.toStringAsFixed(0)}',
+                color: const Color(0xFFFF6B6B),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _openWalletAI,
+                icon: const Icon(Icons.open_in_new,
+                    size: 14, color: Color(0xFF00C896)),
+                label: const Text('Abrir',
+                    style: TextStyle(color: Color(0xFF00C896), fontSize: 12)),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -309,11 +314,16 @@ class _WalletNotConnectedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white70 : const Color(0xFF0A1F16);
+    final subtitleColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [const Color(0xFF152019), const Color(0xFF1A2E22)],
+          colors: isDark
+              ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+              : const [Colors.white, Color(0xFFEEF5F2)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -341,10 +351,10 @@ class _WalletNotConnectedCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'WalletAI no conectado',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: titleColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -353,8 +363,8 @@ class _WalletNotConnectedCard extends StatelessWidget {
                     Text(
                       status.error ??
                           'Vincula tu Cuenta WalletAI o abre WalletAI para sincronizar',
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: subtitleColor,
                         fontSize: 11,
                       ),
                     ),
@@ -401,8 +411,9 @@ class _WalletNotConnectedCard extends StatelessWidget {
                         icon: const Icon(Icons.refresh, size: 16),
                         label: const Text('Reintentar'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Colors.white24),
+                          foregroundColor: titleColor,
+                          side: BorderSide(
+                              color: subtitleColor.withValues(alpha: 0.4)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                       ),
@@ -485,11 +496,16 @@ class _WalletIdMismatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white70 : const Color(0xFF0A1F16);
+    final subtleColor = isDark ? Colors.white38 : const Color(0xFF4A7A65);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [const Color(0xFF152019), const Color(0xFF1A2E22)],
+          colors: isDark
+              ? const [Color(0xFF152019), Color(0xFF1A2E22)]
+              : const [Colors.white, Color(0xFFEEF5F2)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -513,23 +529,23 @@ class _WalletIdMismatchCard extends StatelessWidget {
                     color: Color(0xFFF59E0B), size: 20),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Project IDs no coinciden',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: titleColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Verifica la configuración en ambas apps',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: subtleColor,
                         fontSize: 11,
                       ),
                     ),

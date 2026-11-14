@@ -34,15 +34,18 @@ class _ArmarioScreenState extends ConsumerState<ArmarioScreen>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        title: const Text(
+        title: Text(
           'Armario 👔',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600),
         ),
         bottom: TabBar(
           controller: _tab,
           indicatorColor: const Color(0xFF00C896),
           labelColor: const Color(0xFF00C896),
-          unselectedLabelColor: Colors.white38,
+          unselectedLabelColor:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
           isScrollable: true,
           tabAlignment: TabAlignment.center,
           labelPadding: const EdgeInsets.symmetric(horizontal: 16),

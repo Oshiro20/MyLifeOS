@@ -32,43 +32,56 @@ final _router = GoRouter(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
-    ShellRoute(
-      builder: (ctx, state, child) => _AppShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const HomeScreen(),
-        ),
-        GoRoute(
-          path: '/finanzas',
-          builder: (context, state) => const FinanzasScreen(),
-        ),
-        GoRoute(
-          path: '/cocina',
-          builder: (context, state) => const CocinaScreen(),
-          routes: [
-            GoRoute(
-              path: 'import',
-              builder: (context, state) => const RecipeImporterScreen(),
-            ),
-            GoRoute(
-              path: 'weekly-plan',
-              builder: (context, state) => const WeeklyPlanScreen(),
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/armario',
-          builder: (context, state) => const ArmarioScreen(),
-        ),
-        GoRoute(
-          path: '/foodcoach',
-          builder: (context, state) => const FoodCoachScreen(),
-        ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
-        ),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) =>
+          _AppShell(navigationShell: navigationShell),
+      branches: [
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/armario',
+            builder: (context, state) => const ArmarioScreen(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/cocina',
+            builder: (context, state) => const CocinaScreen(),
+            routes: [
+              GoRoute(
+                path: 'import',
+                builder: (context, state) => const RecipeImporterScreen(),
+              ),
+              GoRoute(
+                path: 'weekly-plan',
+                builder: (context, state) => const WeeklyPlanScreen(),
+              ),
+            ],
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/finanzas',
+            builder: (context, state) => const FinanzasScreen(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/foodcoach',
+            builder: (context, state) => const FoodCoachScreen(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+        ]),
       ],
     ),
   ],
@@ -99,11 +112,21 @@ Future<void> main() async {
         await dotenv.load(fileName: '.env');
       } catch (_) {}
 
-      // Inicializar notificaciones locales
+      // Inicializar notificaciones locales con handler de navegación
       await _notifications.initialize(
         const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         ),
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          final payload = response.payload ?? '';
+          if (payload == 'update_walletai') {
+            _router.go('/finanzas');
+          } else if (payload == 'update_mylifeos') {
+            _router.go('/home');
+          } else if (payload.startsWith('/')) {
+            _router.go(payload);
+          }
+        },
       );
 
       // Inicializar backup automático
@@ -131,6 +154,8 @@ Future<void> main() async {
                   ref.invalidate(inventoryProvider);
                   ref.invalidate(recipesProvider);
                   ref.invalidate(foodCoachProvider);
+                  ref.invalidate(whatCanICookProvider);
+                  ref.invalidate(walletSummaryProvider);
                   ref.read(aiChatProvider.notifier).clearHistory();
                 }),
             // BackupService no requiere override — usa el Provider estándar
@@ -182,9 +207,11 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
   void _handleSharedMedia(List<SharedMediaFile> value) {
     if (value.isNotEmpty) {
       final textOrUrl = value.first.path; // Url/Text defaults to path
+      ReceiveSharingIntent.instance.reset();
       if (textOrUrl.isNotEmpty) {
         _router.go('/cocina/import');
         Future.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted) return;
           ref
               .read(recipeImportProvider.notifier)
               .importFromTikTokUrl(textOrUrl);
@@ -337,43 +364,31 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
 }
 
 // ── App Shell con NavigationBar ──────────────────────────────────────────────
-class _AppShell extends StatefulWidget {
-  final Widget child;
-  const _AppShell({required this.child});
+class _AppShell extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
+  const _AppShell({required this.navigationShell});
 
-  @override
-  State<_AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<_AppShell> {
   static const _tabs = [
-    ('/home', Icons.home_outlined, 'Inicio'),
-    ('/armario', Icons.checkroom_outlined, 'Armario'),
-    ('/cocina', Icons.soup_kitchen_outlined, 'Cocina'),
-    ('/finanzas', Icons.account_balance_wallet_outlined, 'Finanzas'),
-    ('/foodcoach', Icons.restaurant_menu_outlined, 'FoodCoach'),
-    ('/settings', Icons.settings_outlined, 'Ajustes'),
+    (Icons.home_outlined, 'Inicio'),
+    (Icons.checkroom_outlined, 'Armario'),
+    (Icons.soup_kitchen_outlined, 'Cocina'),
+    (Icons.account_balance_wallet_outlined, 'Finanzas'),
+    (Icons.restaurant_menu_outlined, 'FoodCoach'),
+    (Icons.settings_outlined, 'Ajustes'),
   ];
-
-  int _indexFromLocation(String location) {
-    for (int i = 0; i < _tabs.length; i++) {
-      if (location.startsWith(_tabs[i].$1)) return i;
-    }
-    return 0;
-  }
 
   @override
   Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    final currentIndex = _indexFromLocation(location);
-
     return Scaffold(
-      body: widget.child,
+      body: navigationShell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (i) => context.go(_tabs[i].$1),
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (i) => navigationShell.goBranch(
+          i,
+          initialLocation: i == navigationShell.currentIndex,
+        ),
         destinations: _tabs
-            .map((t) => NavigationDestination(icon: Icon(t.$2), label: t.$3))
+            .map((t) => NavigationDestination(icon: Icon(t.$1), label: t.$2))
             .toList(),
       ),
     );

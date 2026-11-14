@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/wallet_ai_summary_card.dart';
 import '../widgets/ai_analysis_card.dart';
 import '../screens/walletai_connection_screen.dart';
 import 'package:core/core.dart';
 
-class FinanzasScreen extends StatefulWidget {
+class FinanzasScreen extends ConsumerStatefulWidget {
   const FinanzasScreen({super.key});
 
   @override
-  State<FinanzasScreen> createState() => _FinanzasScreenState();
+  ConsumerState<FinanzasScreen> createState() => _FinanzasScreenState();
 }
 
-class _FinanzasScreenState extends State<FinanzasScreen> {
-  WalletSummary? _summary;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSummary();
-  }
-
-  Future<void> _loadSummary() async {
-    final summary = await WalletSummaryReader.read();
-    if (mounted) {
-      setState(() => _summary = summary);
-    }
+class _FinanzasScreenState extends ConsumerState<FinanzasScreen> {
+  Future<void> _refresh() async {
+    ref.invalidate(walletSummaryProvider);
+    await ref.read(walletSummaryProvider.future);
   }
 
   Future<void> _openConnectionSettings() async {
@@ -33,16 +24,17 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
         builder: (context) => const WalletAIConnectionSettingsScreen(),
       ),
     );
-    await _loadSummary();
+    await _refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final summary = ref.watch(walletSummaryProvider).asData?.value;
 
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _loadSummary,
+        onRefresh: _refresh,
         color: const Color(0xFF00C896),
         child: CustomScrollView(
           slivers: [
@@ -61,7 +53,7 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   tooltip: 'Actualizar datos',
-                  onPressed: _loadSummary,
+                  onPressed: _refresh,
                 ),
               ],
             ),
@@ -73,7 +65,7 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
                   // ── WalletAI resumen ────────────────────────────────────────
                   const WalletAiSummaryCard(),
                   const SizedBox(height: 16),
-                  AIAnalysisCard(summary: _summary),
+                  AIAnalysisCard(summary: summary),
                   const SizedBox(height: 20),
 
                   // ── Gráfico semanal ─────────────────────────────────────────
@@ -81,14 +73,14 @@ class _FinanzasScreenState extends State<FinanzasScreen> {
                       title: 'Actividad semanal',
                       trailing: 'Basado en WalletAI'),
                   const SizedBox(height: 10),
-                  _WeeklyChart(isDark: isDark, summary: _summary),
+                  _WeeklyChart(isDark: isDark, summary: summary),
                   const SizedBox(height: 20),
 
                   // ── Categorías ──────────────────────────────────────────────
                   const _SectionTitle(
                       title: 'Resumen del mes', trailing: 'WalletAI'),
                   const SizedBox(height: 10),
-                  _CategorySummary(isDark: isDark, summary: _summary),
+                  _CategorySummary(isDark: isDark, summary: summary),
                   const SizedBox(height: 20),
 
                   // ── Transacciones recientes ─────────────────────────────────
@@ -191,16 +183,18 @@ class _WeeklyChart extends StatelessWidget {
                 children: [
                   Text(
                     'Gastos del mes: ${summary!.currency} ${summary!.expenses.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF35594A),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     'Ingresos: ${summary!.currency} ${summary!.income.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Color(0xFF00E5FF),
+                    style: TextStyle(
+                      color: isDark
+                          ? const Color(0xFF00E5FF)
+                          : const Color(0xFF00838F),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -349,7 +343,8 @@ class _CategorySummary extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: savingsRate.clamp(0.0, 1.0),
-              backgroundColor: Colors.white12,
+              backgroundColor:
+                  isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.08),
               color: savingsRate > 0.2
                   ? const Color(0xFF00C896)
                   : savingsRate > 0
@@ -360,7 +355,11 @@ class _CategorySummary extends StatelessWidget {
           ),
           if (summary != null && summary!.byCategory.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Divider(height: 1, color: Colors.white12),
+            Divider(
+                height: 1,
+                color: isDark
+                    ? Colors.white12
+                    : Colors.black.withValues(alpha: 0.08)),
             const SizedBox(height: 12),
             const Align(
               alignment: Alignment.centerLeft,
@@ -385,10 +384,12 @@ class _CategorySummary extends StatelessWidget {
                       ),
                       Text(
                         '${summary!.currency} ${cat.amount.toStringAsFixed(2)} (${cat.percentage.toStringAsFixed(0)}%)',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white70,
+                          color: isDark
+                              ? Colors.white70
+                              : const Color(0xFF35594A),
                         ),
                       ),
                     ],
@@ -397,7 +398,11 @@ class _CategorySummary extends StatelessWidget {
           ],
           if (summary != null && summary!.recentTransactions.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Divider(height: 1, color: Colors.white12),
+            Divider(
+                height: 1,
+                color: isDark
+                    ? Colors.white12
+                    : Colors.black.withValues(alpha: 0.08)),
             const SizedBox(height: 12),
             const Align(
               alignment: Alignment.centerLeft,
@@ -587,7 +592,12 @@ class _GuidanceItem extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 16, color: Colors.white24),
+            Icon(Icons.chevron_right,
+                size: 16,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.35)),
           ],
         ),
       ),

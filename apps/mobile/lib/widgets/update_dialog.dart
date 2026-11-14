@@ -39,61 +39,87 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
       );
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Error al descargar: $e');
+        setState(() {
+          _isDownloading = false;
+          _progress = 0;
+          _errorMessage = 'Error al descargar o instalar: $e';
+        });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: const Color(0xFF152019),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
-        child: _isDownloading
-            ? _buildDownloadingState()
-            : _buildUpdateAvailableState(),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF152019) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final mutedColor = isDark ? Colors.white70 : const Color(0xFF35594A);
+    final subtleColor = isDark ? Colors.white54 : const Color(0xFF5D7A6E);
+    final accentBlue =
+        isDark ? const Color(0xFF00F0FF) : const Color(0xFF00796B);
+
+    return PopScope(
+      canPop: !_isDownloading,
+      child: Dialog(
+        backgroundColor: bgColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(24),
+          child: _isDownloading
+              ? _buildDownloadingState(textColor, mutedColor, subtleColor)
+              : _buildUpdateAvailableState(
+                  isDark, textColor, mutedColor, subtleColor, accentBlue),
+        ),
       ),
     );
   }
 
-  Widget _buildUpdateAvailableState() {
+  Widget _buildUpdateAvailableState(
+    bool isDark,
+    Color textColor,
+    Color mutedColor,
+    Color subtleColor,
+    Color accentBlue,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.system_update, color: Color(0xFF00E676), size: 32),
-            SizedBox(width: 12),
-            Text(
-              '✨ Actualización disponible',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
+            const Icon(Icons.system_update, color: Color(0xFF00E676), size: 32),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '✨ Actualización disponible',
+                style: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Text(
           'Nueva versión ${widget.release.tagName}',
-          style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 14),
+          style: TextStyle(color: accentBlue, fontSize: 14),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : const Color(0xFFF0F9F5),
             borderRadius: BorderRadius.circular(12),
           ),
           constraints: const BoxConstraints(maxHeight: 150),
           child: SingleChildScrollView(
             child: Text(
               _formatReleaseNotes(widget.release.body),
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: mutedColor, fontSize: 13),
             ),
           ),
         ),
@@ -106,18 +132,19 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
               style: const TextStyle(color: Colors.redAccent, fontSize: 12),
             ),
           ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+        Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             TextButton(
               onPressed: () {
                 widget.onDismiss?.call();
                 Navigator.of(context).pop();
               },
-              child: const Text('Después',
-                  style: TextStyle(color: Colors.white54)),
+              child: Text('Después', style: TextStyle(color: subtleColor)),
             ),
-            const SizedBox(width: 8),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00E676),
@@ -135,33 +162,34 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
     );
   }
 
-  Widget _buildDownloadingState() {
+  Widget _buildDownloadingState(
+      Color textColor, Color mutedColor, Color subtleColor) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         const Icon(Icons.downloading, color: Color(0xFF00E676), size: 48),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'Descargando actualización...',
           style: TextStyle(
-              color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         LinearProgressIndicator(
           value: _progress,
-          backgroundColor: Colors.white.withValues(alpha: 0.1),
+          backgroundColor: subtleColor.withValues(alpha: 0.2),
           valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00E676)),
           minHeight: 8,
         ),
         const SizedBox(height: 8),
         Text(
           '${(_progress * 100).toStringAsFixed(1)}%',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: mutedColor, fontSize: 14),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Se abrirá el instalador automáticamente',
-          style: TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(color: subtleColor, fontSize: 12),
           textAlign: TextAlign.center,
         ),
       ],
@@ -169,13 +197,11 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
   }
 
   String _formatReleaseNotes(String body) {
-    // Limpiar el markdown básico
     return body
         .replaceAll('## ', '')
         .replaceAll('### ', '')
         .replaceAll('**', '')
-        .replaceAll('* ', '• ')
-        .replaceAll('-', '•');
+        .replaceAll(RegExp(r'^\s*[-*]\s+', multiLine: true), '• ');
   }
 }
 

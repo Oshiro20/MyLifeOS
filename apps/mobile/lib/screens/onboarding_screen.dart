@@ -109,6 +109,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.initState();
   }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);

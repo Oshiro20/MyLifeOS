@@ -106,13 +106,22 @@ class OutfitAIPreviewCard extends ConsumerWidget {
     final suggestionAsync = ref.watch(
         _outfitSuggestionProvider((aiService, garments, profileSummary)));
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF152019) : Colors.white;
+    final titleColor = isDark ? Colors.white70 : const Color(0xFF35594A);
+    final subtleColor = isDark ? Colors.white24 : const Color(0xFF5D7A6E);
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF152019),
+        color: surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+            color: isDark
+                ? Colors.white12
+                : const Color(0xFF00A37A).withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,17 +130,17 @@ class OutfitAIPreviewCard extends ConsumerWidget {
             children: [
               const Icon(Icons.checkroom, color: Color(0xFFF59E0B), size: 18),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Outfit sugerido con IA',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: titleColor,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const Spacer(),
-              const Text('Hoy · Personalizado',
-                  style: TextStyle(color: Colors.white24, fontSize: 11)),
+              Text('Hoy · Personalizado',
+                  style: TextStyle(color: subtleColor, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 12),
@@ -146,8 +155,8 @@ class OutfitAIPreviewCard extends ConsumerWidget {
                     children: [
                       Text(
                         suggestion ?? 'Organizando tu look...',
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: textColor,
                             fontWeight: FontWeight.w600,
                             fontSize: 13),
                         maxLines: 2,
@@ -159,8 +168,8 @@ class OutfitAIPreviewCard extends ConsumerWidget {
               ],
             ),
             loading: () => _LoadingShimmer(),
-            error: (_, __) => const Text('Error al sugerir outfit',
-                style: TextStyle(color: Colors.white24)),
+            error: (_, __) => Text('Error al sugerir outfit',
+                style: TextStyle(color: subtleColor)),
           ),
         ],
       ),
@@ -216,7 +225,7 @@ class FinanceHealthCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final aiFinance = ref.watch(aiFinanceProvider);
-    final summaryAsync = ref.watch(_walletSummaryCardProvider);
+    final summaryAsync = ref.watch(walletSummaryProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -310,10 +319,6 @@ class FinanceHealthCard extends ConsumerWidget {
     ).animate().fadeIn(delay: 400.ms);
   }
 }
-
-final _walletSummaryCardProvider = FutureProvider<WalletSummary?>((ref) async {
-  return await WalletSummaryReader.read();
-});
 
 final _wasteDetectionProvider = FutureProvider.family<List<String>,
     (AiFinanceService, String, double, double)>((ref, args) async {

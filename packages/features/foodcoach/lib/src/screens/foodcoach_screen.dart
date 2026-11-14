@@ -33,15 +33,18 @@ class _FoodCoachScreenState extends ConsumerState<FoodCoachScreen>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        title: const Text(
+        title: Text(
           'Food Coach 🥗',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600),
         ),
         bottom: TabBar(
           controller: _tab,
           indicatorColor: const Color(0xFF00C896),
           labelColor: const Color(0xFF00C896),
-          unselectedLabelColor: Colors.white38,
+          unselectedLabelColor:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
           labelStyle:
               const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           tabs: const [

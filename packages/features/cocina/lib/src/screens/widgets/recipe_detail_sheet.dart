@@ -65,36 +65,56 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.24),
                     borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 12),
         Text(widget.recipe.name,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
                 fontSize: 20)),
         if (widget.recipe.description.isNotEmpty) ...[
           const SizedBox(height: 6),
           Text(widget.recipe.description,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6), fontSize: 14)),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.65),
+                  fontSize: 14)),
         ],
         const SizedBox(height: 12),
         // Servings controls
         Row(
           children: [
-            const Icon(Icons.people, size: 16, color: Colors.white54),
+            Icon(Icons.people,
+                size: 16,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6)),
             const SizedBox(width: 8),
             Text('Porciones: $_scaledServings',
                 style: TextStyle(
-                    color: isScaled ? const Color(0xFFFF9800) : Colors.white54,
+                    color: isScaled
+                        ? const Color(0xFFFF9800)
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.6),
                     fontWeight: FontWeight.bold)),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.remove_circle_outline, size: 20),
               color: _scaledServings > 1
                   ? const Color(0xFFFF9800)
-                  : Colors.white24,
+                  : Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.24),
               onPressed: _scaledServings > 1
                   ? () => setState(() => _scaledServings--)
                   : null,
@@ -103,7 +123,10 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
               icon: const Icon(Icons.add_circle_outline, size: 20),
               color: _scaledServings < maxServings
                   ? const Color(0xFFFF9800)
-                  : Colors.white24,
+                  : Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.24),
               onPressed: _scaledServings < maxServings
                   ? () => setState(() => _scaledServings++)
                   : null,
@@ -112,18 +135,21 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
         ),
         const SizedBox(height: 8),
         Wrap(spacing: 8, children: [
-          _chip('⏱ ${widget.recipe.durationMinutes} min'),
-          _chip('🍳 ${widget.recipe.ingredients.length} ingredientes'),
+          _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
+          _chip(context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
           if (isScaled)
-            _chip(
+            _chip(context,
                 '📏 x${(_scaledServings / _baseServings).toStringAsFixed(1)}'),
         ]),
         // Ingredients
         if (widget.recipe.ingredients.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text('INGREDIENTES',
+          Text('INGREDIENTES',
               style: TextStyle(
-                  color: Colors.white38,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5)),
@@ -135,13 +161,19 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
                       size: 8, color: Color(0xFF00C896)),
                   const SizedBox(width: 10),
                   Text(ing.ingredientName,
-                      style: TextStyle(color: Colors.white, fontSize: 14)),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: 14)),
                   const Spacer(),
                   Text(
                     '${_formatQuantity(_getScaledQuantity(ing.quantity))} ${ing.unit}',
                     style: TextStyle(
-                        color:
-                            isScaled ? const Color(0xFFFF9800) : Colors.white54,
+                        color: isScaled
+                            ? const Color(0xFFFF9800)
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
                         fontSize: 12,
                         fontWeight:
                             isScaled ? FontWeight.w700 : FontWeight.w400),
@@ -152,9 +184,12 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
         // Instructions
         if (widget.recipe.instructions.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text('INSTRUCCIONES',
+          Text('INSTRUCCIONES',
               style: TextStyle(
-                  color: Colors.white38,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.45),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5)),
@@ -181,7 +216,10 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
                       Expanded(
                           child: Text(e.value,
                               style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.78),
                                   fontSize: 14))),
                     ]),
               )),
@@ -205,26 +243,34 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '💡 Al cocinar, se descontarán los ingredientes de tu despensa',
           textAlign: TextAlign.center,
           style: TextStyle(
-              color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.6),
+              fontSize: 11,
+              fontStyle: FontStyle.italic),
         ),
         const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _chip(String label) {
+  Widget _chip(BuildContext context, String label) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A40),
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          style: TextStyle(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+              fontSize: 12)),
     );
   }
 
