@@ -132,31 +132,34 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
               style: const TextStyle(color: Colors.redAccent, fontSize: 12),
             ),
           ),
-        Wrap(
-          alignment: WrapAlignment.end,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            TextButton(
-              onPressed: () {
-                widget.onDismiss?.call();
-                Navigator.of(context).pop();
-              },
-              child: Text('Después', style: TextStyle(color: subtleColor)),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00E676),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () {
+                  widget.onDismiss?.call();
+                  Navigator.of(context).pop();
+                },
+                child: Text('Después', style: TextStyle(color: subtleColor)),
               ),
-              onPressed: _startUpdate,
-              icon: const Icon(Icons.download, size: 18),
-              label: const Text('Actualizar ahora'),
-            ),
-          ],
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00E676),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _startUpdate,
+                icon: const Icon(Icons.download, size: 18),
+                label: const Text('Actualizar ahora'),
+              ),
+            ],
+          ),
         ),
       ],
     );

@@ -1,7 +1,7 @@
 name: my_life_os
 description: "MyLifeOS — Tu sistema operativo personal."
 publish_to: 'none'
-version: 3.6.0+99
+version: 3.7.0+100
 
 resolution: workspace
 
