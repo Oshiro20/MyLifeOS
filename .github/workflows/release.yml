@@ -29,7 +29,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'master'
+          channel: 'stable'
           cache: true
 
       # ── Instalar dependencias ────────────────────────────────────────────
@@ -37,21 +37,19 @@ jobs:
         run: flutter pub get
         working-directory: apps/mobile
 
-      # ── Build APK release ────────────────────────────────────────────────
+      # ── Build APK release universal ──────────────────────────────────────
       - name: Build APK
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release
         working-directory: apps/mobile
 
-      # ── Renombrar APKs con versión ───────────────────────────────────────
-      - name: Rename APKs
+      # ── Renombrar APK universal con versión ──────────────────────────────
+      - name: Rename APK
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           cd apps/mobile/build/app/outputs/flutter-apk
-          mv app-arm64-v8a-release.apk MyLifeOS-${VERSION}-arm64.apk
-          mv app-armeabi-v7a-release.apk MyLifeOS-${VERSION}-arm32.apk
-          mv app-x86_64-release.apk MyLifeOS-${VERSION}-x86_64.apk
+          mv app-release.apk MyLifeOS-${VERSION}.apk
 
-      # ── Crear Release con APKs adjuntos ─────────────────────────────────
+      # ── Crear Release con APK adjunto ────────────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -60,20 +58,15 @@ jobs:
           body: |
             ## MyLifeOS ${{ steps.version.outputs.VERSION }}
 
-            Nueva versión disponible.
+            Nueva versión disponible con mejoras internas, sincronización cloud con WalletAI e integración OTA.
 
             ### Instalación en Android
-            Descarga el APK según tu dispositivo:
-            - **arm64** → la mayoría de teléfonos modernos (2017+)
-            - **arm32** → teléfonos más antiguos
-            - **x86_64** → emuladores
+            - **APK Universal (`MyLifeOS-${{ steps.version.outputs.VERSION }}.apk`)** compatible con dispositivos arm64, arm32 y x86_64.
 
             Habilita "Instalar apps de fuentes desconocidas" en Ajustes → Seguridad.
 
-            > Los usuarios con la app instalada recibirán una notificación automática.
+            > Los usuarios con la app instalada recibirán una actualización automática (OTA).
           files: |
-            apps/mobile/build/app/outputs/flutter-apk/MyLifeOS-${{ steps.version.outputs.VERSION }}-arm64.apk
-            apps/mobile/build/app/outputs/flutter-apk/MyLifeOS-${{ steps.version.outputs.VERSION }}-arm32.apk
-            apps/mobile/build/app/outputs/flutter-apk/MyLifeOS-${{ steps.version.outputs.VERSION }}-x86_64.apk
+            apps/mobile/build/app/outputs/flutter-apk/MyLifeOS-${{ steps.version.outputs.VERSION }}.apk
           draft: false
           prerelease: false
