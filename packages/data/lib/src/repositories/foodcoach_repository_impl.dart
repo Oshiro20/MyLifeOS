@@ -102,20 +102,25 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
     if (_ai != null) {
       try {
-        final jsonStr = await _ai.evaluateMeal(
-          description: lowerIngredients.join(', '),
+        final description = lowerIngredients.isNotEmpty
+            ? lowerIngredients.join(', ')
+            : 'Analiza los alimentos visibles en la fotografía.';
+        final jsonStr = await _ai.evaluateMealStructured(
+          description: description,
           photoPath: photoPath,
         );
         if (jsonStr != null) {
-          final cleanJson =
-              jsonStr.replaceAll(RegExp(r'```json\n|```'), '').trim();
+          final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonStr);
+          final cleanJson = match?.group(0) ?? jsonStr.trim();
           final decoded = json.decode(cleanJson) as Map<String, dynamic>;
-          final clsStr = decoded['classification'] as String? ?? 'balanced';
+          final clsStr =
+              decoded['classification']?.toString().toLowerCase() ?? 'balanced';
           classification = FoodClassification.values.firstWhere(
             (e) => e.name == clsStr,
             orElse: () => FoodClassification.balanced,
           );
-          healthScore = (decoded['healthScore'] as num?)?.toDouble() ?? 0.5;
+          healthScore =
+              ((decoded['healthScore'] as num?)?.toDouble() ?? 0.5).clamp(0.0, 1.0);
           pos = List<String>.from(decoded['positiveFactors'] ?? []);
           neg = List<String>.from(decoded['negativeFactors'] ?? []);
           feedback = decoded['feedback'] as String? ?? '';
@@ -127,7 +132,11 @@ class FoodCoachRepository implements IFoodCoachRepository {
       }
     }
 
-    if (!aiSuccess) {
+    if (!aiSuccess && lowerIngredients.isEmpty && photoPath != null) {
+      feedback =
+          'No se pudo analizar la fotografía sin conexión. Añade ingredientes manualmente.';
+      rec = 'Verifica tu conexión a internet o lista los ingredientes.';
+    } else if (!aiSuccess) {
       // ── LOGICA OFFLINE (FALLBACK) ──────────────────────────────────────────────
       int totalScore = 0;
       final matched = <String>{};
@@ -211,7 +220,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
               photoPath: r.photoPath.isEmpty ? null : r.photoPath,
               classification:
                   FoodClassification.values[r.classificationIndex.clamp(0, 2)],
-              healthScore: r.classificationIndex / 2.0,
+              healthScore: r.healthScore.clamp(0.0, 1.0),
               feedback: r.feedback,
             ))
         .toList();
@@ -224,6 +233,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
           timestamp: Value(eval.timestamp),
           photoPath: Value(eval.photoPath ?? ''),
           classificationIndex: Value(eval.classification.index),
+          healthScore: Value(eval.healthScore.clamp(0.0, 1.0)),
           feedback: Value(eval.feedback),
           detectedIngredientsCsv: Value(eval.detectedIngredients.join(',')),
         ));
@@ -231,7 +241,11 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
   @override
   Future<void> deleteFromHistory(String id) async {
+    final existing = await (_db.select(_db.mealLogs)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
     await (_db.delete(_db.mealLogs)..where((t) => t.id.equals(id))).go();
+    await AppDatabase.deleteLocalFileIfPresent(existing?.photoPath);
   }
 
   // ── Estadísticas semanales ────────────────────────────────────────────────
@@ -257,16 +271,14 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
     for (final r in rows) {
       final c = FoodClassification.values[r.classificationIndex.clamp(0, 2)];
+      totalScore += r.healthScore.clamp(0.0, 1.0);
       switch (c) {
         case FoodClassification.healthy:
           healthy++;
-          totalScore += 0.85;
         case FoodClassification.balanced:
           balanced++;
-          totalScore += 0.55;
         case FoodClassification.junk:
           junk++;
-          totalScore += 0.20;
       }
     }
 

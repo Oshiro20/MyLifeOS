@@ -78,6 +78,24 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
           ));
         }
       });
+    } else if (widget.initialOutfit != null) {
+      final allGarments = ref.read(armarioProvider).garments;
+      final byId = {for (final g in allGarments) g.id: g};
+      final outfitGarments = widget.initialOutfit!.garmentIds
+          .map((id) => byId[id])
+          .whereType<WardrobeGarment>()
+          .toList();
+      if (outfitGarments.isNotEmpty) {
+        setState(() {
+          for (var i = 0; i < outfitGarments.length; i++) {
+            final factor = (0.15 + (i * 0.25)).clamp(0.15, 0.78);
+            _items.add(CanvasGarment(
+              garment: outfitGarments[i],
+              position: Offset(size.width / 2 - 60, size.height * factor),
+            ));
+          }
+        });
+      }
     }
   }
 
@@ -181,11 +199,18 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                             border: Border.all(color: Colors.white10),
                           ),
                           alignment: Alignment.center,
-                          child: garment.imageAssetId != null
+                          child: garment.imageAssetId != null &&
+                                  File(garment.imageAssetId!).existsSync()
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(File(garment.imageAssetId!),
-                                      fit: BoxFit.cover),
+                                  child: Image.file(
+                                    File(garment.imageAssetId!),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.checkroom,
+                                        color: Colors.white38,
+                                        size: 40),
+                                  ),
                                 )
                               : const Icon(Icons.checkroom,
                                   color: Colors.white38, size: 40),
@@ -301,7 +326,14 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                 style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C896)),
                 onPressed: () async {
-                  if (nameCtrl.text.trim().isEmpty) return;
+                  if (nameCtrl.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                        content: Text('Ingresa un nombre para el outfit'),
+                      ),
+                    );
+                    return;
+                  }
 
                   final garmentIds = _items.map((e) => e.garment.id).toList();
                   final newOutfit = Outfit(
@@ -326,6 +358,7 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
         },
       ),
     );
+    nameCtrl.dispose();
 
     if (saved == true) {
       if (!mounted) return;
@@ -407,11 +440,15 @@ class _MannequinCanvasScreenState extends ConsumerState<MannequinCanvasScreen> {
                                   strokeAlign: BorderSide.strokeAlignOutside)
                               : null,
                         ),
-                        child: item.garment.imageAssetId != null
+                        child: item.garment.imageAssetId != null &&
+                                File(item.garment.imageAssetId!).existsSync()
                             ? Image.file(
                                 File(item.garment.imageAssetId!),
-                                fit: BoxFit
-                                    .contain, // Maintain original aspect ratio
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.checkroom,
+                                      color: Colors.white54, size: 40),
+                                ),
                               )
                             : Center(
                                 child: Container(

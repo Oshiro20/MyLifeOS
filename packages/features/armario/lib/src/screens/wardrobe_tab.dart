@@ -15,9 +15,13 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
   static const _typeEmoji = {
     GarmentType.shirt: '👕',
     GarmentType.tshirt: '👚',
+    GarmentType.polo: '👕',
     GarmentType.pants: '👖',
     GarmentType.jeans: '🩱',
     GarmentType.shoes: '👟',
+    GarmentType.sneakers: '👟',
+    GarmentType.boots: '🥾',
+    GarmentType.sandals: '🩴',
     GarmentType.jacket: '🧥',
     GarmentType.accessories: '💍',
     GarmentType.dress: '👗',
@@ -26,6 +30,13 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
     GarmentType.hoodie: '🧥',
     GarmentType.skirt: '👗',
     GarmentType.other: '🎽',
+  };
+
+  static const _shoeTypes = {
+    GarmentType.shoes,
+    GarmentType.sneakers,
+    GarmentType.boots,
+    GarmentType.sandals,
   };
 
   @override
@@ -37,7 +48,7 @@ class WardrobeTab extends ConsumerWidget with AppFeedback {
 
     // Filtrar prendas (ropa vs calzado)
     final filteredGarments = state.garments.where((g) {
-      final isShoe = g.type == GarmentType.shoes;
+      final isShoe = _shoeTypes.contains(g.type);
       return isShoesTab ? isShoe : !isShoe;
     }).toList();
 
@@ -270,7 +281,8 @@ class _GarmentCard extends StatelessWidget {
           child: Stack(
             children: [
               Center(child: Text(emoji, style: const TextStyle(fontSize: 40))),
-              if (garment.imageDetailsPath != null)
+              if (garment.imageDetailsPath != null &&
+                  File(garment.imageDetailsPath!).existsSync())
                 Positioned(
                   top: 8,
                   right: 8,
@@ -398,6 +410,17 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
   void initState() {
     super.initState();
     _type = widget.isShoesTab ? GarmentType.shoes : GarmentType.tshirt;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _colorCtrl.dispose();
+    _matCtrl.dispose();
+    _brandCtrl.dispose();
+    _sizeCtrl.dispose();
+    _priceCtrl.dispose();
+    super.dispose();
   }
 
   Color _parseColor(String h) {
@@ -724,10 +747,11 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
     if (source == null) return;
 
     final xfile = await picker.pickImage(source: source, maxWidth: 800);
-    if (xfile == null) return;
+    if (xfile == null || !mounted) return;
 
     // Compress the image
     final compressedFile = await _compressImage(File(xfile.path));
+    if (!mounted) return;
 
     final file = compressedFile;
     setState(() {
@@ -752,30 +776,29 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
       }
       final ai = ref.read(geminiProvider);
       final prompt = '''
-Analiza esta prenda de vestir y devuelve un JSON con:
-- name: nombre de la prenda
-- typeIndex: índice del tipo (0-14: tshirt, shirt, pants, shorts, skirt, dress, jacket, sweater, shoes, accessory, sock, underwear, swimwear, sleepwear, sport)
-- primaryColor: color principal en hex
-- material: material principal
-- brand: marca si es visible
-- size: talla si es visible
-- season: estación (all, summer, winter, spring, autumn)
-- styleIndex: estilo (0-4: casual, formal, sport, streetwear, vintage)
+Analiza esta prenda de vestir o calzado y devuelve ÚNICAMENTE un JSON válido con:
+- name: nombre corto y descriptivo de la prenda en español
+- typeIndex: entero 0-16 según GarmentType (0=shirt, 1=tshirt, 2=pants, 3=jeans, 4=shoes, 5=jacket, 6=accessories, 7=dress, 8=shorts, 9=sweater, 10=hoodie, 11=skirt, 12=other, 13=polo, 14=sneakers, 15=boots, 16=sandals)
+- primaryColor: color principal en formato hex #RRGGBB
+- material: material principal (ej: Algodón, Poliéster, Cuero)
+- brand: marca si es visible o ""
+- size: talla si es visible o ""
+- season: estación ("all", "summer", "winter", "spring", "autumn")
+- styleIndex: entero 0-6 (0=casual, 1=formal, 2=sport, 3=streetwear, 4=vintage, 5=minimalist, 6=elegant)
 
-JSON: {"name":"...","typeIndex":0,"primaryColor":"#...","material":"...","brand":"...","size":"...","season":"all","styleIndex":0}
+JSON: {"name":"...","typeIndex":1,"primaryColor":"#FFFFFF","material":"Algodón","brand":"","size":"","season":"all","styleIndex":0}
 ''';
-      final jsonStr = await ai.extractRecipe(
-        textContext: prompt,
-        mediaPath: _photo?.path,
+      final jsonStr = await ai.generateJsonText(
+        prompt: prompt,
+        mediaPaths: _photo != null ? [_photo!.path] : const [],
       );
       if (jsonStr != null && mounted) {
-        final cleanJson =
-            jsonStr.replaceAll(RegExp(r'```json\n|```'), '').trim();
+        final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonStr);
+        final cleanJson = match?.group(0) ?? jsonStr.trim();
         final decoded = json.decode(cleanJson) as Map<String, dynamic>;
 
         int parseInt(dynamic val, int def) {
-          if (val == null) return def;
-          if (val is int) return val;
+          if (val is num) return val.toInt();
           if (val is String) return int.tryParse(val) ?? def;
           return def;
         }
@@ -846,7 +869,9 @@ JSON: {"name":"...","typeIndex":0,"primaryColor":"#...","material":"...","brand"
       );
 
       bool wantShort = false;
-      if ((_type == GarmentType.tshirt || _type == GarmentType.shirt) &&
+      if ((_type == GarmentType.tshirt ||
+              _type == GarmentType.shirt ||
+              _type == GarmentType.polo) &&
           _style == GarmentStyle.sport) {
         wantShort = await showDialog<bool>(
                 context: context,
@@ -886,35 +911,35 @@ JSON: {"name":"...","typeIndex":0,"primaryColor":"#...","material":"...","brand"
           }
           final ai = ref.read(geminiProvider);
           final promptShort = '''
-Analiza esta prenda (short deportivo) y devuelve un JSON con:
+Analiza esta prenda (short deportivo) y devuelve ÚNICAMENTE un JSON válido con:
 - name: "Short de ${garment.name}"
-- typeIndex: 3 (shorts)
-- primaryColor: color principal en hex
+- typeIndex: 8
+- primaryColor: color principal en hex #RRGGBB
 - material: material principal
-- brand: marca si es visible
-- size: talla si es visible
-- season: all
-- styleIndex: 2 (sport)
+- brand: marca si es visible o ""
+- size: talla si es visible o ""
+- season: "all"
+- styleIndex: 2
 
-JSON: {"name":"Short de ${garment.name}","typeIndex":3,"primaryColor":"#...","material":"...","brand":"...","size":"...","season":"all","styleIndex":2}
+JSON: {"name":"Short de ${garment.name}","typeIndex":8,"primaryColor":"#000000","material":"Poliéster","brand":"","size":"","season":"all","styleIndex":2}
 ''';
-          final jsonStr = await ai.extractRecipe(
-            textContext: promptShort,
-            mediaPath: xfile.path,
+          final jsonStr = await ai.generateJsonText(
+            prompt: promptShort,
+            mediaPaths: [xfile.path],
           );
 
           WardrobeGarment shortGarment;
           if (jsonStr != null) {
-            final cleanJson =
-                jsonStr.replaceAll(RegExp(r'```json\n|```'), '').trim();
+            final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonStr);
+            final cleanJson = match?.group(0) ?? jsonStr.trim();
             final decoded = json.decode(cleanJson) as Map<String, dynamic>;
             shortGarment = WardrobeGarment(
                 id: '',
                 name: 'Short de ${garment.name}',
                 type: GarmentType.shorts,
-                primaryColor: decoded['primaryColor'] as String? ?? '#000000',
+                primaryColor: decoded['primaryColor']?.toString() ?? '#000000',
                 style: GarmentStyle.sport,
-                material: decoded['material'] as String? ?? garment.material,
+                material: decoded['material']?.toString() ?? garment.material,
                 season: garment.season,
                 addedAt: DateTime.now());
           } else {

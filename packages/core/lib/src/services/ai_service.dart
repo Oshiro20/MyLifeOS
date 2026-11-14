@@ -593,6 +593,89 @@ Mantén la respuesta en 3 líneas máximo en Markdown.
     );
   }
 
+  /// Genera JSON estructurado (con soporte opcional de imágenes y caché).
+  Future<String?> generateJsonText({
+    required String prompt,
+    List<String> mediaPaths = const [],
+    String? cacheKey,
+  }) async {
+    Future<String?> call() => _executePrompt(
+          prompt: prompt,
+          mediaPaths: mediaPaths,
+          expectJson: true,
+        );
+    if (cacheKey != null) {
+      return _generateWithCache(cacheKey: cacheKey, apiCall: call);
+    }
+    return call();
+  }
+
+  /// Evalúa una comida con respuesta JSON estricta compatible con MealEvaluation.
+  Future<String?> evaluateMealStructured({
+    String? photoPath,
+    required String description,
+  }) async {
+    final mediaPaths = (photoPath != null && photoPath.isNotEmpty)
+        ? [photoPath]
+        : const <String>[];
+    final prompt = '''
+Eres un nutricionista experto y empático. Evalúa esta comida:
+"$description"
+
+Responde ÚNICAMENTE con un objeto JSON válido con estas claves exactas:
+{
+  "classification": "healthy",
+  "healthScore": 0.85,
+  "positiveFactors": ["Alta proteína", "Buena fibra"],
+  "negativeFactors": [],
+  "feedback": "Resumen claro y breve en español de máximo 2 oraciones.",
+  "recommendation": "Un consejo práctico y accionable en español."
+}
+
+Reglas:
+- "classification" DEBE ser exactamente uno de: "healthy", "balanced", "junk".
+- "healthScore" DEBE ser un número decimal entre 0.0 y 1.0 (ej: 0.85 para healthy, 0.55 para balanced, 0.25 para junk).
+- Sin markdown ni texto fuera del JSON.
+''';
+    return _executePrompt(
+      prompt: prompt,
+      mediaPaths: mediaPaths,
+      expectJson: true,
+    );
+  }
+
+  /// Sugiere el Outfit del Día (OOTD) en JSON estructurado usando IDs reales.
+  Future<String?> suggestOutfitOfTheDayJson({
+    required List<Map<String, dynamic>> garments,
+    required String weatherContext,
+    String? userProfileContext,
+  }) async {
+    final profileText = (userProfileContext != null && userProfileContext.isNotEmpty)
+        ? userProfileContext
+        : 'Estilo versátil y cómodo';
+    final prompt = '''
+Eres un estilista personal experto. Selecciona el mejor Outfit del Día usando ÚNICAMENTE prendas de este inventario limpio.
+
+CLIMA ACTUAL: $weatherContext
+PERFIL DEL USUARIO: $profileText
+
+PRENDAS DISPONIBLES (JSON):
+${jsonEncode(garments)}
+
+Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (usa los "id" exactos del inventario o null si no aplica):
+{
+  "top_id": "id_prenda_superior_o_vestido",
+  "bottom_id": "id_prenda_inferior_o_null",
+  "shoes_id": "id_calzado_o_null",
+  "explanation": "Breve explicación personalizada del porqué combina bien con el clima y perfil."
+}
+''';
+    return _executePrompt(
+      prompt: prompt,
+      expectJson: true,
+    );
+  }
+
   /// Orquestador de llamadas con lógica de conectividad y caché.
   Future<String?> _generateWithCache({
     required String cacheKey,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import '../../providers/cocina_providers.dart';
 import '../../providers/cooking_session_provider.dart';
+import '../../utils/cooking_history_service.dart';
 
 /// Shared recipe detail sheet widget used across all tabs.
 class RecipeDetailSheet extends StatelessWidget {
@@ -33,15 +34,16 @@ class _RecipeDetailContent extends StatefulWidget {
 class _RecipeDetailContentState extends State<_RecipeDetailContent> {
   int _scaledServings = 1;
 
+  int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
+
   @override
   void initState() {
     super.initState();
-    _scaledServings = widget.recipe.servings;
+    _scaledServings = _baseServings;
   }
 
   double _getScaledQuantity(double original) {
-    if (widget.recipe.servings == 0) return original;
-    return original * (_scaledServings / widget.recipe.servings);
+    return original * (_scaledServings / _baseServings);
   }
 
   String _formatQuantity(double value) {
@@ -51,8 +53,8 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
 
   @override
   Widget build(BuildContext context) {
-    final isScaled = _scaledServings != widget.recipe.servings;
-    final maxServings = widget.recipe.servings * 2;
+    final isScaled = _scaledServings != _baseServings;
+    final maxServings = (_baseServings * 2).clamp(2, 24);
 
     return ListView(
       controller: PrimaryScrollController.of(context),
@@ -114,7 +116,7 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
           _chip('🍳 ${widget.recipe.ingredients.length} ingredientes'),
           if (isScaled)
             _chip(
-                '📏 x${(_scaledServings / widget.recipe.servings).toStringAsFixed(1)}'),
+                '📏 x${(_scaledServings / _baseServings).toStringAsFixed(1)}'),
         ]),
         // Ingredients
         if (widget.recipe.ingredients.isNotEmpty) ...[
@@ -230,62 +232,74 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
     final container = ProviderScope.containerOf(context);
     final inventoryNotifier = container.read(inventoryProvider.notifier);
 
+    final scaleRatio = _scaledServings / _baseServings;
+    final scaledIngredients = widget.recipe.ingredients.map((ing) {
+      return RecipeIngredient(
+        id: ing.id,
+        recipeId: ing.recipeId,
+        ingredientName: ing.ingredientName,
+        quantity: ing.quantity * scaleRatio,
+        unit: ing.unit,
+      );
+    }).toList();
+
+    final deducted =
+        await inventoryNotifier.deductRecipeIngredients(scaledIngredients);
+
+    if (!context.mounted) return;
+    if (deducted.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     container.read(cookingSessionProvider.notifier).startSession(
           recipeName: widget.recipe.name,
           recipeId: widget.recipe.id,
-          originalServings: widget.recipe.servings,
+          originalServings: _baseServings,
           scaledServings: _scaledServings,
           estimatedDurationMinutes: widget.recipe.durationMinutes,
         );
+    await CookingHistoryService().recordCooked(widget.recipe.name);
 
-    final deducted = await inventoryNotifier
-        .deductRecipeIngredients(widget.recipe.ingredients);
-
-    if (context.mounted) {
-      if (deducted.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
-                const SizedBox(height: 4),
-                Text(deducted.join(', '), style: const TextStyle(fontSize: 12)),
-              ],
-            ),
-            backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(milliseconds: 1000),
-            action: SnackBarAction(
-              label: 'Deshacer',
-              textColor: Colors.white,
-              onPressed: () async {
-                await inventoryNotifier
-                    .revertDeduction(widget.recipe.ingredients);
-                await inventoryNotifier.load();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('↩️ Deducción revertida'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-        );
-        inventoryNotifier.load();
-        Navigator.of(context).pop();
-      }
-    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
+            const SizedBox(height: 4),
+            Text(deducted.join(', '), style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        backgroundColor: const Color(0xFFFF9800),
+        duration: const Duration(milliseconds: 2000),
+        action: SnackBarAction(
+          label: 'Deshacer',
+          textColor: Colors.white,
+          onPressed: () async {
+            await inventoryNotifier.revertDeduction(scaledIngredients);
+            await inventoryNotifier.load();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('↩️ Deducción revertida'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          },
+        ),
+      ),
+    );
+    inventoryNotifier.load();
+    Navigator.of(context).pop();
   }
 }

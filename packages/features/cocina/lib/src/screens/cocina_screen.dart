@@ -67,6 +67,11 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(cocinaTabProvider, (_, next) {
+      if (next != _tab.index && next >= 0 && next < _tab.length && mounted) {
+        _tab.animateTo(next);
+      }
+    });
     final showFabs = _tab.index == 1;
 
     return Scaffold(
@@ -199,15 +204,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
                 FloatingActionButton(
                   heroTag: 'add_recipe',
                   backgroundColor: const Color(0xFF00C896),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Desliza hacia abajo en la lista de recetas para ver opciones'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                  onPressed: () => RecipesTab.openAddRecipeSheet(context, ref),
                   child: const Icon(Icons.add, color: Colors.white),
                 ),
               ],

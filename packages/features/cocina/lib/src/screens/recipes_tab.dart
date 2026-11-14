@@ -11,6 +11,94 @@ import '../utils/cooking_history_service.dart';
 class RecipesTab extends ConsumerStatefulWidget {
   const RecipesTab({super.key});
 
+  static Future<void> openAddRecipeSheet(
+      BuildContext ctx, WidgetRef ref) async {
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _AddRecipeSheet(
+        onSave: (r) async {
+          await saveRecipeWithDuplicateCheckDialog(ctx, ref, r);
+        },
+      ),
+    );
+  }
+
+  static Future<void> saveRecipeWithDuplicateCheckDialog(
+      BuildContext context, WidgetRef ref, Recipe recipe) async {
+    final result = await ref
+        .read(recipesProvider.notifier)
+        .saveRecipeWithDuplicateCheck(recipe);
+
+    if (!context.mounted) return;
+
+    if (result.hasDuplicates) {
+      final dupNames = result.duplicates
+          .map((d) =>
+              '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
+          .join('\n');
+      final shouldContinue = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('⚠️ Posible duplicado'),
+              content: Text(
+                'Esta receta es similar a:\n\n$dupNames\n\n¿Deseas guardarla de todos modos?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Guardar igual'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+
+      if (!shouldContinue || !context.mounted) return;
+      final forced = await ref
+          .read(recipesProvider.notifier)
+          .saveRecipeWithDuplicateCheck(recipe, forceSave: true);
+      if (!context.mounted) return;
+      if (forced.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ "${recipe.name}" guardada (posible duplicado)'),
+            backgroundColor: const Color(0xFF4CAF50),
+          ),
+        );
+      } else if (forced.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar: ${forced.error}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } else if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${recipe.name}" guardada ✓'),
+          backgroundColor: const Color(0xFF4CAF50),
+        ),
+      );
+    } else if (result.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar: ${result.error}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   @override
   ConsumerState<RecipesTab> createState() => _RecipesTabState();
 }
@@ -253,21 +341,8 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
     if (context.mounted) showSuccess(context, '"${recipe.name}" eliminada.');
   }
 
-  Future<void> _showAddRecipeSheet(BuildContext ctx, WidgetRef ref) async {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(ctx).appBarTheme.backgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _AddRecipeSheet(
-        onSave: (r) async {
-          await _saveRecipeWithDuplicateCheck(ctx, ref, r);
-        },
-      ),
-    );
-  }
+  Future<void> _showAddRecipeSheet(BuildContext ctx, WidgetRef ref) =>
+      RecipesTab.openAddRecipeSheet(ctx, ref);
 
   Future<void> _showLocalRecipesSheet(BuildContext ctx, WidgetRef ref) async {
     showModalBottomSheet(
@@ -286,48 +361,8 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
   }
 
   Future<void> _saveRecipeWithDuplicateCheck(
-      BuildContext context, WidgetRef ref, Recipe recipe) async {
-    final result = await ref
-        .read(recipesProvider.notifier)
-        .saveRecipeWithDuplicateCheck(recipe);
-
-    if (!context.mounted) return;
-
-    if (result.hasDuplicates) {
-      final dupNames = result.duplicates
-          .map((d) =>
-              '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
-          .join('\n');
-      await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('⚠️ Posible duplicado'),
-          content: Text(
-            'Esta receta es similar a:\n\n$dupNames\n\n¿Deseas guardarla de todos modos?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Guardar igual'),
-            ),
-          ],
-        ),
-      );
-
-      if (!context.mounted) return;
-      showSuccess(context, '⚠️ "${recipe.name}" guardada (posible duplicado)');
-    } else if (result.success) {
-      if (!context.mounted) return;
-      showSuccess(context, '"${recipe.name}" guardada ✓');
-    } else if (result.error != null) {
-      if (!context.mounted) return;
-      showError(context, 'Error al guardar: ${result.error}');
-    }
-  }
+          BuildContext context, WidgetRef ref, Recipe recipe) =>
+      RecipesTab.saveRecipeWithDuplicateCheckDialog(context, ref, recipe);
 
   void _showRecipeDetail(BuildContext ctx, Recipe recipe) {
     showModalBottomSheet(
@@ -466,23 +501,25 @@ class _RecipeDetailSheet extends StatefulWidget {
 class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   int _scaledServings = 1; // Current scaled servings (default 1 person)
 
+  int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
+
   @override
   void initState() {
     super.initState();
-    _scaledServings = widget.recipe.servings;
+    _scaledServings = _baseServings;
   }
 
   /// Get scaled quantity for an ingredient
   double _getScaledQuantity(double originalQuantity) {
-    final scale = _scaledServings / widget.recipe.servings;
+    final scale = _scaledServings / _baseServings;
     final result = originalQuantity * scale;
     return (result * 100).round() / 100; // Round to 2 decimal places
   }
 
   @override
   Widget build(BuildContext context) {
-    final isScaled = _scaledServings != widget.recipe.servings;
-    final maxServings = widget.recipe.servings * 2;
+    final isScaled = _scaledServings != _baseServings;
+    final maxServings = (_baseServings * 2).clamp(2, 24);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -540,7 +577,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             min: 1,
             max: maxServings.toDouble(),
             divisions: maxServings - 1,
-            value: _scaledServings.toDouble(),
+            value: _scaledServings.clamp(1, maxServings).toDouble(),
             activeColor: const Color(0xFFFF9800),
             inactiveColor: Colors.white12,
             onChanged: (v) => setState(() => _scaledServings = v.toInt()),
@@ -552,7 +589,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
                 context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
             if (isScaled)
               _chip(context,
-                  '📏 x${(_scaledServings / widget.recipe.servings).toStringAsFixed(1)}'),
+                  '📏 x${(_scaledServings / _baseServings).toStringAsFixed(1)}'),
           ]),
           if (widget.recipe.ingredients.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -729,17 +766,11 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   Future<void> _cookRecipe(
       BuildContext context, Recipe recipe, int scaledServings) async {
     // Start cooking session with scaled servings
+    final baseServings = recipe.servings > 0 ? recipe.servings : 1;
     final container = ProviderScope.containerOf(context);
-    container.read(cookingSessionProvider.notifier).startSession(
-          recipeName: recipe.name,
-          recipeId: recipe.id,
-          originalServings: recipe.servings,
-          scaledServings: scaledServings,
-          estimatedDurationMinutes: recipe.durationMinutes,
-        );
 
     // Deduct ingredients with scaling
-    final scaleRatio = scaledServings / recipe.servings;
+    final scaleRatio = scaledServings / baseServings;
     final scaledIngredients = recipe.ingredients.map((ing) {
       return RecipeIngredient(
         id: ing.id,
@@ -763,47 +794,56 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           backgroundColor: Colors.orange,
         ),
       );
-    } else {
-      // Record in cooking history
-      await CookingHistoryService().recordCooked(recipe.name);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  '🍳 ¡Cocinando "${recipe.name}" para $scaledServings persona${scaledServings == 1 ? '' : 's'}!'),
-              const SizedBox(height: 4),
-              Text(
-                'Descontados: ${deducted.join(", ")}',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFFFF9800),
-          duration: const Duration(milliseconds: 1000),
-          action: SnackBarAction(
-            label: 'Deshacer',
-            textColor: Colors.white,
-            onPressed: () async {
-              await inventoryNotifier.revertDeduction(recipe.ingredients);
-              await inventoryNotifier.load();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('↩️ Deducción revertida'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-          ),
-        ),
-      );
+      return;
     }
+
+    container.read(cookingSessionProvider.notifier).startSession(
+          recipeName: recipe.name,
+          recipeId: recipe.id,
+          originalServings: baseServings,
+          scaledServings: scaledServings,
+          estimatedDurationMinutes: recipe.durationMinutes,
+        );
+
+    // Record in cooking history
+    await CookingHistoryService().recordCooked(recipe.name);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                '🍳 ¡Cocinando "${recipe.name}" para $scaledServings persona${scaledServings == 1 ? '' : 's'}!'),
+            const SizedBox(height: 4),
+            Text(
+              'Descontados: ${deducted.join(", ")}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFFF9800),
+        duration: const Duration(milliseconds: 2000),
+        action: SnackBarAction(
+          label: 'Deshacer',
+          textColor: Colors.white,
+          onPressed: () async {
+            await inventoryNotifier.revertDeduction(scaledIngredients);
+            await inventoryNotifier.load();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('↩️ Deducción revertida'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          },
+        ),
+      ),
+    );
     if (!context.mounted) return;
     Navigator.of(context).pop();
   }

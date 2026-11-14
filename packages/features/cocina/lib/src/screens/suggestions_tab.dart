@@ -291,15 +291,15 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       );
     }
 
-    // Group suggestions into menus
+    // Group suggestions into menus using selected component count per menu
     if (visibleSuggestions.isNotEmpty) {
+      final configComponents = ref.watch(menuConfigProvider).components.length;
+      final perMenu = (configComponents > 0 ? configComponents : _selectedComponents.length)
+          .clamp(1, visibleSuggestions.length);
       final menuGroups = <int, List<RecipeSuggestion>>{};
       for (int i = 0; i < visibleSuggestions.length; i++) {
-        final menuNum = (i / _menuCount).floor() + 1;
-        if (!menuGroups.containsKey(menuNum)) {
-          menuGroups[menuNum] = [];
-        }
-        menuGroups[menuNum]!.add(visibleSuggestions[i]);
+        final menuNum = (i ~/ perMenu) + 1;
+        menuGroups.putIfAbsent(menuNum, () => []).add(visibleSuggestions[i]);
       }
 
       return ListView(
@@ -356,10 +356,14 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
               onTap: (recipe) => _showRecipeDetail(context, recipe),
               onSave: (suggestion) =>
                   _saveAISuggestion(context, ref, aiNotifier, suggestion),
+              onSaveMenu: () =>
+                  _saveMenuSuggestions(context, ref, aiNotifier, entry.value),
               onCook: (suggestion) =>
                   _cookAISuggestion(context, ref, aiNotifier, suggestion),
-              onDismiss: () =>
-                  aiNotifier.dismissRecipe(entry.value.first.recipe.id),
+              onCookMenu: () =>
+                  _cookMenuSuggestions(context, ref, aiNotifier, entry.value),
+              onDismiss: () => aiNotifier
+                  .dismissMenu(entry.value.map((s) => s.recipe.id).toList()),
               menuMatchPercentage: menuMatchPercentage,
             );
           }),
@@ -418,9 +422,18 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
           false;
 
       if (!shouldContinue || !context.mounted) return;
-    }
-
-    if (result.success && context.mounted) {
+      final forced = await notifier.saveSuggestion(suggestion, forceSave: true);
+      if (!context.mounted) return;
+      if (forced.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ "${suggestion.recipe.name}" guardada'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(milliseconds: 1500),
+          ),
+        );
+      }
+    } else if (result.success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ "${suggestion.recipe.name}" guardada'),
@@ -430,6 +443,105 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       );
     }
     ref.read(recipesProvider.notifier).load();
+  }
+
+  Future<void> _saveMenuSuggestions(
+    BuildContext context,
+    WidgetRef ref,
+    WhatCanICookNotifier notifier,
+    List<RecipeSuggestion> menuRecipes,
+  ) async {
+    int savedCount = 0;
+    for (final suggestion in menuRecipes) {
+      var res = await notifier.saveSuggestion(suggestion);
+      if (!context.mounted) return;
+      if (res.hasDuplicates) {
+        final dupNames = res.duplicates
+            .map((d) =>
+                '${d.recipe.name} (${(d.similarityScore * 100).round()}% similar)')
+            .join('\n');
+        final shouldContinue = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('⚠️ Posible duplicado'),
+                content: Text(
+                  '"${suggestion.recipe.name}" es similar a:\n\n$dupNames\n\n¿Guardar de todos modos?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Omitir'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Guardar igual'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        if (shouldContinue && context.mounted) {
+          res = await notifier.saveSuggestion(suggestion, forceSave: true);
+        }
+      }
+      if (res.success) savedCount++;
+    }
+    if (!context.mounted) return;
+    ref.read(recipesProvider.notifier).load();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✅ $savedCount de ${menuRecipes.length} recetas guardadas'),
+        backgroundColor:
+            savedCount > 0 ? const Color(0xFF00E676) : Colors.orange,
+        duration: const Duration(milliseconds: 1800),
+      ),
+    );
+  }
+
+  Future<void> _cookMenuSuggestions(
+    BuildContext context,
+    WidgetRef ref,
+    WhatCanICookNotifier notifier,
+    List<RecipeSuggestion> menuRecipes,
+  ) async {
+    if (menuRecipes.isEmpty) return;
+    final allDeducted = <String>[];
+    for (final s in menuRecipes) {
+      final res = await notifier.cookSuggestion(s);
+      if (res.success) {
+        allDeducted.addAll(res.deducted);
+      }
+    }
+    if (!context.mounted) return;
+    if (allDeducted.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    final first = menuRecipes.first.recipe;
+    ref.read(cookingSessionProvider.notifier).startSession(
+          recipeName: menuRecipes.length == 1
+              ? first.name
+              : '${first.name} (+${menuRecipes.length - 1})',
+          recipeId: first.id,
+          originalServings: first.servings > 0 ? first.servings : 1,
+          scaledServings: first.servings > 0 ? first.servings : 1,
+          estimatedDurationMinutes: menuRecipes.fold<int>(
+              0, (sum, r) => sum + r.recipe.durationMinutes),
+        );
+    ref.read(inventoryProvider.notifier).load();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            '🍳 ¡Cocinando menú (${menuRecipes.length} platos)! Descontados: ${allDeducted.length} ítems'),
+        backgroundColor: const Color(0xFFFF9800),
+        duration: const Duration(milliseconds: 1800),
+      ),
+    );
   }
 
   Future<void> _cookAISuggestion(
@@ -774,7 +886,9 @@ class _CompleteMenuCard extends StatelessWidget {
   final List<RecipeSuggestion> recipes;
   final Function(Recipe) onTap;
   final Function(RecipeSuggestion) onSave;
+  final VoidCallback? onSaveMenu;
   final Function(RecipeSuggestion) onCook;
+  final VoidCallback? onCookMenu;
   final VoidCallback? onDismiss;
   final double menuMatchPercentage; // Porcentaje global del menú
 
@@ -783,7 +897,9 @@ class _CompleteMenuCard extends StatelessWidget {
     required this.recipes,
     required this.onTap,
     required this.onSave,
+    this.onSaveMenu,
     required this.onCook,
+    this.onCookMenu,
     this.onDismiss,
     this.menuMatchPercentage = 0.0,
   });
@@ -990,7 +1106,9 @@ class _CompleteMenuCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => onSave(recipes.first),
+                    onPressed: recipes.isEmpty
+                        ? null
+                        : (onSaveMenu ?? () => onSave(recipes.first)),
                     icon: const Icon(Icons.save_outlined, size: 14),
                     label: const Text('Guardar todo',
                         style: TextStyle(fontSize: 11)),
@@ -1007,7 +1125,9 @@ class _CompleteMenuCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => onCook(recipes.first),
+                    onPressed: recipes.isEmpty
+                        ? null
+                        : (onCookMenu ?? () => onCook(recipes.first)),
                     icon: const Icon(Icons.whatshot, size: 14),
                     label:
                         const Text('Cocinar', style: TextStyle(fontSize: 11)),

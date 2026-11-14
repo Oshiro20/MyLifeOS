@@ -7,6 +7,7 @@ class FoodCoachState {
   final List<MealLog> history;
   final WeeklyStats? weeklyStats;
   final List<String> currentIngredients;
+  final bool isLoading;
   final bool isEvaluating;
   final String? error;
 
@@ -15,23 +16,28 @@ class FoodCoachState {
     this.history = const [],
     this.weeklyStats,
     this.currentIngredients = const [],
+    this.isLoading = false,
     this.isEvaluating = false,
     this.error,
   });
 
   FoodCoachState copyWith({
     MealEvaluation? currentEvaluation,
+    bool clearEvaluation = false,
     List<MealLog>? history,
     WeeklyStats? weeklyStats,
     List<String>? currentIngredients,
+    bool? isLoading,
     bool? isEvaluating,
     String? error,
   }) =>
       FoodCoachState(
-        currentEvaluation: currentEvaluation ?? this.currentEvaluation,
+        currentEvaluation:
+            clearEvaluation ? null : (currentEvaluation ?? this.currentEvaluation),
         history: history ?? this.history,
         weeklyStats: weeklyStats ?? this.weeklyStats,
         currentIngredients: currentIngredients ?? this.currentIngredients,
+        isLoading: isLoading ?? this.isLoading,
         isEvaluating: isEvaluating ?? this.isEvaluating,
         error: error,
       );
@@ -48,12 +54,17 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
   }
 
   Future<void> load() async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final history = await _repo.getHistory();
       final stats = await _repo.getWeeklyStats();
-      state = state.copyWith(history: history, weeklyStats: stats);
+      state = state.copyWith(
+        history: history,
+        weeklyStats: stats,
+        isLoading: false,
+      );
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -75,7 +86,8 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
   void clearIngredients() => state = state.copyWith(currentIngredients: []);
 
   Future<void> evaluate({String? photoPath}) async {
-    if (state.currentIngredients.isEmpty) return;
+    final hasPhoto = photoPath != null && photoPath.isNotEmpty;
+    if (state.currentIngredients.isEmpty && !hasPhoto) return;
     state = state.copyWith(isEvaluating: true, error: null);
     try {
       final eval = await _repo.evaluateMeal(
@@ -97,13 +109,17 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
   }
 
   Future<void> deleteFromHistory(String id) async {
-    await _repo.deleteFromHistory(id);
-    final history = await _repo.getHistory();
-    final stats = await _repo.getWeeklyStats();
-    state = state.copyWith(history: history, weeklyStats: stats);
+    try {
+      await _repo.deleteFromHistory(id);
+      final history = await _repo.getHistory();
+      final stats = await _repo.getWeeklyStats();
+      state = state.copyWith(history: history, weeklyStats: stats, error: null);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
-  void clearResult() => state = state.copyWith(currentEvaluation: null);
+  void clearResult() => state = state.copyWith(clearEvaluation: true);
   void clearError() => state = state.copyWith(error: null);
 }
 

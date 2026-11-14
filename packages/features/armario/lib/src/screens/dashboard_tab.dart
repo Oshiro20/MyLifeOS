@@ -220,7 +220,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             _buildLoadingOotd()
           else if (state.ootd != null)
             _buildOotdCard(state.ootd!, themeColor)
-          else if (state.error != null && state.error!.contains('Gemini'))
+          else if (state.error != null)
             _buildErrorOotd(state.error!, themeColor)
           else
             _buildEmptyOotd(themeColor),
@@ -338,7 +338,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
         children: [
           if (explanation != null) ...[
             Text(
-              '"\$explanation"',
+              '"$explanation"',
               style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 14,

@@ -95,56 +95,32 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
   }
 
   Future<void> toggleClean(String id) async {
-    await _repo.toggleClean(id);
-    state = state.copyWith(
-      garments: [
-        for (final g in state.garments)
-          if (g.id == id)
-            WardrobeGarment(
-              id: g.id,
-              name: g.name,
-              type: g.type,
-              primaryColor: g.primaryColor,
-              secondaryColor: g.secondaryColor,
-              style: g.style,
-              material: g.material,
-              season: g.season,
-              isFavorite: g.isFavorite,
-              isClean: !g.isClean,
-              imageAssetId: g.imageAssetId,
-              addedAt: g.addedAt,
-            )
-          else
-            g
-      ],
-    );
-    _refreshSuggestions();
+    try {
+      await _repo.toggleClean(id);
+      state = state.copyWith(
+        garments: [
+          for (final g in state.garments)
+            if (g.id == id) g.copyWith(isClean: !g.isClean) else g
+        ],
+      );
+      _refreshSuggestions();
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   Future<void> toggleFavorite(String id) async {
-    await _repo.toggleFavorite(id);
-    state = state.copyWith(
-      garments: [
-        for (final g in state.garments)
-          if (g.id == id)
-            WardrobeGarment(
-              id: g.id,
-              name: g.name,
-              type: g.type,
-              primaryColor: g.primaryColor,
-              secondaryColor: g.secondaryColor,
-              style: g.style,
-              material: g.material,
-              season: g.season,
-              isFavorite: !g.isFavorite,
-              isClean: g.isClean,
-              imageAssetId: g.imageAssetId,
-              addedAt: g.addedAt,
-            )
-          else
-            g
-      ],
-    );
+    try {
+      await _repo.toggleFavorite(id);
+      state = state.copyWith(
+        garments: [
+          for (final g in state.garments)
+            if (g.id == id) g.copyWith(isFavorite: !g.isFavorite) else g
+        ],
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   Future<void> saveOutfit(Outfit o) async {
@@ -158,33 +134,62 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
   }
 
   Future<void> wearOutfit(String id) async {
-    await _repo.incrementTimesWorn(id);
-    state = state.copyWith(
-      outfits: [
-        for (final o in state.outfits)
-          if (o.id == id)
-            Outfit(
-                id: o.id,
-                name: o.name,
-                garmentIds: o.garmentIds,
-                occasion: o.occasion,
-                season: o.season,
-                timesWorn: o.timesWorn + 1,
-                createdAt: o.createdAt)
-          else
-            o
-      ],
-    );
+    try {
+      Outfit? target;
+      for (final o in state.outfits) {
+        if (o.id == id) {
+          target = o;
+          break;
+        }
+      }
+      await _repo.incrementTimesWorn(id);
+      final wornIds = target?.garmentIds.toSet() ?? const <String>{};
+      state = state.copyWith(
+        outfits: [
+          for (final o in state.outfits)
+            if (o.id == id)
+              Outfit(
+                  id: o.id,
+                  name: o.name,
+                  garmentIds: o.garmentIds,
+                  occasion: o.occasion,
+                  season: o.season,
+                  timesWorn: o.timesWorn + 1,
+                  createdAt: o.createdAt)
+            else
+              o
+        ],
+        garments: [
+          for (final g in state.garments)
+            if (wornIds.contains(g.id))
+              g.copyWith(timesWorn: g.timesWorn + 1)
+            else
+              g
+        ],
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   Future<void> saveProfile(UserPhysicalProfile p) async {
-    await _repo.saveUserProfile(p);
-    state = state.copyWith(userProfile: p);
+    try {
+      await _repo.saveUserProfile(p);
+      state = state.copyWith(userProfile: p);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    }
   }
 
   Future<void> deleteProfile() async {
     await _repo.deleteUserProfile();
-    state = ArmarioState(garments: state.garments, outfits: state.outfits);
+    state = ArmarioState(
+      garments: state.garments,
+      outfits: state.outfits,
+      suggestions: state.suggestions,
+      ootd: state.ootd,
+    );
   }
 
   Future<void> _refreshSuggestions() async {
@@ -205,7 +210,7 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
         return;
       }
 
-      final garmentsJson = cleanGarments
+      final garmentsPayload = cleanGarments
           .map((g) => {
                 'id': g.id,
                 'name': g.name,
@@ -213,15 +218,14 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
                 'color': g.primaryColor,
                 'style': g.style.name,
               })
-          .toList()
-          .toString();
+          .toList();
 
       final profileCtx = state.userProfile != null
           ? 'Estatura: ${state.userProfile!.height}cm, Peso: ${state.userProfile!.weight}kg, Tipo de Cuerpo: ${state.userProfile!.bodyShape ?? 'No especificado'}, Colorimetría: ${state.userProfile!.colorimetry ?? 'No especificada'}'
           : null;
 
-      final resString = await aiService.suggestOutfitOfTheDay(
-        garmentsJson: garmentsJson,
+      final resString = await aiService.suggestOutfitOfTheDayJson(
+        garments: garmentsPayload,
         weatherContext: weatherContext,
         userProfileContext: profileCtx,
       );
@@ -231,19 +235,8 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
         return;
       }
 
-      // Parse JSON from Gemini (assuming it replies with raw JSON, but maybe it has markdown blocks)
-      String cleanJson = resString.trim();
-      if (cleanJson.startsWith('```json')) {
-        cleanJson = cleanJson.replaceAll('```json', '');
-      }
-      if (cleanJson.startsWith('```')) {
-        cleanJson = cleanJson.replaceAll('```', '');
-      }
-      cleanJson = cleanJson.trim();
-
-      if (cleanJson.endsWith('```')) {
-        cleanJson = cleanJson.substring(0, cleanJson.length - 3).trim();
-      }
+      final match = RegExp(r'\{[\s\S]*\}').firstMatch(resString);
+      final cleanJson = match?.group(0) ?? resString.trim();
 
       final Map<String, dynamic> decoded = dart_convert.jsonDecode(cleanJson);
 
@@ -252,21 +245,21 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
       final shoesId = decoded['shoes_id'];
       final explanation = decoded['explanation'];
 
-      WardrobeGarment? topData;
-      WardrobeGarment? bottomData;
-      WardrobeGarment? shoesData;
+      WardrobeGarment? findById(dynamic id) {
+        if (id == null) return null;
+        for (final g in cleanGarments) {
+          if (g.id == id.toString()) return g;
+        }
+        return null;
+      }
 
-      try {
-        topData = cleanGarments.firstWhere((g) => g.id == topId);
-      } catch (_) {}
-      try {
-        bottomData = cleanGarments.firstWhere((g) => g.id == bottomId);
-      } catch (_) {}
-      try {
-        shoesData = cleanGarments.firstWhere((g) => g.id == shoesId);
-      } catch (_) {}
+      final topData = findById(topId);
+      final bottomData = findById(bottomId);
+      final shoesData = findById(shoesId);
 
-      if (topData != null && bottomData != null) {
+      final validDress =
+          topData != null && topData.type == GarmentType.dress;
+      if (topData != null && (bottomData != null || validDress)) {
         state = state.copyWith(isLoadingOotd: false, ootd: {
           'top': topData,
           'bottom': bottomData,
@@ -276,7 +269,7 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
       } else {
         state = state.copyWith(
             isLoadingOotd: false,
-            error: 'Gemini sugirió prendas no encontradas.');
+            error: 'La IA sugirió prendas no disponibles.');
       }
     } catch (e) {
       state = state.copyWith(

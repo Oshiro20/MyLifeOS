@@ -394,10 +394,10 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
       builder: (_) => _AddIngredientSheet(
         itemToEdit: itemToEdit,
         onAdd: (ings) async {
-          await ref.read(inventoryProvider.notifier).delete(itemToEdit.id);
-          await ref.read(inventoryProvider.notifier).add(ings.first);
+          final updated = ings.first.copyWith(id: itemToEdit.id);
+          await ref.read(inventoryProvider.notifier).update(updated);
           if (ctx.mounted) {
-            showSuccess(ctx, '"${ings.first.name}" actualizado ✓');
+            showSuccess(ctx, '"${updated.name}" actualizado ✓');
           }
         },
       ),

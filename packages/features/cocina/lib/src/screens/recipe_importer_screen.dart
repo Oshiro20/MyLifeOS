@@ -411,7 +411,30 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                         ) ??
                         false;
 
-                    if (!shouldContinue) return;
+                    if (!shouldContinue || !mounted) return;
+                    final forced = await ref
+                        .read(recipesProvider.notifier)
+                        .saveRecipeWithDuplicateCheck(recipe, forceSave: true);
+                    if (!mounted) return;
+                    if (!forced.success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Error al guardar: ${forced.error ?? "desconocido"}'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+                  } else if (!result.success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Error al guardar: ${result.error ?? "desconocido"}'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                    return;
                   }
 
                   if (!mounted) return;

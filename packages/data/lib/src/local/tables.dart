@@ -1,11 +1,13 @@
 import 'package:drift/drift.dart';
 
 @DataClassName('MealLogEntry')
+@TableIndex(name: 'idx_meallogs_timestamp', columns: {#timestamp})
 class MealLogs extends Table {
   TextColumn get id => text()();
   DateTimeColumn get timestamp => dateTime()();
   TextColumn get photoPath => text()();
   IntColumn get classificationIndex => integer()();
+  RealColumn get healthScore => real().withDefault(const Constant(0.5))();
   TextColumn get feedback => text()();
   TextColumn get detectedIngredientsCsv =>
       text().withDefault(const Constant(''))();
@@ -17,6 +19,11 @@ class MealLogs extends Table {
 // ───────────────────────── COCINA ────────────────────────────────────────────
 
 @DataClassName('WeeklyMenuEntry')
+@TableIndex(
+  name: 'idx_menu_day_type',
+  columns: {#dayOfWeek, #mealType},
+  unique: true,
+)
 class WeeklyMenuEntries extends Table {
   TextColumn get id => text()();
   // 1=Mon, 2=Tue, ..., 7=Sun
@@ -29,16 +36,11 @@ class WeeklyMenuEntries extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-
-  List<TableIndex> get indexes => [
-        TableIndex(
-            name: 'idx_menu_day_type',
-            columns: {dayOfWeek, mealType},
-            unique: true),
-      ];
 }
 
 @DataClassName('InventoryIngredientEntry')
+@TableIndex(name: 'idx_ingredients_category', columns: {#primaryCategory})
+@TableIndex(name: 'idx_ingredients_expiry', columns: {#expirationDate})
 class InventoryIngredients extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -55,15 +57,11 @@ class InventoryIngredients extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-
-  List<TableIndex> get indexes => [
-        TableIndex(
-            name: 'idx_ingredients_category', columns: {primaryCategory}),
-        TableIndex(name: 'idx_ingredients_expiry', columns: {expirationDate}),
-      ];
 }
 
 @DataClassName('RecipeEntry')
+@TableIndex(name: 'idx_recipes_source', columns: {#sourceIndex})
+@TableIndex(name: 'idx_recipes_region', columns: {#region})
 class Recipes extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -75,6 +73,7 @@ class Recipes extends Table {
   TextColumn get imageAssetId => text().nullable()();
   IntColumn get goalIndex => integer().withDefault(const Constant(0))();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  IntColumn get rating => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
 
   // Hybrid System Columns (v2.7.0)
@@ -91,14 +90,10 @@ class Recipes extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-
-  List<TableIndex> get indexes => [
-        TableIndex(name: 'idx_recipes_source', columns: {sourceIndex}),
-        TableIndex(name: 'idx_recipes_region', columns: {region}),
-      ];
 }
 
 @DataClassName('RecipeIngredientEntry')
+@TableIndex(name: 'idx_recipe_ingredients_recipe_id', columns: {#recipeId})
 class RecipeIngredients extends Table {
   TextColumn get id => text()();
   TextColumn get recipeId => text().references(Recipes, #id)();
@@ -138,6 +133,9 @@ class ShoppingItems extends Table {
 
 /// Prendas del armario personal
 @DataClassName('WardrobeGarmentEntry')
+@TableIndex(name: 'idx_garments_type', columns: {#typeIndex})
+@TableIndex(name: 'idx_garments_favorite', columns: {#isFavorite})
+@TableIndex(name: 'idx_garments_clean', columns: {#isClean})
 class WardrobeGarments extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -153,6 +151,7 @@ class WardrobeGarments extends Table {
   BoolColumn get hasRemovableHood =>
       boolean().withDefault(const Constant(false))();
   IntColumn get rating => integer().withDefault(const Constant(0))();
+  IntColumn get timesWorn => integer().withDefault(const Constant(0))();
   TextColumn get size => text().nullable()();
   TextColumn get brand => text().nullable()();
   RealColumn get price => real().nullable()();
@@ -162,12 +161,6 @@ class WardrobeGarments extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-
-  List<TableIndex> get indexes => [
-        TableIndex(name: 'idx_garments_type', columns: {typeIndex}),
-        TableIndex(name: 'idx_garments_favorite', columns: {isFavorite}),
-        TableIndex(name: 'idx_garments_clean', columns: {isClean}),
-      ];
 }
 
 /// Outfits guardados (combinación de prendas)
@@ -180,7 +173,7 @@ class Outfits extends Table {
       text().withDefault(const Constant('casual'))(); // casual|formal|sport
   TextColumn get season => text().withDefault(const Constant('all'))();
   IntColumn get timesWorn => integer().withDefault(const Constant(0))();
-  DateTime? get lastWornDate => null;
+  DateTimeColumn get lastWornDate => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override

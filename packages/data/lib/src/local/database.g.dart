@@ -32,6 +32,14 @@ class $MealLogsTable extends MealLogs
   late final GeneratedColumn<int> classificationIndex = GeneratedColumn<int>(
       'classification_index', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _healthScoreMeta =
+      const VerificationMeta('healthScore');
+  @override
+  late final GeneratedColumn<double> healthScore = GeneratedColumn<double>(
+      'health_score', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.5));
   static const VerificationMeta _feedbackMeta =
       const VerificationMeta('feedback');
   @override
@@ -52,6 +60,7 @@ class $MealLogsTable extends MealLogs
         timestamp,
         photoPath,
         classificationIndex,
+        healthScore,
         feedback,
         detectedIngredientsCsv
       ];
@@ -90,6 +99,12 @@ class $MealLogsTable extends MealLogs
     } else if (isInserting) {
       context.missing(_classificationIndexMeta);
     }
+    if (data.containsKey('health_score')) {
+      context.handle(
+          _healthScoreMeta,
+          healthScore.isAcceptableOrUnknown(
+              data['health_score']!, _healthScoreMeta));
+    }
     if (data.containsKey('feedback')) {
       context.handle(_feedbackMeta,
           feedback.isAcceptableOrUnknown(data['feedback']!, _feedbackMeta));
@@ -119,6 +134,8 @@ class $MealLogsTable extends MealLogs
           .read(DriftSqlType.string, data['${effectivePrefix}photo_path'])!,
       classificationIndex: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}classification_index'])!,
+      healthScore: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}health_score'])!,
       feedback: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}feedback'])!,
       detectedIngredientsCsv: attachedDatabase.typeMapping.read(
@@ -138,6 +155,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
   final DateTime timestamp;
   final String photoPath;
   final int classificationIndex;
+  final double healthScore;
   final String feedback;
   final String detectedIngredientsCsv;
   const MealLogEntry(
@@ -145,6 +163,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
       required this.timestamp,
       required this.photoPath,
       required this.classificationIndex,
+      required this.healthScore,
       required this.feedback,
       required this.detectedIngredientsCsv});
   @override
@@ -154,6 +173,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
     map['timestamp'] = Variable<DateTime>(timestamp);
     map['photo_path'] = Variable<String>(photoPath);
     map['classification_index'] = Variable<int>(classificationIndex);
+    map['health_score'] = Variable<double>(healthScore);
     map['feedback'] = Variable<String>(feedback);
     map['detected_ingredients_csv'] = Variable<String>(detectedIngredientsCsv);
     return map;
@@ -165,6 +185,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
       timestamp: Value(timestamp),
       photoPath: Value(photoPath),
       classificationIndex: Value(classificationIndex),
+      healthScore: Value(healthScore),
       feedback: Value(feedback),
       detectedIngredientsCsv: Value(detectedIngredientsCsv),
     );
@@ -179,6 +200,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
       photoPath: serializer.fromJson<String>(json['photoPath']),
       classificationIndex:
           serializer.fromJson<int>(json['classificationIndex']),
+      healthScore: serializer.fromJson<double>(json['healthScore']),
       feedback: serializer.fromJson<String>(json['feedback']),
       detectedIngredientsCsv:
           serializer.fromJson<String>(json['detectedIngredientsCsv']),
@@ -192,6 +214,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'photoPath': serializer.toJson<String>(photoPath),
       'classificationIndex': serializer.toJson<int>(classificationIndex),
+      'healthScore': serializer.toJson<double>(healthScore),
       'feedback': serializer.toJson<String>(feedback),
       'detectedIngredientsCsv':
           serializer.toJson<String>(detectedIngredientsCsv),
@@ -203,6 +226,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
           DateTime? timestamp,
           String? photoPath,
           int? classificationIndex,
+          double? healthScore,
           String? feedback,
           String? detectedIngredientsCsv}) =>
       MealLogEntry(
@@ -210,6 +234,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
         timestamp: timestamp ?? this.timestamp,
         photoPath: photoPath ?? this.photoPath,
         classificationIndex: classificationIndex ?? this.classificationIndex,
+        healthScore: healthScore ?? this.healthScore,
         feedback: feedback ?? this.feedback,
         detectedIngredientsCsv:
             detectedIngredientsCsv ?? this.detectedIngredientsCsv,
@@ -222,6 +247,8 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
       classificationIndex: data.classificationIndex.present
           ? data.classificationIndex.value
           : this.classificationIndex,
+      healthScore:
+          data.healthScore.present ? data.healthScore.value : this.healthScore,
       feedback: data.feedback.present ? data.feedback.value : this.feedback,
       detectedIngredientsCsv: data.detectedIngredientsCsv.present
           ? data.detectedIngredientsCsv.value
@@ -236,6 +263,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
           ..write('timestamp: $timestamp, ')
           ..write('photoPath: $photoPath, ')
           ..write('classificationIndex: $classificationIndex, ')
+          ..write('healthScore: $healthScore, ')
           ..write('feedback: $feedback, ')
           ..write('detectedIngredientsCsv: $detectedIngredientsCsv')
           ..write(')'))
@@ -244,7 +272,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
 
   @override
   int get hashCode => Object.hash(id, timestamp, photoPath, classificationIndex,
-      feedback, detectedIngredientsCsv);
+      healthScore, feedback, detectedIngredientsCsv);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -253,6 +281,7 @@ class MealLogEntry extends DataClass implements Insertable<MealLogEntry> {
           other.timestamp == this.timestamp &&
           other.photoPath == this.photoPath &&
           other.classificationIndex == this.classificationIndex &&
+          other.healthScore == this.healthScore &&
           other.feedback == this.feedback &&
           other.detectedIngredientsCsv == this.detectedIngredientsCsv);
 }
@@ -262,6 +291,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
   final Value<DateTime> timestamp;
   final Value<String> photoPath;
   final Value<int> classificationIndex;
+  final Value<double> healthScore;
   final Value<String> feedback;
   final Value<String> detectedIngredientsCsv;
   final Value<int> rowid;
@@ -270,6 +300,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
     this.timestamp = const Value.absent(),
     this.photoPath = const Value.absent(),
     this.classificationIndex = const Value.absent(),
+    this.healthScore = const Value.absent(),
     this.feedback = const Value.absent(),
     this.detectedIngredientsCsv = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -279,6 +310,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
     required DateTime timestamp,
     required String photoPath,
     required int classificationIndex,
+    this.healthScore = const Value.absent(),
     required String feedback,
     this.detectedIngredientsCsv = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -292,6 +324,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
     Expression<DateTime>? timestamp,
     Expression<String>? photoPath,
     Expression<int>? classificationIndex,
+    Expression<double>? healthScore,
     Expression<String>? feedback,
     Expression<String>? detectedIngredientsCsv,
     Expression<int>? rowid,
@@ -302,6 +335,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
       if (photoPath != null) 'photo_path': photoPath,
       if (classificationIndex != null)
         'classification_index': classificationIndex,
+      if (healthScore != null) 'health_score': healthScore,
       if (feedback != null) 'feedback': feedback,
       if (detectedIngredientsCsv != null)
         'detected_ingredients_csv': detectedIngredientsCsv,
@@ -314,6 +348,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
       Value<DateTime>? timestamp,
       Value<String>? photoPath,
       Value<int>? classificationIndex,
+      Value<double>? healthScore,
       Value<String>? feedback,
       Value<String>? detectedIngredientsCsv,
       Value<int>? rowid}) {
@@ -322,6 +357,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
       timestamp: timestamp ?? this.timestamp,
       photoPath: photoPath ?? this.photoPath,
       classificationIndex: classificationIndex ?? this.classificationIndex,
+      healthScore: healthScore ?? this.healthScore,
       feedback: feedback ?? this.feedback,
       detectedIngredientsCsv:
           detectedIngredientsCsv ?? this.detectedIngredientsCsv,
@@ -344,6 +380,9 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
     if (classificationIndex.present) {
       map['classification_index'] = Variable<int>(classificationIndex.value);
     }
+    if (healthScore.present) {
+      map['health_score'] = Variable<double>(healthScore.value);
+    }
     if (feedback.present) {
       map['feedback'] = Variable<String>(feedback.value);
     }
@@ -364,6 +403,7 @@ class MealLogsCompanion extends UpdateCompanion<MealLogEntry> {
           ..write('timestamp: $timestamp, ')
           ..write('photoPath: $photoPath, ')
           ..write('classificationIndex: $classificationIndex, ')
+          ..write('healthScore: $healthScore, ')
           ..write('feedback: $feedback, ')
           ..write('detectedIngredientsCsv: $detectedIngredientsCsv, ')
           ..write('rowid: $rowid')
@@ -984,6 +1024,13 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<int> rating = GeneratedColumn<int>(
+      'rating', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1037,6 +1084,7 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
         imageAssetId,
         goalIndex,
         isFavorite,
+        rating,
         createdAt,
         sourceIndex,
         region,
@@ -1107,6 +1155,10 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
           isFavorite.isAcceptableOrUnknown(
               data['is_favorite']!, _isFavoriteMeta));
     }
+    if (data.containsKey('rating')) {
+      context.handle(_ratingMeta,
+          rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1166,6 +1218,8 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeEntry> {
           .read(DriftSqlType.int, data['${effectivePrefix}goal_index'])!,
       isFavorite: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
+      rating: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}rating'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       sourceIndex: attachedDatabase.typeMapping
@@ -1198,6 +1252,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
   final String? imageAssetId;
   final int goalIndex;
   final bool isFavorite;
+  final int rating;
   final DateTime createdAt;
   final int sourceIndex;
   final String region;
@@ -1215,6 +1270,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       this.imageAssetId,
       required this.goalIndex,
       required this.isFavorite,
+      required this.rating,
       required this.createdAt,
       required this.sourceIndex,
       required this.region,
@@ -1236,6 +1292,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
     }
     map['goal_index'] = Variable<int>(goalIndex);
     map['is_favorite'] = Variable<bool>(isFavorite);
+    map['rating'] = Variable<int>(rating);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['source_index'] = Variable<int>(sourceIndex);
     map['region'] = Variable<String>(region);
@@ -1263,6 +1320,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           : Value(imageAssetId),
       goalIndex: Value(goalIndex),
       isFavorite: Value(isFavorite),
+      rating: Value(rating),
       createdAt: Value(createdAt),
       sourceIndex: Value(sourceIndex),
       region: Value(region),
@@ -1290,6 +1348,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       imageAssetId: serializer.fromJson<String?>(json['imageAssetId']),
       goalIndex: serializer.fromJson<int>(json['goalIndex']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      rating: serializer.fromJson<int>(json['rating']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       sourceIndex: serializer.fromJson<int>(json['sourceIndex']),
       region: serializer.fromJson<String>(json['region']),
@@ -1312,6 +1371,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       'imageAssetId': serializer.toJson<String?>(imageAssetId),
       'goalIndex': serializer.toJson<int>(goalIndex),
       'isFavorite': serializer.toJson<bool>(isFavorite),
+      'rating': serializer.toJson<int>(rating),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'sourceIndex': serializer.toJson<int>(sourceIndex),
       'region': serializer.toJson<String>(region),
@@ -1332,6 +1392,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           Value<String?> imageAssetId = const Value.absent(),
           int? goalIndex,
           bool? isFavorite,
+          int? rating,
           DateTime? createdAt,
           int? sourceIndex,
           String? region,
@@ -1350,6 +1411,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
             imageAssetId.present ? imageAssetId.value : this.imageAssetId,
         goalIndex: goalIndex ?? this.goalIndex,
         isFavorite: isFavorite ?? this.isFavorite,
+        rating: rating ?? this.rating,
         createdAt: createdAt ?? this.createdAt,
         sourceIndex: sourceIndex ?? this.sourceIndex,
         region: region ?? this.region,
@@ -1377,6 +1439,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       goalIndex: data.goalIndex.present ? data.goalIndex.value : this.goalIndex,
       isFavorite:
           data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
+      rating: data.rating.present ? data.rating.value : this.rating,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       sourceIndex:
           data.sourceIndex.present ? data.sourceIndex.value : this.sourceIndex,
@@ -1401,6 +1464,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           ..write('imageAssetId: $imageAssetId, ')
           ..write('goalIndex: $goalIndex, ')
           ..write('isFavorite: $isFavorite, ')
+          ..write('rating: $rating, ')
           ..write('createdAt: $createdAt, ')
           ..write('sourceIndex: $sourceIndex, ')
           ..write('region: $region, ')
@@ -1423,6 +1487,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
       imageAssetId,
       goalIndex,
       isFavorite,
+      rating,
       createdAt,
       sourceIndex,
       region,
@@ -1443,6 +1508,7 @@ class RecipeEntry extends DataClass implements Insertable<RecipeEntry> {
           other.imageAssetId == this.imageAssetId &&
           other.goalIndex == this.goalIndex &&
           other.isFavorite == this.isFavorite &&
+          other.rating == this.rating &&
           other.createdAt == this.createdAt &&
           other.sourceIndex == this.sourceIndex &&
           other.region == this.region &&
@@ -1462,6 +1528,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
   final Value<String?> imageAssetId;
   final Value<int> goalIndex;
   final Value<bool> isFavorite;
+  final Value<int> rating;
   final Value<DateTime> createdAt;
   final Value<int> sourceIndex;
   final Value<String> region;
@@ -1480,6 +1547,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     this.imageAssetId = const Value.absent(),
     this.goalIndex = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.rating = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.sourceIndex = const Value.absent(),
     this.region = const Value.absent(),
@@ -1499,6 +1567,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     this.imageAssetId = const Value.absent(),
     this.goalIndex = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.rating = const Value.absent(),
     required DateTime createdAt,
     this.sourceIndex = const Value.absent(),
     this.region = const Value.absent(),
@@ -1520,6 +1589,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     Expression<String>? imageAssetId,
     Expression<int>? goalIndex,
     Expression<bool>? isFavorite,
+    Expression<int>? rating,
     Expression<DateTime>? createdAt,
     Expression<int>? sourceIndex,
     Expression<String>? region,
@@ -1539,6 +1609,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
       if (imageAssetId != null) 'image_asset_id': imageAssetId,
       if (goalIndex != null) 'goal_index': goalIndex,
       if (isFavorite != null) 'is_favorite': isFavorite,
+      if (rating != null) 'rating': rating,
       if (createdAt != null) 'created_at': createdAt,
       if (sourceIndex != null) 'source_index': sourceIndex,
       if (region != null) 'region': region,
@@ -1560,6 +1631,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
       Value<String?>? imageAssetId,
       Value<int>? goalIndex,
       Value<bool>? isFavorite,
+      Value<int>? rating,
       Value<DateTime>? createdAt,
       Value<int>? sourceIndex,
       Value<String>? region,
@@ -1578,6 +1650,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
       imageAssetId: imageAssetId ?? this.imageAssetId,
       goalIndex: goalIndex ?? this.goalIndex,
       isFavorite: isFavorite ?? this.isFavorite,
+      rating: rating ?? this.rating,
       createdAt: createdAt ?? this.createdAt,
       sourceIndex: sourceIndex ?? this.sourceIndex,
       region: region ?? this.region,
@@ -1621,6 +1694,9 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
     if (isFavorite.present) {
       map['is_favorite'] = Variable<bool>(isFavorite.value);
     }
+    if (rating.present) {
+      map['rating'] = Variable<int>(rating.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1658,6 +1734,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeEntry> {
           ..write('imageAssetId: $imageAssetId, ')
           ..write('goalIndex: $goalIndex, ')
           ..write('isFavorite: $isFavorite, ')
+          ..write('rating: $rating, ')
           ..write('createdAt: $createdAt, ')
           ..write('sourceIndex: $sourceIndex, ')
           ..write('region: $region, ')
@@ -2702,6 +2779,14 @@ class $WardrobeGarmentsTable extends WardrobeGarments
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _timesWornMeta =
+      const VerificationMeta('timesWorn');
+  @override
+  late final GeneratedColumn<int> timesWorn = GeneratedColumn<int>(
+      'times_worn', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _sizeMeta = const VerificationMeta('size');
   @override
   late final GeneratedColumn<String> size = GeneratedColumn<String>(
@@ -2749,6 +2834,7 @@ class $WardrobeGarmentsTable extends WardrobeGarments
         isClean,
         hasRemovableHood,
         rating,
+        timesWorn,
         size,
         brand,
         price,
@@ -2834,6 +2920,10 @@ class $WardrobeGarmentsTable extends WardrobeGarments
       context.handle(_ratingMeta,
           rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta));
     }
+    if (data.containsKey('times_worn')) {
+      context.handle(_timesWornMeta,
+          timesWorn.isAcceptableOrUnknown(data['times_worn']!, _timesWornMeta));
+    }
     if (data.containsKey('size')) {
       context.handle(
           _sizeMeta, size.isAcceptableOrUnknown(data['size']!, _sizeMeta));
@@ -2897,6 +2987,8 @@ class $WardrobeGarmentsTable extends WardrobeGarments
           DriftSqlType.bool, data['${effectivePrefix}has_removable_hood'])!,
       rating: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}rating'])!,
+      timesWorn: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}times_worn'])!,
       size: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}size']),
       brand: attachedDatabase.typeMapping
@@ -2932,6 +3024,7 @@ class WardrobeGarmentEntry extends DataClass
   final bool isClean;
   final bool hasRemovableHood;
   final int rating;
+  final int timesWorn;
   final String? size;
   final String? brand;
   final double? price;
@@ -2951,6 +3044,7 @@ class WardrobeGarmentEntry extends DataClass
       required this.isClean,
       required this.hasRemovableHood,
       required this.rating,
+      required this.timesWorn,
       this.size,
       this.brand,
       this.price,
@@ -2972,6 +3066,7 @@ class WardrobeGarmentEntry extends DataClass
     map['is_clean'] = Variable<bool>(isClean);
     map['has_removable_hood'] = Variable<bool>(hasRemovableHood);
     map['rating'] = Variable<int>(rating);
+    map['times_worn'] = Variable<int>(timesWorn);
     if (!nullToAbsent || size != null) {
       map['size'] = Variable<String>(size);
     }
@@ -3005,6 +3100,7 @@ class WardrobeGarmentEntry extends DataClass
       isClean: Value(isClean),
       hasRemovableHood: Value(hasRemovableHood),
       rating: Value(rating),
+      timesWorn: Value(timesWorn),
       size: size == null && nullToAbsent ? const Value.absent() : Value(size),
       brand:
           brand == null && nullToAbsent ? const Value.absent() : Value(brand),
@@ -3036,6 +3132,7 @@ class WardrobeGarmentEntry extends DataClass
       isClean: serializer.fromJson<bool>(json['isClean']),
       hasRemovableHood: serializer.fromJson<bool>(json['hasRemovableHood']),
       rating: serializer.fromJson<int>(json['rating']),
+      timesWorn: serializer.fromJson<int>(json['timesWorn']),
       size: serializer.fromJson<String?>(json['size']),
       brand: serializer.fromJson<String?>(json['brand']),
       price: serializer.fromJson<double?>(json['price']),
@@ -3060,6 +3157,7 @@ class WardrobeGarmentEntry extends DataClass
       'isClean': serializer.toJson<bool>(isClean),
       'hasRemovableHood': serializer.toJson<bool>(hasRemovableHood),
       'rating': serializer.toJson<int>(rating),
+      'timesWorn': serializer.toJson<int>(timesWorn),
       'size': serializer.toJson<String?>(size),
       'brand': serializer.toJson<String?>(brand),
       'price': serializer.toJson<double?>(price),
@@ -3082,6 +3180,7 @@ class WardrobeGarmentEntry extends DataClass
           bool? isClean,
           bool? hasRemovableHood,
           int? rating,
+          int? timesWorn,
           Value<String?> size = const Value.absent(),
           Value<String?> brand = const Value.absent(),
           Value<double?> price = const Value.absent(),
@@ -3101,6 +3200,7 @@ class WardrobeGarmentEntry extends DataClass
         isClean: isClean ?? this.isClean,
         hasRemovableHood: hasRemovableHood ?? this.hasRemovableHood,
         rating: rating ?? this.rating,
+        timesWorn: timesWorn ?? this.timesWorn,
         size: size.present ? size.value : this.size,
         brand: brand.present ? brand.value : this.brand,
         price: price.present ? price.value : this.price,
@@ -3133,6 +3233,7 @@ class WardrobeGarmentEntry extends DataClass
           ? data.hasRemovableHood.value
           : this.hasRemovableHood,
       rating: data.rating.present ? data.rating.value : this.rating,
+      timesWorn: data.timesWorn.present ? data.timesWorn.value : this.timesWorn,
       size: data.size.present ? data.size.value : this.size,
       brand: data.brand.present ? data.brand.value : this.brand,
       price: data.price.present ? data.price.value : this.price,
@@ -3161,6 +3262,7 @@ class WardrobeGarmentEntry extends DataClass
           ..write('isClean: $isClean, ')
           ..write('hasRemovableHood: $hasRemovableHood, ')
           ..write('rating: $rating, ')
+          ..write('timesWorn: $timesWorn, ')
           ..write('size: $size, ')
           ..write('brand: $brand, ')
           ..write('price: $price, ')
@@ -3185,6 +3287,7 @@ class WardrobeGarmentEntry extends DataClass
       isClean,
       hasRemovableHood,
       rating,
+      timesWorn,
       size,
       brand,
       price,
@@ -3207,6 +3310,7 @@ class WardrobeGarmentEntry extends DataClass
           other.isClean == this.isClean &&
           other.hasRemovableHood == this.hasRemovableHood &&
           other.rating == this.rating &&
+          other.timesWorn == this.timesWorn &&
           other.size == this.size &&
           other.brand == this.brand &&
           other.price == this.price &&
@@ -3228,6 +3332,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
   final Value<bool> isClean;
   final Value<bool> hasRemovableHood;
   final Value<int> rating;
+  final Value<int> timesWorn;
   final Value<String?> size;
   final Value<String?> brand;
   final Value<double?> price;
@@ -3248,6 +3353,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
     this.isClean = const Value.absent(),
     this.hasRemovableHood = const Value.absent(),
     this.rating = const Value.absent(),
+    this.timesWorn = const Value.absent(),
     this.size = const Value.absent(),
     this.brand = const Value.absent(),
     this.price = const Value.absent(),
@@ -3269,6 +3375,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
     this.isClean = const Value.absent(),
     this.hasRemovableHood = const Value.absent(),
     this.rating = const Value.absent(),
+    this.timesWorn = const Value.absent(),
     this.size = const Value.absent(),
     this.brand = const Value.absent(),
     this.price = const Value.absent(),
@@ -3295,6 +3402,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
     Expression<bool>? isClean,
     Expression<bool>? hasRemovableHood,
     Expression<int>? rating,
+    Expression<int>? timesWorn,
     Expression<String>? size,
     Expression<String>? brand,
     Expression<double>? price,
@@ -3316,6 +3424,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
       if (isClean != null) 'is_clean': isClean,
       if (hasRemovableHood != null) 'has_removable_hood': hasRemovableHood,
       if (rating != null) 'rating': rating,
+      if (timesWorn != null) 'times_worn': timesWorn,
       if (size != null) 'size': size,
       if (brand != null) 'brand': brand,
       if (price != null) 'price': price,
@@ -3339,6 +3448,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
       Value<bool>? isClean,
       Value<bool>? hasRemovableHood,
       Value<int>? rating,
+      Value<int>? timesWorn,
       Value<String?>? size,
       Value<String?>? brand,
       Value<double?>? price,
@@ -3359,6 +3469,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
       isClean: isClean ?? this.isClean,
       hasRemovableHood: hasRemovableHood ?? this.hasRemovableHood,
       rating: rating ?? this.rating,
+      timesWorn: timesWorn ?? this.timesWorn,
       size: size ?? this.size,
       brand: brand ?? this.brand,
       price: price ?? this.price,
@@ -3408,6 +3519,9 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
     if (rating.present) {
       map['rating'] = Variable<int>(rating.value);
     }
+    if (timesWorn.present) {
+      map['times_worn'] = Variable<int>(timesWorn.value);
+    }
     if (size.present) {
       map['size'] = Variable<String>(size.value);
     }
@@ -3447,6 +3561,7 @@ class WardrobeGarmentsCompanion extends UpdateCompanion<WardrobeGarmentEntry> {
           ..write('isClean: $isClean, ')
           ..write('hasRemovableHood: $hasRemovableHood, ')
           ..write('rating: $rating, ')
+          ..write('timesWorn: $timesWorn, ')
           ..write('size: $size, ')
           ..write('brand: $brand, ')
           ..write('price: $price, ')
@@ -3503,6 +3618,12 @@ class $OutfitsTable extends Outfits with TableInfo<$OutfitsTable, OutfitEntry> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _lastWornDateMeta =
+      const VerificationMeta('lastWornDate');
+  @override
+  late final GeneratedColumn<DateTime> lastWornDate = GeneratedColumn<DateTime>(
+      'last_worn_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -3510,8 +3631,16 @@ class $OutfitsTable extends Outfits with TableInfo<$OutfitsTable, OutfitEntry> {
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, garmentIdsCsv, occasion, season, timesWorn, createdAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        garmentIdsCsv,
+        occasion,
+        season,
+        timesWorn,
+        lastWornDate,
+        createdAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3553,6 +3682,12 @@ class $OutfitsTable extends Outfits with TableInfo<$OutfitsTable, OutfitEntry> {
       context.handle(_timesWornMeta,
           timesWorn.isAcceptableOrUnknown(data['times_worn']!, _timesWornMeta));
     }
+    if (data.containsKey('last_worn_date')) {
+      context.handle(
+          _lastWornDateMeta,
+          lastWornDate.isAcceptableOrUnknown(
+              data['last_worn_date']!, _lastWornDateMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -3580,6 +3715,8 @@ class $OutfitsTable extends Outfits with TableInfo<$OutfitsTable, OutfitEntry> {
           .read(DriftSqlType.string, data['${effectivePrefix}season'])!,
       timesWorn: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}times_worn'])!,
+      lastWornDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_worn_date']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -3598,6 +3735,7 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
   final String occasion;
   final String season;
   final int timesWorn;
+  final DateTime? lastWornDate;
   final DateTime createdAt;
   const OutfitEntry(
       {required this.id,
@@ -3606,6 +3744,7 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
       required this.occasion,
       required this.season,
       required this.timesWorn,
+      this.lastWornDate,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3616,6 +3755,9 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
     map['occasion'] = Variable<String>(occasion);
     map['season'] = Variable<String>(season);
     map['times_worn'] = Variable<int>(timesWorn);
+    if (!nullToAbsent || lastWornDate != null) {
+      map['last_worn_date'] = Variable<DateTime>(lastWornDate);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -3628,6 +3770,9 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
       occasion: Value(occasion),
       season: Value(season),
       timesWorn: Value(timesWorn),
+      lastWornDate: lastWornDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastWornDate),
       createdAt: Value(createdAt),
     );
   }
@@ -3642,6 +3787,7 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
       occasion: serializer.fromJson<String>(json['occasion']),
       season: serializer.fromJson<String>(json['season']),
       timesWorn: serializer.fromJson<int>(json['timesWorn']),
+      lastWornDate: serializer.fromJson<DateTime?>(json['lastWornDate']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -3655,6 +3801,7 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
       'occasion': serializer.toJson<String>(occasion),
       'season': serializer.toJson<String>(season),
       'timesWorn': serializer.toJson<int>(timesWorn),
+      'lastWornDate': serializer.toJson<DateTime?>(lastWornDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -3666,6 +3813,7 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
           String? occasion,
           String? season,
           int? timesWorn,
+          Value<DateTime?> lastWornDate = const Value.absent(),
           DateTime? createdAt}) =>
       OutfitEntry(
         id: id ?? this.id,
@@ -3674,6 +3822,8 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
         occasion: occasion ?? this.occasion,
         season: season ?? this.season,
         timesWorn: timesWorn ?? this.timesWorn,
+        lastWornDate:
+            lastWornDate.present ? lastWornDate.value : this.lastWornDate,
         createdAt: createdAt ?? this.createdAt,
       );
   OutfitEntry copyWithCompanion(OutfitsCompanion data) {
@@ -3686,6 +3836,9 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
       occasion: data.occasion.present ? data.occasion.value : this.occasion,
       season: data.season.present ? data.season.value : this.season,
       timesWorn: data.timesWorn.present ? data.timesWorn.value : this.timesWorn,
+      lastWornDate: data.lastWornDate.present
+          ? data.lastWornDate.value
+          : this.lastWornDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -3699,14 +3852,15 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
           ..write('occasion: $occasion, ')
           ..write('season: $season, ')
           ..write('timesWorn: $timesWorn, ')
+          ..write('lastWornDate: $lastWornDate, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, name, garmentIdsCsv, occasion, season, timesWorn, createdAt);
+  int get hashCode => Object.hash(id, name, garmentIdsCsv, occasion, season,
+      timesWorn, lastWornDate, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3717,6 +3871,7 @@ class OutfitEntry extends DataClass implements Insertable<OutfitEntry> {
           other.occasion == this.occasion &&
           other.season == this.season &&
           other.timesWorn == this.timesWorn &&
+          other.lastWornDate == this.lastWornDate &&
           other.createdAt == this.createdAt);
 }
 
@@ -3727,6 +3882,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
   final Value<String> occasion;
   final Value<String> season;
   final Value<int> timesWorn;
+  final Value<DateTime?> lastWornDate;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const OutfitsCompanion({
@@ -3736,6 +3892,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
     this.occasion = const Value.absent(),
     this.season = const Value.absent(),
     this.timesWorn = const Value.absent(),
+    this.lastWornDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -3746,6 +3903,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
     this.occasion = const Value.absent(),
     this.season = const Value.absent(),
     this.timesWorn = const Value.absent(),
+    this.lastWornDate = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -3759,6 +3917,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
     Expression<String>? occasion,
     Expression<String>? season,
     Expression<int>? timesWorn,
+    Expression<DateTime>? lastWornDate,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -3769,6 +3928,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
       if (occasion != null) 'occasion': occasion,
       if (season != null) 'season': season,
       if (timesWorn != null) 'times_worn': timesWorn,
+      if (lastWornDate != null) 'last_worn_date': lastWornDate,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3781,6 +3941,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
       Value<String>? occasion,
       Value<String>? season,
       Value<int>? timesWorn,
+      Value<DateTime?>? lastWornDate,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return OutfitsCompanion(
@@ -3790,6 +3951,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
       occasion: occasion ?? this.occasion,
       season: season ?? this.season,
       timesWorn: timesWorn ?? this.timesWorn,
+      lastWornDate: lastWornDate ?? this.lastWornDate,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3816,6 +3978,9 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
     if (timesWorn.present) {
       map['times_worn'] = Variable<int>(timesWorn.value);
     }
+    if (lastWornDate.present) {
+      map['last_worn_date'] = Variable<DateTime>(lastWornDate.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -3834,6 +3999,7 @@ class OutfitsCompanion extends UpdateCompanion<OutfitEntry> {
           ..write('occasion: $occasion, ')
           ..write('season: $season, ')
           ..write('timesWorn: $timesWorn, ')
+          ..write('lastWornDate: $lastWornDate, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4690,6 +4856,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $UserProfileTable userProfile = $UserProfileTable(this);
   late final $WeeklyMenuEntriesTable weeklyMenuEntries =
       $WeeklyMenuEntriesTable(this);
+  late final Index idxMeallogsTimestamp = Index('idx_meallogs_timestamp',
+      'CREATE INDEX idx_meallogs_timestamp ON meal_logs (timestamp)');
+  late final Index idxIngredientsCategory = Index('idx_ingredients_category',
+      'CREATE INDEX idx_ingredients_category ON inventory_ingredients (primary_category)');
+  late final Index idxIngredientsExpiry = Index('idx_ingredients_expiry',
+      'CREATE INDEX idx_ingredients_expiry ON inventory_ingredients (expiration_date)');
+  late final Index idxRecipesSource = Index('idx_recipes_source',
+      'CREATE INDEX idx_recipes_source ON recipes (source_index)');
+  late final Index idxRecipesRegion = Index('idx_recipes_region',
+      'CREATE INDEX idx_recipes_region ON recipes (region)');
+  late final Index idxRecipeIngredientsRecipeId = Index(
+      'idx_recipe_ingredients_recipe_id',
+      'CREATE INDEX idx_recipe_ingredients_recipe_id ON recipe_ingredients (recipe_id)');
+  late final Index idxGarmentsType = Index('idx_garments_type',
+      'CREATE INDEX idx_garments_type ON wardrobe_garments (type_index)');
+  late final Index idxGarmentsFavorite = Index('idx_garments_favorite',
+      'CREATE INDEX idx_garments_favorite ON wardrobe_garments (is_favorite)');
+  late final Index idxGarmentsClean = Index('idx_garments_clean',
+      'CREATE INDEX idx_garments_clean ON wardrobe_garments (is_clean)');
+  late final Index idxMenuDayType = Index('idx_menu_day_type',
+      'CREATE UNIQUE INDEX idx_menu_day_type ON weekly_menu_entries (day_of_week, meal_type)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4704,7 +4891,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         wardrobeGarments,
         outfits,
         userProfile,
-        weeklyMenuEntries
+        weeklyMenuEntries,
+        idxMeallogsTimestamp,
+        idxIngredientsCategory,
+        idxIngredientsExpiry,
+        idxRecipesSource,
+        idxRecipesRegion,
+        idxRecipeIngredientsRecipeId,
+        idxGarmentsType,
+        idxGarmentsFavorite,
+        idxGarmentsClean,
+        idxMenuDayType
       ];
 }
 
@@ -4713,6 +4910,7 @@ typedef $$MealLogsTableCreateCompanionBuilder = MealLogsCompanion Function({
   required DateTime timestamp,
   required String photoPath,
   required int classificationIndex,
+  Value<double> healthScore,
   required String feedback,
   Value<String> detectedIngredientsCsv,
   Value<int> rowid,
@@ -4722,6 +4920,7 @@ typedef $$MealLogsTableUpdateCompanionBuilder = MealLogsCompanion Function({
   Value<DateTime> timestamp,
   Value<String> photoPath,
   Value<int> classificationIndex,
+  Value<double> healthScore,
   Value<String> feedback,
   Value<String> detectedIngredientsCsv,
   Value<int> rowid,
@@ -4748,6 +4947,9 @@ class $$MealLogsTableFilterComposer
   ColumnFilters<int> get classificationIndex => $composableBuilder(
       column: $table.classificationIndex,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get healthScore => $composableBuilder(
+      column: $table.healthScore, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get feedback => $composableBuilder(
       column: $table.feedback, builder: (column) => ColumnFilters(column));
@@ -4779,6 +4981,9 @@ class $$MealLogsTableOrderingComposer
       column: $table.classificationIndex,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get healthScore => $composableBuilder(
+      column: $table.healthScore, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get feedback => $composableBuilder(
       column: $table.feedback, builder: (column) => ColumnOrderings(column));
 
@@ -4807,6 +5012,9 @@ class $$MealLogsTableAnnotationComposer
 
   GeneratedColumn<int> get classificationIndex => $composableBuilder(
       column: $table.classificationIndex, builder: (column) => column);
+
+  GeneratedColumn<double> get healthScore => $composableBuilder(
+      column: $table.healthScore, builder: (column) => column);
 
   GeneratedColumn<String> get feedback =>
       $composableBuilder(column: $table.feedback, builder: (column) => column);
@@ -4842,6 +5050,7 @@ class $$MealLogsTableTableManager extends RootTableManager<
             Value<DateTime> timestamp = const Value.absent(),
             Value<String> photoPath = const Value.absent(),
             Value<int> classificationIndex = const Value.absent(),
+            Value<double> healthScore = const Value.absent(),
             Value<String> feedback = const Value.absent(),
             Value<String> detectedIngredientsCsv = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -4851,6 +5060,7 @@ class $$MealLogsTableTableManager extends RootTableManager<
             timestamp: timestamp,
             photoPath: photoPath,
             classificationIndex: classificationIndex,
+            healthScore: healthScore,
             feedback: feedback,
             detectedIngredientsCsv: detectedIngredientsCsv,
             rowid: rowid,
@@ -4860,6 +5070,7 @@ class $$MealLogsTableTableManager extends RootTableManager<
             required DateTime timestamp,
             required String photoPath,
             required int classificationIndex,
+            Value<double> healthScore = const Value.absent(),
             required String feedback,
             Value<String> detectedIngredientsCsv = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -4869,6 +5080,7 @@ class $$MealLogsTableTableManager extends RootTableManager<
             timestamp: timestamp,
             photoPath: photoPath,
             classificationIndex: classificationIndex,
+            healthScore: healthScore,
             feedback: feedback,
             detectedIngredientsCsv: detectedIngredientsCsv,
             rowid: rowid,
@@ -5162,6 +5374,7 @@ typedef $$RecipesTableCreateCompanionBuilder = RecipesCompanion Function({
   Value<String?> imageAssetId,
   Value<int> goalIndex,
   Value<bool> isFavorite,
+  Value<int> rating,
   required DateTime createdAt,
   Value<int> sourceIndex,
   Value<String> region,
@@ -5181,6 +5394,7 @@ typedef $$RecipesTableUpdateCompanionBuilder = RecipesCompanion Function({
   Value<String?> imageAssetId,
   Value<int> goalIndex,
   Value<bool> isFavorite,
+  Value<int> rating,
   Value<DateTime> createdAt,
   Value<int> sourceIndex,
   Value<String> region,
@@ -5270,6 +5484,9 @@ class $$RecipesTableFilterComposer
 
   ColumnFilters<bool> get isFavorite => $composableBuilder(
       column: $table.isFavorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get rating => $composableBuilder(
+      column: $table.rating, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5374,6 +5591,9 @@ class $$RecipesTableOrderingComposer
   ColumnOrderings<bool> get isFavorite => $composableBuilder(
       column: $table.isFavorite, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get rating => $composableBuilder(
+      column: $table.rating, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -5431,6 +5651,9 @@ class $$RecipesTableAnnotationComposer
 
   GeneratedColumn<bool> get isFavorite => $composableBuilder(
       column: $table.isFavorite, builder: (column) => column);
+
+  GeneratedColumn<int> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5529,6 +5752,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             Value<String?> imageAssetId = const Value.absent(),
             Value<int> goalIndex = const Value.absent(),
             Value<bool> isFavorite = const Value.absent(),
+            Value<int> rating = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> sourceIndex = const Value.absent(),
             Value<String> region = const Value.absent(),
@@ -5548,6 +5772,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             imageAssetId: imageAssetId,
             goalIndex: goalIndex,
             isFavorite: isFavorite,
+            rating: rating,
             createdAt: createdAt,
             sourceIndex: sourceIndex,
             region: region,
@@ -5567,6 +5792,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             Value<String?> imageAssetId = const Value.absent(),
             Value<int> goalIndex = const Value.absent(),
             Value<bool> isFavorite = const Value.absent(),
+            Value<int> rating = const Value.absent(),
             required DateTime createdAt,
             Value<int> sourceIndex = const Value.absent(),
             Value<String> region = const Value.absent(),
@@ -5586,6 +5812,7 @@ class $$RecipesTableTableManager extends RootTableManager<
             imageAssetId: imageAssetId,
             goalIndex: goalIndex,
             isFavorite: isFavorite,
+            rating: rating,
             createdAt: createdAt,
             sourceIndex: sourceIndex,
             region: region,
@@ -6294,6 +6521,7 @@ typedef $$WardrobeGarmentsTableCreateCompanionBuilder
   Value<bool> isClean,
   Value<bool> hasRemovableHood,
   Value<int> rating,
+  Value<int> timesWorn,
   Value<String?> size,
   Value<String?> brand,
   Value<double?> price,
@@ -6316,6 +6544,7 @@ typedef $$WardrobeGarmentsTableUpdateCompanionBuilder
   Value<bool> isClean,
   Value<bool> hasRemovableHood,
   Value<int> rating,
+  Value<int> timesWorn,
   Value<String?> size,
   Value<String?> brand,
   Value<double?> price,
@@ -6371,6 +6600,9 @@ class $$WardrobeGarmentsTableFilterComposer
 
   ColumnFilters<int> get rating => $composableBuilder(
       column: $table.rating, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get timesWorn => $composableBuilder(
+      column: $table.timesWorn, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get size => $composableBuilder(
       column: $table.size, builder: (column) => ColumnFilters(column));
@@ -6440,6 +6672,9 @@ class $$WardrobeGarmentsTableOrderingComposer
   ColumnOrderings<int> get rating => $composableBuilder(
       column: $table.rating, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get timesWorn => $composableBuilder(
+      column: $table.timesWorn, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get size => $composableBuilder(
       column: $table.size, builder: (column) => ColumnOrderings(column));
 
@@ -6506,6 +6741,9 @@ class $$WardrobeGarmentsTableAnnotationComposer
   GeneratedColumn<int> get rating =>
       $composableBuilder(column: $table.rating, builder: (column) => column);
 
+  GeneratedColumn<int> get timesWorn =>
+      $composableBuilder(column: $table.timesWorn, builder: (column) => column);
+
   GeneratedColumn<String> get size =>
       $composableBuilder(column: $table.size, builder: (column) => column);
 
@@ -6565,6 +6803,7 @@ class $$WardrobeGarmentsTableTableManager extends RootTableManager<
             Value<bool> isClean = const Value.absent(),
             Value<bool> hasRemovableHood = const Value.absent(),
             Value<int> rating = const Value.absent(),
+            Value<int> timesWorn = const Value.absent(),
             Value<String?> size = const Value.absent(),
             Value<String?> brand = const Value.absent(),
             Value<double?> price = const Value.absent(),
@@ -6586,6 +6825,7 @@ class $$WardrobeGarmentsTableTableManager extends RootTableManager<
             isClean: isClean,
             hasRemovableHood: hasRemovableHood,
             rating: rating,
+            timesWorn: timesWorn,
             size: size,
             brand: brand,
             price: price,
@@ -6607,6 +6847,7 @@ class $$WardrobeGarmentsTableTableManager extends RootTableManager<
             Value<bool> isClean = const Value.absent(),
             Value<bool> hasRemovableHood = const Value.absent(),
             Value<int> rating = const Value.absent(),
+            Value<int> timesWorn = const Value.absent(),
             Value<String?> size = const Value.absent(),
             Value<String?> brand = const Value.absent(),
             Value<double?> price = const Value.absent(),
@@ -6628,6 +6869,7 @@ class $$WardrobeGarmentsTableTableManager extends RootTableManager<
             isClean: isClean,
             hasRemovableHood: hasRemovableHood,
             rating: rating,
+            timesWorn: timesWorn,
             size: size,
             brand: brand,
             price: price,
@@ -6666,6 +6908,7 @@ typedef $$OutfitsTableCreateCompanionBuilder = OutfitsCompanion Function({
   Value<String> occasion,
   Value<String> season,
   Value<int> timesWorn,
+  Value<DateTime?> lastWornDate,
   required DateTime createdAt,
   Value<int> rowid,
 });
@@ -6676,6 +6919,7 @@ typedef $$OutfitsTableUpdateCompanionBuilder = OutfitsCompanion Function({
   Value<String> occasion,
   Value<String> season,
   Value<int> timesWorn,
+  Value<DateTime?> lastWornDate,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -6706,6 +6950,9 @@ class $$OutfitsTableFilterComposer
 
   ColumnFilters<int> get timesWorn => $composableBuilder(
       column: $table.timesWorn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastWornDate => $composableBuilder(
+      column: $table.lastWornDate, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -6739,6 +6986,10 @@ class $$OutfitsTableOrderingComposer
   ColumnOrderings<int> get timesWorn => $composableBuilder(
       column: $table.timesWorn, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get lastWornDate => $composableBuilder(
+      column: $table.lastWornDate,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -6769,6 +7020,9 @@ class $$OutfitsTableAnnotationComposer
 
   GeneratedColumn<int> get timesWorn =>
       $composableBuilder(column: $table.timesWorn, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastWornDate => $composableBuilder(
+      column: $table.lastWornDate, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6803,6 +7057,7 @@ class $$OutfitsTableTableManager extends RootTableManager<
             Value<String> occasion = const Value.absent(),
             Value<String> season = const Value.absent(),
             Value<int> timesWorn = const Value.absent(),
+            Value<DateTime?> lastWornDate = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -6813,6 +7068,7 @@ class $$OutfitsTableTableManager extends RootTableManager<
             occasion: occasion,
             season: season,
             timesWorn: timesWorn,
+            lastWornDate: lastWornDate,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -6823,6 +7079,7 @@ class $$OutfitsTableTableManager extends RootTableManager<
             Value<String> occasion = const Value.absent(),
             Value<String> season = const Value.absent(),
             Value<int> timesWorn = const Value.absent(),
+            Value<DateTime?> lastWornDate = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -6833,6 +7090,7 @@ class $$OutfitsTableTableManager extends RootTableManager<
             occasion: occasion,
             season: season,
             timesWorn: timesWorn,
+            lastWornDate: lastWornDate,
             createdAt: createdAt,
             rowid: rowid,
           ),

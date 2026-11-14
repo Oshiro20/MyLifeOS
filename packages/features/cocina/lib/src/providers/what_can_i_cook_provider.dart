@@ -56,8 +56,17 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       suggestions.where((s) => !_dismissedIds.contains(s.recipe.id)).toList();
 
   void dismissRecipe(String recipeId) {
-    _dismissedIds.add(recipeId);
-    state = state;
+    dismissMenu([recipeId]);
+  }
+
+  void dismissMenu(List<String> recipeIds) {
+    _dismissedIds.addAll(recipeIds);
+    suggestions =
+        suggestions.where((s) => !recipeIds.contains(s.recipe.id)).toList();
+    if (state == WhatCanICookState.success) {
+      state = WhatCanICookState.initial;
+      state = WhatCanICookState.success;
+    }
   }
 
   @override
@@ -96,6 +105,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
 
     state = WhatCanICookState.loading;
     errorMessage = null;
+    _dismissedIds.clear();
 
     try {
       final inventoryNotifier = ref.read(inventoryProvider.notifier);
@@ -170,6 +180,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   Future<void> generateRapidMenus() async {
     state = WhatCanICookState.loading;
     errorMessage = null;
+    _dismissedIds.clear();
 
     try {
       final inventoryNotifier = ref.read(inventoryProvider.notifier);
@@ -318,11 +329,16 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     errorMessage = null;
   }
 
-  Future<SaveRecipeResult> saveSuggestion(RecipeSuggestion suggestion) async {
+  Future<SaveRecipeResult> saveSuggestion(
+    RecipeSuggestion suggestion, {
+    bool forceSave = false,
+  }) async {
     try {
       final recipesNotifier = ref.read(recipesProvider.notifier);
-      return await recipesNotifier
-          .saveRecipeWithDuplicateCheck(suggestion.recipe);
+      return await recipesNotifier.saveRecipeWithDuplicateCheck(
+        suggestion.recipe,
+        forceSave: forceSave,
+      );
     } catch (e) {
       debugPrint('❌ Error saving suggestion: $e');
       return SaveRecipeResult.error(e.toString());
@@ -384,6 +400,12 @@ class _GeminiAdapter implements IAIRecipeExtractor {
 
   @override
   Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) {
+    if (textContext != null && textContext.isNotEmpty) {
+      return gemini.generateJsonText(
+        prompt: textContext,
+        mediaPaths: mediaPath != null ? [mediaPath] : const [],
+      );
+    }
     return gemini.extractRecipe(textContext: textContext, mediaPath: mediaPath);
   }
 }

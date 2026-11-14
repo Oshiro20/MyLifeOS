@@ -27,12 +27,16 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(foodCoachProvider);
+    final canEvaluate = state.currentIngredients.isNotEmpty || _photoPath != null;
 
     // Mostrar resultado si hay evaluación
     if (state.currentEvaluation != null) {
       return _ResultView(
         evaluation: state.currentEvaluation!,
-        onReset: () => ref.read(foodCoachProvider.notifier).clearResult(),
+        onReset: () {
+          setState(() => _photoPath = null);
+          ref.read(foodCoachProvider.notifier).clearResult();
+        },
       );
     }
 
@@ -224,23 +228,56 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
 
           const SizedBox(height: 28),
 
+          // Error si falló la evaluación
+          if (state.error != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.redAccent.withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: Colors.redAccent, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      state.error!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Botón evaluar
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: state.currentIngredients.isEmpty
+                backgroundColor: !canEvaluate
                     ? Colors.white12
                     : const Color(0xFF00C896),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              onPressed: state.currentIngredients.isEmpty || state.isEvaluating
+              onPressed: !canEvaluate || state.isEvaluating
                   ? null
-                  : () => ref
-                      .read(foodCoachProvider.notifier)
-                      .evaluate(photoPath: _photoPath),
+                  : () async {
+                      final selectedPhoto = _photoPath;
+                      await ref
+                          .read(foodCoachProvider.notifier)
+                          .evaluate(photoPath: selectedPhoto);
+                      if (mounted &&
+                          ref.read(foodCoachProvider).currentEvaluation != null) {
+                        setState(() => _photoPath = null);
+                      }
+                    },
               icon: state.isEvaluating
                   ? const SizedBox(
                       height: 18,
@@ -381,7 +418,8 @@ class _ResultView extends StatelessWidget {
       child: Column(
         children: [
           // Foto si existe
-          if (evaluation.photoPath != null) ...[
+          if (evaluation.photoPath != null &&
+              File(evaluation.photoPath!).existsSync()) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.file(File(evaluation.photoPath!),

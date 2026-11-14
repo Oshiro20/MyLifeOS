@@ -103,6 +103,7 @@ class WardrobeGarment extends Equatable {
   final double? price;
   final String? imageAssetId;
   final String? imageDetailsPath;
+  final int timesWorn;
   final DateTime addedAt;
 
   const WardrobeGarment({
@@ -123,8 +124,52 @@ class WardrobeGarment extends Equatable {
     this.price,
     this.imageAssetId,
     this.imageDetailsPath,
+    this.timesWorn = 0,
     required this.addedAt,
   });
+
+  WardrobeGarment copyWith({
+    String? id,
+    String? name,
+    GarmentType? type,
+    String? primaryColor,
+    String? secondaryColor,
+    GarmentStyle? style,
+    String? material,
+    Season? season,
+    bool? isFavorite,
+    bool? isClean,
+    bool? hasRemovableHood,
+    int? rating,
+    String? size,
+    String? brand,
+    double? price,
+    String? imageAssetId,
+    String? imageDetailsPath,
+    int? timesWorn,
+    DateTime? addedAt,
+  }) =>
+      WardrobeGarment(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        type: type ?? this.type,
+        primaryColor: primaryColor ?? this.primaryColor,
+        secondaryColor: secondaryColor ?? this.secondaryColor,
+        style: style ?? this.style,
+        material: material ?? this.material,
+        season: season ?? this.season,
+        isFavorite: isFavorite ?? this.isFavorite,
+        isClean: isClean ?? this.isClean,
+        hasRemovableHood: hasRemovableHood ?? this.hasRemovableHood,
+        rating: rating ?? this.rating,
+        size: size ?? this.size,
+        brand: brand ?? this.brand,
+        price: price ?? this.price,
+        imageAssetId: imageAssetId ?? this.imageAssetId,
+        imageDetailsPath: imageDetailsPath ?? this.imageDetailsPath,
+        timesWorn: timesWorn ?? this.timesWorn,
+        addedAt: addedAt ?? this.addedAt,
+      );
 
   @override
   List<Object?> get props => [
@@ -145,6 +190,7 @@ class WardrobeGarment extends Equatable {
         price,
         imageAssetId,
         imageDetailsPath,
+        timesWorn,
         addedAt
       ];
 }

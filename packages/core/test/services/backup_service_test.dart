@@ -41,7 +41,7 @@ void main() {
       });
 
       test('should have correct schema version', () {
-        expect(BackupMetadata.schemaVersion, 4);
+        expect(BackupMetadata.schemaVersion, 16);
       });
 
       test('should have correct app id', () {

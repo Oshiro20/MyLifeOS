@@ -257,11 +257,23 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           false;
 
       if (!shouldContinue || !context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('⚠️ Receta guardada (posible duplicado)'),
-            backgroundColor: Colors.orange),
-      );
+      final forced = await ref
+          .read(recipesProvider.notifier)
+          .saveRecipeWithDuplicateCheck(recipe, forceSave: true);
+      if (!context.mounted) return;
+      if (forced.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('⚠️ Receta guardada (posible duplicado)'),
+              backgroundColor: Colors.orange),
+        );
+      } else if (forced.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error al guardar: ${forced.error}'),
+              backgroundColor: Colors.redAccent),
+        );
+      }
     } else if (result.success) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

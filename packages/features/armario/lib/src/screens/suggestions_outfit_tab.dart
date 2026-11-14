@@ -51,8 +51,8 @@ class _SuggestionsOutfitTabState extends ConsumerState<SuggestionsOutfitTab> {
       suggestions: state.suggestions,
       garments: state.garments,
       onBack: () => setState(() => _selectedOccasion = null),
-      onSave: (name, occasion, ids) {
-        ref.read(armarioProvider.notifier).saveOutfit(Outfit(
+      onSave: (name, occasion, ids) async {
+        await ref.read(armarioProvider.notifier).saveOutfit(Outfit(
               id: '',
               name: name,
               garmentIds: ids,
@@ -220,7 +220,8 @@ class _OutfitResults extends StatelessWidget {
   final List<List<WardrobeGarment>> suggestions;
   final List<WardrobeGarment> garments;
   final VoidCallback onBack;
-  final void Function(String name, String occasion, List<String> ids) onSave;
+  final Future<void> Function(String name, String occasion, List<String> ids)
+      onSave;
 
   const _OutfitResults({
     required this.occasion,
@@ -233,9 +234,13 @@ class _OutfitResults extends StatelessWidget {
   static const _typeEmoji = {
     GarmentType.shirt: '👕',
     GarmentType.tshirt: '👚',
+    GarmentType.polo: '👕',
     GarmentType.pants: '👖',
     GarmentType.jeans: '🩱',
     GarmentType.shoes: '👟',
+    GarmentType.sneakers: '👟',
+    GarmentType.boots: '🥾',
+    GarmentType.sandals: '🩴',
     GarmentType.jacket: '🧥',
     GarmentType.accessories: '💍',
     GarmentType.dress: '👗',
@@ -280,18 +285,32 @@ class _OutfitResults extends StatelessWidget {
         break;
     }
 
+    const shoeTypes = {
+      GarmentType.shoes,
+      GarmentType.sneakers,
+      GarmentType.boots,
+      GarmentType.sandals,
+    };
+    const topTypes = {
+      GarmentType.shirt,
+      GarmentType.tshirt,
+      GarmentType.polo,
+      GarmentType.sweater,
+      GarmentType.hoodie,
+      GarmentType.jacket,
+    };
+    const bottomTypes = {
+      GarmentType.pants,
+      GarmentType.jeans,
+      GarmentType.shorts,
+      GarmentType.skirt,
+    };
+
     final clean = garments.where((g) => g.isClean).toList();
-    final tops = clean.where((g) =>
-        g.type == GarmentType.shirt ||
-        g.type == GarmentType.tshirt ||
-        g.type == GarmentType.sweater ||
-        g.type == GarmentType.hoodie);
-    final bottoms = clean.where((g) =>
-        g.type == GarmentType.pants ||
-        g.type == GarmentType.jeans ||
-        g.type == GarmentType.shorts ||
-        g.type == GarmentType.skirt);
-    final shoes = clean.where((g) => g.type == GarmentType.shoes).toList();
+    final tops = clean.where((g) => topTypes.contains(g.type));
+    final bottoms = clean.where((g) => bottomTypes.contains(g.type));
+    final dresses = clean.where((g) => g.type == GarmentType.dress).toList();
+    final shoes = clean.where((g) => shoeTypes.contains(g.type)).toList();
 
     // Prioritize matching styles
     final scoredTops = tops.toList()
@@ -306,14 +325,29 @@ class _OutfitResults extends StatelessWidget {
         final bMatch = preferredStyles.contains(b.style) ? 0 : 1;
         return aMatch.compareTo(bMatch);
       });
+    final scoredShoes = shoes.toList()
+      ..sort((a, b) {
+        final aMatch = preferredStyles.contains(a.style) ? 0 : 1;
+        final bMatch = preferredStyles.contains(b.style) ? 0 : 1;
+        return aMatch.compareTo(bMatch);
+      });
 
     final results = <List<WardrobeGarment>>[];
     for (final top in scoredTops) {
       for (final bottom in scoredBottoms) {
-        final shoe = shoes.isNotEmpty ? shoes.first : null;
+        final shoe = scoredShoes.isNotEmpty
+            ? scoredShoes[results.length % scoredShoes.length]
+            : null;
         results.add(shoe != null ? [top, bottom, shoe] : [top, bottom]);
         if (results.length >= 3) return results;
       }
+    }
+    for (final dress in dresses) {
+      final shoe = scoredShoes.isNotEmpty
+          ? scoredShoes[results.length % scoredShoes.length]
+          : null;
+      results.add(shoe != null ? [dress, shoe] : [dress]);
+      if (results.length >= 3) return results;
     }
     return results;
   }
@@ -430,15 +464,25 @@ class _OutfitResults extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10)),
                               ),
-                              onPressed: () {
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
                                 final ids = combo.map((g) => g.id).toList();
-                                onSave(
-                                    'Outfit $occasion ${i + 1}', occasion, ids);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Outfit guardado ✓'),
-                                      backgroundColor: Color(0xFF66BB6A)),
-                                );
+                                try {
+                                  await onSave(
+                                      'Outfit $occasion ${i + 1}', occasion, ids);
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Outfit guardado ✓'),
+                                        backgroundColor: Color(0xFF66BB6A)),
+                                  );
+                                } catch (e) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                        content: Text('Error al guardar: $e'),
+                                        backgroundColor:
+                                            const Color(0xFFFF5252)),
+                                  );
+                                }
                               },
                               icon: const Icon(Icons.bookmark_add_outlined,
                                   color: Colors.white, size: 16),
@@ -494,9 +538,16 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
     final c = widget.current;
     _heightCtrl = TextEditingController(text: c?.height ?? '');
     _weightCtrl = TextEditingController(text: c?.weight ?? '');
-    _skinTone = c?.skinTone ?? 'medio';
-    _bodyType = c?.bodyType ?? 'promedio';
-    _hairType = c?.hairType ?? 'lacio';
+    _skinTone = _skinOptions.contains(c?.skinTone) ? c!.skinTone! : 'medio';
+    _bodyType = _bodyOptions.contains(c?.bodyType) ? c!.bodyType! : 'promedio';
+    _hairType = _hairOptions.contains(c?.hairType) ? c!.hairType! : 'lacio';
+  }
+
+  @override
+  void dispose() {
+    _heightCtrl.dispose();
+    _weightCtrl.dispose();
+    super.dispose();
   }
 
   @override

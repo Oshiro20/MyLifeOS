@@ -32,9 +32,7 @@ class CocinaRepository implements ICocinaRepository {
         description: r.description,
         durationMinutes: r.durationMinutes,
         servings: r.servings,
-        instructions: (jsonDecode(r.instructionsJson) as List)
-            .map((e) => e.toString())
-            .toList(),
+        instructions: _decodeStringList(r.instructionsJson),
         ingredients: ings
             .map((i) => RecipeIngredient(
                   id: i.id,
@@ -46,9 +44,11 @@ class CocinaRepository implements ICocinaRepository {
             .toList(),
         tags: r.tagsCsv.isEmpty ? [] : r.tagsCsv.split(','),
         imageAssetId: r.imageAssetId,
-        goal: NutritionGoal.values[r.goalIndex],
+        goal: NutritionGoal
+            .values[r.goalIndex.clamp(0, NutritionGoal.values.length - 1)],
         isFavorite: r.isFavorite,
         createdAt: r.createdAt,
+        rating: r.rating > 0 ? r.rating : null,
         cuisineStyle: r.region.isNotEmpty ? r.region : null,
         fuenteUrl: r.sourceUrl,
         fuenteLabel: r.sourceIndex == 0
@@ -63,6 +63,16 @@ class CocinaRepository implements ICocinaRepository {
               )
             : null,
       );
+
+  List<String> _decodeStringList(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
 
   ShoppingItem _toShoppingItem(ShoppingItemEntry e) => ShoppingItem(
         id: e.id,
@@ -119,20 +129,27 @@ class CocinaRepository implements ICocinaRepository {
 
   @override
   Future<void> deleteIngredient(String id) async {
+    final existing = await (_db.select(_db.inventoryIngredients)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
     await (_db.delete(_db.inventoryIngredients)..where((t) => t.id.equals(id)))
         .go();
+    await AppDatabase.deleteLocalFileIfPresent(existing?.imageAssetId);
   }
 
   // ── Recetas ──────────────────────────────────────────────────────────────────
   @override
   Future<List<Recipe>> getAllRecipes() async {
     final recipes = await _db.select(_db.recipes).get();
-    return Future.wait(recipes.map((r) async {
-      final ings = await (_db.select(_db.recipeIngredients)
-            ..where((t) => t.recipeId.equals(r.id)))
-          .get();
-      return _toRecipe(r, ings);
-    }));
+    if (recipes.isEmpty) return const [];
+    final allIngs = await _db.select(_db.recipeIngredients).get();
+    final grouped = <String, List<RecipeIngredientEntry>>{};
+    for (final ing in allIngs) {
+      grouped.putIfAbsent(ing.recipeId, () => []).add(ing);
+    }
+    return recipes
+        .map((r) => _toRecipe(r, grouped[r.id] ?? const []))
+        .toList();
   }
 
   @override
@@ -150,52 +167,69 @@ class CocinaRepository implements ICocinaRepository {
   Future<Recipe> saveRecipe(Recipe recipe) async {
     final id = recipe.id.isEmpty ? _uuid.v4() : recipe.id;
     final now = recipe.createdAt;
+    final sourceIndex = recipe.fuenteLabel == 'TheMealDB'
+        ? 1
+        : (recipe.fuenteLabel == 'Chef IA' || recipe.fuenteLabel == 'IA')
+            ? 2
+            : 0;
 
-    await _db.into(_db.recipes).insertOnConflictUpdate(RecipesCompanion(
-          id: Value(id),
-          name: Value(recipe.name),
-          description: Value(recipe.description),
-          durationMinutes: Value(recipe.durationMinutes),
-          servings: Value(recipe.servings),
-          instructionsJson: Value(jsonEncode(recipe.instructions)),
-          tagsCsv: Value(recipe.tags.join(',')),
-          imageAssetId: Value(recipe.imageAssetId),
-          goalIndex: Value(recipe.goal.index),
-          isFavorite: Value(recipe.isFavorite),
-          createdAt: Value(now),
-          sourceIndex: Value(0),
-          region: Value(recipe.cuisineStyle ?? ''),
-          difficulty: Value('Media'),
-          sourceUrl: Value(recipe.fuenteUrl),
-          mealType: Value(recipe.tipoComida?.name),
-        ));
+    await _db.transaction(() async {
+      await _db.into(_db.recipes).insertOnConflictUpdate(RecipesCompanion(
+            id: Value(id),
+            name: Value(recipe.name),
+            description: Value(recipe.description),
+            durationMinutes: Value(recipe.durationMinutes),
+            servings: Value(recipe.servings),
+            instructionsJson: Value(jsonEncode(recipe.instructions)),
+            tagsCsv: Value(recipe.tags.join(',')),
+            imageAssetId: Value(recipe.imageAssetId),
+            goalIndex: Value(recipe.goal.index),
+            isFavorite: Value(recipe.isFavorite),
+            createdAt: Value(now),
+            sourceIndex: Value(sourceIndex),
+            region: Value(recipe.cuisineStyle ?? ''),
+            difficulty: Value('Media'),
+            sourceUrl: Value(recipe.fuenteUrl),
+            mealType: Value(recipe.tipoComida?.name),
+            rating: Value(recipe.rating ?? 0),
+          ));
 
-    // Reemplazar ingredientes de la receta
-    await (_db.delete(_db.recipeIngredients)
-          ..where((t) => t.recipeId.equals(id)))
-        .go();
+      // Reemplazar ingredientes de la receta
+      await (_db.delete(_db.recipeIngredients)
+            ..where((t) => t.recipeId.equals(id)))
+          .go();
 
-    for (final ing in recipe.ingredients) {
-      await _db.into(_db.recipeIngredients).insert(
-            RecipeIngredientsCompanion(
-              id: Value(ing.id.isEmpty ? _uuid.v4() : ing.id),
-              recipeId: Value(id),
-              ingredientName: Value(ing.ingredientName),
-              quantity: Value(ing.quantity),
-              unit: Value(ing.unit),
-            ),
-          );
-    }
+      for (final ing in recipe.ingredients) {
+        await _db.into(_db.recipeIngredients).insert(
+              RecipeIngredientsCompanion(
+                id: Value(ing.id.isEmpty ? _uuid.v4() : ing.id),
+                recipeId: Value(id),
+                ingredientName: Value(ing.ingredientName),
+                quantity: Value(ing.quantity),
+                unit: Value(ing.unit),
+              ),
+            );
+      }
+    });
 
     return recipe.copyWith(id: id);
   }
 
   @override
   Future<void> deleteRecipe(String id) async {
-    await (_db.delete(_db.recipeIngredients)
-          ..where((t) => t.recipeId.equals(id)))
-        .go();
-    await (_db.delete(_db.recipes)..where((t) => t.id.equals(id))).go();
+    final existing = await (_db.select(_db.recipes)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    await _db.transaction(() async {
+      await (_db.delete(_db.weeklyMenuEntries)
+            ..where((t) => t.recipeId.equals(id)))
+          .go();
+      await (_db.delete(_db.recipeIngredients)
+            ..where((t) => t.recipeId.equals(id)))
+          .go();
+      await (_db.delete(_db.recipes)..where((t) => t.id.equals(id))).go();
+    });
+    await AppDatabase.deleteLocalFileIfPresent(existing?.imageAssetId);
   }
 
   @override
@@ -211,39 +245,40 @@ class CocinaRepository implements ICocinaRepository {
     final existing = await getRecipeById(recipe.id);
     if (existing == null) throw Exception('Receta no encontrada');
 
-    // Update recipe details
-    await (_db.update(_db.recipes)..where((t) => t.id.equals(recipe.id)))
-        .write(RecipesCompanion(
-      name: Value(recipe.name),
-      description: Value(recipe.description),
-      durationMinutes: Value(recipe.durationMinutes),
-      servings: Value(recipe.servings),
-      instructionsJson: Value(jsonEncode(recipe.instructions)),
-      tagsCsv: Value(recipe.tags.join(',')),
-      imageAssetId: Value(recipe.imageAssetId),
-      goalIndex: Value(recipe.goal.index),
-      isFavorite: Value(recipe.isFavorite),
-      region: Value(recipe.cuisineStyle ?? ''),
-      sourceUrl: Value(recipe.fuenteUrl),
-      mealType: Value(recipe.tipoComida?.name),
-    ));
+    await _db.transaction(() async {
+      await (_db.update(_db.recipes)..where((t) => t.id.equals(recipe.id)))
+          .write(RecipesCompanion(
+        name: Value(recipe.name),
+        description: Value(recipe.description),
+        durationMinutes: Value(recipe.durationMinutes),
+        servings: Value(recipe.servings),
+        instructionsJson: Value(jsonEncode(recipe.instructions)),
+        tagsCsv: Value(recipe.tags.join(',')),
+        imageAssetId: Value(recipe.imageAssetId),
+        goalIndex: Value(recipe.goal.index),
+        isFavorite: Value(recipe.isFavorite),
+        region: Value(recipe.cuisineStyle ?? ''),
+        sourceUrl: Value(recipe.fuenteUrl),
+        mealType: Value(recipe.tipoComida?.name),
+        rating: Value(recipe.rating ?? 0),
+      ));
 
-    // Update ingredients
-    await (_db.delete(_db.recipeIngredients)
-          ..where((t) => t.recipeId.equals(recipe.id)))
-        .go();
+      await (_db.delete(_db.recipeIngredients)
+            ..where((t) => t.recipeId.equals(recipe.id)))
+          .go();
 
-    for (final ing in recipe.ingredients) {
-      await _db.into(_db.recipeIngredients).insert(
-            RecipeIngredientsCompanion(
-              id: Value(ing.id),
-              recipeId: Value(recipe.id),
-              ingredientName: Value(ing.ingredientName),
-              quantity: Value(ing.quantity),
-              unit: Value(ing.unit),
-            ),
-          );
-    }
+      for (final ing in recipe.ingredients) {
+        await _db.into(_db.recipeIngredients).insert(
+              RecipeIngredientsCompanion(
+                id: Value(ing.id.isEmpty ? _uuid.v4() : ing.id),
+                recipeId: Value(recipe.id),
+                ingredientName: Value(ing.ingredientName),
+                quantity: Value(ing.quantity),
+                unit: Value(ing.unit),
+              ),
+            );
+      }
+    });
 
     return recipe;
   }
@@ -509,61 +544,4 @@ class CocinaRepository implements ICocinaRepository {
   Future<void> clearWeeklyMenu() async {
     await _db.delete(_db.weeklyMenuEntries).go();
   }
-}
-
-// ── Extensión para copyWith ───────────────────────────────────────────────────
-extension InventoryIngredientX on InventoryIngredient {
-  InventoryIngredient copyWith({
-    String? id,
-    String? name,
-    String? primaryCategory,
-    String? subCategory,
-    double? quantity,
-    String? unit,
-    DateTime? expirationDate,
-    String? imageAssetId,
-    String? storageArea,
-  }) =>
-      InventoryIngredient(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        primaryCategory: primaryCategory ?? this.primaryCategory,
-        subCategory: subCategory ?? this.subCategory,
-        quantity: quantity ?? this.quantity,
-        unit: unit ?? this.unit,
-        expirationDate: expirationDate ?? this.expirationDate,
-        imageAssetId: imageAssetId ?? this.imageAssetId,
-        storageArea: storageArea ?? this.storageArea,
-      );
-}
-
-extension RecipeX on Recipe {
-  Recipe copyWith({
-    String? id,
-    String? name,
-    String? description,
-    int? durationMinutes,
-    int? servings,
-    List<String>? instructions,
-    List<RecipeIngredient>? ingredients,
-    List<String>? tags,
-    String? imageAssetId,
-    NutritionGoal? goal,
-    bool? isFavorite,
-    DateTime? createdAt,
-  }) =>
-      Recipe(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        description: description ?? this.description,
-        durationMinutes: durationMinutes ?? this.durationMinutes,
-        servings: servings ?? this.servings,
-        instructions: instructions ?? this.instructions,
-        ingredients: ingredients ?? this.ingredients,
-        tags: tags ?? this.tags,
-        imageAssetId: imageAssetId ?? this.imageAssetId,
-        goal: goal ?? this.goal,
-        isFavorite: isFavorite ?? this.isFavorite,
-        createdAt: createdAt ?? this.createdAt,
-      );
 }

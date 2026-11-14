@@ -17,19 +17,28 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
           await ref.read(foodCoachProvider.notifier).load();
         },
         color: const Color(0xFF00C896),
-        child: const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.history_outlined, size: 64, color: Colors.white12),
-              SizedBox(height: 12),
-              Text('Sin evaluaciones aún',
-                  style: TextStyle(color: Colors.white38, fontSize: 17)),
-              SizedBox(height: 6),
-              Text('Evalúa tu primera comida en la pestaña "Evaluar".',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white24, fontSize: 13)),
-            ],
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.history_outlined,
+                        size: 64, color: Colors.white12),
+                    SizedBox(height: 12),
+                    Text('Sin evaluaciones aún',
+                        style: TextStyle(color: Colors.white38, fontSize: 17)),
+                    SizedBox(height: 6),
+                    Text('Evalúa tu primera comida en la pestaña "Evaluar".',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white24, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       );
@@ -62,7 +71,13 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
             '${_label(log.classification)} · ${(log.healthScore * 100).round()}pts');
     if (!confirmed) return;
     await ref.read(foodCoachProvider.notifier).deleteFromHistory(log.id);
-    if (context.mounted) showSuccess(context, 'Registro eliminado.');
+    if (!context.mounted) return;
+    final err = ref.read(foodCoachProvider).error;
+    if (err != null) {
+      showError(context, err);
+    } else {
+      showSuccess(context, 'Registro eliminado.');
+    }
   }
 
   String _dateLabel(DateTime d) =>

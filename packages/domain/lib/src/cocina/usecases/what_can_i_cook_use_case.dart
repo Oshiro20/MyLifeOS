@@ -304,16 +304,18 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
 
         final name = recipeData['nombre_receta'] as String? ?? 'Receta';
         final description = recipeData['descripcion'] as String? ?? '';
-        final tiempoTotal = recipeData['tiempo_total_min'] as int? ?? 30;
-        final porciones = recipeData['porciones'] as int? ?? 2;
+        final tiempoTotal =
+            (recipeData['tiempo_total_min'] as num?)?.toInt() ?? 30;
+        final porciones = (recipeData['porciones'] as num?)?.toInt() ?? 2;
         final ingredientesDisponibles =
-            recipeData['ingredientes_disponibles'] as int? ?? 0;
+            (recipeData['ingredientes_disponibles'] as num?)?.toInt() ?? 0;
         final ingredientesTotales =
-            recipeData['ingredientes_totales'] as int? ?? 0;
+            (recipeData['ingredientes_totales'] as num?)?.toInt() ?? 0;
 
         // Parse ingredients
         final ingredients = <RecipeIngredient>[];
-        final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
+        final recipeId =
+            'ai_${DateTime.now().microsecondsSinceEpoch}_${suggestions.length}';
         final rawIngredients =
             recipeData['ingredientes'] as List<dynamic>? ?? [];
 
@@ -347,8 +349,8 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
         final rawSteps = recipeData['pasos'] as List<dynamic>? ?? [];
         final sortedSteps = List<Map<String, dynamic>>.from(rawSteps)
           ..sort((a, b) {
-            final numA = a['numero'] as int? ?? 0;
-            final numB = b['numero'] as int? ?? 0;
+            final numA = (a['numero'] as num?)?.toInt() ?? 0;
+            final numB = (b['numero'] as num?)?.toInt() ?? 0;
             return numA.compareTo(numB);
           });
 
@@ -370,7 +372,8 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
                     ?.map((e) => e.toString())
                     .toList() ??
                 [];
-        final caloriasAproximadas = recipeData['calorias_aproximadas'] as int?;
+        final caloriasAproximadas =
+            (recipeData['calorias_aproximadas'] as num?)?.toInt();
 
         final recipe = Recipe(
           id: recipeId,
@@ -481,10 +484,9 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
 
   /// Brute force: finds the outermost matching bracket/brace pair
   String _bruteForceJsonExtract(String text) {
-    // Remove markdown
-    text = text.replaceAll(RegExp(r'```[\s\S]*?```'), '');
-    text = text.replaceAll(RegExp(r'```json\s*'), '');
-    text = text.replaceAll(RegExp(r'```\s*'), '');
+    // Strip fence markers without deleting JSON content inside
+    text = text.replaceAll(RegExp(r'```(?:json)?', caseSensitive: false), '');
+    text = text.replaceAll('```', '');
 
     // Try to find matching brackets for arrays
     for (int start = 0; start < text.length; start++) {
@@ -738,16 +740,17 @@ Genera SOLO el array JSON:''';
 
         final name = recipeData['nombre_receta'] as String? ?? 'Receta';
         final description = recipeData['descripcion'] as String? ?? '';
-        final tiempoTotal = recipeData['tiempo_total_min'] as int? ?? 30;
-        final porciones = recipeData['porciones'] as int? ?? 2;
+        final tiempoTotal =
+            (recipeData['tiempo_total_min'] as num?)?.toInt() ?? 30;
+        final porciones = (recipeData['porciones'] as num?)?.toInt() ?? 2;
         final ingredientesDisponibles =
-            recipeData['ingredientes_disponibles'] as int? ?? 0;
+            (recipeData['ingredientes_disponibles'] as num?)?.toInt() ?? 0;
         final ingredientesTotales =
-            recipeData['ingredientes_totales'] as int? ?? 0;
+            (recipeData['ingredientes_totales'] as num?)?.toInt() ?? 0;
 
         final ingredients = <RecipeIngredient>[];
         final recipeId =
-            '${DateTime.now().millisecondsSinceEpoch}_${suggestions.length}';
+            'ai_${DateTime.now().microsecondsSinceEpoch}_${suggestions.length}';
         final rawIngredients =
             recipeData['ingredientes'] as List<dynamic>? ?? [];
 
@@ -778,8 +781,8 @@ Genera SOLO el array JSON:''';
         final rawSteps = recipeData['pasos'] as List<dynamic>? ?? [];
         final sortedSteps = List<Map<String, dynamic>>.from(rawSteps)
           ..sort((a, b) {
-            final numA = a['numero'] as int? ?? 0;
-            final numB = b['numero'] as int? ?? 0;
+            final numA = (a['numero'] as num?)?.toInt() ?? 0;
+            final numB = (b['numero'] as num?)?.toInt() ?? 0;
             return numA.compareTo(numB);
           });
 
@@ -798,7 +801,8 @@ Genera SOLO el array JSON:''';
                     ?.map((e) => e.toString())
                     .toList() ??
                 [];
-        final caloriasAproximadas = recipeData['calorias_aproximadas'] as int?;
+        final caloriasAproximadas =
+            (recipeData['calorias_aproximadas'] as num?)?.toInt();
 
         // Map tipo_comida string to MealType enum
         MealType? mealType;

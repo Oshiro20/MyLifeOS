@@ -655,7 +655,18 @@ class ShoppingTab extends ConsumerWidget {
     amountCtrl.dispose();
     descCtrl.dispose();
 
-    if (action == 'cloud' && amount > 0) {
+    if (action == 'cloud') {
+      if (amount <= 0) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ingresa un monto mayor a 0 para enviarlo a WalletAI'),
+              backgroundColor: Colors.orangeAccent,
+            ),
+          );
+        }
+        return;
+      }
       final res = await WalletCloudService.sendPendingTransaction(
         amount: amount,
         description: description,
@@ -675,7 +686,7 @@ class ShoppingTab extends ConsumerWidget {
       }
     } else if (action == 'deeplink') {
       await WalletAICommunicationService.openQuickExpense(
-        amount: amount,
+        amount: amount > 0 ? amount : 0,
         description: description,
       );
     }

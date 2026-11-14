@@ -33,6 +33,13 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _heightController.dispose();
+    _weightController.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source);
@@ -63,34 +70,30 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
     try {
       final aiService = ref.read(geminiProvider);
       final prompt = '''
-Analiza el perfil físico de la persona basada en esta descripción.
+Analiza la fotografía adjunta de la persona junto con sus medidas para construir su perfil de asesoría de imagen.
 Estatura: ${_heightController.text} cm
 Peso: ${_weightController.text} kg
 
-Devuelve un JSON estimado con:
-- skin_tone: tono de piel estimado (claro, medio, oscuro)
-- colorimetry: estación de colorimetría estimada (primavera, verano, otoño, invierno)
-- body_shape: forma corporal estimada basada en estatura/peso (rectángulo, triángulo, reloj de arena, triángulo invertido)
-- hair_type: no determinable sin imagen
+Devuelve ÚNICAMENTE un objeto JSON válido con estas claves exactas:
+- skin_tone: tono de piel observado ("claro", "medio", "trigueño", "oscuro")
+- colorimetry: estación de colorimetría recomendada ("primavera", "verano", "otoño", "invierno")
+- body_shape: forma corporal estimada ("rectángulo", "triángulo", "reloj de arena", "triángulo invertido", "atlético")
+- hair_type: tipo de cabello observado ("lacio", "ondulado", "rizado")
 
 Formato JSON:
-{"skin_tone": "medio", "colorimetry": "otoño", "body_shape": "rectángulo", "hair_type": "no determinable"}
+{"skin_tone": "medio", "colorimetry": "otoño", "body_shape": "rectángulo", "hair_type": "lacio"}
 ''';
-      final jsonResponse = await aiService.generateText(prompt: prompt);
+      final jsonResponse = await aiService.generateJsonText(
+        prompt: prompt,
+        mediaPaths: [_imageFile!.path],
+      );
 
       if (jsonResponse == null) {
         throw Exception('No se recibió respuesta de la IA.');
       }
 
-      // Limpiar markdown si Gemini lo incluye
-      var cleanJson = jsonResponse.trim();
-      if (cleanJson.startsWith('```json')) {
-        cleanJson = cleanJson.substring(7);
-        if (cleanJson.endsWith('```')) {
-          cleanJson = cleanJson.substring(0, cleanJson.length - 3);
-        }
-      }
-      cleanJson = cleanJson.trim();
+      final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonResponse);
+      final cleanJson = match?.group(0) ?? jsonResponse.trim();
 
       final data = json.decode(cleanJson) as Map<String, dynamic>;
 

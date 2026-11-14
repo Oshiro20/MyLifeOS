@@ -1,7 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:domain/domain.dart';
+import 'package:data/data.dart';
 import 'package:core/core.dart';
 import '../utils/cooking_history_service.dart';
+
+const _cocinaUuid = Uuid();
+
+/// Helper to navigate/switch Cocina tabs (0=Despensa, 1=Recetas, ..., 4=Lista)
+class CocinaTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+  void setTab(int index) => state = index;
+}
+
+final cocinaTabProvider =
+    NotifierProvider<CocinaTabNotifier, int>(CocinaTabNotifier.new);
 
 /// Result of attempting to save a recipe with duplicate check
 class SaveRecipeResult {
@@ -20,7 +34,7 @@ class SaveRecipeResult {
 
   const SaveRecipeResult.duplicatesFound({
     required this.duplicates,
-    required this.savedRecipe,
+    this.savedRecipe,
   })  : success = false,
         hasDuplicates = true,
         error = null;
@@ -152,35 +166,26 @@ class InventoryNotifier extends Notifier<InventoryState> {
         List<InventoryIngredient>.from(state.ingredients);
 
     for (final recipeIng in recipeIngredients) {
-      // Find matching pantry item (case-insensitive name match)
       final matchIndex = updatedIngredients.indexWhere((pantryItem) =>
           pantryItem.name.toLowerCase() ==
           recipeIng.ingredientName.toLowerCase());
 
       if (matchIndex != -1) {
         final pantryItem = updatedIngredients[matchIndex];
-        // Convert recipe quantity to same unit if possible (simplified: assume same unit)
-        final newQty = pantryItem.quantity - recipeIng.quantity;
+        final converted = IngredientUnitNormalizer.convert(
+          recipeIng.quantity,
+          MeasurementUnit.fromString(recipeIng.unit),
+          MeasurementUnit.fromString(pantryItem.unit),
+        );
+        final delta = converted ?? recipeIng.quantity;
+        final newQty = pantryItem.quantity - delta;
 
         if (newQty <= 0) {
-          // Remove from pantry
           updatedIngredients.removeAt(matchIndex);
           deducted.add(recipeIng.ingredientName);
           await _repo.deleteIngredient(pantryItem.id);
         } else {
-          // Update quantity - create new instance since InventoryIngredient is immutable
-          final updated = InventoryIngredient(
-            id: pantryItem.id,
-            name: pantryItem.name,
-            primaryCategory: pantryItem.primaryCategory,
-            subCategory: pantryItem.subCategory,
-            preparation: pantryItem.preparation,
-            quantity: newQty,
-            unit: pantryItem.unit,
-            expirationDate: pantryItem.expirationDate,
-            imageAssetId: pantryItem.imageAssetId,
-            storageArea: pantryItem.storageArea,
-          );
+          final updated = pantryItem.copyWith(quantity: newQty);
           updatedIngredients[matchIndex] = updated;
           deducted.add(recipeIng.ingredientName);
           await _repo.updateIngredient(updated);
@@ -197,9 +202,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
   /// Revert a deduction (undo last cook action)
   Future<void> revertDeduction(List<RecipeIngredient> recipeIngredients) async {
-    final currentIngredients = state.ingredients;
     final revertedIngredients =
-        List<InventoryIngredient>.from(currentIngredients);
+        List<InventoryIngredient>.from(state.ingredients);
 
     for (final recipeIng in recipeIngredients) {
       final matchIndex = revertedIngredients.indexWhere((pantryItem) =>
@@ -208,39 +212,32 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
       if (matchIndex != -1) {
         final pantryItem = revertedIngredients[matchIndex];
-        final newQty = pantryItem.quantity + recipeIng.quantity;
-        revertedIngredients[matchIndex] = InventoryIngredient(
-          id: pantryItem.id,
-          name: pantryItem.name,
-          primaryCategory: pantryItem.primaryCategory,
-          subCategory: pantryItem.subCategory,
-          preparation: pantryItem.preparation,
-          quantity: newQty,
-          unit: pantryItem.unit,
-          expirationDate: pantryItem.expirationDate,
-          imageAssetId: pantryItem.imageAssetId,
-          storageArea: pantryItem.storageArea,
+        final converted = IngredientUnitNormalizer.convert(
+          recipeIng.quantity,
+          MeasurementUnit.fromString(recipeIng.unit),
+          MeasurementUnit.fromString(pantryItem.unit),
         );
+        final delta = converted ?? recipeIng.quantity;
+        final updated = pantryItem.copyWith(quantity: pantryItem.quantity + delta);
+        revertedIngredients[matchIndex] = updated;
+        await _repo.updateIngredient(updated);
       } else {
-        // Ingredient was deleted, re-add it (approximate)
-        revertedIngredients.add(InventoryIngredient(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+        final detected = IngredientDetector.detect(recipeIng.ingredientName);
+        final restored = InventoryIngredient(
+          id: _cocinaUuid.v4(),
           name: recipeIng.ingredientName,
-          primaryCategory: 'Otros',
-          subCategory: '',
+          primaryCategory: detected.primaryCategory ?? 'Otros',
+          subCategory: detected.subCategory ?? '',
           preparation: '',
           quantity: recipeIng.quantity,
           unit: recipeIng.unit,
           expirationDate: null,
-          imageAssetId: '',
-          storageArea: 'pantry',
-        ));
+          imageAssetId: null,
+          storageArea: 'Alacena',
+        );
+        revertedIngredients.add(restored);
+        await _repo.addIngredient(restored);
       }
-    }
-
-    // Persist to DB
-    for (final ing in revertedIngredients) {
-      await _repo.updateIngredient(ing);
     }
 
     state = state.copyWith(ingredients: revertedIngredients);
@@ -256,35 +253,31 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
       if (existingIndex != -1) {
         final existing = state.ingredients[existingIndex];
-        final updated = InventoryIngredient(
-          id: existing.id,
-          name: existing.name,
-          primaryCategory: existing.primaryCategory,
-          subCategory: existing.subCategory,
-          preparation: existing.preparation,
-          quantity: existing.quantity + item.quantity,
-          unit: existing.unit,
-          expirationDate: existing.expirationDate,
-          imageAssetId: existing.imageAssetId,
-          storageArea: existing.storageArea,
+        final converted = IngredientUnitNormalizer.convert(
+          item.quantity,
+          MeasurementUnit.fromString(item.unit),
+          MeasurementUnit.fromString(existing.unit),
         );
+        final delta = converted ?? item.quantity;
+        final updated = existing.copyWith(quantity: existing.quantity + delta);
         await _repo.updateIngredient(updated);
         state = state.copyWith(ingredients: [
           for (int i = 0; i < state.ingredients.length; i++)
             if (i == existingIndex) updated else state.ingredients[i]
         ]);
       } else {
+        final detected = IngredientDetector.detect(item.name);
         final newIng = InventoryIngredient(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: _cocinaUuid.v4(),
           name: item.name,
-          primaryCategory: 'Otros',
-          subCategory: '',
+          primaryCategory: detected.primaryCategory ?? 'Otros',
+          subCategory: detected.subCategory ?? '',
           preparation: '',
           quantity: item.quantity,
           unit: item.unit,
           expirationDate: null,
-          imageAssetId: '',
-          storageArea: 'pantry',
+          imageAssetId: null,
+          storageArea: 'Alacena',
         );
         await _repo.addIngredient(newIng);
         state = state.copyWith(ingredients: [newIng, ...state.ingredients]);
@@ -350,28 +343,23 @@ class RecipesNotifier extends Notifier<RecipesState> {
   Future<SaveRecipeResult> saveRecipeWithDuplicateCheck(
     Recipe recipe, {
     double duplicateThreshold = 0.70,
+    bool forceSave = false,
   }) async {
     try {
-      // Check for duplicates against existing recipes
-      final duplicates = RecipeDuplicateChecker.findDuplicates(
-        recipe,
-        state.recipes,
-        threshold: duplicateThreshold,
-      );
+      if (!forceSave) {
+        final duplicates = RecipeDuplicateChecker.findDuplicates(
+          recipe,
+          state.recipes,
+          threshold: duplicateThreshold,
+        );
 
-      if (duplicates.isNotEmpty) {
-        // Save the recipe anyway but warn the user
-        final saved = await _repo.saveRecipe(recipe);
-        state = state.copyWith(
-          recipes: [saved, ...state.recipes],
-        );
-        return SaveRecipeResult.duplicatesFound(
-          duplicates: duplicates,
-          savedRecipe: saved,
-        );
+        if (duplicates.isNotEmpty) {
+          return SaveRecipeResult.duplicatesFound(
+            duplicates: duplicates,
+          );
+        }
       }
 
-      // No duplicates, save normally
       final saved = await _repo.saveRecipe(recipe);
       final existing = state.recipes.any((r) => r.id == saved.id);
       state = state.copyWith(

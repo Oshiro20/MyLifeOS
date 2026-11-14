@@ -27,6 +27,31 @@ class InventoryIngredient extends Equatable {
     this.storageArea,
   });
 
+  InventoryIngredient copyWith({
+    String? id,
+    String? name,
+    String? primaryCategory,
+    String? subCategory,
+    String? preparation,
+    double? quantity,
+    String? unit,
+    DateTime? expirationDate,
+    String? imageAssetId,
+    String? storageArea,
+  }) =>
+      InventoryIngredient(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        primaryCategory: primaryCategory ?? this.primaryCategory,
+        subCategory: subCategory ?? this.subCategory,
+        preparation: preparation ?? this.preparation,
+        quantity: quantity ?? this.quantity,
+        unit: unit ?? this.unit,
+        expirationDate: expirationDate ?? this.expirationDate,
+        imageAssetId: imageAssetId ?? this.imageAssetId,
+        storageArea: storageArea ?? this.storageArea,
+      );
+
   /// Display name includes preparation if available
   String get displayName {
     if (preparation.isNotEmpty) {

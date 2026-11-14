@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:domain/domain.dart';
 import 'package:data/data.dart';
 import '../providers/cocina_providers.dart';
@@ -202,12 +203,13 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     }
 
     // Add to shopping list
+    const uuid = Uuid();
     final notifier = ref.read(recipesProvider.notifier);
     int added = 0;
     for (final entry in missingMap.entries) {
       final units = entry.value.toList();
-      notifier.addShoppingItem(ShoppingItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString() + added.toString(),
+      await notifier.addShoppingItem(ShoppingItem(
+        id: uuid.v4(),
         name: entry.key,
         quantity: 1,
         unit: units.length == 1 ? units.first : 'unidades',
@@ -223,13 +225,12 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
           content: Text(
               '🛒 $added ingredientes añadidos a la lista de compras ($recipeCount recetas)'),
           backgroundColor: const Color(0xFF00E676),
-          duration: const Duration(milliseconds: 1000),
+          duration: const Duration(milliseconds: 1800),
           action: SnackBarAction(
             label: 'VER',
             textColor: Colors.white,
             onPressed: () {
-              // Switch to shopping tab
-              Navigator.of(context).pop();
+              ref.read(cocinaTabProvider.notifier).setTab(4);
             },
           ),
         ),
