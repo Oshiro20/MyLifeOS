@@ -139,36 +139,7 @@ Estos antojos son INDEPENDIENTES de la hora del día.
     }
 
     // Build user preferences context (optional)
-    String userPrefsContext = '';
-    if (userPreferences != null && userPreferences.hasAnyPreferences) {
-      final prefsParts = <String>[];
-      if (userPreferences.favoriteCategories.isNotEmpty) {
-        prefsParts.add(
-            'Categorías favoritas: ${userPreferences.favoriteCategories.join(", ")}');
-      }
-      if (userPreferences.spiceLevel != null) {
-        prefsParts.add('Nivel de picante: ${userPreferences.spiceLevel}');
-      }
-      if (userPreferences.portionSize != null) {
-        prefsParts.add('Tamaño de porción: ${userPreferences.portionSize}');
-      }
-      if (userPreferences.typicalServings != null) {
-        prefsParts.add(
-            'Porciones típicas: ${userPreferences.typicalServings} personas');
-      }
-      if (userPreferences.dietaryRestrictions.isNotEmpty) {
-        prefsParts.add(
-            'Restricciones: ${userPreferences.dietaryRestrictions.join(", ")}');
-      }
-      if (prefsParts.isNotEmpty) {
-        userPrefsContext = '''
-👤 PREFERENCIAS PERSONALES DEL USUARIO:
-${prefsParts.join('\n')}
-
-Adapta las sugerencias a estas preferencias.
-''';
-      }
-    }
+    final userPrefsContext = _buildUserPrefsContext(userPreferences);
 
     final prompt = '''
 👨‍🍳 ERES UN CHEF PROFESIONAL ESPECIALIZADO EN COCINA DE APROVECHAMIENTO.
@@ -676,14 +647,18 @@ ${recentlyUsedRecipeNames.take(10).map((e) => '- $e').join('\n')}
     }
 
     final totalRecipes = menuCount * components.length;
+    final userPrefsContext = _buildUserPrefsContext(userPreferences);
 
     final prompt = '''
-Chef peruano. Genera ${totalRecipes} recetas JSON.
+$emoji Chef peruano. Genera $totalRecipes recetas JSON para $mealPeriodName.
+
+INGREDIENTES DISPONIBLES EN DESPENSA:
+$inventoryDescription
 
 COMPONENTES: $componentNames
 TIPOS: $mealTypeList
-${dinnerNote}
-REGLAS: recetas peruanas reales, NO repetir, tipos validos: entrada/sopa/seco/postre/bebida/mazamorra, min 3 ingredientes y 3 pasos.
+$dinnerNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
+REGLAS: recetas peruanas reales priorizando los ingredientes disponibles, NO repetir, tipos validos: entrada/sopa/seco/postre/bebida/mazamorra, min 3 ingredientes y 3 pasos.
 
 FORMATO JSON array exacto:
 [{"nombre_receta":"Nombre","descripcion":"Desc","porciones":4,"tiempo_preparacion_min":10,"tiempo_coccion_min":20,"tiempo_total_min":30,"dificultad":"Facil","tipo_comida":"seco","cocina":"Peruana","cuisine_style":"Peruana","ingredientes":[{"nombre":"Ing","cantidad":1,"unidad":"unidades"}],"ingredientes_inferidos":["sal"],"pasos":[{"numero":1,"descripcion":"Paso"}],"utensilios":["olla"],"calorias_aproximadas":300,"tags":["tag"],"ingredientes_disponibles":2,"ingredientes_totales":3,"nivel_confianza":"Alto","observaciones":"Nota"}]
@@ -771,8 +746,8 @@ Genera SOLO el array JSON:''';
             recipeData['ingredientes_totales'] as int? ?? 0;
 
         final ingredients = <RecipeIngredient>[];
-        final recipeId = DateTime.now().millisecondsSinceEpoch.toString() +
-            '_${suggestions.length}';
+        final recipeId =
+            '${DateTime.now().millisecondsSinceEpoch}_${suggestions.length}';
         final rawIngredients =
             recipeData['ingredientes'] as List<dynamic>? ?? [];
 
@@ -867,6 +842,38 @@ Genera SOLO el array JSON:''';
       debugPrint('📋 Stack trace: $stackTrace');
       throw Exception('Error al generar sugerencias con IA: $e');
     }
+  }
+
+  String _buildUserPrefsContext(ChefPreferences? userPreferences) {
+    if (userPreferences == null || !userPreferences.hasAnyPreferences) {
+      return '';
+    }
+    final prefsParts = <String>[];
+    if (userPreferences.favoriteCategories.isNotEmpty) {
+      prefsParts.add(
+          'Categorías favoritas: ${userPreferences.favoriteCategories.join(", ")}');
+    }
+    if (userPreferences.spiceLevel != null) {
+      prefsParts.add('Nivel de picante: ${userPreferences.spiceLevel}');
+    }
+    if (userPreferences.portionSize != null) {
+      prefsParts.add('Tamaño de porción: ${userPreferences.portionSize}');
+    }
+    if (userPreferences.typicalServings != null) {
+      prefsParts
+          .add('Porciones típicas: ${userPreferences.typicalServings} personas');
+    }
+    if (userPreferences.dietaryRestrictions.isNotEmpty) {
+      prefsParts.add(
+          'Restricciones: ${userPreferences.dietaryRestrictions.join(", ")}');
+    }
+    if (prefsParts.isEmpty) return '';
+    return '''
+👤 PREFERENCIAS PERSONALES DEL USUARIO:
+${prefsParts.join('\n')}
+
+Adapta las sugerencias a estas preferencias.
+''';
   }
 }
 

@@ -7,9 +7,19 @@ void main() {
 
   group('BackupService', () {
     late BackupService backupService;
+    late Directory tempDocsDir;
 
-    setUp(() {
-      backupService = BackupService();
+    setUp(() async {
+      tempDocsDir = await Directory.systemTemp.createTemp('mylifeos_backup_test_');
+      backupService = BackupService(
+        getDocumentsDirectoryFn: () async => tempDocsDir,
+      );
+    });
+
+    tearDown(() async {
+      if (await tempDocsDir.exists()) {
+        await tempDocsDir.delete(recursive: true);
+      }
     });
 
     group('BackupMetadata', () {

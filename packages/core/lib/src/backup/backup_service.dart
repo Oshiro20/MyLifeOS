@@ -63,6 +63,12 @@ class BackupMetadata {
 /// Servicio de backup/restore de la base de datos SQLite.
 /// Empaqueta el archivo .sqlite en un zip con metadatos para validar integridad.
 class BackupService {
+  final Future<Directory> Function() _getDocumentsDir;
+
+  BackupService({Future<Directory> Function()? getDocumentsDirectoryFn})
+      : _getDocumentsDir =
+            getDocumentsDirectoryFn ?? getApplicationDocumentsDirectory;
+
   // ── Exportar ─────────────────────────────────────────────────────────────────
   Future<BackupResult> exportBackup() async {
     try {
@@ -165,7 +171,7 @@ class BackupService {
 
   // ── Utilidades ────────────────────────────────────────────────────────────────
   Future<File> _getDbFile() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await _getDocumentsDir();
     return File(p.join(dir.path, 'mylifeos.sqlite'));
   }
 

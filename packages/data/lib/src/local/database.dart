@@ -161,6 +161,22 @@ class AppDatabase extends _$AppDatabase {
           }
         },
       );
+
+  /// Elimina todos los registros de usuario respetando el orden de claves foráneas.
+  Future<void> clearAllUserData() async {
+    await transaction(() async {
+      await delete(weeklyMenuEntries).go();
+      await delete(recipeIngredients).go();
+      await delete(recipes).go();
+      await delete(inventoryIngredients).go();
+      await delete(appliances).go();
+      await delete(shoppingItems).go();
+      await delete(outfits).go();
+      await delete(wardrobeGarments).go();
+      await delete(userProfile).go();
+      await delete(mealLogs).go();
+    });
+  }
 }
 
 /// Usa drift_flutter que maneja sqlite3_flutter_libs automáticamente.

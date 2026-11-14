@@ -21,7 +21,7 @@ class SupabaseSyncService implements ISyncService {
       _client = Supabase.instance.client;
       return SyncSuccess();
     } catch (e) {
-      return SyncFailure('Error conectando a Supabase: \$e');
+      return SyncFailure('Error conectando a Supabase: $e');
     }
   }
 
@@ -56,7 +56,7 @@ class SupabaseSyncService implements ISyncService {
 
       return SyncSuccess();
     } catch (e) {
-      return SyncFailure('Error en sincro general: \$e');
+      return SyncFailure('Error en sincro general: $e');
     }
   }
 
@@ -98,7 +98,7 @@ class SupabaseSyncService implements ISyncService {
       }
       return SyncSuccess();
     } catch (e) {
-      return SyncFailure('Fallo al sincronizar prendas: \$e');
+      return SyncFailure('Fallo al sincronizar prendas: $e');
     }
   }
 
