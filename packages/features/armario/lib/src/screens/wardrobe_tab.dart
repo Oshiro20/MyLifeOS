@@ -250,6 +250,7 @@ class _GarmentCard extends StatelessWidget {
   final WardrobeGarment garment;
   final String emoji;
   final VoidCallback onToggleClean, onToggleFav, onDelete;
+  final VoidCallback? onRecordWear;
 
   const _GarmentCard({
     required this.garment,
@@ -257,6 +258,7 @@ class _GarmentCard extends StatelessWidget {
     required this.onToggleClean,
     required this.onToggleFav,
     required this.onDelete,
+    this.onRecordWear,
   });
 
   Color get _color {
@@ -286,7 +288,20 @@ class _GarmentCard extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Center(child: Text(emoji, style: const TextStyle(fontSize: 40))),
+              if (garment.imageAssetId != null &&
+                  File(garment.imageAssetId!).existsSync())
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Image.file(
+                      File(garment.imageAssetId!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                )
+              else
+                Center(child: Text(emoji, style: const TextStyle(fontSize: 40))),
               if (garment.imageDetailsPath != null &&
                   File(garment.imageDetailsPath!).existsSync())
                 Positioned(
@@ -327,6 +342,20 @@ class _GarmentCard extends StatelessWidget {
                         .onSurface
                         .withValues(alpha: 0.38),
                     fontSize: 11)),
+            if (garment.timesWorn > 0 ||
+                (garment.price != null && garment.price! > 0)) ...[
+              const SizedBox(height: 2),
+              Text(
+                _wearAndCostLabel(garment),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF00C896),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(children: [
               _SmallBtn(
@@ -342,6 +371,15 @@ class _GarmentCard extends StatelessWidget {
                 tooltip: garment.isClean ? 'Marcar sucia' : 'Marcar limpia',
                 onTap: onToggleClean,
               ),
+              if (onRecordWear != null) ...[
+                const SizedBox(width: 4),
+                _SmallBtn(
+                  icon: Icons.exposure_plus_1,
+                  color: const Color(0xFF00C896),
+                  tooltip: 'Registrar +1 uso',
+                  onTap: onRecordWear!,
+                ),
+              ],
               _SmallBtn(
                 icon:
                     garment.isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -367,6 +405,14 @@ class _GarmentCard extends StatelessWidget {
         ),
       ]),
     );
+  }
+
+  static String _wearAndCostLabel(WardrobeGarment g) {
+    final usesLabel = '${g.timesWorn} ${g.timesWorn == 1 ? 'uso' : 'usos'}';
+    final price = g.price;
+    if (price == null || price <= 0) return usesLabel;
+    final cpw = g.timesWorn > 0 ? price / g.timesWorn : price;
+    return '$usesLabel · S/ ${cpw.toStringAsFixed(1)}/uso';
   }
 }
 
@@ -421,6 +467,8 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
   File? _photoDetails;
   bool _autoDetected = false;
   bool _hasRemovableHood = false;
+  bool _removingBg = false;
+  bool _sendPurchaseToWallet = false;
 
   @override
   void initState() {
@@ -505,6 +553,36 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
               const SizedBox(height: 6),
               const Text('✨ Auto-detección aplicada',
                   style: TextStyle(color: Color(0xFF00C896), fontSize: 11)),
+            ],
+            if (_photo != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: _removingBg ? null : _removePhotoBackground,
+                  icon: _removingBg
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF00C896),
+                          ),
+                        )
+                      : const Icon(Icons.auto_fix_high,
+                          size: 16, color: Color(0xFF00C896)),
+                  label: Text(
+                    _removingBg ? 'Quitando fondo...' : 'Quitar fondo (IA)',
+                    style: const TextStyle(
+                        color: Color(0xFF00C896), fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF00C896)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                  ),
+                ),
+              ),
             ],
             const SizedBox(height: 12),
 
@@ -598,6 +676,21 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
                   child: _field(
                       _priceCtrl, 'Precio (opc)', Icons.attach_money_outlined)),
             ]),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              activeThumbColor: const Color(0xFF00C896),
+              activeTrackColor:
+                  const Color(0xFF00C896).withValues(alpha: 0.35),
+              title: const Text('Registrar gasto en WalletAI',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              subtitle: const Text(
+                'Si ingresas precio, se enviará como gasto pendiente',
+                style: TextStyle(fontSize: 11),
+              ),
+              value: _sendPurchaseToWallet,
+              onChanged: (v) => setState(() => _sendPurchaseToWallet = v),
+            ),
             const SizedBox(height: 8),
             Row(children: [
               Text('Rating:',
@@ -901,6 +994,28 @@ JSON: {"name":"...","typeIndex":1,"primaryColor":"#FFFFFF","material":"Algodón"
 
       final savedTop = await widget.onAdd(garment);
 
+      if (_sendPurchaseToWallet &&
+          garment.price != null &&
+          garment.price! > 0) {
+        final walletRes = await WalletCloudService.sendPendingTransaction(
+          amount: garment.price!,
+          description: 'Prenda: ${garment.name}',
+          categoryHint: 'Ropa y Calzado',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(walletRes.success
+                  ? 'Gasto enviado a WalletAI'
+                  : 'Prenda guardada (${walletRes.message})'),
+              backgroundColor: walletRes.success
+                  ? const Color(0xFF00C896)
+                  : const Color(0xFFFFB74D),
+            ),
+          );
+        }
+      }
+
       if (wantShort) {
         final picker = ImagePicker();
         final xfile =
@@ -981,6 +1096,53 @@ JSON: {"name":"Short de ${garment.name}","typeIndex":8,"primaryColor":"#000000",
               backgroundColor: const Color(0xFFFF5252)),
         );
       }
+    }
+  }
+
+  Future<void> _removePhotoBackground() async {
+    final current = _photo;
+    if (current == null || _removingBg) return;
+    setState(() => _removingBg = true);
+    try {
+      final processed = await ref
+          .read(backgroundRemoverServiceProvider)
+          .removeBackground(current.path);
+      if (processed == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo quitar el fondo en este dispositivo'),
+              backgroundColor: Color(0xFFFFB74D),
+            ),
+          );
+        }
+        return;
+      }
+      final persisted = await ImageCompressionUtil.compressImage(
+        originalFile: File(processed),
+        subfolder: 'garments',
+        deleteOriginal: true,
+      );
+      if (mounted) {
+        setState(() => _photo = persisted);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fondo removido correctamente'),
+            backgroundColor: Color(0xFF00C896),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al quitar fondo: $e'),
+            backgroundColor: const Color(0xFFFF5252),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _removingBg = false);
     }
   }
 
@@ -1088,7 +1250,7 @@ class WardrobeCategoryScreen extends ConsumerWidget with AppFeedback {
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                childAspectRatio: 0.8,
+                childAspectRatio: 0.74,
               ),
               itemCount: items.length,
               itemBuilder: (ctx, i) => _GarmentCard(
@@ -1101,6 +1263,13 @@ class WardrobeCategoryScreen extends ConsumerWidget with AppFeedback {
                       items[i].isClean
                           ? '"${items[i].name}" marcada como sucia'
                           : '"${items[i].name}" marcada como limpia');
+                },
+                onRecordWear: () async {
+                  await notifier.incrementGarmentWear(items[i].id);
+                  if (context.mounted) {
+                    showInfo(
+                        context, '+1 uso registrado para "${items[i].name}"');
+                  }
                 },
                 onToggleFav: () {
                   notifier.toggleFavorite(items[i].id);

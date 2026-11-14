@@ -248,6 +248,8 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                       fontSize: 13)),
             ),
 
+          const _PendingMealSyncBanner(),
+
           // Sugerencias rápidas
           const SizedBox(height: 8),
           Text('Sugerencias rápidas',
@@ -278,6 +280,7 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                     ))
                 .toList(),
           ),
+          const _PantryAndRecentChips(),
 
           const SizedBox(height: 28),
 
@@ -536,6 +539,13 @@ class _ResultView extends StatelessWidget {
             color: const Color(0xFF00C896),
             content: evaluation.recommendation,
           ),
+          const SizedBox(height: 16),
+
+          // Recetas sugeridas de Cocina según despensa
+          _HealthyRecipeMatchesSection(
+            detectedIngredients: evaluation.detectedIngredients,
+            healthScore: evaluation.healthScore,
+          ),
           const SizedBox(height: 24),
 
           // Botón nueva evaluación
@@ -610,6 +620,338 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+final _foodCoachPantryFeedProvider =
+    FutureProvider.autoDispose((ref) async {
+  final loader = ref.watch(pantryIngredientsFeedProvider);
+  return loader();
+});
+
+final _foodCoachRecipesFeedProvider =
+    FutureProvider.autoDispose((ref) async {
+  final loader = ref.watch(recipesFeedProvider);
+  return loader();
+});
+
+class _PendingMealSyncBanner extends ConsumerStatefulWidget {
+  const _PendingMealSyncBanner();
+
+  @override
+  ConsumerState<_PendingMealSyncBanner> createState() =>
+      _PendingMealSyncBannerState();
+}
+
+class _PendingMealSyncBannerState
+    extends ConsumerState<_PendingMealSyncBanner> {
+  String? _loadedRecipeName;
+
+  void _consumeIfPending(PendingMealEvaluation? pending) {
+    if (pending == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(foodCoachProvider.notifier);
+      notifier.clearResult();
+      notifier.clearIngredients();
+      for (final ing in pending.ingredients) {
+        if (ing.trim().isNotEmpty) {
+          notifier.addIngredient(ing.trim());
+        }
+      }
+      setState(() => _loadedRecipeName = pending.recipeName);
+      ref.read(pendingMealEvaluationProvider.notifier).clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = ref.watch(pendingMealEvaluationProvider);
+    _consumeIfPending(pending);
+
+    if (_loadedRecipeName == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF00C896).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.restaurant_menu,
+              size: 18, color: Color(0xFF00C896)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Receta cargada desde Cocina: $_loadedRecipeName',
+              style: const TextStyle(
+                color: Color(0xFF00C896),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.close, size: 16, color: Color(0xFF00C896)),
+            onPressed: () => setState(() => _loadedRecipeName = null),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PantryAndRecentChips extends ConsumerWidget {
+  const _PantryAndRecentChips();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pantryAsync = ref.watch(_foodCoachPantryFeedProvider);
+    final recentAsync = ref.watch(recentCookedNamesProvider);
+    final recipesAsync = ref.watch(_foodCoachRecipesFeedProvider);
+
+    final pantryItems = pantryAsync.value
+            ?.where((i) => i.quantity > 0)
+            .take(8)
+            .toList() ??
+        const [];
+    final recentNames = recentAsync.value?.take(4).toList() ?? const [];
+
+    if (pantryItems.isEmpty && recentNames.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (pantryItems.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'De tu despensa',
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: pantryItems
+                .map((item) => ActionChip(
+                      label: Text(
+                        item.name,
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.72),
+                          fontSize: 11,
+                        ),
+                      ),
+                      backgroundColor:
+                          const Color(0xFF00C896).withValues(alpha: 0.1),
+                      side: BorderSide(
+                        color: const Color(0xFF00C896).withValues(alpha: 0.25),
+                      ),
+                      onPressed: () => ref
+                          .read(foodCoachProvider.notifier)
+                          .addIngredient(item.name),
+                      padding: EdgeInsets.zero,
+                    ))
+                .toList(),
+          ),
+        ],
+        if (recentNames.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Cocinaste recientemente',
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: recentNames.map((recipeName) {
+              return ActionChip(
+                avatar: const Icon(Icons.history,
+                    size: 14, color: Color(0xFFFF9800)),
+                label: Text(
+                  recipeName,
+                  style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.78),
+                    fontSize: 11,
+                  ),
+                ),
+                backgroundColor:
+                    const Color(0xFFFF9800).withValues(alpha: 0.1),
+                side: BorderSide(
+                  color: const Color(0xFFFF9800).withValues(alpha: 0.28),
+                ),
+                onPressed: () {
+                  final notifier = ref.read(foodCoachProvider.notifier);
+                  final recipes = recipesAsync.value ?? const [];
+                  final match = recipes
+                      .where((r) =>
+                          r.name.toLowerCase() == recipeName.toLowerCase())
+                      .firstOrNull;
+                  if (match != null && match.ingredients.isNotEmpty) {
+                    for (final ing in match.ingredients) {
+                      notifier.addIngredient(ing.ingredientName);
+                    }
+                  } else {
+                    notifier.addIngredient(recipeName);
+                  }
+                },
+                padding: EdgeInsets.zero,
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _HealthyRecipeMatchesSection extends ConsumerWidget {
+  final List<String> detectedIngredients;
+  final double healthScore;
+
+  const _HealthyRecipeMatchesSection({
+    required this.detectedIngredients,
+    required this.healthScore,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recipesAsync = ref.watch(_foodCoachRecipesFeedProvider);
+    final pantryAsync = ref.watch(_foodCoachPantryFeedProvider);
+
+    final recipes = recipesAsync.value ?? const [];
+    if (recipes.isEmpty) return const SizedBox.shrink();
+
+    final pantryNames = (pantryAsync.value ?? const [])
+        .where((i) => i.quantity > 0)
+        .map((i) => i.name.toLowerCase())
+        .toSet();
+    final detectedLower =
+        detectedIngredients.map((e) => e.toLowerCase()).toSet();
+
+    final scored = recipes.map((r) {
+      var pantryHits = 0;
+      var mealHits = 0;
+      for (final ing in r.ingredients) {
+        final name = ing.ingredientName.toLowerCase();
+        if (pantryNames.any((p) => p.contains(name) || name.contains(p))) {
+          pantryHits++;
+        }
+        if (detectedLower.any((d) => d.contains(name) || name.contains(d))) {
+          mealHits++;
+        }
+      }
+      final score = (pantryHits * 2) + mealHits;
+      return (recipe: r, pantryHits: pantryHits, score: score);
+    }).where((entry) => entry.recipe.ingredients.isNotEmpty).toList()
+      ..sort((a, b) => b.score.compareTo(a.score));
+
+    final top = scored.take(3).toList();
+    if (top.isEmpty) return const SizedBox.shrink();
+
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final heading = healthScore < 0.65
+        ? 'Alternativas caseras en tu Cocina'
+        : 'Recetas de tu Cocina que combinan';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF00C896).withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.menu_book_outlined,
+                  size: 16, color: Color(0xFF00C896)),
+              const SizedBox(width: 6),
+              Text(
+                heading,
+                style: const TextStyle(
+                  color: Color(0xFF00C896),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...top.map((entry) {
+            final r = entry.recipe;
+            return InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                ref.read(pendingMealEvaluationProvider.notifier).queue(
+                      recipeName: r.name,
+                      ingredients:
+                          r.ingredients.map((i) => i.ingredientName).toList(),
+                    );
+                ref.read(foodCoachProvider.notifier).clearResult();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            r.name,
+                            style: TextStyle(
+                              color: onSurface,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${r.durationMinutes} min · ${entry.pantryHits}/${r.ingredients.length} en despensa',
+                            style: TextStyle(
+                              color: onSurface.withValues(alpha: 0.55),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        size: 18, color: Color(0xFF00C896)),
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );

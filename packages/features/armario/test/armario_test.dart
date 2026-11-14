@@ -37,5 +37,23 @@ void main() {
       );
       expect(g.isFavorite, isTrue);
     });
+
+    test('incremento de timesWorn mantiene datos base de la prenda', () {
+      final ts = DateTime(2026, 4, 1, 12);
+      final g = WardrobeGarment(
+        id: 'g3',
+        name: 'Casaca Denim',
+        type: GarmentType.jacket,
+        primaryColor: '#1E3A8A',
+        style: GarmentStyle.casual,
+        price: 120.0,
+        timesWorn: 2,
+        addedAt: ts,
+      );
+      final updated = g.copyWith(timesWorn: g.timesWorn + 1);
+      expect(updated.timesWorn, 3);
+      expect(updated.price, 120.0);
+      expect(updated.price! / updated.timesWorn, 40.0);
+    });
   });
 }

@@ -24,6 +24,8 @@ export 'src/services/offline_cache_service.dart';
 export 'src/services/connectivity_service.dart';
 export 'src/services/ai_chat_service.dart';
 export 'src/services/ai_finance_service.dart';
+export 'src/services/cross_module_bridge.dart';
 export 'src/services/secure_storage_service.dart';
+export 'src/services/weather_service.dart';
 // Utils
 export 'src/utils/image_compression_util.dart';

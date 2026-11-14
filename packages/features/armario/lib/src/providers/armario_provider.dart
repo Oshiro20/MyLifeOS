@@ -123,6 +123,30 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
     }
   }
 
+  /// Incrementa el contador de usos de una prenda individual y lo persiste.
+  Future<void> incrementGarmentWear(String id) async {
+    WardrobeGarment? target;
+    for (final g in state.garments) {
+      if (g.id == id) {
+        target = g;
+        break;
+      }
+    }
+    if (target == null) return;
+    final updated = target.copyWith(timesWorn: target.timesWorn + 1);
+    try {
+      await _repo.updateGarment(updated);
+      state = state.copyWith(
+        garments: [
+          for (final g in state.garments)
+            if (g.id == id) updated else g
+        ],
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> saveOutfit(Outfit o) async {
     try {
       final saved = await _repo.saveOutfit(o);

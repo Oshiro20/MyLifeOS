@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/cocina_providers.dart';
 import '../../providers/cooking_session_provider.dart';
 import '../../utils/cooking_history_service.dart';
@@ -253,6 +255,37 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
                   .withValues(alpha: 0.6),
               fontSize: 11,
               fontStyle: FontStyle.italic),
+        ),
+        const SizedBox(height: 12),
+        Consumer(
+          builder: (context, ref, _) => SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                final ingredients = widget.recipe.ingredients
+                    .map((i) => i.ingredientName.trim())
+                    .where((n) => n.isNotEmpty)
+                    .toList();
+                ref.read(pendingMealEvaluationProvider.notifier).queue(
+                      recipeName: widget.recipe.name,
+                      ingredients: ingredients,
+                    );
+                Navigator.of(context).pop();
+                context.go('/foodcoach');
+              },
+              icon: const Icon(Icons.health_and_safety_outlined,
+                  color: Color(0xFF00C896)),
+              label: const Text('Evaluar en FoodCoach',
+                  style: TextStyle(
+                      color: Color(0xFF00C896), fontWeight: FontWeight.w700)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF00C896)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
       ],

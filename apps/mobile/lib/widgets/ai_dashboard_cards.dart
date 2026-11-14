@@ -86,7 +86,7 @@ final _dailyInsightProvider =
   return await service.generateDailyInsight();
 });
 
-/// Card que sugiere el outfit del día basado en el clima (simulado) y el armario.
+/// Card que muestra el Outfit del Día unificado con `armarioProvider` y clima real.
 class OutfitAIPreviewCard extends ConsumerWidget {
   const OutfitAIPreviewCard({super.key});
 
@@ -98,19 +98,29 @@ class OutfitAIPreviewCard extends ConsumerWidget {
 
     if (garments.isEmpty) return const SizedBox.shrink();
 
-    final profile = armarioState.userProfile;
-    final profileSummary = profile != null
-        ? 'Colorimetría: ${profile.colorimetry ?? 'N/A'}, Estilo/Cuerpo: ${profile.bodyShape ?? profile.bodyType}'
-        : null;
-
-    final suggestionAsync = ref.watch(
-        _outfitSuggestionProvider((aiService, garments, profileSummary)));
+    final cleanGarments = garments.where((g) => g.isClean).toList();
+    if (armarioState.ootd == null &&
+        !armarioState.isLoadingOotd &&
+        cleanGarments.isNotEmpty) {
+      ref.watch(_autoOotdBootstrapProvider((aiService, cleanGarments.length)));
+    }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF152019) : Colors.white;
     final titleColor = isDark ? Colors.white70 : const Color(0xFF35594A);
     final subtleColor = isDark ? Colors.white24 : const Color(0xFF5D7A6E);
     final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+
+    final ootd = armarioState.ootd;
+    final top = ootd?['top'] as WardrobeGarment?;
+    final bottom = ootd?['bottom'] as WardrobeGarment?;
+    final shoes = ootd?['shoes'] as WardrobeGarment?;
+    final explanation = ootd?['explanation']?.toString();
+    final pieces = [
+      if (top != null) top.name,
+      if (bottom != null) bottom.name,
+      if (shoes != null) shoes.name,
+    ];
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -139,38 +149,53 @@ class OutfitAIPreviewCard extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
-              Text('Hoy · Personalizado',
+              Text('Hoy · Armario',
                   style: TextStyle(color: subtleColor, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 12),
-          suggestionAsync.when(
-            data: (suggestion) => Row(
+          if (armarioState.isLoadingOotd)
+            _LoadingShimmer()
+          else if (ootd != null && pieces.isNotEmpty)
+            Row(
               children: [
-                _GarmentMiniature(icon: '🎨', color: Colors.blueGrey),
+                _GarmentMiniature(icon: '👔', color: Colors.amber),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        suggestion ?? 'Organizando tu look...',
+                        pieces.join(' + '),
                         style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13),
-                        maxLines: 2,
+                          color: textColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (explanation != null && explanation.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          explanation,
+                          style: TextStyle(color: titleColor, fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ],
+            )
+          else
+            Text(
+              cleanGarments.isEmpty
+                  ? 'No hay prendas limpias disponibles hoy'
+                  : (armarioState.error ?? 'Organizando tu look del día...'),
+              style: TextStyle(color: titleColor, fontSize: 12),
             ),
-            loading: () => _LoadingShimmer(),
-            error: (_, __) => Text('Error al sugerir outfit',
-                style: TextStyle(color: subtleColor)),
-          ),
         ],
       ),
     )
@@ -179,44 +204,14 @@ class OutfitAIPreviewCard extends ConsumerWidget {
   }
 }
 
-final _outfitSuggestionProvider =
-    FutureProvider.family<String?, (GeminiService, List<WardrobeGarment>, String?)>(
-        (ref, args) async {
-  final (service, garments, profileSummary) = args;
-  final description = garments
-      .map((g) =>
-          '${g.type.name}: ${g.name} (${g.primaryColor}${g.brand != null ? ', ${g.brand}' : ''})')
-      .join(', ');
-  final weather = _currentSeasonalWeather();
-  final contextParts = [
-    weather,
-    if (profileSummary != null && profileSummary.isNotEmpty) profileSummary,
-  ].join(' · ');
-
-  return await service.suggestOutfitOfTheDay(
-    occasion: 'Diario',
-    garmentsDescription: [description],
-    userProfileContext: contextParts,
-  );
+final _autoOotdBootstrapProvider =
+    FutureProvider.family<void, (GeminiService, int)>((ref, args) async {
+  final (aiService, _) = args;
+  final weather = await WeatherService.fetchCurrentWeather();
+  await ref
+      .read(armarioProvider.notifier)
+      .generateOutfitOfTheDay(aiService, weather);
 });
-
-String _currentSeasonalWeather() {
-  final now = DateTime.now();
-  final month = now.month;
-  final hour = now.hour;
-  final seasonTemp = (month >= 12 || month <= 3)
-      ? 26
-      : (month >= 7 && month <= 9)
-          ? 17
-          : 21;
-  final adjusted = (hour < 8 || hour > 20) ? seasonTemp - 3 : seasonTemp;
-  final condition = (month >= 12 || month <= 3)
-      ? 'Soleado'
-      : (month >= 7 && month <= 9)
-          ? 'Nublado'
-          : 'Parcialmente nublado';
-  return '$condition, $adjusted°C';
-}
 
 /// Card de salud financiera con IA.
 class FinanceHealthCard extends ConsumerWidget {

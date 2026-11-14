@@ -144,4 +144,26 @@ void main() {
           ]));
     });
   });
+
+  group('AiJsonParser', () {
+    test('limpia cercos markdown y decodifica objeto JSON', () {
+      const raw = 'Aquí tienes:\n```json\n{"name": "Ceviche", "mins": 20}\n```';
+      expect(
+        AiJsonParser.decodeMap(raw),
+        {'name': 'Ceviche', 'mins': 20},
+      );
+    });
+
+    test('extrae y decodifica lista JSON envuelta en texto', () {
+      const raw = 'Sugerencias: [{"name": "Ensalada"}, {"name": "Sopa"}] fin.';
+      final list = AiJsonParser.decodeList(raw);
+      expect(list, hasLength(2));
+      expect((list!.first as Map<String, dynamic>)['name'], 'Ensalada');
+    });
+
+    test('retorna null ante JSON inválido', () {
+      expect(AiJsonParser.decodeMap('texto sin json'), isNull);
+      expect(AiJsonParser.decodeList('texto sin lista'), isNull);
+    });
+  });
 }

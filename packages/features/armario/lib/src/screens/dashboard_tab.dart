@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
@@ -15,86 +14,64 @@ class DashboardTab extends ConsumerStatefulWidget {
 }
 
 class _DashboardTabState extends ConsumerState<DashboardTab> {
-  String _currentWeather = "Cargando clima...";
+  String _currentWeather = WeatherService.seasonalFallback();
+  String _selectedCity = 'Lima';
 
   @override
   void initState() {
     super.initState();
-    _currentWeather = _getCurrentWeather();
-    // Generamos sugerencia automáticamente si no hay una y ya cargaron las prendas
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndGenerateOotd();
-    });
+    _loadRealWeather();
   }
 
-  /// Generates a realistic weather string for Lima, Peru based on time of day and season.
-  String _getCurrentWeather() {
-    final now = DateTime.now();
-    final hour = now.hour;
-    final month = now.month;
-
-    // Lima seasons: Summer (Dec-Mar), Autumn (Apr-Jun), Winter (Jul-Sep), Spring (Oct-Nov)
-    // Lima temps: Summer 20-30°C, Autumn 17-24°C, Winter 14-19°C, Spring 17-24°C
-    final rand = Random();
-    int minTemp, maxTemp;
-    if (month >= 12 || month <= 3) {
-      // Summer
-      minTemp = 20;
-      maxTemp = 30;
-    } else if (month >= 7 && month <= 9) {
-      // Winter
-      minTemp = 14;
-      maxTemp = 19;
-    } else {
-      // Autumn/Spring
-      minTemp = 17;
-      maxTemp = 24;
-    }
-
-    // Time of day adjustment: cooler in morning/evening
-    int timeOffset = 0;
-    if (hour < 8 || hour > 20) {
-      timeOffset = -3;
-    } else if (hour >= 12 && hour <= 15) {
-      timeOffset = 2;
-    }
-
-    final temp = (minTemp + rand.nextInt(maxTemp - minTemp + 1) + timeOffset)
-        .clamp(15, 30);
-
-    // Conditions based on season and randomness
-    final conditions = _getWeatherCondition(month, rand);
-
-    return '$conditions, $temp°C';
-  }
-
-  String _getWeatherCondition(int month, Random rand) {
-    // Lima: Summer is mostly sunny, Winter is often cloudy/overcast
-    if (month >= 12 || month <= 3) {
-      // Summer: mostly sunny
-      return rand.nextDouble() < 0.7 ? "Soleado" : "Parcialmente nublado";
-    } else if (month >= 7 && month <= 9) {
-      // Winter: cloudy, sometimes rainy
-      final r = rand.nextDouble();
-      if (r < 0.4) return "Nublado";
-      if (r < 0.7) return "Parcialmente nublado";
-      if (r < 0.9) return "Lluvioso";
-      return "Nublado";
-    } else {
-      // Autumn/Spring: mixed
-      final r = rand.nextDouble();
-      if (r < 0.4) return "Soleado";
-      if (r < 0.7) return "Parcialmente nublado";
-      if (r < 0.9) return "Nublado";
-      return "Lluvioso";
-    }
-  }
-
-  void _refreshWeather() {
+  Future<void> _loadRealWeather({bool forceRefresh = false}) async {
+    final city = await WeatherService.getSelectedCity();
+    final weather =
+        await WeatherService.fetchCurrentWeather(forceRefresh: forceRefresh);
+    if (!mounted) return;
     setState(() {
-      _currentWeather = _getCurrentWeather();
+      _selectedCity = city;
+      _currentWeather = weather;
     });
     _checkAndGenerateOotd();
+  }
+
+  Future<void> _pickCity() async {
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text(
+              'Seleccionar ciudad para clima',
+              style: TextStyle(
+                color: Theme.of(ctx).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final city in WeatherService.presets.keys)
+              ListTile(
+                title: Text(city),
+                trailing: city == _selectedCity
+                    ? const Icon(Icons.check, color: Color(0xFF00C896))
+                    : null,
+                onTap: () => Navigator.pop(ctx, city),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null && chosen != _selectedCity) {
+      await WeatherService.setSelectedCity(chosen);
+      await _loadRealWeather(forceRefresh: true);
+    }
   }
 
   void _checkAndGenerateOotd() {
@@ -120,20 +97,21 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(armarioProvider);
-    final themeColor = const Color(0xFF00C896);
+    final userName = ref.watch(userDisplayNameProvider);
+    const themeColor = Color(0xFF00C896);
 
     return RefreshIndicator(
       color: themeColor,
       onRefresh: () async {
         await ref.read(armarioProvider.notifier).load();
-        _refreshWeather();
+        await _loadRealWeather(forceRefresh: true);
       },
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           // Greeting Card
           Text(
-            '${_getGreeting()}, Joel',
+            '${_getGreeting()}, $userName',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface,
               fontSize: 28,
@@ -152,9 +130,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           ),
           const SizedBox(height: 24),
 
-          // Weather Card
+          // Weather Card (Open-Meteo real + selector de ciudad)
           GestureDetector(
-            onTap: _refreshWeather,
+            onTap: () => _loadRealWeather(forceRefresh: true),
+            onLongPress: _pickCity,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -179,7 +158,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Clima en Lima',
+                          'Clima en $_selectedCity (toca para actualizar)',
                           style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme
@@ -196,12 +175,16 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                       ],
                     ),
                   ),
-                  Icon(Icons.refresh,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.5),
-                      size: 18),
+                  IconButton(
+                    tooltip: 'Cambiar ciudad',
+                    onPressed: _pickCity,
+                    icon: Icon(Icons.location_on_outlined,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55),
+                        size: 20),
+                  ),
                 ],
               ),
             ),
