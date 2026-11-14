@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Servicio de identidad compartida entre MyLifeOS y WalletAI.
 ///
@@ -375,3 +376,38 @@ class SharedIdentityService {
     _cachedUserId = null;
   }
 }
+
+/// Notifier reactivo para el nombre visible del usuario en MyLifeOS.
+class UserDisplayNameNotifier extends Notifier<String> {
+  static const defaultName = 'Usuario';
+
+  @override
+  String build() {
+    Future.microtask(_load);
+    return defaultName;
+  }
+
+  Future<void> _load() async {
+    final saved = await SharedIdentityService.getUserName();
+    if (saved != null && saved.trim().isNotEmpty) {
+      state = saved.trim();
+    }
+  }
+
+  Future<void> setName(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    await SharedIdentityService.setUserName(trimmed);
+    state = trimmed;
+  }
+
+  Future<void> reset() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('mylifeos_user_name');
+    state = defaultName;
+  }
+}
+
+final userDisplayNameProvider =
+    NotifierProvider<UserDisplayNameNotifier, String>(
+        UserDisplayNameNotifier.new);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:core/core.dart';
+import 'package:domain/domain.dart';
 import 'package:armario/armario.dart';
 import 'package:cocina/cocina.dart';
 import 'package:foodcoach/foodcoach.dart';
@@ -98,52 +99,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _showVoiceAssistantDialog(BuildContext context) {
+  void _showAssistantChatSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF0F172A),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Container(
-        height: 300,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white12,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Icon(Icons.mic, color: Color(0xFF00C896), size: 48),
-            const SizedBox(height: 16),
-            const Text(
-              'Escuchando...',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Dime algo como: "Añade un café a mis gastos"',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 14),
-            ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white10,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Detener'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => const _AssistantChatSheet(),
     );
   }
 
@@ -159,12 +123,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? 'Buenas tardes'
             : 'Buenas noches';
 
+    final userName = ref.watch(userDisplayNameProvider);
+
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showVoiceAssistantDialog(context),
+        onPressed: () => _showAssistantChatSheet(context),
         backgroundColor: const Color(0xFF00C896),
-        label: const Text('IA Voz', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.mic, color: Colors.white),
+        label: const Text('Asistente IA',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        icon: const Icon(Icons.auto_awesome, color: Colors.white),
       ),
       body: RefreshIndicator(
         color: primary,
@@ -207,8 +174,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       .onSurface
                                       .withValues(alpha: 0.6),
                                   fontSize: 13)),
-                          const Text('Joel',
-                              style: TextStyle(
+                          Text(userName,
+                              style: const TextStyle(
                                   fontWeight: FontWeight.w700, fontSize: 20)),
                         ],
                       ),
@@ -296,11 +263,41 @@ class _WellbeingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final armarioState = ref.watch(armarioProvider);
     final foodCoachState = ref.watch(foodCoachProvider);
+    final invState = ref.watch(inventoryProvider);
     final outfitsCount = armarioState.outfits.length;
 
     final avgScore = foodCoachState.weeklyStats?.averageHealthScore ?? 0.0;
     final healthStr =
         avgScore > 0 ? '${(avgScore * 100).toStringAsFixed(0)}%' : 'N/A';
+
+    // Calcular score real ponderado según los módulos con datos
+    final scores = <double>[];
+    if (avgScore > 0) {
+      scores.add(avgScore.clamp(0.0, 1.0));
+    }
+    if (armarioState.garments.isNotEmpty) {
+      final cleanCount = armarioState.garments.where((g) => g.isClean).length;
+      scores.add(cleanCount / armarioState.garments.length);
+    }
+    if (invState.ingredients.isNotEmpty) {
+      final freshCount =
+          invState.ingredients.where((i) => !i.isExpired).length;
+      scores.add(freshCount / invState.ingredients.length);
+    }
+
+    final hasData = scores.isNotEmpty;
+    final computedScore = hasData
+        ? (scores.reduce((a, b) => a + b) / scores.length).clamp(0.0, 1.0)
+        : 0.0;
+    final scoreInt = (computedScore * 100).round();
+
+    final statusSubtitle = !hasData
+        ? 'Registra datos en tus módulos para calcularlo'
+        : scoreInt >= 80
+            ? 'Excelente equilibrio en tus módulos'
+            : scoreInt >= 50
+                ? 'Buen ritmo, sigue cuidando tus hábitos'
+                : 'Hay aspectos por mejorar hoy';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -334,7 +331,7 @@ class _WellbeingCard extends ConsumerWidget {
                         fontSize: 18,
                         color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 4),
-                Text('Vas por buen camino hoy',
+                Text(statusSubtitle,
                     style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -359,7 +356,7 @@ class _WellbeingCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Score circular
+          // Score circular real
           SizedBox(
             width: 80,
             height: 80,
@@ -367,7 +364,7 @@ class _WellbeingCard extends ConsumerWidget {
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
-                  value: 0.85,
+                  value: hasData ? computedScore : 0.0,
                   strokeWidth: 7,
                   backgroundColor: primary.withValues(alpha: 0.15),
                   valueColor: AlwaysStoppedAnimation(primary),
@@ -376,7 +373,7 @@ class _WellbeingCard extends ConsumerWidget {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('85',
+                    Text(hasData ? '$scoreInt' : '--',
                         style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
@@ -654,20 +651,106 @@ class _FinanceSummaryState extends State<_FinanceSummary> {
 }
 
 // ── Recent activity ───────────────────────────────────────────────────────────
-class _RecentActivity extends StatelessWidget {
+class _RecentActivity extends ConsumerWidget {
   final bool isDark;
   final Color primary;
   const _RecentActivity({required this.isDark, required this.primary});
 
-  static const _items = [
-    ('💰', 'Café Starbucks', 'Finanzas · 10:30 AM', '-S/4.50', false),
-    ('👗', "Outfit 'Cena' guardado", 'Armario · 08:15 AM', '', null),
-    ('💧', 'Agua 500ml registrada', 'FoodCoach · 07:45 AM', '', null),
-  ];
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 60) {
+      return 'Hace ${diff.inMinutes.clamp(1, 59)} min';
+    }
+    if (diff.inHours < 24) {
+      return 'Hace ${diff.inHours} h';
+    }
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}';
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final surface = isDark ? const Color(0xFF152019) : Colors.white;
+    final foodCoachState = ref.watch(foodCoachProvider);
+    final armarioState = ref.watch(armarioProvider);
+    final recipesState = ref.watch(recipesProvider);
+
+    final events = <({
+      String emoji,
+      String title,
+      String subtitle,
+      DateTime date,
+      String route,
+    })>[
+      for (final meal in foodCoachState.history.take(3))
+        (
+          emoji: '🥗',
+          title: switch (meal.classification) {
+            FoodClassification.healthy => 'Comida saludable (${(meal.healthScore * 100).round()}%)',
+            FoodClassification.balanced => 'Comida balanceada (${(meal.healthScore * 100).round()}%)',
+            FoodClassification.junk => 'Comida chatarra (${(meal.healthScore * 100).round()}%)',
+          },
+          subtitle: 'FoodCoach · ${_formatDate(meal.timestamp)}',
+          date: meal.timestamp,
+          route: '/foodcoach',
+        ),
+      for (final outfit in armarioState.outfits.take(3))
+        (
+          emoji: '👗',
+          title: "Outfit '${outfit.name}'",
+          subtitle: 'Armario · ${_formatDate(outfit.createdAt)}',
+          date: outfit.createdAt,
+          route: '/armario',
+        ),
+      for (final garment in armarioState.garments.take(3))
+        (
+          emoji: '👕',
+          title: garment.name,
+          subtitle: 'Prenda en Armario · ${_formatDate(garment.addedAt)}',
+          date: garment.addedAt,
+          route: '/armario',
+        ),
+      for (final recipe in recipesState.recipes.take(3))
+        (
+          emoji: '🍽️',
+          title: recipe.name,
+          subtitle: 'Receta en Cocina · ${_formatDate(recipe.createdAt)}',
+          date: recipe.createdAt,
+          route: '/cocina',
+        ),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    final recent = events.take(4).toList();
+
+    if (recent.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: primary.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.history_toggle_off,
+                color: primary.withValues(alpha: 0.7), size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Aún no hay actividad reciente. Registra una prenda, receta o comida para ver tu historial aquí.',
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -676,12 +759,13 @@ class _RecentActivity extends StatelessWidget {
         border: Border.all(color: primary.withValues(alpha: 0.15)),
       ),
       child: Column(
-        children: List.generate(_items.length, (i) {
-          final item = _items[i];
-          final isLast = i == _items.length - 1;
+        children: List.generate(recent.length, (i) {
+          final item = recent[i];
+          final isLast = i == recent.length - 1;
           return Column(
             children: [
               ListTile(
+                onTap: () => context.go(item.route),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                 leading: Container(
@@ -692,26 +776,23 @@ class _RecentActivity extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
-                    child: Text(item.$1, style: const TextStyle(fontSize: 16)),
+                    child: Text(item.emoji, style: const TextStyle(fontSize: 16)),
                   ),
                 ),
-                title: Text(item.$2,
+                title: Text(item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 13)),
-                subtitle: Text(item.$3,
+                subtitle: Text(item.subtitle,
                     style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
                             .withValues(alpha: 0.45),
                         fontSize: 11)),
-                trailing: item.$4.isNotEmpty
-                    ? Text(item.$4,
-                        style: const TextStyle(
-                            color: Color(0xFFFF6B6B),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13))
-                    : null,
+                trailing: Icon(Icons.chevron_right,
+                    size: 18, color: primary.withValues(alpha: 0.5)),
               ),
               if (!isLast)
                 Divider(
@@ -721,6 +802,238 @@ class _RecentActivity extends StatelessWidget {
             ],
           );
         }),
+      ),
+    );
+  }
+}
+
+// ── Asistente IA Modal Sheet ──────────────────────────────────────────────────
+class _AssistantChatSheet extends ConsumerStatefulWidget {
+  const _AssistantChatSheet();
+
+  @override
+  ConsumerState<_AssistantChatSheet> createState() =>
+      _AssistantChatSheetState();
+}
+
+class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
+  final _ctrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send([String? preset]) async {
+    final text = (preset ?? _ctrl.text).trim();
+    if (text.isEmpty) return;
+    if (preset == null) _ctrl.clear();
+
+    final summary = await WalletSummaryReader.read();
+    final walletCtx = summary != null
+        ? 'Balance ${summary.currency} ${summary.balance.toStringAsFixed(2)}, '
+            'Ingresos ${summary.income.toStringAsFixed(2)}, '
+            'Gastos ${summary.expenses.toStringAsFixed(2)} (${summary.month})'
+        : null;
+
+    final armarioState = ref.read(armarioProvider);
+    final outfitCtx = armarioState.outfits.isNotEmpty
+        ? 'Último outfit: ${armarioState.outfits.first.name}'
+        : null;
+
+    await ref.read(aiChatProvider.notifier).sendMessage(
+          text,
+          walletContext: walletCtx,
+          outfitContext: outfitCtx,
+        );
+
+    if (mounted && _scrollCtrl.hasClients) {
+      _scrollCtrl.animateTo(
+        _scrollCtrl.position.maxScrollExtent + 120,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = ref.watch(aiChatProvider);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.72,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 12, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_awesome,
+                      color: Color(0xFF00C896), size: 22),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Asistente MyLifeOS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (messages.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.white54, size: 20),
+                      tooltip: 'Limpiar chat',
+                      onPressed: () =>
+                          ref.read(aiChatProvider.notifier).clearHistory(),
+                    ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            Expanded(
+              child: messages.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Pregúntame sobre tu armario, recetas, nutrición o finanzas.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 14),
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                ActionChip(
+                                  label: const Text('¿Qué me pongo hoy?'),
+                                  onPressed: () => _send('¿Qué me pongo hoy?'),
+                                ),
+                                ActionChip(
+                                  label: const Text('Tip de ahorro del mes'),
+                                  onPressed: () =>
+                                      _send('Dame un tip de ahorro para este mes'),
+                                ),
+                                ActionChip(
+                                  label: const Text('Idea rápida de cena'),
+                                  onPressed: () =>
+                                      _send('Sugiéreme una cena ligera y saludable'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollCtrl,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: messages.length,
+                      itemBuilder: (ctx, i) {
+                        final msg = messages[i];
+                        return Align(
+                          alignment: msg.isUser
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.78,
+                            ),
+                            decoration: BoxDecoration(
+                              color: msg.isUser
+                                  ? const Color(0xFF00C896)
+                                  : const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: msg.isLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF00C896),
+                                    ),
+                                  )
+                                : Text(
+                                    msg.content,
+                                    style: TextStyle(
+                                      color: msg.isUser
+                                          ? Colors.black
+                                          : Colors.white,
+                                      fontSize: 13.5,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      style: const TextStyle(color: Colors.white),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      decoration: InputDecoration(
+                        hintText: 'Escribe tu consulta...',
+                        hintStyle: const TextStyle(color: Colors.white38),
+                        filled: true,
+                        fillColor: const Color(0xFF1E293B),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: () => _send(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF00C896),
+                      foregroundColor: Colors.black,
+                    ),
+                    icon: const Icon(Icons.send),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

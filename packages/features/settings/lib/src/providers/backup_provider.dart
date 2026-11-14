@@ -103,6 +103,8 @@ class BackupNotifier extends Notifier<BackupState> {
 
   void clearStatus() => state = state.copyWith(status: BackupStatus.idle);
 
+  Future<void> refreshInfo() => _loadInfo();
+
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -112,6 +114,10 @@ class BackupNotifier extends Notifier<BackupState> {
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 final backupServiceProvider = Provider<BackupService>((ref) => BackupService());
+
+/// Callback opcional provisto por la app principal para limpiar Drift + estado.
+final clearAllDataCallbackProvider =
+    Provider<Future<void> Function()?>((ref) => null);
 
 final backupProvider =
     NotifierProvider<BackupNotifier, BackupState>(BackupNotifier.new);

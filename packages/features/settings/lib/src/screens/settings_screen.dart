@@ -7,6 +7,7 @@ import '../providers/backup_provider.dart';
 import '../providers/theme_provider.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -176,13 +177,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 // ── Profile Card ──────────────────────────────────────────────────────────────
 
-class _ProfileCard extends StatelessWidget {
+class _ProfileCard extends ConsumerWidget {
   final bool isDark;
   final String appVersion;
   const _ProfileCard({required this.isDark, required this.appVersion});
 
+  Future<void> _editName(
+      BuildContext context, WidgetRef ref, String currentName) async {
+    final controller = TextEditingController(text: currentName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: const Text('Editar nombre'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(
+            labelText: 'Tu nombre',
+            hintText: 'Ej: Joel',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newName != null && newName.isNotEmpty) {
+      await ref.read(userDisplayNameProvider.notifier).setName(newName);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userName = ref.watch(userDisplayNameProvider);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -214,28 +252,47 @@ class _ProfileCard extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MyLifeOS',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0A1F16),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+            child: InkWell(
+              onTap: () => _editName(context, ref, userName),
+              borderRadius: BorderRadius.circular(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          userName,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0A1F16),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 15,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.6)
+                            : const Color(0xFF4A7A65),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  appVersion,
-                  style: TextStyle(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.6)
-                        : const Color(0xFF4A7A65),
-                    fontSize: 12,
+                  const SizedBox(height: 4),
+                  Text(
+                    'MyLifeOS · $appVersion',
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.6)
+                          : const Color(0xFF4A7A65),
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Container(
@@ -245,7 +302,7 @@ class _ProfileCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'Fase 8',
+              'Personal OS',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 11,
@@ -1047,7 +1104,7 @@ Future<void> _confirmDeleteAllFinal(BuildContext context, WidgetRef ref) async {
       title: const Text('⚠️ Confirmar borrado total',
           style: TextStyle(color: Colors.red)),
       content: const Text(
-        'Esto eliminará TODOS los datos: transacciones, cuentas, categorías, recetas, prendas, perfiles y ajustes. ¿Estás completamente seguro?',
+        'Esto eliminará TODOS tus datos locales: ingredientes, recetas, menú semanal, prendas, outfits, evaluaciones nutricionales y ajustes. ¿Estás completamente seguro?',
         style: TextStyle(color: Colors.white70),
       ),
       actions: [
@@ -1067,11 +1124,19 @@ Future<void> _confirmDeleteAllFinal(BuildContext context, WidgetRef ref) async {
 
   if (confirmed == true && context.mounted) {
     try {
+      final clearDbCallback = ref.read(clearAllDataCallbackProvider);
+      if (clearDbCallback != null) {
+        await clearDbCallback();
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      await ref.read(secureStorageProvider).deleteAll();
+      await ref.read(userDisplayNameProvider.notifier).reset();
+      await ref.read(backupProvider.notifier).refreshInfo();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-                '⚠️ Para borrar todos los datos, ve a Ajustes > Aplicación > Borrar datos de la app en la configuración del sistema.'),
+            content: Text('✅ Todos los datos locales fueron eliminados.'),
             backgroundColor: Color(0xFF00C896),
           ),
         );

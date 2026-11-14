@@ -98,8 +98,13 @@ class OutfitAIPreviewCard extends ConsumerWidget {
 
     if (garments.isEmpty) return const SizedBox.shrink();
 
-    final suggestionAsync =
-        ref.watch(_outfitSuggestionProvider((aiService, garments)));
+    final profile = armarioState.userProfile;
+    final profileSummary = profile != null
+        ? 'Colorimetría: ${profile.colorimetry ?? 'N/A'}, Estilo/Cuerpo: ${profile.bodyShape ?? profile.bodyType}'
+        : null;
+
+    final suggestionAsync = ref.watch(
+        _outfitSuggestionProvider((aiService, garments, profileSummary)));
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -166,19 +171,43 @@ class OutfitAIPreviewCard extends ConsumerWidget {
 }
 
 final _outfitSuggestionProvider =
-    FutureProvider.family<String?, (GeminiService, List<WardrobeGarment>)>(
+    FutureProvider.family<String?, (GeminiService, List<WardrobeGarment>, String?)>(
         (ref, args) async {
-  final (service, garments) = args;
+  final (service, garments, profileSummary) = args;
   final description = garments
       .map((g) =>
-          '${g.type.name}: ${g.brand ?? 'Sin marca'} (${g.primaryColor})')
+          '${g.type.name}: ${g.name} (${g.primaryColor}${g.brand != null ? ', ${g.brand}' : ''})')
       .join(', ');
+  final weather = _currentSeasonalWeather();
+  final contextParts = [
+    weather,
+    if (profileSummary != null && profileSummary.isNotEmpty) profileSummary,
+  ].join(' · ');
+
   return await service.suggestOutfitOfTheDay(
     occasion: 'Diario',
     garmentsDescription: [description],
-    userProfileContext: 'Clima soleado, 24°C',
+    userProfileContext: contextParts,
   );
 });
+
+String _currentSeasonalWeather() {
+  final now = DateTime.now();
+  final month = now.month;
+  final hour = now.hour;
+  final seasonTemp = (month >= 12 || month <= 3)
+      ? 26
+      : (month >= 7 && month <= 9)
+          ? 17
+          : 21;
+  final adjusted = (hour < 8 || hour > 20) ? seasonTemp - 3 : seasonTemp;
+  final condition = (month >= 12 || month <= 3)
+      ? 'Soleado'
+      : (month >= 7 && month <= 9)
+          ? 'Nublado'
+          : 'Parcialmente nublado';
+  return '$condition, $adjusted°C';
+}
 
 /// Card de salud financiera con IA.
 class FinanceHealthCard extends ConsumerWidget {
@@ -187,11 +216,7 @@ class FinanceHealthCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final aiFinance = ref.watch(aiFinanceProvider);
-    // TODO: Obtener transacciones reales del provider de finanzas
-    final transactions = <Map<String, dynamic>>[];
-
-    final wasteDetectAsync =
-        ref.watch(_wasteDetectionProvider((aiFinance, transactions)));
+    final summaryAsync = ref.watch(_walletSummaryCardProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -207,12 +232,12 @@ class FinanceHealthCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.account_balance_wallet,
+              Icon(Icons.account_balance_wallet,
                   color: Color(0xFF818CF8), size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'SALUD FINANCIERA',
                 style: TextStyle(
                   color: Color(0xFFC7D2FE),
@@ -224,34 +249,61 @@ class FinanceHealthCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          wasteDetectAsync.when(
-            data: (alerts) => alerts.isEmpty
-                ? const Text(
-                    'Tus finanzas se ven impecables hoy. ¡Sigue así!',
-                    style: TextStyle(color: Colors.white, fontSize: 14),
-                  )
-                : Column(
-                    children: alerts
-                        .map((a) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.warning_amber_rounded,
-                                      color: Colors.orangeAccent, size: 16),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                      child: Text(a,
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 13))),
-                                ],
-                              ),
-                            ))
-                        .toList(),
-                  ),
+          summaryAsync.when(
+            data: (summary) {
+              if (summary == null) {
+                return const Text(
+                  'Conecta WalletAI en la pestaña Finanzas para analizar tus gastos reales.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                );
+              }
+
+              if (summary.expenses <= 0 && summary.income <= 0) {
+                return const Text(
+                  'Sin movimientos registrados este mes en WalletAI.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                );
+              }
+
+              final wasteDetectAsync = ref.watch(_wasteDetectionProvider(
+                (aiFinance, summary.month, summary.income, summary.expenses),
+              ));
+
+              return wasteDetectAsync.when(
+                data: (alerts) => alerts.isEmpty
+                    ? Text(
+                        'Balance ${summary.currency} ${summary.balance.toStringAsFixed(2)} · Sin alertas detectadas en ${summary.month}.',
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      )
+                    : Column(
+                        children: alerts
+                            .map((a) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.warning_amber_rounded,
+                                          color: Colors.orangeAccent, size: 16),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                          child: Text(a,
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13))),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                loading: () => _LoadingShimmer(),
+                error: (_, __) => const Text('Error en el análisis de gastos',
+                    style: TextStyle(color: Colors.white54)),
+              );
+            },
             loading: () => _LoadingShimmer(),
-            error: (_, __) => const Text('Error en el análisis de gastos',
-                style: TextStyle(color: Colors.white24)),
+            error: (_, __) => const Text(
+              'No se pudo leer el resumen de WalletAI.',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
+            ),
           ),
         ],
       ),
@@ -259,9 +311,29 @@ class FinanceHealthCard extends ConsumerWidget {
   }
 }
 
+final _walletSummaryCardProvider = FutureProvider<WalletSummary?>((ref) async {
+  return await WalletSummaryReader.read();
+});
+
 final _wasteDetectionProvider = FutureProvider.family<List<String>,
-    (AiFinanceService, List<Map<String, dynamic>>)>((ref, args) async {
-  final (service, transactions) = args;
+    (AiFinanceService, String, double, double)>((ref, args) async {
+  final (service, month, income, expenses) = args;
+  final transactions = <Map<String, dynamic>>[
+    if (expenses > 0)
+      {
+        'name': 'Gastos del mes ($month)',
+        'category': 'Gastos mensuales',
+        'amount': -expenses,
+        'date': month,
+      },
+    if (income > 0)
+      {
+        'name': 'Ingresos del mes ($month)',
+        'category': 'Ingresos mensuales',
+        'amount': income,
+        'date': month,
+      },
+  ];
   return await service.detectWastefulExpenses(transactions: transactions);
 });
 

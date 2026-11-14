@@ -94,8 +94,10 @@ Future<void> main() async {
   // Capturar errores de Zone (errores asíncronos no manejados)
   runZonedGuarded(
     () async {
-      // Cargar variables de entorno desde .env
-      await dotenv.load(fileName: '.env');
+      // Cargar variables de entorno opcionales sin fallar si .env no está en assets
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (_) {}
 
       // Inicializar notificaciones locales
       await _notifications.initialize(
@@ -122,6 +124,15 @@ Future<void> main() async {
             // Register cocina providers
             inventoryProvider.overrideWith(InventoryNotifier.new),
             recipesProvider.overrideWith(RecipesNotifier.new),
+            // Real clear-all-data callback for SettingsScreen
+            clearAllDataCallbackProvider.overrideWith((ref) => () async {
+                  await _db.clearAllUserData();
+                  ref.invalidate(armarioProvider);
+                  ref.invalidate(inventoryProvider);
+                  ref.invalidate(recipesProvider);
+                  ref.invalidate(foodCoachProvider);
+                  ref.read(aiChatProvider.notifier).clearHistory();
+                }),
             // BackupService no requiere override — usa el Provider estándar
           ],
           child: const MyLifeOSApp(),
