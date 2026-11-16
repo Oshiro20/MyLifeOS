@@ -38,6 +38,7 @@ class WhatCanICookUseCase {
     List<String>? recentlyUsedRecipeNames, // Recipes used in last 7 days
     SuggestionMode mode = SuggestionMode.now,
     ChefPreferences? userPreferences,
+    bool budgetSaverMode = false,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -142,6 +143,9 @@ Estos antojos son INDEPENDIENTES de la hora del día.
 
     // Build user preferences context (optional)
     final userPrefsContext = _buildUserPrefsContext(userPreferences);
+    final budgetNote = budgetSaverMode
+        ? '8. 💰 MODO AHORRO: Prioriza recetas económicas usando al máximo lo que ya existe en la despensa y minimizando compras adicionales.'
+        : '';
 
     final prompt = '''
 👨‍🍳 ERES UN CHEF PROFESIONAL ESPECIALIZADO EN COCINA DE APROVECHAMIENTO.
@@ -161,6 +165,7 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 5. Sé específico con cantidades y pasos
 6. CADA receta DEBE tener AL MENOS 3 ingredientes reales y 3 pasos.
 7. Para CADA receta incluye "cuisine_style" (ej: "Peruana-sierra", "Peruana-costa", "Italiana").
+$budgetNote
 
 📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
 Devuelve un único objeto JSON con clave "recetas":
@@ -821,8 +826,8 @@ FORMATO JSON EXACTO:
       prefsParts.add('Tamaño de porción: ${userPreferences.portionSize}');
     }
     if (userPreferences.typicalServings != null) {
-      prefsParts
-          .add('Porciones típicas: ${userPreferences.typicalServings} personas');
+      prefsParts.add(
+          'Porciones típicas: ${userPreferences.typicalServings} personas');
     }
     if (userPreferences.dietaryRestrictions.isNotEmpty) {
       prefsParts.add(
