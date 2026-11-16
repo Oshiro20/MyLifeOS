@@ -157,6 +157,17 @@ class ArmarioNotifier extends Notifier<ArmarioState> {
     }
   }
 
+  Future<void> deleteOutfit(String id) async {
+    try {
+      await _repo.deleteOutfit(id);
+      state = state.copyWith(
+        outfits: state.outfits.where((o) => o.id != id).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> wearOutfit(String id) async {
     try {
       Outfit? target;

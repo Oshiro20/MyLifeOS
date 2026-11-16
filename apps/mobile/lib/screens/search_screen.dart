@@ -167,13 +167,15 @@ class MyLifeOSSearchDelegate extends SearchDelegate<String> {
       final armarioState = ref.read(armarioProvider);
       for (final g in armarioState.garments) {
         if (g.name.toLowerCase().contains(q) ||
+            g.type.label.toLowerCase().contains(q) ||
             g.type.name.toLowerCase().contains(q) ||
-            (g.style.name.toLowerCase().contains(q))) {
+            g.style.label.toLowerCase().contains(q) ||
+            g.style.name.toLowerCase().contains(q)) {
           results.add(SearchResult(
             id: 'garment_${g.id}',
             title: g.name,
             subtitle:
-                '${g.type.name} • ${g.primaryColor} • ${g.isClean ? "✅ Limpia" : "🧺 Para lavar"}',
+                '${g.type.label} • ${g.primaryColor} • ${g.isClean ? "✅ Limpia" : "🧺 Para lavar"}',
             emoji: '👔',
             type: SearchResultType.garment,
             route: '/armario',

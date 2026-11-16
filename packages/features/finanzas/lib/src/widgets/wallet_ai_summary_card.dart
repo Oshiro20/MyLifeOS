@@ -49,9 +49,18 @@ class _WalletAiSummaryCardState extends ConsumerState<WalletAiSummaryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final watchedSummary = ref.watch(walletSummaryProvider);
+    ref.listen<AsyncValue<WalletSummary?>>(walletSummaryProvider, (_, next) {
+      next.whenData((summary) {
+        if (mounted && summary != _summary) {
+          setState(() => _summary = summary);
+        }
+      });
+    });
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mutedColor = isDark ? Colors.white54 : const Color(0xFF4A7A65);
-    if (_loading) {
+    if (_loading && watchedSummary.isLoading) {
       return SizedBox(
         height: 120,
         child: Center(
@@ -260,7 +269,16 @@ class _WalletAiSummaryCardState extends ConsumerState<WalletAiSummaryCard> {
   }
 
   Future<void> _openWalletAI() async {
-    await WalletAICommunicationService.openWalletAI();
+    final ok = await WalletAICommunicationService.openWalletAI();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'No se pudo abrir WalletAI. Verifica que la app esté instalada.'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+    }
   }
 }
 

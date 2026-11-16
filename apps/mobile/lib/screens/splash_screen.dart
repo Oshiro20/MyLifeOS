@@ -33,9 +33,13 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _navigate() async {
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
+    final currentPath = GoRouterState.of(context).matchedLocation;
+    if (currentPath != '/' && currentPath.isNotEmpty) return;
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
     if (!mounted) return;
+    final latestPath = GoRouterState.of(context).matchedLocation;
+    if (latestPath != '/' && latestPath.isNotEmpty) return;
     context.go(onboardingDone ? '/home' : '/onboarding');
   }
 

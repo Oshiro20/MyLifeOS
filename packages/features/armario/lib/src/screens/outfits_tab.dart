@@ -48,49 +48,119 @@ class OutfitsTab extends ConsumerWidget {
               .whereType<WardrobeGarment>()
               .toList();
 
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Expanded(
-                    child: Text(outfit.name,
+          return InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _showOutfitDetail(context, ref, outfit, garments),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Expanded(
+                      child: Text(outfit.name,
+                          style: TextStyle(
+                              color: onSurface,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15)),
+                    ),
+                    Text('${outfit.timesWorn}× usado',
                         style: TextStyle(
-                            color: onSurface,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.38),
+                            fontSize: 11)),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: garments
+                        .take(4)
+                        .map((g) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: _ColorDot(hex: g.primaryColor),
+                            ))
+                        .toList(),
                   ),
-                  Text('${outfit.timesWorn}× usado',
-                      style: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.38),
-                          fontSize: 11)),
-                ]),
-                const SizedBox(height: 8),
-                Row(
-                  children: garments
-                      .take(4)
-                      .map((g) => Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: _ColorDot(hex: g.primaryColor),
-                          ))
-                      .toList(),
-                ),
-                const SizedBox(height: 8),
-                Row(children: [
-                  _Tag(outfit.occasion),
-                  const SizedBox(width: 6),
-                  _Tag(outfit.season.name),
-                ]),
-              ],
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    _Tag(outfit.occasion),
+                    const SizedBox(width: 6),
+                    _Tag(outfit.season.name),
+                    const Spacer(),
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      onPressed: () async {
+                        await ref
+                            .read(armarioProvider.notifier)
+                            .wearOutfit(outfit.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  '✨ "${outfit.name}" marcado como usado hoy'),
+                              backgroundColor: const Color(0xFF00C896),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.checkroom,
+                          size: 16, color: Color(0xFF00C896)),
+                      label: const Text('Usar hoy',
+                          style: TextStyle(
+                              color: Color(0xFF00C896), fontSize: 12)),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Eliminar outfit',
+                      icon: Icon(Icons.delete_outline,
+                          size: 18,
+                          color: onSurface.withValues(alpha: 0.45)),
+                      onPressed: () async {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogCtx) => AlertDialog(
+                            backgroundColor: Theme.of(dialogCtx).cardColor,
+                            title: const Text('¿Eliminar outfit?'),
+                            content: Text(
+                                'Se eliminará "${outfit.name}" de tus outfits guardados.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogCtx, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.redAccent),
+                                onPressed: () =>
+                                    Navigator.pop(dialogCtx, true),
+                                child: const Text('Eliminar',
+                                    style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true) {
+                          await ref
+                              .read(armarioProvider.notifier)
+                              .deleteOutfit(outfit.id);
+                        }
+                      },
+                    ),
+                  ]),
+                ],
+              ),
             ),
           );
         },
@@ -116,6 +186,70 @@ class OutfitsTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showOutfitDetail(
+    BuildContext context,
+    WidgetRef ref,
+    Outfit outfit,
+    List<WardrobeGarment> garments,
+  ) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(outfit.name,
+                style: TextStyle(
+                    color: onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('${outfit.occasion} · ${outfit.season.label} · ${outfit.timesWorn}× usado',
+                style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.55), fontSize: 12)),
+            const SizedBox(height: 12),
+            if (garments.isEmpty)
+              Text('Las prendas asociadas ya no están en el armario.',
+                  style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.6), fontSize: 13))
+            else
+              ...garments.map((g) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: _ColorDot(hex: g.primaryColor),
+                    title: Text(g.name, style: TextStyle(color: onSurface)),
+                    subtitle: Text(g.type.label,
+                        style: TextStyle(
+                            color: onSurface.withValues(alpha: 0.5),
+                            fontSize: 12)),
+                  )),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00C896)),
+                onPressed: () async {
+                  await ref.read(armarioProvider.notifier).wearOutfit(outfit.id);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                icon: const Icon(Icons.checkroom, color: Colors.white),
+                label: const Text('Usar hoy',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

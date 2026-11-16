@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'ai_service.dart';
@@ -104,7 +105,7 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
             raw ?? 'No pude procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
         await _cache.saveString(
           'chat_last',
-          '{"q":${_esc(text)},"a":${_esc(aiResponse)}}',
+          jsonEncode({'q': text, 'a': aiResponse}),
         );
       }
     } catch (e) {
@@ -134,10 +135,12 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
       outfitContext: outfitContext,
     );
 
-    final historyMessages = state
+    final completedMessages = state
         .where((m) => !m.isLoading && m.content.isNotEmpty)
-        .take(state.length > 1 ? state.length - 1 : 0)
         .toList();
+    final historyMessages = completedMessages.length > 1
+        ? completedMessages.sublist(0, completedMessages.length - 1)
+        : const <AiChatMessage>[];
 
     final historyPayload = historyMessages
         .map((m) => {
@@ -180,9 +183,6 @@ class AiChatNotifier extends Notifier<List<AiChatMessage>> {
     }
     return sb.toString();
   }
-
-  String _esc(String t) =>
-      '"${t.replaceAll('"', '\\"').replaceAll('\n', '\\n')}"';
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────

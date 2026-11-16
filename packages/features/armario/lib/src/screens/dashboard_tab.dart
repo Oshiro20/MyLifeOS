@@ -322,12 +322,15 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     final shoes = ootd['shoes'] as WardrobeGarment?;
     final explanation = ootd['explanation'] as String?;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [themeColor.withAlpha(30), const Color(0xFF0F1A14)],
+          colors: isDark
+              ? [themeColor.withAlpha(30), const Color(0xFF0F1A14)]
+              : [themeColor.withValues(alpha: 0.12), Theme.of(context).cardColor],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: themeColor.withAlpha(60)),

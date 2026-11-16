@@ -115,16 +115,20 @@ class _WalletAIConnectionSettingsScreenState
   Future<void> _forceSync() async {
     setState(() => _syncing = true);
 
-    await WalletAICommunicationService.requestSync();
-    await Future.delayed(const Duration(seconds: 2));
+    final ok = await WalletAICommunicationService.requestSync();
+    if (ok) {
+      await Future.delayed(const Duration(seconds: 2));
+    }
     await _loadInfo();
 
     if (mounted) {
       setState(() => _syncing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sincronización solicitada a WalletAI'),
-          backgroundColor: Color(0xFF00C896),
+        SnackBar(
+          content: Text(ok
+              ? 'Sincronización solicitada a WalletAI'
+              : 'No se pudo abrir WalletAI. Verifica que esté instalada.'),
+          backgroundColor: ok ? const Color(0xFF00C896) : Colors.orangeAccent,
         ),
       );
     }
@@ -368,7 +372,16 @@ class _WalletAIConnectionSettingsScreenState
   }
 
   Future<void> _openWalletAI() async {
-    await WalletAICommunicationService.openWalletAI();
+    final ok = await WalletAICommunicationService.openWalletAI();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'No se pudo abrir WalletAI. Verifica que esté instalada.'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+    }
   }
 
   void _showHelp() {

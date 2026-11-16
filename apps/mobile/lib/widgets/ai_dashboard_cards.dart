@@ -219,7 +219,6 @@ class FinanceHealthCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final aiFinance = ref.watch(aiFinanceProvider);
     final summaryAsync = ref.watch(walletSummaryProvider);
 
     return Container(
@@ -262,16 +261,16 @@ class FinanceHealthCard extends ConsumerWidget {
                 );
               }
 
-              if (summary.expenses <= 0 && summary.income <= 0) {
+              if (summary.expenses <= 0 &&
+                  summary.income <= 0 &&
+                  summary.recentTransactions.isEmpty) {
                 return const Text(
                   'Sin movimientos registrados este mes en WalletAI.',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 );
               }
 
-              final wasteDetectAsync = ref.watch(_wasteDetectionProvider(
-                (aiFinance, summary.month, summary.income, summary.expenses),
-              ));
+              final wasteDetectAsync = ref.watch(_wasteDetectionProvider);
 
               return wasteDetectAsync.when(
                 data: (alerts) => alerts.isEmpty
@@ -298,12 +297,12 @@ class FinanceHealthCard extends ConsumerWidget {
                                 ))
                             .toList(),
                       ),
-                loading: () => _LoadingShimmer(),
+                loading: () => _LoadingShimmer(baseColor: Colors.white12),
                 error: (_, __) => const Text('Error en el análisis de gastos',
                     style: TextStyle(color: Colors.white54)),
               );
             },
-            loading: () => _LoadingShimmer(),
+            loading: () => _LoadingShimmer(baseColor: Colors.white12),
             error: (_, __) => const Text(
               'No se pudo leer el resumen de WalletAI.',
               style: TextStyle(color: Colors.white54, fontSize: 13),
@@ -315,25 +314,50 @@ class FinanceHealthCard extends ConsumerWidget {
   }
 }
 
-final _wasteDetectionProvider = FutureProvider.family<List<String>,
-    (AiFinanceService, String, double, double)>((ref, args) async {
-  final (service, month, income, expenses) = args;
-  final transactions = <Map<String, dynamic>>[
-    if (expenses > 0)
-      {
-        'name': 'Gastos del mes ($month)',
-        'category': 'Gastos mensuales',
-        'amount': -expenses,
-        'date': month,
-      },
-    if (income > 0)
-      {
-        'name': 'Ingresos del mes ($month)',
-        'category': 'Ingresos mensuales',
-        'amount': income,
-        'date': month,
-      },
-  ];
+final _wasteDetectionProvider =
+    FutureProvider.autoDispose<List<String>>((ref) async {
+  final service = ref.watch(aiFinanceProvider);
+  final summary = await ref.watch(walletSummaryProvider.future);
+  if (summary == null) return const [];
+
+  final List<Map<String, dynamic>> transactions;
+  if (summary.recentTransactions.isNotEmpty) {
+    transactions = summary.recentTransactions;
+  } else if (summary.byCategory.isNotEmpty) {
+    transactions = [
+      for (final c in summary.byCategory)
+        {
+          'name': 'Gastos en ${c.name}',
+          'category': c.name,
+          'amount': -c.amount,
+          'date': summary.month,
+        },
+      if (summary.income > 0)
+        {
+          'name': 'Ingresos del mes (${summary.month})',
+          'category': 'Ingresos mensuales',
+          'amount': summary.income,
+          'date': summary.month,
+        },
+    ];
+  } else {
+    transactions = [
+      if (summary.expenses > 0)
+        {
+          'name': 'Gastos del mes (${summary.month})',
+          'category': 'Gastos mensuales',
+          'amount': -summary.expenses,
+          'date': summary.month,
+        },
+      if (summary.income > 0)
+        {
+          'name': 'Ingresos del mes (${summary.month})',
+          'category': 'Ingresos mensuales',
+          'amount': summary.income,
+          'date': summary.month,
+        },
+    ];
+  }
   return await service.detectWastefulExpenses(transactions: transactions);
 });
 
@@ -361,8 +385,13 @@ class _GarmentMiniature extends StatelessWidget {
 
 /// Shimmer para carga
 class _LoadingShimmer extends StatelessWidget {
+  final Color? baseColor;
+  const _LoadingShimmer({this.baseColor});
+
   @override
   Widget build(BuildContext context) {
+    final shimmerColor = baseColor ??
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -370,7 +399,7 @@ class _LoadingShimmer extends StatelessWidget {
           width: double.infinity,
           height: 14,
           decoration: BoxDecoration(
-            color: Colors.white12,
+            color: shimmerColor,
             borderRadius: BorderRadius.circular(4),
           ),
         ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1200.ms),
@@ -379,7 +408,7 @@ class _LoadingShimmer extends StatelessWidget {
           width: 200,
           height: 14,
           decoration: BoxDecoration(
-            color: Colors.white12,
+            color: shimmerColor,
             borderRadius: BorderRadius.circular(4),
           ),
         ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1200.ms),

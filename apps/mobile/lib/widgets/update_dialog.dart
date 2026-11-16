@@ -40,9 +40,14 @@ class _MyLifeOSUpdateDialogState extends State<MyLifeOSUpdateDialog> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          _errorMessage = 'Error al descargar o instalar: $e';
+        });
+      }
+    } finally {
+      if (mounted && _isDownloading) {
+        setState(() {
           _isDownloading = false;
           _progress = 0;
-          _errorMessage = 'Error al descargar o instalar: $e';
         });
       }
     }

@@ -14,10 +14,11 @@ Future<String> clearImageCache() async {
     int totalSize = 0;
     int fileCount = 0;
 
-    await for (final file in compressedDir.list()) {
-      if (file is File) {
-        totalSize += await file.length();
-        await file.delete();
+    await for (final entity
+        in compressedDir.list(recursive: true, followLinks: false)) {
+      if (entity is File) {
+        totalSize += await entity.length();
+        await entity.delete();
         fileCount++;
       }
     }

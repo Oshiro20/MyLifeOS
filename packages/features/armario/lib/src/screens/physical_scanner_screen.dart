@@ -42,10 +42,20 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (picked != null) {
+      final compressed = await ImageCompressionUtil.compressImage(
+        originalFile: File(picked.path),
+        subfolder: 'scanner',
+      );
+      if (!mounted) return;
       setState(() {
-        _imageFile = File(picked.path);
+        _imageFile = compressed;
         _error = null;
       });
     }

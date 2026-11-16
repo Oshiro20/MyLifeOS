@@ -99,8 +99,17 @@ class _FinanzasScreenState extends ConsumerState<FinanzasScreen> {
 
       // ── FAB ───────────────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          WalletAICommunicationService.openWalletAI();
+        onPressed: () async {
+          final ok = await WalletAICommunicationService.openWalletAI();
+          if (!ok && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'No se pudo abrir WalletAI. Verifica que esté instalada.'),
+                backgroundColor: Colors.orangeAccent,
+              ),
+            );
+          }
         },
         tooltip: 'Abrir WalletAI',
         child: const Icon(Icons.open_in_new),
@@ -527,14 +536,36 @@ class _WalletAIGuidance extends StatelessWidget {
             icon: Icons.account_balance_wallet,
             title: 'Abrir WalletAI',
             subtitle: 'Gestiona transacciones, categorías y presupuestos',
-            onTap: () => WalletAICommunicationService.openWalletAI(),
+            onTap: () async {
+              final ok = await WalletAICommunicationService.openWalletAI();
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'No se pudo abrir WalletAI. Verifica que esté instalada.'),
+                    backgroundColor: Colors.orangeAccent,
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 8),
           _GuidanceItem(
             icon: Icons.sync,
             title: 'Sincronizar datos',
             subtitle: 'Abre WalletAI para exportar el resumen actualizado',
-            onTap: () => WalletAICommunicationService.requestSync(),
+            onTap: () async {
+              final ok = await WalletAICommunicationService.requestSync();
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Solicitud local guardada, pero no se pudo abrir WalletAI.'),
+                    backgroundColor: Colors.orangeAccent,
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 8),
           _GuidanceItem(

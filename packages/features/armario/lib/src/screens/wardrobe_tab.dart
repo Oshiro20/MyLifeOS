@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:domain/domain.dart';
-import 'dart:convert';
 import 'package:core/core.dart';
 import '../providers/armario_provider.dart';
 
@@ -756,7 +755,7 @@ class _AddGarmentSheetState extends ConsumerState<_AddGarmentSheet> {
             aspectRatio: 0.85,
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF161626),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                     color: const Color(0xFF00C896).withAlpha(80), width: 1.5),
@@ -873,7 +872,7 @@ Analiza esta prenda de vestir o calzado y devuelve ÚNICAMENTE un JSON válido c
 - brand: marca si es visible o ""
 - size: talla si es visible o ""
 - season: estación ("all", "summer", "winter", "spring", "autumn")
-- styleIndex: entero 0-6 (0=casual, 1=formal, 2=sport, 3=streetwear, 4=vintage, 5=minimalist, 6=elegant)
+- styleIndex: entero 0-6 según GarmentStyle (0=casual, 1=formal, 2=sport, 3=streetwear, 4=elegant, 5=smartCasual, 6=workwear)
 
 JSON: {"name":"...","typeIndex":1,"primaryColor":"#FFFFFF","material":"Algodón","brand":"","size":"","season":"all","styleIndex":0}
 ''';
@@ -882,9 +881,8 @@ JSON: {"name":"...","typeIndex":1,"primaryColor":"#FFFFFF","material":"Algodón"
         mediaPaths: _photo != null ? [_photo!.path] : const [],
       );
       if (jsonStr != null && mounted) {
-        final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonStr);
-        final cleanJson = match?.group(0) ?? jsonStr.trim();
-        final decoded = json.decode(cleanJson) as Map<String, dynamic>;
+        final decoded = AiJsonParser.decodeMap(jsonStr);
+        if (decoded == null) return;
 
         int parseInt(dynamic val, int def) {
           if (val is num) return val.toInt();
@@ -1018,9 +1016,17 @@ JSON: {"name":"...","typeIndex":1,"primaryColor":"#FFFFFF","material":"Algodón"
 
       if (wantShort) {
         final picker = ImagePicker();
-        final xfile =
-            await picker.pickImage(source: ImageSource.camera, maxWidth: 800);
+        final xfile = await picker.pickImage(
+          source: ImageSource.camera,
+          maxWidth: 1200,
+          maxHeight: 1200,
+          imageQuality: 85,
+        );
         if (xfile != null) {
+          final persistedShort = await ImageCompressionUtil.compressImage(
+            originalFile: File(xfile.path),
+            subfolder: 'garments',
+          );
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Analizando short con IA...')));
@@ -1041,32 +1047,22 @@ JSON: {"name":"Short de ${garment.name}","typeIndex":8,"primaryColor":"#000000",
 ''';
           final jsonStr = await ai.generateJsonText(
             prompt: promptShort,
-            mediaPaths: [xfile.path],
+            mediaPaths: [persistedShort.path],
           );
 
-          WardrobeGarment shortGarment;
-          if (jsonStr != null) {
-            final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonStr);
-            final cleanJson = match?.group(0) ?? jsonStr.trim();
-            final decoded = json.decode(cleanJson) as Map<String, dynamic>;
-            shortGarment = WardrobeGarment(
-                id: '',
-                name: 'Short de ${garment.name}',
-                type: GarmentType.shorts,
-                primaryColor: decoded['primaryColor']?.toString() ?? '#000000',
-                style: GarmentStyle.sport,
-                material: decoded['material']?.toString() ?? garment.material,
-                season: garment.season,
-                addedAt: DateTime.now());
-          } else {
-            shortGarment = WardrobeGarment(
-                id: '',
-                name: 'Short de ${garment.name}',
-                type: GarmentType.shorts,
-                primaryColor: '#000000',
-                style: GarmentStyle.sport,
-                addedAt: DateTime.now());
-          }
+          final decoded =
+              jsonStr != null ? AiJsonParser.decodeMap(jsonStr) : null;
+          final shortGarment = WardrobeGarment(
+            id: '',
+            name: 'Short de ${garment.name}',
+            type: GarmentType.shorts,
+            primaryColor: decoded?['primaryColor']?.toString() ?? '#000000',
+            style: GarmentStyle.sport,
+            material: decoded?['material']?.toString() ?? garment.material,
+            season: garment.season,
+            imageAssetId: persistedShort.path,
+            addedAt: DateTime.now(),
+          );
           final savedShort =
               await ref.read(armarioProvider.notifier).addGarment(shortGarment);
 
@@ -1122,6 +1118,7 @@ JSON: {"name":"Short de ${garment.name}","typeIndex":8,"primaryColor":"#000000",
         originalFile: File(processed),
         subfolder: 'garments',
         deleteOriginal: true,
+        preserveTransparency: true,
       );
       if (mounted) {
         setState(() => _photo = persisted);

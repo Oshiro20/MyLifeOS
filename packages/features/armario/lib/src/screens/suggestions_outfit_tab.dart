@@ -285,12 +285,23 @@ class _OutfitResults extends StatelessWidget {
         preferredStyles.addAll([GarmentStyle.casual, GarmentStyle.streetwear]);
         break;
       case 'trabajo':
+        preferredStyles.addAll([
+          GarmentStyle.formal,
+          GarmentStyle.smartCasual,
+          GarmentStyle.workwear,
+          GarmentStyle.elegant,
+        ]);
+        break;
       case 'formal':
         preferredStyles.addAll([GarmentStyle.formal, GarmentStyle.elegant]);
         break;
       case 'cita':
-        preferredStyles.addAll(
-            [GarmentStyle.elegant, GarmentStyle.casual, GarmentStyle.formal]);
+        preferredStyles.addAll([
+          GarmentStyle.elegant,
+          GarmentStyle.smartCasual,
+          GarmentStyle.casual,
+          GarmentStyle.formal,
+        ]);
         break;
       case 'fiesta':
         preferredStyles.addAll([GarmentStyle.streetwear, GarmentStyle.elegant]);
@@ -298,6 +309,21 @@ class _OutfitResults extends StatelessWidget {
       case 'deporte':
         preferredStyles.add(GarmentStyle.sport);
         break;
+    }
+
+    final currentSeason = switch (DateTime.now().month) {
+      >= 3 && <= 5 => Season.autumn, // Hemisferio sur / neutro con Season.all
+      >= 6 && <= 8 => Season.winter,
+      >= 9 && <= 11 => Season.spring,
+      _ => Season.summer,
+    };
+
+    int scoreGarment(WardrobeGarment g) {
+      var score = preferredStyles.contains(g.style) ? 0 : 2;
+      if (g.season != Season.all && g.season != currentSeason) {
+        score += 1;
+      }
+      return score;
     }
 
     const shoeTypes = {
@@ -327,23 +353,15 @@ class _OutfitResults extends StatelessWidget {
     final dresses = clean.where((g) => g.type == GarmentType.dress).toList();
     final shoes = clean.where((g) => shoeTypes.contains(g.type)).toList();
 
-    // Prioritize matching styles
+    // Prioritize matching styles and season
     final scoredTops = tops.toList()
-      ..sort((a, b) {
-        final aMatch = preferredStyles.contains(a.style) ? 0 : 1;
-        final bMatch = preferredStyles.contains(b.style) ? 0 : 1;
-        return aMatch.compareTo(bMatch);
-      });
+      ..sort((a, b) => scoreGarment(a).compareTo(scoreGarment(b)));
     final scoredBottoms = bottoms.toList()
-      ..sort((a, b) {
-        final aMatch = preferredStyles.contains(a.style) ? 0 : 1;
-        final bMatch = preferredStyles.contains(b.style) ? 0 : 1;
-        return aMatch.compareTo(bMatch);
-      });
+      ..sort((a, b) => scoreGarment(a).compareTo(scoreGarment(b)));
     final scoredShoes = shoes.toList()
       ..sort((a, b) {
-        final aMatch = preferredStyles.contains(a.style) ? 0 : 1;
-        final bMatch = preferredStyles.contains(b.style) ? 0 : 1;
+        final aMatch = scoreGarment(a);
+        final bMatch = scoreGarment(b);
         return aMatch.compareTo(bMatch);
       });
 
@@ -688,6 +706,8 @@ class _ProfileFormSheetState extends State<_ProfileFormSheet> {
         height: _heightCtrl.text.trim(),
         weight: _weightCtrl.text.trim(),
         hairType: _hairType,
+        colorimetry: widget.current?.colorimetry,
+        bodyShape: widget.current?.bodyShape,
         consentGranted: true,
         updatedAt: DateTime.now(),
       ));

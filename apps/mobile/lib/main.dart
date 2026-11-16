@@ -156,7 +156,11 @@ Future<void> main() async {
                   ref.invalidate(walletSummaryProvider);
                   ref.read(aiChatProvider.notifier).clearHistory();
                 }),
-            // BackupService no requiere override — usa el Provider estándar
+            // BackupService wired with WAL checkpoint and DB close callbacks
+            backupServiceProvider.overrideWith((ref) => BackupService(
+                  checkpointDbFn: () => _db.checkpointWal(),
+                  closeDbFn: () => _db.close(),
+                )),
           ],
           child: const MyLifeOSApp(),
         ),

@@ -53,9 +53,9 @@ void main() {
 
       expect(container.read(pendingMealEvaluationProvider), isNull);
       container.read(pendingMealEvaluationProvider.notifier).queue(
-            recipeName: 'Lomo Saltado',
-            ingredients: ['lomo', 'cebolla', 'tomate'],
-          );
+        recipeName: 'Lomo Saltado',
+        ingredients: ['lomo', 'cebolla', 'tomate'],
+      );
 
       final queued = container.read(pendingMealEvaluationProvider);
       expect(queued?.recipeName, 'Lomo Saltado');
@@ -63,6 +63,17 @@ void main() {
 
       container.read(pendingMealEvaluationProvider.notifier).clear();
       expect(container.read(pendingMealEvaluationProvider), isNull);
+    });
+  });
+
+  group('SharedIdentityService', () {
+    test('setUserName tolera espacios iniciales/finales sin RangeError',
+        () async {
+      await SharedIdentityService.setUserName('   Joel   ');
+      expect(await SharedIdentityService.getUserName(), 'Joel');
+
+      await SharedIdentityService.setUserName('   ');
+      expect(await SharedIdentityService.getUserName(), '');
     });
   });
 }

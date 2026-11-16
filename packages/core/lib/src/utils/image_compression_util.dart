@@ -6,8 +6,8 @@ import 'package:path_provider/path_provider.dart';
 
 /// Utilidad compartida para comprimir y persistir imágenes localmente.
 class ImageCompressionUtil {
-  /// Comprime [originalFile] a JPEG y lo guarda en una carpeta persistente
-  /// dentro de Documentos (`media/[subfolder]`) para que no lo borre el SO.
+  /// Comprime [originalFile] a JPEG (o PNG si [preserveTransparency] es true)
+  /// y lo guarda en una carpeta persistente dentro de Documentos (`media/[subfolder]`).
   static Future<File> compressImage({
     required File originalFile,
     int quality = 70,
@@ -15,12 +15,14 @@ class ImageCompressionUtil {
     int maxHeight = 1024,
     String subfolder = 'general',
     bool deleteOriginal = false,
+    bool preserveTransparency = false,
   }) async {
     try {
       final targetDir = await _resolveMediaDirectory(originalFile, subfolder);
+      final ext = preserveTransparency ? 'png' : 'jpg';
       final targetPath = p.join(
         targetDir.path,
-        'img_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        'img_${DateTime.now().millisecondsSinceEpoch}.$ext',
       );
 
       final result = await FlutterImageCompress.compressAndGetFile(
@@ -29,7 +31,7 @@ class ImageCompressionUtil {
         quality: quality,
         minWidth: maxWidth,
         minHeight: maxHeight,
-        format: CompressFormat.jpeg,
+        format: preserveTransparency ? CompressFormat.png : CompressFormat.jpeg,
       );
 
       if (result != null) {
@@ -48,6 +50,15 @@ class ImageCompressionUtil {
           await originalFile.delete();
         }
         return compressedFile;
+      }
+
+      if (preserveTransparency && await originalFile.exists()) {
+        final copied = await originalFile.copy(targetPath);
+        if (deleteOriginal &&
+            originalFile.absolute.path != copied.absolute.path) {
+          await originalFile.delete();
+        }
+        return copied;
       }
 
       debugPrint(

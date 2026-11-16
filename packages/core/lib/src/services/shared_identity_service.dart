@@ -116,7 +116,8 @@ class SharedIdentityService {
   /// - [name]: Nombre del usuario (máximo 50 caracteres)
   static Future<void> setUserName(String name) async {
     final prefs = await SharedPreferences.getInstance();
-    final trimmed = name.trim().substring(0, name.length.clamp(0, 50));
+    final cleanName = name.trim();
+    final trimmed = cleanName.substring(0, cleanName.length.clamp(0, 50));
     await prefs.setString(_userNameKey, trimmed);
     debugPrint('[SharedIdentity] User Name establecido: $trimmed');
   }

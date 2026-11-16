@@ -101,7 +101,13 @@ class AiFinanceService {
     required List<Map<String, dynamic>> transactions,
     String? month,
   }) async {
-    final cacheKey = '$_cacheKeyPrefix${month ?? _currentMonth()}';
+    final monthKey = month ?? _currentMonth();
+    final totalAbs = transactions.fold<double>(
+      0.0,
+      (sum, t) => sum + ((t['amount'] as num?)?.abs().toDouble() ?? 0.0),
+    );
+    final cacheKey =
+        '$_cacheKeyPrefix${monthKey}_${transactions.length}_${totalAbs.round()}';
 
     final online = await _connectivity.isOnline();
     if (!online) {
@@ -141,7 +147,10 @@ Devuelve EXACTAMENTE este JSON sin markdown ni texto adicional:
 ''';
 
     try {
-      final result = await _gemini.generateText(prompt: prompt);
+      final result = await _gemini.generateJsonText(
+        prompt: prompt,
+        cacheKey: cacheKey,
+      );
       if (result == null) return FinanceInsight.empty();
 
       final decoded = AiJsonParser.decodeMap(result);
@@ -195,18 +204,20 @@ Eres un experto en ahorro. Analiza estas transacciones y busca "gastos hormiga"
 (pequeños gastos recurrentes que sumados son mucho) o suscripciones duplicadas/olvidadas.
 $transactions
 
-Devuelve una lista JSON de strings con los hallazgos.
-Ejemplo: ["Gasto excesivo en cafeterías (S/120 al mes)", "Suscripción duplicada detectada"]
-Solo devuelve el JSON array.
+Devuelve ÚNICAMENTE un JSON válido con el siguiente formato exacto:
+{"hallazgos": ["Gasto excesivo en cafeterías (S/120 al mes)", "Suscripción duplicada detectada"]}
 ''';
 
     try {
-      final result = await _gemini.generateText(prompt: prompt);
+      final result = await _gemini.generateJsonText(
+        prompt: prompt,
+      );
       if (result == null) return [];
 
-      final decoded = AiJsonParser.decodeList(result);
-      if (decoded != null) {
-        return decoded.map((e) => e.toString()).toList();
+      final decodedMap = AiJsonParser.decodeMap(result);
+      final rawList = decodedMap?['hallazgos'] ?? AiJsonParser.decodeList(result);
+      if (rawList is List) {
+        return rawList.map((e) => e.toString()).toList();
       }
       return [];
     } catch (e) {

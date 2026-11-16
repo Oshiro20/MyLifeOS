@@ -93,9 +93,7 @@ class WalletAICommunicationService {
       debugPrint('[WalletAICommunication] Sync request creado: ${file.path}');
 
       // Abrir WalletAI para que procese la solicitud
-      await openWalletAI(context: 'sync');
-
-      return true;
+      return await openWalletAI(context: 'sync');
     } catch (e) {
       debugPrint('[WalletAICommunication] Error al solicitar sync: $e');
       return false;

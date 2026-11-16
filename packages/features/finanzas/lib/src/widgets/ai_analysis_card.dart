@@ -16,6 +16,15 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
   FinanceInsight? _insight;
   String? _error;
 
+  @override
+  void didUpdateWidget(covariant AIAnalysisCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.summary != widget.summary) {
+      _insight = null;
+      _error = null;
+    }
+  }
+
   Future<void> _analyze() async {
     if (widget.summary == null) return;
 
@@ -250,7 +259,7 @@ class _AIAnalysisCardState extends ConsumerState<AIAnalysisCard> {
         ],
 
         // Consejo
-        const Text('Consejo del Chef Financiero',
+        const Text('Consejo Financiero',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
         const SizedBox(height: 8),
         Container(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -1004,16 +1005,33 @@ class _AssistantChatSheetState extends ConsumerState<_AssistantChatSheet> {
                                       color: Color(0xFF00C896),
                                     ),
                                   )
-                                : Text(
-                                    msg.content,
-                                    style: TextStyle(
-                                      color: msg.isUser
-                                          ? Colors.black
-                                          : textColor,
-                                      fontSize: 13.5,
-                                      height: 1.4,
-                                    ),
-                                  ),
+                                : msg.isUser
+                                    ? Text(
+                                        msg.content,
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 13.5,
+                                          height: 1.4,
+                                        ),
+                                      )
+                                    : MarkdownBody(
+                                        data: msg.content,
+                                        styleSheet: MarkdownStyleSheet(
+                                          p: TextStyle(
+                                            color: textColor,
+                                            fontSize: 13.5,
+                                            height: 1.4,
+                                          ),
+                                          listBullet: TextStyle(
+                                            color: textColor,
+                                            fontSize: 13.5,
+                                          ),
+                                          strong: TextStyle(
+                                            color: textColor,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
                           ),
                         );
                       },
