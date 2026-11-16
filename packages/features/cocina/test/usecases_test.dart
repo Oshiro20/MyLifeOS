@@ -544,4 +544,57 @@ void main() {
       expect(matchesLow.length, lessThanOrEqualTo(1));
     });
   });
+
+  group('WhatCanICookUseCase', () {
+    test('executeWithMenu parsea objeto {"menus": ...}, pasos String y sinónimos',
+        () async {
+      final fake = FakeAIExtractor(
+        jsonResponse: '''```json
+{
+  "menus": [
+    {
+      "menu_numero": 1,
+      "platos": [
+        {
+          "nombre_receta": "Seco de pollo",
+          "descripcion": "Clásico casero",
+          "porciones": 2.0,
+          "tiempo_total_min": 35.0,
+          "tipo_comida": "segundo",
+          "ingredientes": [
+            {"nombre": "Pollo", "cantidad": "500", "unidad": "g"},
+            {"nombre": "Culantro", "cantidad": 1, "unidad": "taza"}
+          ],
+          "pasos": ["Licuar culantro", "Aderezar cebolla", "Cocinar pollo"]
+        }
+      ]
+    }
+  ]
+}
+```''',
+      );
+      final useCase = WhatCanICookUseCase(fake);
+      final res = await useCase.executeWithMenu(
+        inventory: const [
+          InventoryIngredient(
+            id: 'i1',
+            name: 'Pollo',
+            primaryCategory: 'Proteínas animales',
+            quantity: 1,
+            unit: 'kg',
+          ),
+        ],
+        mealPeriod: 'almuerzo',
+        components: ['platoFuerte'],
+        menuCount: 1,
+        budgetSaverMode: true,
+      );
+
+      expect(res, hasLength(1));
+      expect(res.first.menuNumber, 1);
+      expect(res.first.recipe.name, 'Seco de pollo');
+      expect(res.first.recipe.tipoComida, MealType.seco);
+      expect(res.first.recipe.instructions, hasLength(3));
+    });
+  });
 }

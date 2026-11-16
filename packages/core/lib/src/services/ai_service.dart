@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'connectivity_service.dart';
@@ -80,7 +81,7 @@ class GeminiService {
         'temperature': 0.4,
         'topK': 32,
         'topP': 1,
-        'maxOutputTokens': 4096,
+        'maxOutputTokens': 8192,
         if (expectJson) 'responseMimeType': 'application/json',
       },
     };
@@ -114,12 +115,16 @@ class GeminiService {
         .join();
   }
 
+  /// Genera hash determinístico entre ejecuciones para claves de caché.
+  static String _stableHash(String input) =>
+      sha256.convert(utf8.encode(input)).toString().substring(0, 20);
+
   /// Genera texto simple con soporte de caché offline y fallback vía Render Cloud.
   Future<String?> generateText({
     required String prompt,
     String? cacheKey,
   }) async {
-    final effectiveCacheKey = cacheKey ?? 'text_${prompt.hashCode}';
+    final effectiveCacheKey = cacheKey ?? 'text_${_stableHash(prompt)}';
 
     return _generateWithCache(
       cacheKey: effectiveCacheKey,
@@ -136,14 +141,37 @@ class GeminiService {
     List<String> mediaPaths = const [],
     bool expectJson = false,
   }) async {
+    if (!await _connectivity.isOnline()) {
+      debugPrint('[GeminiService] Sin conexión a internet; omitiendo llamada remota.');
+      return null;
+    }
+
     final mediaItems = <Map<String, String>>[];
     for (final path in mediaPaths) {
       final file = File(path);
       if (await file.exists()) {
-        final bytes = await file.readAsBytes();
+        final mime = _getMimeType(path);
+        var bytes = await file.readAsBytes();
+        // Comprimir imágenes > 700KB en memoria para evitar timeouts o payloads HTTP 413
+        if (mime.startsWith('image/') && bytes.length > 700 * 1024) {
+          try {
+            final compressed = await FlutterImageCompress.compressWithList(
+              bytes,
+              minWidth: 1280,
+              minHeight: 1280,
+              quality: 75,
+              format: CompressFormat.jpeg,
+            );
+            if (compressed.isNotEmpty && compressed.length < bytes.length) {
+              bytes = compressed;
+            }
+          } catch (e) {
+            debugPrint('[GeminiService] Compresión en memoria omitida: $e');
+          }
+        }
         mediaItems.add({
           'base64': base64Encode(bytes),
-          'mimeType': _getMimeType(path),
+          'mimeType': mime,
         });
       }
     }
@@ -435,11 +463,11 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
         mediaPaths: imagePaths,
         expectJson: true,
       ).timeout(
-        const Duration(seconds: 45),
+        const Duration(seconds: 75),
         onTimeout: () {
           throw TimeoutException(
-            'La IA tardó demasiado en responder. Intenta con imágenes más claras.',
-            const Duration(seconds: 45),
+            'La IA tardó demasiado en responder. Intenta con imágenes más claras o menos fotos.',
+            const Duration(seconds: 75),
           );
         },
       );
@@ -528,7 +556,8 @@ La respuesta DEBE ser solo el JSON.
     required List<String> garmentsDescription,
     String? userProfileContext,
   }) async {
-    final cacheKey = 'outfit_${occasion}_${garmentsDescription.hashCode}';
+    final cacheKey =
+        'outfit_${occasion}_${_stableHash(garmentsDescription.join('|'))}';
 
     return _generateWithCache(
       cacheKey: cacheKey,
@@ -735,9 +764,13 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (usa los "id" ex
   }
 
   String _getMimeType(String path) {
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg';
-    if (path.endsWith('.png')) return 'image/png';
-    if (path.endsWith('.mp4')) return 'video/mp4';
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.heic') || lower.endsWith('.heif')) return 'image/heic';
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.mov')) return 'video/quicktime';
     return 'application/octet-stream';
   }
 }

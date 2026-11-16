@@ -5,6 +5,7 @@ import '../entities/recipe.dart';
 import '../entities/chef_preferences.dart';
 import '../repositories/i_ai_recipe_extractor.dart';
 import '../../utils/ai_json_parser.dart';
+import 'extract_recipe_use_case.dart';
 
 /// Suggestion mode: what type of recipes to suggest
 enum SuggestionMode {
@@ -158,65 +159,41 @@ Basándote en estos ingredientes, sugiere $maxSuggestions recetas REALISTAS y AT
 3. Cada receta debe ser diferente y creativa
 4. Prioriza recetas que usen ingredientes que están por vencer
 5. Sé específico con cantidades y pasos
-6. ⚠️ IMPORTANTE: CADA receta DEBE tener AL MENOS 3 ingredientes reales en el array "ingredientes". NO devuelvas recetas vacías o sin ingredientes.
-7. Variedad: Incluye diferentes tipos de plato. DEBES mezclar entre:
-   - Postres (🍰): tortas, flanes, mazamorras, gelatinas
-   - Entradas (🥗): ceviches, ensaladas, causa, tiraditos
-   - Sopas (🍲): caldos, cremas, aguaditos
-   - Platos fuertes (🍛): arroces, tallarines, carnes
-   - Bebidas (🥤): jugos, chicha, limonadas, emolientes
-   - Snacks (🍿): botanas, pasabocas
-8. Para CADA receta incluye "cuisine_style" con el estilo de cocina (ej: "Peruana-sierra", "Italiana", "Selvática")
+6. CADA receta DEBE tener AL MENOS 3 ingredientes reales y 3 pasos.
+7. Para CADA receta incluye "cuisine_style" (ej: "Peruana-sierra", "Peruana-costa", "Italiana").
 
 📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
-IMPORTANTE: Devuelve SOLAMENTE el array JSON. Sin texto antes ni después. Sin backticks de markdown.
-
-[
-  {
-    "nombre_receta": "Arroz chaufa sencillo",
-    "descripcion": "Delicioso arroz chaufa peruano con huevo y cebollita china",
-    "porciones": 4,
-    "tiempo_preparacion_min": 10,
-    "tiempo_coccion_min": 20,
-    "tiempo_total_min": 30,
-    "dificultad": "Fácil",
-    "tipo_comida": "Almuerzo",
-    "cocina": "Peruana",
-    "cuisine_style": "Peruana-costa",
-    "ingredientes": [
-      {"nombre": "Arroz", "cantidad": 2, "unidad": "tazas"},
-      {"nombre": "Huevo", "cantidad": 3, "unidad": "unidades"},
-      {"nombre": "Cebolla china", "cantidad": 2, "unidad": "unidades"}
-    ],
-    "ingredientes_inferidos": ["aceite", "sal", "salsa de soya"],
-    "pasos": [
-      {"numero": 1, "descripcion": "Calentar el wok a fuego alto con un poco de aceite"},
-      {"numero": 2, "descripcion": "Agregar los huevos batidos y revolver"},
-      {"numero": 3, "descripcion": "Añadir el arroz salteado y mezclar todo"}
-    ],
-    "utensilios": ["wok", "cuchara de madera"],
-    "calorias_aproximadas": 350,
-    "tags": ["fácil", "peruano", "rápido"],
-    "ingredientes_disponibles": 8,
-    "ingredientes_totales": 10,
-    "nivel_confianza": "Alto",
-    "observaciones": "Puedes cocinar esto ahora con lo que tienes"
-  }
-]
-
-⚠️ REGLAS OBLIGATORIAS PARA EL JSON:
-1. El resultado DEBE ser un array JSON válido que empieza con [ y termina con ]
-2. NO incluyas texto fuera del array JSON
-3. NO uses backticks (```) ni markdown
-4. TODOS los campos son obligatorios en cada receta
-5. "cantidad" debe ser NÚMERO (ej: 2, 1.5, 0.25)
-6. "unidad" en ESPAÑOL (ej: "tazas", "unidades", "gramos")
-7. "ingredientes": array con AL MENOS 3 ingredientes
-8. "pasos": array con AL MENOS 3 pasos
-9. "tiempo_total_min": número realista entre 15 y 180
-10. "porciones": número entero entre 1 y 12
-11. NO uses ingredientes que el usuario no le gustan. Si son esenciales, sustitúyelos.
-12. Incluye "cuisine_style" con el estilo de cocina
+Devuelve un único objeto JSON con clave "recetas":
+{
+  "recetas": [
+    {
+      "nombre_receta": "Arroz chaufa sencillo",
+      "descripcion": "Arroz chaufa peruano con huevo y cebollita china",
+      "porciones": 4,
+      "tiempo_preparacion_min": 10,
+      "tiempo_coccion_min": 20,
+      "tiempo_total_min": 30,
+      "dificultad": "Fácil",
+      "tipo_comida": "seco",
+      "cocina": "Peruana",
+      "cuisine_style": "Peruana-costa",
+      "ingredientes": [
+        {"nombre": "Arroz", "cantidad": 2, "unidad": "tazas"},
+        {"nombre": "Huevo", "cantidad": 3, "unidad": "unidades"},
+        {"nombre": "Cebolla china", "cantidad": 2, "unidad": "unidades"}
+      ],
+      "ingredientes_inferidos": ["aceite", "sal", "salsa de soya"],
+      "pasos": [
+        {"numero": 1, "descripcion": "Calentar el wok a fuego alto con un poco de aceite"},
+        {"numero": 2, "descripcion": "Agregar los huevos batidos y revolver"},
+        {"numero": 3, "descripcion": "Añadir el arroz salteado y mezclar todo"}
+      ],
+      "utensilios": ["wok", "cuchara de madera"],
+      "calorias_aproximadas": 350,
+      "tags": ["fácil", "peruano", "rápido"]
+    }
+  ]
+}
 
 ${cuisineContext.isNotEmpty ? cuisineContext : ''}
 ${dislikedWarning.isNotEmpty ? dislikedWarning : ''}
@@ -224,7 +201,7 @@ ${recentlyUsedWarning.isNotEmpty ? recentlyUsedWarning : ''}
 ${modeContext.isNotEmpty ? modeContext : ''}
 ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
 
-🍳 AHORA DEVUELVE SOLAMENTE EL ARRAY JSON CON LAS $maxSuggestions RECETAS:''';
+🍳 AHORA DEVUELVE SOLAMENTE EL OBJETO JSON:{"recetas": [...]}''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
@@ -236,168 +213,20 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
         throw Exception('La IA no pudo generar sugerencias');
       }
 
-      // Debug: log raw response
-      debugPrint('📄 WhatCanICook raw response (${jsonString.length} chars)');
-      if (jsonString.length < 1000) {
-        debugPrint('📄 Full: $jsonString');
-      } else {
-        debugPrint('📄 First 1000: ${jsonString.substring(0, 1000)}');
-      }
-
-      // Try multiple extraction strategies in order of preference
-      dynamic decoded;
-      List<String> extractionAttempts = [
-        _extractJsonFromResponse(jsonString, expectList: true),
-        _aggressiveJsonClean(jsonString),
-        _bruteForceJsonExtract(jsonString),
-      ];
-
-      bool parseSuccess = false;
-      for (int i = 0; i < extractionAttempts.length; i++) {
-        final attempt = extractionAttempts[i];
-        if (attempt.isEmpty || attempt.length < 2) continue;
-
-        debugPrint(
-            '🧹 Attempt ${i + 1} (${attempt.length} chars): ${attempt.substring(0, attempt.length > 100 ? 100 : attempt.length)}');
-        try {
-          decoded = jsonDecode(attempt);
-          debugPrint('✅ Parse succeeded on attempt ${i + 1}');
-          parseSuccess = true;
-          break;
-        } catch (e) {
-          debugPrint('❌ Attempt ${i + 1} failed: $e');
-        }
-      }
-
-      if (!parseSuccess) {
-        throw Exception(
-          'La IA devolvió un formato inválido.\n\n'
-          'Consejos para mejores resultados:\n'
-          '• Ten al menos 5-7 ingredientes en tu despensa\n'
-          '• Incluye ingredientes variados (proteínas, verduras, granos)\n'
-          '• Toca "Reintentar" para probar de nuevo',
-        );
-      }
-
-      // Handle both List and single Map (wrap in list if single)
-      List<dynamic> recipeList;
-      if (decoded is List) {
-        recipeList = decoded;
-      } else if (decoded is Map<String, dynamic>) {
-        debugPrint('⚠️ Gemini returned a single object, wrapping in list');
-        recipeList = [decoded];
-      } else {
-        throw Exception(
-          'Formato inesperado de la IA (tipo: ${decoded.runtimeType}). '
-          'Intenta de nuevo.',
-        );
-      }
-
-      if (recipeList.isEmpty) {
-        throw Exception(
-            'La IA no encontró recetas con tus ingredientes actuales.');
-      }
-
+      final parsedEntries = _decodeSuggestionPayload(jsonString);
       final suggestions = <RecipeSuggestion>[];
-
-      for (final recipeData in recipeList) {
-        if (recipeData is! Map<String, dynamic>) continue;
-
-        final name = recipeData['nombre_receta'] as String? ?? 'Receta';
-        final description = recipeData['descripcion'] as String? ?? '';
-        final tiempoTotal =
-            (recipeData['tiempo_total_min'] as num?)?.toInt() ?? 30;
-        final porciones = (recipeData['porciones'] as num?)?.toInt() ?? 2;
-        final ingredientesDisponibles =
-            (recipeData['ingredientes_disponibles'] as num?)?.toInt() ?? 0;
-        final ingredientesTotales =
-            (recipeData['ingredientes_totales'] as num?)?.toInt() ?? 0;
-
-        // Parse ingredients
-        final ingredients = <RecipeIngredient>[];
-        final recipeId =
-            'ai_${DateTime.now().microsecondsSinceEpoch}_${suggestions.length}';
-        final rawIngredients =
-            recipeData['ingredientes'] as List<dynamic>? ?? [];
-
-        for (int i = 0; i < rawIngredients.length; i++) {
-          final item = rawIngredients[i] as Map<String, dynamic>;
-          final ingName = item['nombre'] as String? ?? 'Ingrediente $i';
-          final rawQty = item['cantidad'];
-          final qty = rawQty is num
-              ? rawQty.toDouble()
-              : (rawQty is String ? double.tryParse(rawQty) ?? 1.0 : 1.0);
-          final unit = item['unidad'] as String? ?? 'unidades';
-
-          ingredients.add(RecipeIngredient(
-            id: '${recipeId}_ing_$i',
-            recipeId: recipeId,
-            ingredientName: ingName,
-            quantity: qty,
-            unit: unit,
-          ));
-        }
-
-        // Skip empty recipes (no ingredients or too few)
-        if (ingredients.length < 2) {
-          debugPrint(
-              '⚠️ Skipping empty recipe: $name (${ingredients.length} ingredients)');
-          continue;
-        }
-
-        // Parse steps
-        final steps = <String>[];
-        final rawSteps = recipeData['pasos'] as List<dynamic>? ?? [];
-        final sortedSteps = List<Map<String, dynamic>>.from(rawSteps)
-          ..sort((a, b) {
-            final numA = (a['numero'] as num?)?.toInt() ?? 0;
-            final numB = (b['numero'] as num?)?.toInt() ?? 0;
-            return numA.compareTo(numB);
-          });
-
-        for (final step in sortedSteps) {
-          steps.add(step['descripcion'] as String? ?? '');
-        }
-
-        // Parse tags
-        final rawTags = recipeData['tags'] as List<dynamic>? ?? [];
-        final tags = rawTags.map((e) => e.toString()).toList();
-
-        // Parse additional fields
-        final utensilios = (recipeData['utensilios'] as List<dynamic>?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [];
-        final ingredientesInferidos =
-            (recipeData['ingredientes_inferidos'] as List<dynamic>?)
-                    ?.map((e) => e.toString())
-                    .toList() ??
-                [];
-        final caloriasAproximadas =
-            (recipeData['calorias_aproximadas'] as num?)?.toInt();
-
-        final recipe = Recipe(
-          id: recipeId,
-          name: name,
-          description: description,
-          durationMinutes: tiempoTotal,
-          servings: porciones,
-          instructions: steps,
-          ingredients: ingredients,
-          tags: tags,
-          createdAt: DateTime.now(),
-          utensilios: utensilios,
-          ingredientesInferidos: ingredientesInferidos,
-          caloriasAproximadas: caloriasAproximadas,
+      for (final entry in parsedEntries) {
+        final parsed = _parseSuggestionEntry(
+          entry.recipeMap,
+          suggestions.length,
+          menuNumber: entry.menuNumber,
         );
+        if (parsed != null) suggestions.add(parsed);
+      }
 
-        suggestions.add(RecipeSuggestion(
-          recipe: recipe,
-          matchPercentage: ingredientesTotales > 0
-              ? ((ingredientesDisponibles / ingredientesTotales) * 100).round()
-              : 0,
-          missingIngredients: ingredientesTotales - ingredientesDisponibles,
-        ));
+      if (suggestions.isEmpty) {
+        throw Exception(
+            'La IA no devolvió recetas válidas con tus ingredientes actuales.');
       }
 
       return suggestions;
@@ -406,6 +235,248 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
       debugPrint('📋 Stack trace: $stackTrace');
       throw Exception('Error al generar sugerencias con IA: $e');
     }
+  }
+
+  /// Decodifica respuestas tanto en formato `{"menus": [...]}` como `{"recetas": [...]}` o `[...]`.
+  List<({Map<String, dynamic> recipeMap, int? menuNumber})>
+      _decodeSuggestionPayload(String jsonString) {
+    dynamic decoded;
+    final candidates = [
+      _extractJsonFromResponse(jsonString, expectList: false),
+      _extractJsonFromResponse(jsonString, expectList: true),
+      _aggressiveJsonClean(jsonString),
+      _bruteForceJsonExtract(jsonString),
+    ];
+
+    bool parseSuccess = false;
+    for (final attempt in candidates) {
+      if (attempt.trim().length < 2) continue;
+      try {
+        decoded = jsonDecode(attempt);
+        parseSuccess = true;
+        break;
+      } catch (_) {}
+    }
+
+    if (!parseSuccess) {
+      throw Exception(
+        'La IA devolvió un formato inválido.\n\n'
+        'Consejos para mejores resultados:\n'
+        '• Ten al menos 5-7 ingredientes en tu despensa\n'
+        '• Incluye ingredientes variados\n'
+        '• Toca "Regenerar" para probar de nuevo',
+      );
+    }
+
+    final results = <({Map<String, dynamic> recipeMap, int? menuNumber})>[];
+
+    if (decoded is Map) {
+      final root = Map<String, dynamic>.from(decoded);
+      if (root['menus'] is List) {
+        final menus = root['menus'] as List;
+        for (int mIdx = 0; mIdx < menus.length; mIdx++) {
+          final menuItem = menus[mIdx];
+          if (menuItem is! Map) continue;
+          final menuMap = Map<String, dynamic>.from(menuItem);
+          final menuNum =
+              (menuMap['menu_numero'] as num?)?.toInt() ?? (mIdx + 1);
+          final platos = menuMap['platos'] ?? menuMap['recetas'];
+          if (platos is List) {
+            for (final plato in platos) {
+              if (plato is Map) {
+                results.add((
+                  recipeMap: Map<String, dynamic>.from(plato),
+                  menuNumber: menuNum,
+                ));
+              }
+            }
+          } else if (menuMap.containsKey('nombre_receta')) {
+            results.add((recipeMap: menuMap, menuNumber: menuNum));
+          }
+        }
+        return results;
+      }
+
+      final listField =
+          root['recetas'] ?? root['recipes'] ?? root['suggestions'];
+      if (listField is List) {
+        for (final item in listField) {
+          if (item is Map) {
+            final map = Map<String, dynamic>.from(item);
+            results.add((
+              recipeMap: map,
+              menuNumber: (map['menu_numero'] as num?)?.toInt(),
+            ));
+          }
+        }
+        return results;
+      }
+
+      results.add((
+        recipeMap: root,
+        menuNumber: (root['menu_numero'] as num?)?.toInt(),
+      ));
+      return results;
+    }
+
+    if (decoded is List) {
+      for (final item in decoded) {
+        if (item is Map) {
+          final map = Map<String, dynamic>.from(item);
+          results.add((
+            recipeMap: map,
+            menuNumber: (map['menu_numero'] as num?)?.toInt(),
+          ));
+        }
+      }
+      return results;
+    }
+
+    throw Exception('Formato inesperado de la IA (${decoded.runtimeType}).');
+  }
+
+  RecipeSuggestion? _parseSuggestionEntry(
+    Map<String, dynamic> recipeData,
+    int index, {
+    int? menuNumber,
+  }) {
+    final name = recipeData['nombre_receta']?.toString().trim();
+    if (name == null || name.isEmpty) return null;
+
+    final description = recipeData['descripcion']?.toString() ?? '';
+    final rawTiempo = recipeData['tiempo_total_min'];
+    final tiempoTotal = rawTiempo is num
+        ? rawTiempo.round()
+        : (rawTiempo is String ? int.tryParse(rawTiempo) ?? 30 : 30);
+    final rawPorciones = recipeData['porciones'];
+    final porciones = rawPorciones is num
+        ? rawPorciones.round()
+        : (rawPorciones is String ? int.tryParse(rawPorciones) ?? 2 : 2);
+    final ingredientesDisponibles =
+        (recipeData['ingredientes_disponibles'] as num?)?.toInt() ?? 0;
+    final ingredientesTotales =
+        (recipeData['ingredientes_totales'] as num?)?.toInt() ?? 0;
+
+    final ingredients = <RecipeIngredient>[];
+    final recipeId = 'ai_${DateTime.now().microsecondsSinceEpoch}_$index';
+    final rawIngField = recipeData['ingredientes'];
+    final rawIngredients = rawIngField is List ? rawIngField : const [];
+
+    for (int i = 0; i < rawIngredients.length; i++) {
+      final rawItem = rawIngredients[i];
+      if (rawItem is String && rawItem.trim().isNotEmpty) {
+        ingredients.add(RecipeIngredient(
+          id: '${recipeId}_ing_$i',
+          recipeId: recipeId,
+          ingredientName: rawItem.trim(),
+          quantity: 1.0,
+          unit: 'unidades',
+        ));
+        continue;
+      }
+      if (rawItem is! Map) continue;
+      final item = Map<String, dynamic>.from(rawItem);
+      final ingName = item['nombre']?.toString().trim() ?? 'Ingrediente $i';
+      final rawQty = item['cantidad'];
+      final qty = rawQty is num
+          ? rawQty.toDouble()
+          : (rawQty is String
+              ? double.tryParse(rawQty.replaceAll(',', '.')) ?? 1.0
+              : 1.0);
+      final unit = item['unidad']?.toString() ?? 'unidades';
+
+      ingredients.add(RecipeIngredient(
+        id: '${recipeId}_ing_$i',
+        recipeId: recipeId,
+        ingredientName: ingName,
+        quantity: qty,
+        unit: unit,
+      ));
+    }
+
+    if (ingredients.length < 2) {
+      debugPrint('⚠️ Skipping empty recipe: $name');
+      return null;
+    }
+
+    final steps = <String>[];
+    final rawStepsField = recipeData['pasos'];
+    final rawSteps = rawStepsField is List ? rawStepsField : const [];
+    final mapSteps = <Map<String, dynamic>>[];
+    final stringSteps = <String>[];
+
+    for (final s in rawSteps) {
+      if (s is Map) {
+        mapSteps.add(Map<String, dynamic>.from(s));
+      } else if (s != null && s.toString().trim().isNotEmpty) {
+        stringSteps.add(s.toString().trim());
+      }
+    }
+
+    if (mapSteps.isNotEmpty) {
+      mapSteps.sort((a, b) {
+        final numA = (a['numero'] as num?)?.toInt() ?? 0;
+        final numB = (b['numero'] as num?)?.toInt() ?? 0;
+        return numA.compareTo(numB);
+      });
+      for (final step in mapSteps) {
+        final desc = step['descripcion']?.toString().trim() ?? '';
+        if (desc.isNotEmpty) steps.add(desc);
+      }
+    } else {
+      steps.addAll(stringSteps);
+    }
+
+    final rawTags = recipeData['tags'];
+    final tags = rawTags is List
+        ? rawTags.map((e) => e.toString()).toList()
+        : const <String>[];
+
+    final rawUtensilios = recipeData['utensilios'];
+    final utensilios = rawUtensilios is List
+        ? rawUtensilios.map((e) => e.toString()).toList()
+        : const <String>[];
+
+    final rawInferidos = recipeData['ingredientes_inferidos'];
+    final ingredientesInferidos = rawInferidos is List
+        ? rawInferidos.map((e) => e.toString()).toList()
+        : const <String>[];
+
+    final rawCal = recipeData['calorias_aproximadas'];
+    final caloriasAproximadas = rawCal is num
+        ? rawCal.round()
+        : (rawCal is String ? int.tryParse(rawCal) : null);
+
+    final tipoComidaStr = recipeData['tipo_comida']?.toString();
+    final mealType = tipoComidaStr != null
+        ? ExtractRecipeUseCase.parseMealType(tipoComidaStr)
+        : null;
+
+    final recipe = Recipe(
+      id: recipeId,
+      name: name,
+      description: description,
+      durationMinutes: tiempoTotal,
+      servings: porciones,
+      instructions: steps,
+      ingredients: ingredients,
+      tags: tags,
+      createdAt: DateTime.now(),
+      utensilios: utensilios,
+      ingredientesInferidos: ingredientesInferidos,
+      caloriasAproximadas: caloriasAproximadas,
+      tipoComida: mealType,
+    );
+
+    return RecipeSuggestion(
+      recipe: recipe,
+      matchPercentage: ingredientesTotales > 0
+          ? ((ingredientesDisponibles / ingredientesTotales) * 100).round()
+          : 0,
+      missingIngredients:
+          (ingredientesTotales - ingredientesDisponibles).clamp(0, 999),
+      menuNumber: menuNumber,
+    );
   }
 
   /// Robustly extracts JSON from a response string
@@ -496,7 +567,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     return text;
   }
 
-  /// NEW: Execute with personalized menu components
+  /// NEW: Execute with personalized menu components (loteado automático y objeto JSON).
   Future<List<RecipeSuggestion>> executeWithMenu({
     required List<InventoryIngredient> inventory,
     required dynamic mealPeriod, // MealPeriod enum
@@ -506,62 +577,117 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     String? cuisinePreference,
     List<String>? recentlyUsedRecipeNames,
     ChefPreferences? userPreferences,
+    bool budgetSaverMode = false,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
           'No tienes ingredientes en tu inventario. Agrega algunos primero.');
     }
 
+    final safeComponents =
+        components.isNotEmpty ? components : const ['platoFuerte'];
+    final safeMenuCount = menuCount.clamp(1, 5);
+    final totalRecipes = safeMenuCount * safeComponents.length;
+
+    // Si supera 6 recetas en una sola llamada, dividir en lotes de máximo 2 menús
+    // para no truncar tokens ni superar timeouts.
+    if (totalRecipes > 6 && safeMenuCount > 2) {
+      final results = <RecipeSuggestion>[];
+      final usedNames = <String>[...?recentlyUsedRecipeNames];
+      int nextMenuIndex = 1;
+      int remaining = safeMenuCount;
+
+      while (remaining > 0) {
+        final batchMenus = remaining >= 2 ? 2 : 1;
+        final batch = await _executeMenuBatch(
+          inventory: inventory,
+          mealPeriod: mealPeriod,
+          components: safeComponents,
+          batchMenuCount: batchMenus,
+          startMenuNumber: nextMenuIndex,
+          dislikedIngredients: dislikedIngredients,
+          cuisinePreference: cuisinePreference,
+          recentlyUsedRecipeNames: usedNames,
+          userPreferences: userPreferences,
+          budgetSaverMode: budgetSaverMode,
+        );
+        for (final s in batch) {
+          results.add(s);
+          usedNames.add(s.recipe.name);
+        }
+        nextMenuIndex += batchMenus;
+        remaining -= batchMenus;
+      }
+      return results;
+    }
+
+    return _executeMenuBatch(
+      inventory: inventory,
+      mealPeriod: mealPeriod,
+      components: safeComponents,
+      batchMenuCount: safeMenuCount,
+      startMenuNumber: 1,
+      dislikedIngredients: dislikedIngredients,
+      cuisinePreference: cuisinePreference,
+      recentlyUsedRecipeNames: recentlyUsedRecipeNames,
+      userPreferences: userPreferences,
+      budgetSaverMode: budgetSaverMode,
+    );
+  }
+
+  Future<List<RecipeSuggestion>> _executeMenuBatch({
+    required List<InventoryIngredient> inventory,
+    required dynamic mealPeriod,
+    required List<dynamic> components,
+    required int batchMenuCount,
+    required int startMenuNumber,
+    List<String>? dislikedIngredients,
+    String? cuisinePreference,
+    List<String>? recentlyUsedRecipeNames,
+    ChefPreferences? userPreferences,
+    bool budgetSaverMode = false,
+  }) async {
     final inventoryDescription = inventory.map((item) {
       return '- ${item.name}: ${item.quantity} ${item.unit}${item.preparation.isNotEmpty ? ' (${item.preparation})' : ''}';
     }).join('\n');
 
-    // Build component requirements string
     final componentNames = components.map((c) {
-      // MenuComponent has: label, emoji, mealTypeName
-      final label =
-          c.toString().split('.').last; // e.g., "MenuComponent.entrada"
-      final Map<String, String> componentMap = {
+      final label = c.toString().split('.').last;
+      const componentMap = {
         'entrada': '🥗 Entrada',
         'sopa': '🍲 Sopa',
-        'platoFuerte': '🥘 Plato Fuerte (Segundo)',
+        'platoFuerte': '🥘 Plato Fuerte (seco/segundo)',
         'refresco': '🥤 Refresco/Bebida',
         'postre': '🍰 Postre',
       };
       return componentMap[label] ?? label;
     }).join(', ');
 
-    // Map components to MealType names
     final mealTypeNames = components.map((c) {
       final label = c.toString().split('.').last;
-      final Map<String, String> typeMap = {
+      const typeMap = {
         'entrada': 'entrada',
         'sopa': 'sopa',
-        'platoFuerte': 'almuerzo',
+        'platoFuerte': 'seco',
         'refresco': 'bebida',
         'postre': 'postre',
       };
-      return typeMap[label] ?? 'almuerzo';
+      return typeMap[label] ?? 'seco';
     }).toSet();
 
     final mealTypeList = mealTypeNames.join(', ');
-
     final mealPeriodName = mealPeriod.toString().split('.').last;
-    final mealPeriodEmoji = {
+    const mealPeriodEmoji = {
       'desayuno': '🌅',
       'almuerzo': '🍛',
       'cena': '🌙',
     };
     final emoji = mealPeriodEmoji[mealPeriodName] ?? '🍽️';
 
-    // Dinner-specific note: light dishes only
     String dinnerNote = '';
     if (mealPeriodName == 'cena') {
       dinnerNote = '''
-🌙 IMPORTANTE: Es para la CENA. Sugiere platos LIGEROS y fáciles de digerir:
-- Sopas livianas, ensaladas, sandwiches, tortillas, ceviches pequeños
-- EVITA platos pesados: frituras, carnes rojas grandes, guisos pesados
-- Porciones moderadas, tiempos de preparación cortos
+🌙 IMPORTANTE: Es para la CENA. Sugiere platos LIGEROS y fáciles de digerir (sopas livianas, ensaladas, sandwiches, tortillas). Evita frituras o guisos muy pesados.
 ''';
     }
 
@@ -576,37 +702,67 @@ ${dislikedIngredients.map((e) => '- $e').join('\n')}
     String cuisineContext = '';
     if (cuisinePreference != null && cuisinePreference.isNotEmpty) {
       cuisineContext = '''
-🌍 PREFERENCIA CULINARIA: "$cuisinePreference"
-Prioriza recetas de esta cocina.
+🌍 PREFERENCIA CULINARIA: "$cuisinePreference". Prioriza recetas de esta cocina.
 ''';
     }
 
     String recentlyUsedWarning = '';
     if (recentlyUsedRecipeNames != null && recentlyUsedRecipeNames.isNotEmpty) {
       recentlyUsedWarning = '''
-📅 RECETAS USADAS RECIENTEMENTE (NO REPETIR):
-${recentlyUsedRecipeNames.take(10).map((e) => '- $e').join('\n')}
+📅 RECETAS YA USADAS (NO REPETIR):
+${recentlyUsedRecipeNames.take(12).map((e) => '- $e').join('\n')}
 ''';
     }
 
-    final totalRecipes = menuCount * components.length;
+    final budgetNote = budgetSaverMode
+        ? '💰 MODO AHORRO ACTIVO: Prioriza recetas económicas usando al máximo lo que ya existe en la despensa y minimizando ingredientes por comprar.\n'
+        : '';
+
     final userPrefsContext = _buildUserPrefsContext(userPreferences);
+    final endMenuNumber = startMenuNumber + batchMenuCount - 1;
 
     final prompt = '''
-$emoji Chef peruano. Genera $totalRecipes recetas JSON para $mealPeriodName.
+$emoji Chef peruano. Genera EXACTAMENTE $batchMenuCount menú(s) completo(s) numerado(s) del $startMenuNumber al $endMenuNumber para $mealPeriodName.
+Cada menú DEBE incluir estos componentes en su lista "platos": $componentNames (tipos válidos: $mealTypeList).
 
 INGREDIENTES DISPONIBLES EN DESPENSA:
 $inventoryDescription
 
-COMPONENTES: $componentNames
-TIPOS: $mealTypeList
-$dinnerNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
-REGLAS: recetas peruanas reales priorizando los ingredientes disponibles, NO repetir, tipos validos: entrada/sopa/seco/postre/bebida/mazamorra, min 3 ingredientes y 3 pasos.
+$dinnerNote$budgetNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
+REGLAS:
+- Recetas peruanas reales priorizando los ingredientes disponibles, SIN repetir platos.
+- Cada plato DEBE tener mínimo 2 ingredientes reales y 3 pasos concisos.
+- "tipo_comida" debe coincidir con: entrada, sopa, seco, postre, bebida, mazamorra, desayuno, almuerzo o cena.
+- Devuelve ÚNICAMENTE un objeto JSON válido con clave "menus" (sin texto extra ni markdown).
 
-FORMATO JSON array exacto:
-[{"nombre_receta":"Nombre","descripcion":"Desc","porciones":4,"tiempo_preparacion_min":10,"tiempo_coccion_min":20,"tiempo_total_min":30,"dificultad":"Facil","tipo_comida":"seco","cocina":"Peruana","cuisine_style":"Peruana","ingredientes":[{"nombre":"Ing","cantidad":1,"unidad":"unidades"}],"ingredientes_inferidos":["sal"],"pasos":[{"numero":1,"descripcion":"Paso"}],"utensilios":["olla"],"calorias_aproximadas":300,"tags":["tag"],"ingredientes_disponibles":2,"ingredientes_totales":3,"nivel_confianza":"Alto","observaciones":"Nota"}]
-
-Genera SOLO el array JSON:''';
+FORMATO JSON EXACTO:
+{
+  "menus": [
+    {
+      "menu_numero": $startMenuNumber,
+      "platos": [
+        {
+          "nombre_receta": "Nombre",
+          "descripcion": "Descripción corta",
+          "porciones": 4,
+          "tiempo_preparacion_min": 10,
+          "tiempo_coccion_min": 20,
+          "tiempo_total_min": 30,
+          "dificultad": "Fácil",
+          "tipo_comida": "seco",
+          "cocina": "Peruana",
+          "cuisine_style": "Peruana",
+          "ingredientes": [{"nombre": "Ingrediente", "cantidad": 1, "unidad": "unidades"}],
+          "ingredientes_inferidos": ["sal", "aceite"],
+          "pasos": [{"numero": 1, "descripcion": "Paso conciso"}],
+          "utensilios": ["olla"],
+          "calorias_aproximadas": 350,
+          "tags": ["peruana"]
+        }
+      ]
+    }
+  ]
+}''';
 
     try {
       final jsonString = await aiExtractor.extractRecipeJson(
@@ -619,166 +775,26 @@ Genera SOLO el array JSON:''';
       }
 
       debugPrint('📄 executeWithMenu response (${jsonString.length} chars)');
-      if (jsonString.length < 2000) {
-        debugPrint('📄 Full: $jsonString');
-      } else {
-        debugPrint('📄 First 2000: ${jsonString.substring(0, 2000)}');
-      }
 
-      // Parse JSON with multiple extraction strategies
-      dynamic decoded;
-      List<String> extractionAttempts = [
-        _extractJsonFromResponse(jsonString, expectList: true),
-        _aggressiveJsonClean(jsonString),
-        _bruteForceJsonExtract(jsonString),
-      ];
-
-      bool parseSuccess = false;
-      for (int i = 0; i < extractionAttempts.length; i++) {
-        final attempt = extractionAttempts[i];
-        if (attempt.isEmpty || attempt.length < 2) continue;
-
-        debugPrint('🧹 JSON parse attempt ${i + 1} (${attempt.length} chars)');
-        try {
-          decoded = jsonDecode(attempt);
-          debugPrint('✅ Parse succeeded on attempt ${i + 1}');
-          parseSuccess = true;
-          break;
-        } catch (e) {
-          debugPrint('❌ Attempt ${i + 1} failed: $e');
-        }
-      }
-
-      if (!parseSuccess) {
-        throw Exception(
-          'La IA devolvió un formato inválido.\n\n'
-          'Consejos:\n'
-          '• Ten al menos 5-7 ingredientes en tu despensa\n'
-          '• Incluye ingredientes variados\n'
-          '• Toca "Regenerar" para probar de nuevo',
-        );
-      }
-
-      List<dynamic> recipeList;
-      if (decoded is List) {
-        recipeList = decoded;
-      } else if (decoded is Map<String, dynamic>) {
-        recipeList = [decoded];
-      } else {
-        throw Exception(
-            'Formato inesperado de la IA (tipo: ${decoded.runtimeType})');
-      }
-
-      if (recipeList.isEmpty) {
-        throw Exception(
-            'La IA no encontró recetas con tus ingredientes actuales.');
-      }
-
+      final parsedEntries = _decodeSuggestionPayload(jsonString);
       final suggestions = <RecipeSuggestion>[];
-
-      for (final recipeData in recipeList) {
-        if (recipeData is! Map<String, dynamic>) continue;
-
-        final name = recipeData['nombre_receta'] as String? ?? 'Receta';
-        final description = recipeData['descripcion'] as String? ?? '';
-        final tiempoTotal =
-            (recipeData['tiempo_total_min'] as num?)?.toInt() ?? 30;
-        final porciones = (recipeData['porciones'] as num?)?.toInt() ?? 2;
-        final ingredientesDisponibles =
-            (recipeData['ingredientes_disponibles'] as num?)?.toInt() ?? 0;
-        final ingredientesTotales =
-            (recipeData['ingredientes_totales'] as num?)?.toInt() ?? 0;
-
-        final ingredients = <RecipeIngredient>[];
-        final recipeId =
-            'ai_${DateTime.now().microsecondsSinceEpoch}_${suggestions.length}';
-        final rawIngredients =
-            recipeData['ingredientes'] as List<dynamic>? ?? [];
-
-        for (int i = 0; i < rawIngredients.length; i++) {
-          final item = rawIngredients[i] as Map<String, dynamic>;
-          final ingName = item['nombre'] as String? ?? 'Ingrediente $i';
-          final rawQty = item['cantidad'];
-          final qty = rawQty is num
-              ? rawQty.toDouble()
-              : (rawQty is String ? double.tryParse(rawQty) ?? 1.0 : 1.0);
-          final unit = item['unidad'] as String? ?? 'unidades';
-
-          ingredients.add(RecipeIngredient(
-            id: '${recipeId}_ing_$i',
-            recipeId: recipeId,
-            ingredientName: ingName,
-            quantity: qty,
-            unit: unit,
-          ));
-        }
-
-        if (ingredients.length < 2) {
-          debugPrint('⚠️ Skipping empty recipe: $name');
-          continue;
-        }
-
-        final steps = <String>[];
-        final rawSteps = recipeData['pasos'] as List<dynamic>? ?? [];
-        final sortedSteps = List<Map<String, dynamic>>.from(rawSteps)
-          ..sort((a, b) {
-            final numA = (a['numero'] as num?)?.toInt() ?? 0;
-            final numB = (b['numero'] as num?)?.toInt() ?? 0;
-            return numA.compareTo(numB);
-          });
-
-        for (final step in sortedSteps) {
-          steps.add(step['descripcion'] as String? ?? '');
-        }
-
-        final rawTags = recipeData['tags'] as List<dynamic>? ?? [];
-        final tags = rawTags.map((e) => e.toString()).toList();
-        final utensilios = (recipeData['utensilios'] as List<dynamic>?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [];
-        final ingredientesInferidos =
-            (recipeData['ingredientes_inferidos'] as List<dynamic>?)
-                    ?.map((e) => e.toString())
-                    .toList() ??
-                [];
-        final caloriasAproximadas =
-            (recipeData['calorias_aproximadas'] as num?)?.toInt();
-
-        // Map tipo_comida string to MealType enum
-        MealType? mealType;
-        final tipoComidaStr =
-            (recipeData['tipo_comida'] as String?)?.toLowerCase();
-        if (tipoComidaStr != null) {
-          mealType = MealType.values.cast<MealType?>().firstWhere(
-                (m) => m!.name == tipoComidaStr,
-                orElse: () => null,
-              );
-        }
-
-        final recipe = Recipe(
-          id: recipeId,
-          name: name,
-          description: description,
-          durationMinutes: tiempoTotal,
-          servings: porciones,
-          instructions: steps,
-          ingredients: ingredients,
-          tags: tags,
-          createdAt: DateTime.now(),
-          utensilios: utensilios,
-          ingredientesInferidos: ingredientesInferidos,
-          caloriasAproximadas: caloriasAproximadas,
-          tipoComida: mealType,
+      for (final entry in parsedEntries) {
+        final effectiveMenuNum = entry.menuNumber != null
+            ? (entry.menuNumber! >= startMenuNumber
+                ? entry.menuNumber!
+                : startMenuNumber + entry.menuNumber! - 1)
+            : startMenuNumber + (suggestions.length ~/ components.length);
+        final parsed = _parseSuggestionEntry(
+          entry.recipeMap,
+          suggestions.length,
+          menuNumber: effectiveMenuNum,
         );
+        if (parsed != null) suggestions.add(parsed);
+      }
 
-        suggestions.add(RecipeSuggestion(
-          recipe: recipe,
-          matchPercentage: ingredientesTotales > 0
-              ? ((ingredientesDisponibles / ingredientesTotales) * 100).round()
-              : 0,
-          missingIngredients: ingredientesTotales - ingredientesDisponibles,
-        ));
+      if (suggestions.isEmpty) {
+        throw Exception(
+            'La IA no encontró recetas válidas con tus ingredientes actuales.');
       }
 
       return suggestions;
@@ -812,6 +828,21 @@ Genera SOLO el array JSON:''';
       prefsParts.add(
           'Restricciones: ${userPreferences.dietaryRestrictions.join(", ")}');
     }
+    if (userPreferences.wantsSoup != null) {
+      prefsParts.add(userPreferences.wantsSoup!
+          ? 'Incluir sopa cuando aplique'
+          : 'Evitar sopas');
+    }
+    if (userPreferences.wantsDessert != null) {
+      prefsParts.add(userPreferences.wantsDessert!
+          ? 'Incluir opción de postre'
+          : 'Sin postre');
+    }
+    if (userPreferences.wantsDrink != null) {
+      prefsParts.add(userPreferences.wantsDrink!
+          ? 'Incluir bebida/refresco'
+          : 'Sin bebida');
+    }
     if (prefsParts.isEmpty) return '';
     return '''
 👤 PREFERENCIAS PERSONALES DEL USUARIO:
@@ -826,11 +857,13 @@ class RecipeSuggestion {
   final Recipe recipe;
   final int matchPercentage; // 0-100
   final int missingIngredients;
+  final int? menuNumber;
 
   const RecipeSuggestion({
     required this.recipe,
     required this.matchPercentage,
     required this.missingIngredients,
+    this.menuNumber,
   });
 
   Map<String, dynamic> toJson() {
@@ -838,14 +871,16 @@ class RecipeSuggestion {
       'recipe': recipe.toJson(),
       'matchPercentage': matchPercentage,
       'missingIngredients': missingIngredients,
+      if (menuNumber != null) 'menuNumber': menuNumber,
     };
   }
 
   factory RecipeSuggestion.fromJson(Map<String, dynamic> json) {
     return RecipeSuggestion(
       recipe: Recipe.fromJson(json['recipe'] as Map<String, dynamic>),
-      matchPercentage: json['matchPercentage'] as int,
-      missingIngredients: json['missingIngredients'] as int,
+      matchPercentage: (json['matchPercentage'] as num).toInt(),
+      missingIngredients: (json['missingIngredients'] as num).toInt(),
+      menuNumber: (json['menuNumber'] as num?)?.toInt(),
     );
   }
 }

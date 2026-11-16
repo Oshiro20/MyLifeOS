@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:core/core.dart';
@@ -27,8 +28,12 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
   @override
   void initState() {
     super.initState();
-    // Reset importer state so old imported recipes don't persist
-    ref.read(recipeImportProvider.notifier).reset();
+    // Reset importer state safely after first frame
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(recipeImportProvider.notifier).reset();
+      }
+    });
     _loadHistory();
     // Clear error when user types in URL field
     _urlController.addListener(() {
@@ -110,13 +115,13 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
 
-    // Validate URL format before processing
-    if (!RecipeImportNotifier.isValidRecipeUrl(url)) {
+    final hasDot = url.contains('.');
+    if (!hasDot && !RecipeImportNotifier.isValidRecipeUrl(url)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'Por favor ingresa una URL válida de TikTok, Instagram o YouTube'),
+                'Ingresa un enlace válido (TikTok, YouTube, Instagram o web de receta)'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -127,6 +132,40 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
     // Clear error state before submitting
     ref.read(recipeImportProvider.notifier).errorMessage = null;
     ref.read(recipeImportProvider.notifier).importFromTikTokUrl(url);
+  }
+
+  Future<void> _showPasteTextDialog() async {
+    final textCtrl = TextEditingController();
+    final submitted = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Pegar texto de receta'),
+        content: TextField(
+          controller: textCtrl,
+          maxLines: 7,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText:
+                'Pega aquí los ingredientes o la descripción de la receta...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, textCtrl.text.trim()),
+            child: const Text('Extraer con IA'),
+          ),
+        ],
+      ),
+    );
+    textCtrl.dispose();
+    if (submitted != null && submitted.isNotEmpty && mounted) {
+      ref.read(recipeImportProvider.notifier).importFromText(submitted);
+    }
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -151,9 +190,9 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
     final notifier = ref.read(recipeImportProvider.notifier);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF031411), // Emerald Night Deep Background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Chef IA',
+        title: Text('Importar Receta IA',
             style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold)),
@@ -478,7 +517,11 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                     ),
                   );
                   if (!mounted) return;
-                  Navigator.of(context).pop();
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go('/cocina');
+                  }
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -639,36 +682,40 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.history,
-                                      size: 14, color: Color(0xFF00F0FF)),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      url.length > 50
-                                          ? '${url.substring(0, 50)}...'
-                                          : url,
-                                      style: const TextStyle(
-                                          color: Colors.white70, fontSize: 12),
-                                      overflow: TextOverflow.ellipsis,
+                                    const Icon(Icons.history,
+                                        size: 14, color: Color(0xFF00F0FF)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        url.length > 50
+                                            ? '${url.substring(0, 50)}...'
+                                            : url,
+                                        style: TextStyle(
+                                            color: onSurface.withValues(
+                                                alpha: 0.78),
+                                            fontSize: 12),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                  const Icon(Icons.north_west,
-                                      size: 12, color: Colors.white38),
-                                ],
+                                    Icon(Icons.north_west,
+                                        size: 12,
+                                        color: onSurface.withValues(alpha: 0.45)),
+                                  ],
+                                ),
                               ),
-                            ),
-                          )),
+                            )),
+                      ],
                     ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 24),
-          const Center(
-              child: Text('— O sube imágenes de una receta —',
+          Center(
+              child: Text('— O sube fotos, video o texto —',
                   style: TextStyle(
-                      color: Colors.white54, fontWeight: FontWeight.bold))),
+                      color: onSurface.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.bold))),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -798,6 +845,21 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
             label: const Text('Subir video desde Galería',
                 style: TextStyle(fontSize: 16)),
             onPressed: _pickVideo,
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                  color: onSurface.withValues(alpha: 0.35), width: 1.2),
+              foregroundColor: onSurface,
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
+            icon: const Icon(Icons.notes_outlined),
+            label: const Text('Pegar texto de receta',
+                style: TextStyle(fontSize: 15)),
+            onPressed: _showPasteTextDialog,
           ),
         ],
       ),

@@ -290,13 +290,6 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
   }
 
   Future<void> _cookRecipe(BuildContext context, Recipe recipe) async {
-    ref.read(cookingSessionProvider.notifier).startSession(
-          recipeName: recipe.name,
-          recipeId: recipe.id,
-          originalServings: recipe.servings,
-          estimatedDurationMinutes: recipe.durationMinutes,
-        );
-
     final inventoryNotifier = ref.read(inventoryProvider.notifier);
     final deducted =
         await inventoryNotifier.deductRecipeIngredients(recipe.ingredients);
@@ -311,6 +304,12 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
           ),
         );
       } else {
+        ref.read(cookingSessionProvider.notifier).startSession(
+              recipeName: recipe.name,
+              recipeId: recipe.id,
+              originalServings: recipe.servings,
+              estimatedDurationMinutes: recipe.durationMinutes,
+            );
         // Record in cooking history
         await CookingHistoryService().recordCooked(recipe.name);
 

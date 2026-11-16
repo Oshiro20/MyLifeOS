@@ -43,51 +43,61 @@ class ExtractRecipeUseCase {
         decoded['name'] ?? decoded['nombre_receta'] ?? 'Receta Importada';
     final description = decoded['description'] ?? decoded['descripcion'] ?? '';
 
-    // Support both formats for time
-    int durationMinutes;
-    if (decoded['durationMinutes'] != null) {
-      durationMinutes = decoded['durationMinutes'] as int;
-    } else if (decoded['tiempo_total_min'] != null) {
-      durationMinutes = decoded['tiempo_total_min'] as int;
-    } else {
-      durationMinutes = 30;
-    }
+    // Support both formats for time (num/string safe)
+    final rawDuration =
+        decoded['durationMinutes'] ?? decoded['tiempo_total_min'];
+    final durationMinutes = rawDuration is num
+        ? rawDuration.round()
+        : (rawDuration is String
+            ? (double.tryParse(rawDuration.replaceAll(',', '.'))?.round() ?? 30)
+            : 30);
 
     // Support both formats for servings
     final servings = decoded['servings'] ?? decoded['porciones'];
-    final servingsInt =
-        servings is int ? servings : (servings is num ? servings.toInt() : 2);
+    final servingsInt = servings is num
+        ? servings.round()
+        : (servings is String
+            ? (double.tryParse(servings.replaceAll(',', '.'))?.round() ?? 2)
+            : 2);
 
     // Support both ingredient formats
-    List<dynamic> rawIngredients = [];
-    if (decoded['ingredients'] != null) {
-      rawIngredients = decoded['ingredients'] as List<dynamic>;
-    } else if (decoded['ingredientes'] != null) {
-      rawIngredients = decoded['ingredientes'] as List<dynamic>;
-    }
+    final rawIngField = decoded['ingredients'] ?? decoded['ingredientes'];
+    final rawIngredients = rawIngField is List ? rawIngField : const [];
 
     final List<RecipeIngredient> ingredients = [];
     final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
 
     for (int i = 0; i < rawIngredients.length; i++) {
-      final item = rawIngredients[i] as Map<String, dynamic>;
+      final rawEntry = rawIngredients[i];
+      if (rawEntry is String && rawEntry.trim().isNotEmpty) {
+        ingredients.add(RecipeIngredient(
+          id: '${recipeId}_ing_$i',
+          recipeId: recipeId,
+          ingredientName: rawEntry.trim(),
+          quantity: 1.0,
+          unit: 'unidades',
+        ));
+        continue;
+      }
+      if (rawEntry is! Map) continue;
+      final item = Map<String, dynamic>.from(rawEntry);
 
-      // Support both ingredient field names
       final ingName =
-          item['ingredientName'] ?? item['nombre'] ?? 'Ingrediente $i';
+          (item['ingredientName'] ?? item['nombre'])?.toString() ??
+              'Ingrediente $i';
 
-      // Support both quantity formats (number or string)
       double qty;
       final rawQty = item['quantity'] ?? item['cantidad'];
       if (rawQty is num) {
         qty = rawQty.toDouble();
       } else if (rawQty is String) {
-        qty = double.tryParse(rawQty) ?? 1.0;
+        qty = double.tryParse(rawQty.replaceAll(',', '.')) ?? 1.0;
       } else {
         qty = 1.0;
       }
 
-      final rawUnit = item['unit'] ?? item['unidad'] ?? 'unidades';
+      final rawUnit =
+          (item['unit'] ?? item['unidad'])?.toString() ?? 'unidades';
 
       ingredients.add(RecipeIngredient(
         id: '${recipeId}_ing_$i',
@@ -100,18 +110,30 @@ class ExtractRecipeUseCase {
 
     // Support both instruction formats
     List<dynamic> rawInstructions = [];
-    if (decoded['instructions'] != null) {
+    if (decoded['instructions'] is List) {
       rawInstructions = decoded['instructions'] as List<dynamic>;
-    } else if (decoded['pasos'] != null) {
-      final pasosList = decoded['pasos'] as List<dynamic>;
-      pasosList.sort((a, b) {
-        final numA = (a as Map)['numero'] as int? ?? 0;
-        final numB = (b as Map)['numero'] as int? ?? 0;
-        return numA.compareTo(numB);
-      });
-      rawInstructions = pasosList
-          .map((p) => (p as Map)['descripcion'] ?? p.toString())
-          .toList();
+    } else if (decoded['pasos'] is List) {
+      final pasosList = List<dynamic>.from(decoded['pasos'] as List);
+      final mapSteps = <Map<String, dynamic>>[];
+      final stringSteps = <String>[];
+      for (final p in pasosList) {
+        if (p is Map) {
+          mapSteps.add(Map<String, dynamic>.from(p));
+        } else if (p != null && p.toString().trim().isNotEmpty) {
+          stringSteps.add(p.toString().trim());
+        }
+      }
+      if (mapSteps.isNotEmpty) {
+        mapSteps.sort((a, b) {
+          final numA = (a['numero'] as num?)?.toInt() ?? 0;
+          final numB = (b['numero'] as num?)?.toInt() ?? 0;
+          return numA.compareTo(numB);
+        });
+        rawInstructions =
+            mapSteps.map((p) => p['descripcion']?.toString() ?? '').toList();
+      } else {
+        rawInstructions = stringSteps;
+      }
     }
 
     // VALIDATION AUTOMÁTICA: Verificar que la receta tenga contenido mínimo
@@ -140,12 +162,15 @@ class ExtractRecipeUseCase {
                 .toList() ??
             [];
 
-    final caloriasAproximadas = decoded['calorias_aproximadas'] as int?;
+    final rawCal = decoded['calorias_aproximadas'];
+    final caloriasAproximadas = rawCal is num
+        ? rawCal.round()
+        : (rawCal is String ? int.tryParse(rawCal) : null);
 
     // Parsear información nutricional
     NutritionInfo? nutrition;
-    if (decoded['nutricion'] != null) {
-      final nutriData = decoded['nutricion'] as Map<String, dynamic>;
+    if (decoded['nutricion'] is Map) {
+      final nutriData = Map<String, dynamic>.from(decoded['nutricion'] as Map);
       nutrition = NutritionInfo(
         proteinasG: (nutriData['proteinas_g'] as num?)?.toDouble() ?? 0,
         carbohidratosG: (nutriData['carbohidratos_g'] as num?)?.toDouble() ?? 0,
@@ -200,9 +225,9 @@ class ExtractRecipeUseCase {
 
     // Parsear tipo de comida
     MealType? tipoComida;
-    final rawTipoComida = decoded['tipo_comida'] as String?;
+    final rawTipoComida = decoded['tipo_comida']?.toString();
     if (rawTipoComida != null) {
-      tipoComida = _parseMealType(rawTipoComida);
+      tipoComida = parseMealType(rawTipoComida);
     }
 
     // Parsear fuente (source URL)
@@ -241,8 +266,8 @@ class ExtractRecipeUseCase {
   String _extractJsonFromResponse(String response) =>
       AiJsonParser.extractJson(response);
 
-  /// Parses a meal type string from Gemini response to MealType enum
-  MealType? _parseMealType(String value) {
+  /// Parses a meal type string from AI response to [MealType] enum.
+  static MealType? parseMealType(String value) {
     final lower = value.toLowerCase().trim();
     if (lower.contains('desayun')) {
       return MealType.desayuno;
@@ -250,7 +275,7 @@ class ExtractRecipeUseCase {
     if (lower.contains('almuerz')) {
       return MealType.almuerzo;
     }
-    if (lower.contains('cen')) {
+    if (lower.contains('cena')) {
       return MealType.cena;
     }
     if (lower.contains('entrad') || lower.contains('aperitivo')) {
@@ -258,10 +283,13 @@ class ExtractRecipeUseCase {
     }
     if (lower.contains('sop') ||
         lower.contains('caldo') ||
-        lower.contains('crem')) {
+        lower.contains('crema')) {
       return MealType.sopa;
     }
-    if (lower.contains('sec')) {
+    if (lower.contains('seco') ||
+        lower.contains('segundo') ||
+        lower.contains('plato fuerte') ||
+        lower.contains('fondo')) {
       return MealType.seco;
     }
     if (lower.contains('postre') || lower.contains('dulc')) {
@@ -271,6 +299,7 @@ class ExtractRecipeUseCase {
       return MealType.mazamorra;
     }
     if (lower.contains('bebida') ||
+        lower.contains('refresco') ||
         lower.contains('jugo') ||
         lower.contains('zumo') ||
         lower.contains('limonad') ||
@@ -280,7 +309,7 @@ class ExtractRecipeUseCase {
     }
     if (lower.contains('snack') ||
         lower.contains('botan') ||
-        lower.contains('pasabol')) {
+        lower.contains('pasaboc')) {
       return MealType.snack;
     }
     return null;

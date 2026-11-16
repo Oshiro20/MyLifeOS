@@ -22,7 +22,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
   final Set<MenuComponent> _selectedComponents = {
     MenuComponent.platoFuerte,
   };
-  int _menuCount = 5; // Número de menús a generar (por defecto 5)
+  int _menuCount = 3; // Número de menús a generar (por defecto 3)
+  bool _budgetSaverMode = false; // Priorizar ahorro usando despensa
   bool _isMenuCreatorExpanded = true; // Controlar si la tarjeta está expandida
 
   // Listen for inventory changes
@@ -42,7 +43,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                       style: TextStyle(fontSize: 12)),
                 ],
               ),
-              backgroundColor: Theme.of(context).cardColor,
+              backgroundColor: const Color(0xFF152019),
               duration: const Duration(milliseconds: 1500),
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.all(8),
@@ -93,54 +94,62 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             constraints: BoxConstraints(
-              maxHeight: _isMenuCreatorExpanded ? 500.0 : 0.0,
+              maxHeight: _isMenuCreatorExpanded ? 540.0 : 0.0,
             ),
             child: _isMenuCreatorExpanded
-                ? _MenuCreatorCard(
-                    selectedMealPeriod: _selectedMealPeriod,
-                    selectedComponents: _selectedComponents,
-                    menuCount: _menuCount,
-                    onMealPeriodChanged: (period) =>
-                        setState(() => _selectedMealPeriod = period),
-                    onComponentToggle: (component) {
-                      setState(() {
-                        if (_selectedComponents.contains(component)) {
-                          if (_selectedComponents.length > 1) {
-                            _selectedComponents.remove(component);
+                ? SingleChildScrollView(
+                    child: _MenuCreatorCard(
+                      selectedMealPeriod: _selectedMealPeriod,
+                      selectedComponents: _selectedComponents,
+                      menuCount: _menuCount,
+                      budgetSaverMode: _budgetSaverMode,
+                      onMealPeriodChanged: (period) =>
+                          setState(() => _selectedMealPeriod = period),
+                      onComponentToggle: (component) {
+                        setState(() {
+                          if (_selectedComponents.contains(component)) {
+                            if (_selectedComponents.length > 1) {
+                              _selectedComponents.remove(component);
+                            }
+                          } else {
+                            _selectedComponents.add(component);
                           }
-                        } else {
-                          _selectedComponents.add(component);
-                        }
-                      });
-                    },
-                    onMenuCountChanged: (count) =>
-                        setState(() => _menuCount = count),
-                    onGenerateAI: () {
-                      ref.read(menuConfigProvider.notifier).update(
-                            mealPeriod: _selectedMealPeriod,
-                            components: _selectedComponents.toList(),
-                            menuCount: _menuCount,
-                          );
-                      aiNotifier.generateSuggestions(
-                        mealPeriod: _selectedMealPeriod,
-                        components: _selectedComponents.toList(),
-                        menuCount: _menuCount,
-                        forceRefresh: true,
-                      );
-                      setState(() => _isMenuCreatorExpanded = false);
-                    },
-                    onGenerateLocal: () {
-                      ref.read(menuConfigProvider.notifier).update(
-                            mealPeriod: _selectedMealPeriod,
-                            components: _selectedComponents.toList(),
-                            menuCount: _menuCount,
-                          );
-                      aiNotifier.generateRapidMenus();
-                      setState(() => _isMenuCreatorExpanded = false);
-                    },
-                    isLoading: aiState == WhatCanICookState.loading,
-                    onCollapse: () =>
-                        setState(() => _isMenuCreatorExpanded = false),
+                        });
+                      },
+                      onMenuCountChanged: (count) =>
+                          setState(() => _menuCount = count),
+                      onBudgetSaverChanged: (val) =>
+                          setState(() => _budgetSaverMode = val),
+                      onGenerateAI: () {
+                        ref.read(menuConfigProvider.notifier).update(
+                              mealPeriod: _selectedMealPeriod,
+                              components: _selectedComponents.toList(),
+                              menuCount: _menuCount,
+                              budgetSaverMode: _budgetSaverMode,
+                            );
+                        aiNotifier.generateSuggestions(
+                          mealPeriod: _selectedMealPeriod,
+                          components: _selectedComponents.toList(),
+                          menuCount: _menuCount,
+                          budgetSaverMode: _budgetSaverMode,
+                          forceRefresh: true,
+                        );
+                        setState(() => _isMenuCreatorExpanded = false);
+                      },
+                      onGenerateLocal: () {
+                        ref.read(menuConfigProvider.notifier).update(
+                              mealPeriod: _selectedMealPeriod,
+                              components: _selectedComponents.toList(),
+                              menuCount: _menuCount,
+                              budgetSaverMode: _budgetSaverMode,
+                            );
+                        aiNotifier.generateRapidMenus();
+                        setState(() => _isMenuCreatorExpanded = false);
+                      },
+                      isLoading: aiState == WhatCanICookState.loading,
+                      onCollapse: () =>
+                          setState(() => _isMenuCreatorExpanded = false),
+                    ),
                   )
                 : const SizedBox.shrink(),
           ),
@@ -184,6 +193,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     Set<String> availableNames,
   ) {
     final visibleSuggestions = aiNotifier.visibleSuggestions;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
     if (aiState == WhatCanICookState.initial) {
       return Center(
@@ -191,31 +201,19 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.restaurant_menu,
-                size: 64,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.18)),
+                size: 64, color: onSurface.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             Text(
-              'Arma tu menú arriba y toca "Generar"',
+              'Arma tu menú arriba y toca "Menús IA"',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
-                  fontSize: 14),
+                  color: onSurface.withValues(alpha: 0.55), fontSize: 14),
             ),
             const SizedBox(height: 8),
             Text(
               'El Chef IA sugerirá menús completos\nbasados en tu despensa',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.38),
-                  fontSize: 12),
+                  color: onSurface.withValues(alpha: 0.4), fontSize: 12),
             ),
           ],
         ),
@@ -232,11 +230,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             Text(
               'El Chef IA está armando tu menú...',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
-                  fontSize: 14),
+                  color: onSurface.withValues(alpha: 0.72), fontSize: 14),
             ),
           ],
         ),
@@ -270,6 +264,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                   mealPeriod: _selectedMealPeriod,
                   components: _selectedComponents.toList(),
                   menuCount: _menuCount,
+                  budgetSaverMode: _budgetSaverMode,
                   forceRefresh: true,
                 ),
                 icon: const Icon(Icons.refresh, size: 16),
@@ -295,22 +290,14 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             Text(
               'No se encontraron menús con esos componentes.',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.72),
-                  fontSize: 14),
+                  color: onSurface.withValues(alpha: 0.72), fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Intenta con menos componentes o agrega más ingredientes a tu despensa.',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.55),
-                  fontSize: 12),
+                  color: onSurface.withValues(alpha: 0.55), fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -318,20 +305,48 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       );
     }
 
-    // Group suggestions into menus using selected component count per menu
+    // Group suggestions by explicit menuNumber from AI/local engine (fallback to perMenu)
     if (visibleSuggestions.isNotEmpty) {
       final configComponents = ref.watch(menuConfigProvider).components.length;
-      final perMenu = (configComponents > 0 ? configComponents : _selectedComponents.length)
-          .clamp(1, visibleSuggestions.length);
+      final perMenu =
+          (configComponents > 0 ? configComponents : _selectedComponents.length)
+              .clamp(1, visibleSuggestions.length);
       final menuGroups = <int, List<RecipeSuggestion>>{};
       for (int i = 0; i < visibleSuggestions.length; i++) {
-        final menuNum = (i ~/ perMenu) + 1;
-        menuGroups.putIfAbsent(menuNum, () => []).add(visibleSuggestions[i]);
+        final item = visibleSuggestions[i];
+        final menuNum = item.menuNumber ?? ((i ~/ perMenu) + 1);
+        menuGroups.putIfAbsent(menuNum, () => []).add(item);
       }
 
       return ListView(
         padding: const EdgeInsets.only(bottom: 80),
         children: [
+          if (aiNotifier.statusNotice != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border:
+                    Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 16, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      aiNotifier.statusNotice!,
+                      style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.85),
+                          fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
@@ -340,7 +355,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     color: Color(0xFF00E676), size: 18),
                 const SizedBox(width: 6),
                 Text(
-                  '${visibleSuggestions.length} platos encontrados en ${menuGroups.length} menús',
+                  '${visibleSuggestions.length} platos en ${menuGroups.length} menús',
                   style: const TextStyle(
                       color: Color(0xFF00E676),
                       fontSize: 13,
@@ -352,6 +367,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     mealPeriod: _selectedMealPeriod,
                     components: _selectedComponents.toList(),
                     menuCount: _menuCount,
+                    budgetSaverMode: _budgetSaverMode,
                     forceRefresh: true,
                   ),
                   icon: const Icon(Icons.refresh, size: 14),
@@ -517,7 +533,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     ref.read(recipesProvider.notifier).load();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('✅ $savedCount de ${menuRecipes.length} recetas guardadas'),
+        content:
+            Text('✅ $savedCount de ${menuRecipes.length} recetas guardadas'),
         backgroundColor:
             savedCount > 0 ? const Color(0xFF00E676) : Colors.orange,
         duration: const Duration(milliseconds: 1800),
@@ -543,7 +560,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     if (allDeducted.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
+          content:
+              Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -577,16 +595,18 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     WhatCanICookNotifier notifier,
     RecipeSuggestion suggestion,
   ) async {
-    ref.read(cookingSessionProvider.notifier).startSession(
-          recipeName: suggestion.recipe.name,
-          recipeId: suggestion.recipe.id,
-          originalServings: suggestion.recipe.servings,
-          scaledServings: 1,
-          estimatedDurationMinutes: suggestion.recipe.durationMinutes,
-        );
-
     final result = await notifier.cookSuggestion(suggestion);
     if (context.mounted) {
+      if (result.success) {
+        ref.read(cookingSessionProvider.notifier).startSession(
+              recipeName: suggestion.recipe.name,
+              recipeId: suggestion.recipe.id,
+              originalServings: suggestion.recipe.servings,
+              scaledServings: 1,
+              estimatedDurationMinutes: suggestion.recipe.durationMinutes,
+            );
+        ref.read(inventoryProvider.notifier).load();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.success
@@ -597,9 +617,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
           duration: const Duration(milliseconds: 1500),
         ),
       );
-      if (result.success) {
-        ref.read(inventoryProvider.notifier).load();
-      }
     }
   }
 
@@ -628,7 +645,7 @@ enum MealPeriod {
 enum MenuComponent {
   entrada('Entrada', '🥗', 'entrada'),
   sopa('Sopa', '🍲', 'sopa'),
-  platoFuerte('Plato Fuerte', '🥘', 'almuerzo'),
+  platoFuerte('Plato Fuerte', '🥘', 'seco'),
   refresco('Refresco', '🥤', 'bebida'),
   postre('Postre', '🍰', 'postre');
 
@@ -645,9 +662,11 @@ class _MenuCreatorCard extends StatelessWidget {
   final MealPeriod selectedMealPeriod;
   final Set<MenuComponent> selectedComponents;
   final int menuCount;
+  final bool budgetSaverMode;
   final Function(MealPeriod) onMealPeriodChanged;
   final Function(MenuComponent) onComponentToggle;
   final Function(int) onMenuCountChanged;
+  final ValueChanged<bool> onBudgetSaverChanged;
   final VoidCallback onGenerateAI;
   final VoidCallback onGenerateLocal;
   final bool isLoading;
@@ -657,9 +676,11 @@ class _MenuCreatorCard extends StatelessWidget {
     required this.selectedMealPeriod,
     required this.selectedComponents,
     required this.menuCount,
+    required this.budgetSaverMode,
     required this.onMealPeriodChanged,
     required this.onComponentToggle,
     required this.onMenuCountChanged,
+    required this.onBudgetSaverChanged,
     required this.onGenerateAI,
     required this.onGenerateLocal,
     required this.isLoading,
@@ -668,15 +689,30 @@ class _MenuCreatorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final chipBg = isDark
+        ? const Color(0xFF2A2A40)
+        : Theme.of(context).colorScheme.surfaceContainerHighest;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A2F1A), Color(0xFF0F1F0F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: isDark
+            ? const LinearGradient(
+                colors: [Color(0xFF1A2F1A), Color(0xFF0F1F0F)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: [
+                  const Color(0xFF00C896).withValues(alpha: 0.12),
+                  Theme.of(context).cardColor,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(16),
         border:
             Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.3)),
@@ -690,7 +726,7 @@ class _MenuCreatorCard extends StatelessWidget {
               const Text(
                 '🍽️ Arma tu Menú',
                 style: TextStyle(
-                    color: Color(0xFF00E676),
+                    color: Color(0xFF00C896),
                     fontSize: 16,
                     fontWeight: FontWeight.bold),
               ),
@@ -699,7 +735,7 @@ class _MenuCreatorCard extends StatelessWidget {
                 IconButton(
                   onPressed: onCollapse,
                   icon: const Icon(Icons.expand_less,
-                      size: 20, color: Color(0xFF00E676)),
+                      size: 20, color: Color(0xFF00C896)),
                   tooltip: 'Colapsar',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -711,10 +747,7 @@ class _MenuCreatorCard extends StatelessWidget {
           // 1. Meal Period Selector
           Text('1. ¿Qué comida es?',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.75),
+                  color: onSurface.withValues(alpha: 0.72),
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
@@ -729,11 +762,7 @@ class _MenuCreatorCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFFFF9800)
-                            : Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                        color: isSelected ? const Color(0xFFFF9800) : chipBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -742,10 +771,7 @@ class _MenuCreatorCard extends StatelessWidget {
                         style: TextStyle(
                           color: isSelected
                               ? Colors.black
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.75),
+                              : onSurface.withValues(alpha: 0.75),
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,
                           fontSize: 11,
@@ -763,10 +789,7 @@ class _MenuCreatorCard extends StatelessWidget {
           // 2. Menu Components
           Text('2. ¿Qué partes quieres?',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.75),
+                  color: onSurface.withValues(alpha: 0.72),
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
@@ -783,14 +806,12 @@ class _MenuCreatorCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF00E676).withValues(alpha: 0.25)
-                        : Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        ? const Color(0xFF00C896).withValues(alpha: 0.22)
+                        : chipBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
-                          ? const Color(0xFF00E676)
+                          ? const Color(0xFF00C896)
                           : Colors.transparent,
                       width: 1.5,
                     ),
@@ -805,13 +826,8 @@ class _MenuCreatorCard extends StatelessWidget {
                         component.label,
                         style: TextStyle(
                           color: isSelected
-                              ? (Theme.of(context).brightness == Brightness.dark
-                                  ? const Color(0xFF00E676)
-                                  : const Color(0xFF008955))
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.75),
+                              ? const Color(0xFF00C896)
+                              : onSurface.withValues(alpha: 0.75),
                           fontSize: 11,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,
@@ -820,7 +836,7 @@ class _MenuCreatorCard extends StatelessWidget {
                       if (isSelected) ...[
                         const SizedBox(width: 4),
                         const Icon(Icons.check,
-                            size: 12, color: Color(0xFF00E676)),
+                            size: 12, color: Color(0xFF00C896)),
                       ],
                     ],
                   ),
@@ -834,10 +850,7 @@ class _MenuCreatorCard extends StatelessWidget {
           // 3. Number of menus
           Text('3. ¿Cuántos menús?',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.75),
+                  color: onSurface.withValues(alpha: 0.72),
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
@@ -855,7 +868,35 @@ class _MenuCreatorCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
+
+          // Modo ahorro opcional
+          FilterChip(
+            avatar: Icon(
+              Icons.savings_outlined,
+              size: 16,
+              color: budgetSaverMode
+                  ? const Color(0xFF00C896)
+                  : onSurface.withValues(alpha: 0.65),
+            ),
+            label: Text(
+              'Modo Ahorro (economizar con despensa)',
+              style: TextStyle(
+                fontSize: 11,
+                color: budgetSaverMode
+                    ? const Color(0xFF00C896)
+                    : onSurface.withValues(alpha: 0.78),
+                fontWeight:
+                    budgetSaverMode ? FontWeight.w700 : FontWeight.normal,
+              ),
+            ),
+            selected: budgetSaverMode,
+            onSelected: onBudgetSaverChanged,
+            selectedColor: const Color(0xFF00C896).withValues(alpha: 0.18),
+            checkmarkColor: const Color(0xFF00C896),
+          ),
+
+          const SizedBox(height: 10),
 
           // Two generate buttons: IA (orange) and Local (blue)
           Row(
@@ -908,32 +949,35 @@ class _MenuCreatorCard extends StatelessWidget {
   Widget _countButton(int count, Function(int) onChanged, int selected) {
     final isSelected = selected == count;
     return Builder(
-      builder: (context) => GestureDetector(
-        onTap: () => onChanged(count),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFFFF9800)
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '$count',
-            textAlign: TextAlign.center,
-            style: TextStyle(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final onSurface = Theme.of(context).colorScheme.onSurface;
+        return GestureDetector(
+          onTap: () => onChanged(count),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
               color: isSelected
-                  ? Colors.black
-                  : Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.75),
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
+                  ? const Color(0xFFFF9800)
+                  : (isDark
+                      ? const Color(0xFF2A2A40)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected
+                    ? Colors.black
+                    : onSurface.withValues(alpha: 0.75),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -971,19 +1015,11 @@ class _CompleteMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final onSurface = theme.colorScheme.onSurface;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? const [Color(0xFF1A2F1A), Color(0xFF0F1F0F)]
-              : [
-                  const Color(0xFF00E676).withValues(alpha: 0.08),
-                  theme.cardColor,
-                ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2F1A), Color(0xFF0F1F0F)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1018,8 +1054,7 @@ class _CompleteMenuCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${recipes.length} platos · ${recipes.fold(0, (sum, r) => sum + r.recipe.durationMinutes)} min total',
-                  style: TextStyle(
-                      color: onSurface.withValues(alpha: 0.58), fontSize: 11),
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
                 if (onDismiss != null)
                   IconButton(
@@ -1065,14 +1100,14 @@ class _CompleteMenuCard extends StatelessWidget {
                         Text(
                           'Ingredientes disponibles',
                           style: TextStyle(
-                            color: onSurface.withValues(alpha: 0.65),
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 10,
                           ),
                         ),
                         const SizedBox(height: 2),
                         LinearProgressIndicator(
                           value: menuMatchPercentage / 100,
-                          backgroundColor: onSurface.withValues(alpha: 0.1),
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             menuMatchPercentage >= 70
                                 ? const Color(0xFF00E676)
@@ -1112,7 +1147,7 @@ class _CompleteMenuCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: onSurface.withValues(alpha: 0.04),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                           color:
@@ -1134,8 +1169,8 @@ class _CompleteMenuCard extends StatelessWidget {
                             children: [
                               Text(
                                 recipe.name,
-                                style: TextStyle(
-                                    color: onSurface,
+                                style: const TextStyle(
+                                    color: Colors.white,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500),
                                 maxLines: 1,
@@ -1159,9 +1194,8 @@ class _CompleteMenuCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           '${recipe.durationMinutes}min',
-                          style: TextStyle(
-                              color: onSurface.withValues(alpha: 0.58),
-                              fontSize: 10),
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 10),
                         ),
                       ],
                     ),

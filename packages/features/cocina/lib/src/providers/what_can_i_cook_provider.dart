@@ -16,11 +16,13 @@ class MenuConfig {
   final MealPeriod? mealPeriod;
   final List<MenuComponent> components;
   final int menuCount;
+  final bool budgetSaverMode;
 
   const MenuConfig({
     this.mealPeriod,
     this.components = const [MenuComponent.platoFuerte],
     this.menuCount = 3,
+    this.budgetSaverMode = false,
   });
 }
 
@@ -28,14 +30,17 @@ class MenuConfigNotifier extends Notifier<MenuConfig> {
   @override
   MenuConfig build() => const MenuConfig();
 
-  void update(
-      {MealPeriod? mealPeriod,
-      List<MenuComponent>? components,
-      int? menuCount}) {
+  void update({
+    MealPeriod? mealPeriod,
+    List<MenuComponent>? components,
+    int? menuCount,
+    bool? budgetSaverMode,
+  }) {
     state = MenuConfig(
       mealPeriod: mealPeriod ?? state.mealPeriod,
       components: components ?? state.components,
       menuCount: menuCount ?? state.menuCount,
+      budgetSaverMode: budgetSaverMode ?? state.budgetSaverMode,
     );
   }
 }
@@ -47,6 +52,8 @@ final menuConfigProvider = NotifierProvider<MenuConfigNotifier, MenuConfig>(() {
 class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   List<RecipeSuggestion> suggestions = [];
   String? errorMessage;
+  String? statusNotice;
+  bool usedLocalFallback = false;
   MealPeriod? _lastMealPeriod;
 
   final Set<String> _dismissedIds = {};
@@ -86,25 +93,55 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     return MealPeriod.cena;
   }
 
+  String _buildCacheSignature({
+    required MealPeriod meal,
+    required List<MenuComponent> components,
+    required int menuCount,
+    required String? cuisinePreference,
+    required bool budgetSaverMode,
+    required List<InventoryIngredient> ingredients,
+  }) {
+    final compNames = components.map((c) => c.name).toList()..sort();
+    final ingNames = ingredients.map((i) => i.name.toLowerCase()).toList()
+      ..sort();
+    return '${meal.name}|${compNames.join(',')}|$menuCount|${cuisinePreference ?? ''}|$budgetSaverMode|${ingNames.join(',')}';
+  }
+
+  static int _countMissingIngredients(
+    List<RecipeIngredient> recipeIngredients,
+    List<InventoryIngredient> inventory,
+  ) {
+    final invNames = inventory
+        .where((i) => i.quantity > 0)
+        .map((i) => i.name.trim().toLowerCase())
+        .toList();
+    var missing = 0;
+    for (final ing in recipeIngredients) {
+      final target = ing.ingredientName.trim().toLowerCase();
+      final hasMatch = invNames.any(
+        (inv) => inv == target || inv.contains(target) || target.contains(inv),
+      );
+      if (!hasMatch) missing++;
+    }
+    return missing;
+  }
+
   Future<void> generateSuggestions({
     MealPeriod? mealPeriod,
     List<MenuComponent>? components,
     int menuCount = 3,
     String? cuisinePreference,
+    bool budgetSaverMode = false,
     bool forceRefresh = false,
   }) async {
-    // ALWAYS force refresh when user explicitly generates
-    // The cache was causing stale results when parameters changed
-    final cached =
-        forceRefresh ? null : await _cacheService.getCachedSuggestions();
-    if (cached != null && cached.isNotEmpty) {
-      suggestions = cached;
-      state = WhatCanICookState.success;
-      return;
-    }
+    final menuComponents =
+        (components != null && components.isNotEmpty) ? components : [MenuComponent.platoFuerte];
+    final meal = mealPeriod ?? _getCurrentMealPeriod();
 
     state = WhatCanICookState.loading;
     errorMessage = null;
+    statusNotice = null;
+    usedLocalFallback = false;
     _dismissedIds.clear();
 
     try {
@@ -115,8 +152,29 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       if (inventoryState.ingredients.isEmpty) {
         throw Exception(
           'No tienes ingredientes en tu inventario. '
-          'Agrega algunos en la pestaña de Inventario primero.',
+          'Agrega algunos en la pestaña de Despensa primero.',
         );
+      }
+
+      final signature = _buildCacheSignature(
+        meal: meal,
+        components: menuComponents,
+        menuCount: menuCount,
+        cuisinePreference: cuisinePreference,
+        budgetSaverMode: budgetSaverMode,
+        ingredients: inventoryState.ingredients,
+      );
+
+      final cached = forceRefresh
+          ? null
+          : await _cacheService.getCachedSuggestions(
+              expectedSignature: signature,
+            );
+      if (cached != null && cached.isNotEmpty) {
+        suggestions = cached;
+        state = WhatCanICookState.success;
+        _lastMealPeriod = meal;
+        return;
       }
 
       final prefsState = ref.read(userFoodPreferencesProvider);
@@ -125,13 +183,9 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       final gemini = ref.read(geminiProvider);
       final useCase = WhatCanICookUseCase(_GeminiAdapter(gemini));
 
-      // Build the menu context from components
-      final menuComponents = components ?? [MenuComponent.platoFuerte];
-      final meal = mealPeriod ?? _getCurrentMealPeriod();
-
       debugPrint('🔄 Generating new menu suggestions...');
       debugPrint(
-          '   Meal: ${meal.label}, Components: ${menuComponents.length}, Count: $menuCount');
+          '   Meal: ${meal.label}, Components: ${menuComponents.length}, Count: $menuCount, Ahorro: $budgetSaverMode');
 
       suggestions = await useCase.executeWithMenu(
         inventory: inventoryState.ingredients,
@@ -142,32 +196,55 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         cuisinePreference: cuisinePreference,
         recentlyUsedRecipeNames: recentlyUsed,
         userPreferences: chefPrefs,
+        budgetSaverMode: budgetSaverMode,
       );
 
       debugPrint('✅ Generated ${suggestions.length} recipes');
 
-      // Recalculate match percentages
+      // Recalcular localmente TANTO matchPercentage como missingIngredients reales
       final viabilityCalc = CalculateRecipeViabilityUseCase();
       suggestions = suggestions.map((s) {
         final viability = viabilityCalc.execute(
           recipeIngredients: s.recipe.ingredients,
           inventory: inventoryState.ingredients,
         );
+        final realMissing = _countMissingIngredients(
+          s.recipe.ingredients,
+          inventoryState.ingredients,
+        );
         return RecipeSuggestion(
           recipe: s.recipe,
           matchPercentage: (viability * 100).round(),
-          missingIngredients: s.missingIngredients,
+          missingIngredients: realMissing,
+          menuNumber: s.menuNumber,
         );
       }).toList();
 
-      await _cacheService.saveSuggestions(suggestions);
+      await _cacheService.saveSuggestions(suggestions, signature: signature);
 
       state = WhatCanICookState.success;
       _lastMealPeriod = meal;
     } catch (e) {
+      debugPrint('❌ WhatCanICook AI error: $e — intentando fallback local...');
+      final invState = ref.read(inventoryProvider);
+      if (invState.ingredients.isNotEmpty) {
+        ref.read(menuConfigProvider.notifier).update(
+              mealPeriod: meal,
+              components: menuComponents,
+              menuCount: menuCount,
+              budgetSaverMode: budgetSaverMode,
+            );
+        await generateRapidMenus(
+          notice:
+              'Chef IA remoto no disponible; mostrando sugerencias de tu recetario local.',
+        );
+        if (state == WhatCanICookState.success) {
+          usedLocalFallback = true;
+          return;
+        }
+      }
       errorMessage = e.toString();
       state = WhatCanICookState.error;
-      debugPrint('❌ WhatCanICook error: $e');
     }
   }
 
@@ -177,9 +254,11 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
   }
 
   /// Generate menus from LOCAL recipes (no AI), respecting selected components
-  Future<void> generateRapidMenus() async {
+  Future<void> generateRapidMenus({String? notice}) async {
     state = WhatCanICookState.loading;
     errorMessage = null;
+    statusNotice = notice;
+    usedLocalFallback = notice != null;
     _dismissedIds.clear();
 
     try {
@@ -269,10 +348,6 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
           // Shuffle for variety
           pool.shuffle();
 
-          final inventoryNames = inventoryState.ingredients
-              .map((i) => i.name.toLowerCase())
-              .toSet();
-
           // Pick best match from shuffled batch
           Recipe? bestRecipe;
           double bestMatch = -1;
@@ -295,14 +370,15 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
             recipeIngredients: bestRecipe.ingredients,
             inventory: inventoryState.ingredients,
           );
-          final missingCount = bestRecipe.ingredients.where((ing) {
-            return !inventoryNames.contains(ing.ingredientName.toLowerCase());
-          }).length;
 
           suggestions.add(RecipeSuggestion(
             recipe: bestRecipe,
             matchPercentage: (viability * 100).round(),
-            missingIngredients: missingCount,
+            missingIngredients: _countMissingIngredients(
+              bestRecipe.ingredients,
+              inventoryState.ingredients,
+            ),
+            menuNumber: menuIdx + 1,
           ));
         }
       }

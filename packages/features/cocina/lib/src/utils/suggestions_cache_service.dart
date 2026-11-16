@@ -8,28 +8,45 @@ import 'package:domain/domain.dart';
 class SuggestionsCacheService {
   static const String _keySuggestions = 'ai_suggestions_cache';
   static const String _keyTimestamp = 'ai_suggestions_timestamp';
+  static const String _keySignature = 'ai_suggestions_signature';
   static const Duration ttl = Duration(hours: 4);
 
-  /// Save suggestions to cache with current timestamp
-  Future<void> saveSuggestions(List<RecipeSuggestion> suggestions) async {
+  /// Save suggestions to cache with current timestamp and query signature
+  Future<void> saveSuggestions(
+    List<RecipeSuggestion> suggestions, {
+    String? signature,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = suggestions.map((s) => s.toJson()).toList();
       await prefs.setString(_keySuggestions, jsonEncode(jsonList));
       await prefs.setInt(_keyTimestamp, DateTime.now().millisecondsSinceEpoch);
+      if (signature != null) {
+        await prefs.setString(_keySignature, signature);
+      } else {
+        await prefs.remove(_keySignature);
+      }
     } catch (e) {
-      // Silently fail - cache is optional
       debugPrint('❌ Error saving suggestions cache: $e');
     }
   }
 
-  /// Get cached suggestions if still valid (within TTL)
-  Future<List<RecipeSuggestion>?> getCachedSuggestions() async {
+  /// Get cached suggestions if still valid (within TTL and matching signature)
+  Future<List<RecipeSuggestion>?> getCachedSuggestions({
+    String? expectedSignature,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final timestamp = prefs.getInt(_keyTimestamp);
 
       if (timestamp == null) return null;
+
+      if (expectedSignature != null) {
+        final savedSig = prefs.getString(_keySignature);
+        if (savedSig != expectedSignature) {
+          return null;
+        }
+      }
 
       final cachedTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
       final now = DateTime.now();
@@ -58,6 +75,7 @@ class SuggestionsCacheService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keySuggestions);
       await prefs.remove(_keyTimestamp);
+      await prefs.remove(_keySignature);
     } catch (e) {
       debugPrint('❌ Error clearing cache: $e');
     }

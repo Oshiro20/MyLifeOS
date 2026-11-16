@@ -184,7 +184,7 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
-                        'Chef IA',
+                        'Importar IA',
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 11,

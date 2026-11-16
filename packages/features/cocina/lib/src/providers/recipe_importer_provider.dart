@@ -55,87 +55,138 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   }
 
   Future<void> importFromTikTokUrl(String url) async {
-    // Validate URL before processing
-    if (!isValidRecipeUrl(url)) {
-      errorMessage = 'URL no válida. Usa URLs de TikTok, Instagram o YouTube.';
+    final cleanUrl = url.trim();
+    if (cleanUrl.isEmpty) {
+      errorMessage = 'Ingresa una URL válida de receta o video.';
       state = RecipeImportState.error;
       return;
     }
 
     state = RecipeImportState.downloadingVideo;
-    currentStatusMessage = 'Conectando con TikTok...';
+    currentStatusMessage = 'Analizando enlace de receta...';
     errorMessage = null;
 
     try {
       final tikTokService = ref.read(tikTokServiceProvider);
-      final info = await tikTokService.getTikTokVideoInfo(url);
-      if (info == null) {
-        throw Exception('No se recibió respuesta del servicio de TikTok.');
-      }
+      final info = await tikTokService.getTikTokVideoInfo(cleanUrl);
 
-      debugPrint('📦 TikTok API response keys: ${info.keys.toList()}');
-
-      // Try multiple extraction strategies
       String? videoUrl;
-
-      // Strategy 1: Wrapped in 'data'
-      if (info.containsKey('data') && info['data'] is Map) {
-        final data = info['data'] as Map<String, dynamic>;
-        debugPrint('📦 Data keys: ${data.keys.toList()}');
-        videoUrl = data['video_link_nwm'] ??
-            data['play'] ??
-            data['wmplay'] ??
-            data['hdplay'] ??
-            data['url'];
+      if (info != null) {
+        if (info.containsKey('data') && info['data'] is Map) {
+          final data = info['data'] as Map<String, dynamic>;
+          videoUrl = data['video_link_nwm'] ??
+              data['play'] ??
+              data['wmplay'] ??
+              data['hdplay'] ??
+              data['url'];
+        }
+        videoUrl ??= info['url'] as String?;
+        videoUrl ??= info['video_link_nwm'] ??
+            info['play'] ??
+            info['wmplay'] ??
+            info['hdplay'];
       }
 
-      // Strategy 2: Direct URL at root
-      if (videoUrl == null && info.containsKey('url')) {
-        videoUrl = info['url'] as String?;
+      if (videoUrl != null && videoUrl.isNotEmpty) {
+        currentStatusMessage = 'Descargando video...';
+        final tempFile = File(
+            '${(await getTemporaryDirectory()).path}/tiktok_${DateTime.now().millisecondsSinceEpoch}.mp4');
+
+        final response = await http
+            .get(Uri.parse(videoUrl))
+            .timeout(const Duration(seconds: 45));
+        if (response.statusCode != 200) {
+          throw Exception('Fallo al descargar el video.');
+        }
+        await tempFile.writeAsBytes(response.bodyBytes);
+
+        try {
+          await importFromVideoFile(tempFile.path, sourceUrl: cleanUrl);
+        } finally {
+          if (tempFile.existsSync()) tempFile.deleteSync();
+        }
+      } else {
+        // Extracción alternativa pública vía oEmbed + OpenGraph / JSON-LD
+        currentStatusMessage = 'Extrayendo metadatos y descripción del enlace...';
+        final metadata =
+            await tikTokService.extractPublicRecipeMetadata(cleanUrl);
+        if (metadata == null) {
+          throw Exception(
+            'No se pudo leer este enlace automáticamente (puede ser privado o estar protegido).\n\n'
+            'Usa "Galería", "Cámara", "Subir video" o pega el texto de la receta abajo.',
+          );
+        }
+
+        String? tempThumbPath;
+        if (metadata.thumbnailUrl != null) {
+          try {
+            final imgResp = await http
+                .get(Uri.parse(metadata.thumbnailUrl!))
+                .timeout(const Duration(seconds: 15));
+            if (imgResp.statusCode == 200 && imgResp.bodyBytes.isNotEmpty) {
+              tempThumbPath =
+                  '${(await getTemporaryDirectory()).path}/url_thumb_${DateTime.now().millisecondsSinceEpoch}.jpg';
+              await File(tempThumbPath).writeAsBytes(imgResp.bodyBytes);
+            }
+          } catch (_) {}
+        }
+
+        state = RecipeImportState.extractingAI;
+        currentStatusMessage = 'El Chef IA está interpretando la receta...';
+
+        try {
+          final geminiService = ref.read(geminiProvider);
+          final jsonString = await geminiService.extractRecipe(
+            textContext: metadata.contextText.isNotEmpty
+                ? metadata.contextText
+                : 'Receta desde $cleanUrl',
+            mediaPath: tempThumbPath,
+          );
+          if (jsonString == null || jsonString.isEmpty) {
+            throw Exception(
+              'El enlace no contiene suficientes datos visibles para armar la receta.\n'
+              'Prueba subiendo capturas, el video o pegando el texto de los ingredientes.',
+            );
+          }
+          importFromJson(jsonString, sourceUrl: cleanUrl);
+        } finally {
+          if (tempThumbPath != null && File(tempThumbPath).existsSync()) {
+            File(tempThumbPath).deleteSync();
+          }
+        }
       }
 
-      // Strategy 3: Video keys at root level
-      videoUrl ??= info['video_link_nwm'] ??
-          info['play'] ??
-          info['wmplay'] ??
-          info['hdplay'];
-
-      if (videoUrl == null) {
-        debugPrint(
-            '❌ TikTok API full response: ${info.toString().substring(0, info.toString().length > 500 ? 500 : info.toString().length)}');
-        throw Exception(
-          'No se encontró URL de descarga del video. '
-          'La API devolvió: ${info.keys.toList()}. '
-          'Intenta con otro video o verifica la API key.',
-        );
-      }
-
-      debugPrint('🎬 Video URL found: $videoUrl');
-      currentStatusMessage = 'Descargando video...';
-      final tempFile = File(
-          '${(await getTemporaryDirectory()).path}/tiktok_${DateTime.now().millisecondsSinceEpoch}.mp4');
-
-      final response = await http.get(Uri.parse(videoUrl));
-      if (response.statusCode != 200) {
-        throw Exception('Fallo al descargar el video.');
-      }
-      await tempFile.writeAsBytes(response.bodyBytes);
-      debugPrint('✅ Video downloaded: ${tempFile.path}');
-
-      try {
-        await importFromVideoFile(tempFile.path);
-      } finally {
-        if (tempFile.existsSync()) tempFile.deleteSync();
-      }
-
-      // Save to history on success
       if (state == RecipeImportState.success) {
         final historyService = ImportHistoryService();
-        await historyService.saveImport(url);
+        await historyService.saveImport(cleanUrl);
       }
     } catch (e) {
-      errorMessage = e.toString();
-      debugPrint('❌ TikTok import error: $e');
+      errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('❌ URL import error: $e');
+      state = RecipeImportState.error;
+    }
+  }
+
+  /// Extrae una receta estructurada directamente desde texto pegado por el usuario.
+  Future<void> importFromText(String rawText) async {
+    final clean = rawText.trim();
+    if (clean.isEmpty) return;
+
+    state = RecipeImportState.extractingAI;
+    currentStatusMessage = 'El Chef IA está estructurando tu receta...';
+    errorMessage = null;
+
+    try {
+      final geminiService = ref.read(geminiProvider);
+      final jsonString = await geminiService.extractRecipe(textContext: clean);
+      if (jsonString == null || jsonString.isEmpty) {
+        throw Exception(
+          'No se pudo interpretar el texto. Verifica tu conexión a internet e intenta de nuevo.',
+        );
+      }
+      importFromJson(jsonString);
+    } catch (e) {
+      errorMessage = e.toString().replaceFirst('Exception: ', '');
       state = RecipeImportState.error;
     }
   }
@@ -185,11 +236,15 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
     }
   }
 
-  Future<void> importFromVideoFile(String filePath) async {
+  Future<void> importFromVideoFile(
+    String filePath, {
+    String? sourceUrl,
+  }) async {
     state = RecipeImportState.extractingAI;
-    currentStatusMessage = 'El Chef IA está analizando el video...';
+    currentStatusMessage = 'El Chef IA está extrayendo fotogramas del video...';
     errorMessage = null;
 
+    final frames = <String>[];
     try {
       final file = File(filePath);
       if (!file.existsSync()) {
@@ -206,74 +261,77 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         );
       }
 
-      if (fileSizeMB > 50) {
-        currentStatusMessage =
-            'Video grande detectado (${fileSizeMB.toStringAsFixed(0)} MB). Esto puede tardar...';
-      }
+      final tempDir = await getTemporaryDirectory();
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final seenSizes = <int>{};
 
-      // Strategy: ALWAYS extract a single thumbnail.
-      String? thumbnailPath;
-      try {
-        thumbnailPath = await VideoThumbnail.thumbnailFile(
-          video: filePath,
-          thumbnailPath:
-              '${(await getTemporaryDirectory()).path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          imageFormat: ImageFormat.JPEG,
-          maxHeight: 1080,
-          quality: 85,
-        );
-
-        if (thumbnailPath == null || !File(thumbnailPath).existsSync()) {
-          throw Exception('No se pudo extraer la imagen del video.');
-        }
-
-        debugPrint('📸 Using thumbnail: $thumbnailPath');
-      } catch (e) {
-        debugPrint('⚠️ Thumbnail extraction failed: $e');
-        throw Exception('Error al procesar el video: $e');
-      }
-
-      // Direct call to GeminiService for better error visibility
-      final geminiService = ref.read(geminiProvider);
-      debugPrint('🔍 Calling Gemini directly with thumbnail...');
-
-      try {
-        final jsonString =
-            await geminiService.extractRecipe(mediaPath: thumbnailPath);
-
-        debugPrint(
-            '📝 Gemini returned: ${jsonString?.substring(0, jsonString.length > 200 ? 200 : jsonString.length)}...');
-
-        if (jsonString == null || jsonString.isEmpty) {
-          throw Exception(
-            'Gemini devolvió una respuesta vacía.\n\n'
-            'Posibles causas:\n'
-            '1. API Key de Gemini no configurada en .env\n'
-            '2. Sin conexión a internet\n'
-            '3. Video no es de cocina\n\n'
-            'Revisa la consola para más detalles.',
+      for (final timeMs in [0, 3000, 7000, 12000]) {
+        try {
+          final framePath = await VideoThumbnail.thumbnailFile(
+            video: filePath,
+            thumbnailPath: '${tempDir.path}/thumb_${ts}_$timeMs.jpg',
+            imageFormat: ImageFormat.JPEG,
+            maxHeight: 960,
+            timeMs: timeMs,
+            quality: 80,
           );
-        }
-
-        // Parse the JSON response
-        final useCase = ref.read(extractRecipeUseCaseProvider);
-        importedRecipe = useCase.parseFromJson(jsonString);
-
-        currentStatusMessage = '¡Receta encontrada!';
-        state = RecipeImportState.success;
-      } catch (e) {
-        debugPrint('❌ Gemini extractRecipe failed: $e');
-        rethrow;
+          if (framePath != null) {
+            final frameFile = File(framePath);
+            if (frameFile.existsSync()) {
+              final size = frameFile.lengthSync();
+              if (size > 0 && seenSizes.add(size)) {
+                frames.add(framePath);
+              } else {
+                frameFile.deleteSync();
+              }
+            }
+          }
+        } catch (_) {}
       }
 
-      // Clean up thumbnail after processing
-      if (File(thumbnailPath).existsSync()) {
-        File(thumbnailPath).deleteSync();
+      if (frames.isEmpty) {
+        throw Exception('No se pudieron extraer fotogramas del video.');
       }
+
+      currentStatusMessage =
+          'El Chef IA está analizando ${frames.length} fotograma(s) del video...';
+      final geminiService = ref.read(geminiProvider);
+
+      final String? jsonString;
+      if (frames.length > 1) {
+        jsonString = await geminiService.extractRecipeFromImages(frames);
+      } else {
+        jsonString = await geminiService.extractRecipe(mediaPath: frames.first);
+      }
+
+      if (jsonString == null || jsonString.isEmpty) {
+        throw Exception(
+          'No se obtuvo respuesta de la IA.\n\n'
+          'Verifica tu conexión a internet o prueba con capturas de pantalla de los ingredientes y pasos.',
+        );
+      }
+
+      debugPrint(
+          '📝 Gemini returned: ${jsonString.substring(0, jsonString.length > 200 ? 200 : jsonString.length)}...');
+
+      final useCase = ref.read(extractRecipeUseCaseProvider);
+      importedRecipe = useCase.parseFromJson(jsonString, sourceUrl: sourceUrl);
+
+      currentStatusMessage = '¡Receta encontrada!';
+      state = RecipeImportState.success;
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = e.toString().replaceFirst('Exception: ', '');
       debugPrint('❌ Video import error: $e');
       state = RecipeImportState.error;
+    } finally {
+      for (final frame in frames) {
+        final f = File(frame);
+        if (f.existsSync()) {
+          try {
+            f.deleteSync();
+          } catch (_) {}
+        }
+      }
     }
   }
 
@@ -311,7 +369,8 @@ final extractRecipeUseCaseProvider = Provider<ExtractRecipeUseCase>((ref) {
 final tikTokServiceProvider = Provider<TikTokService>((ref) {
   const apiKey = String.fromEnvironment('TIKTOK_API_KEY');
   if (apiKey.isEmpty) {
-    debugPrint('ℹ️ TIKTOK_API_KEY no configurada (usando extracción alternativa).');
+    debugPrint(
+        'ℹ️ TIKTOK_API_KEY no configurada (usando extracción alternativa).');
   }
   return TikTokService(apiKey);
 });
