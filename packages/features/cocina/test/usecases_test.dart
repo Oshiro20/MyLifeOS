@@ -154,6 +154,21 @@ void main() {
       expect(recipe.fuenteUrl, 'https://example.com');
       expect(recipe.ingredients.length, 1);
     });
+
+    test('parseFromJson lanza error legible cuando IA reporta error_extraccion',
+        () {
+      const errorJson =
+          '{"error_extraccion": "No hay información visible del plato."}';
+      final useCase = ExtractRecipeUseCase(FakeAIExtractor());
+
+      expect(
+        () => useCase.parseFromJson(errorJson),
+        throwsA(
+          predicate((e) =>
+              e.toString().contains('No hay información visible del plato.')),
+        ),
+      );
+    });
   });
 
   // ── CalculateRecipeViabilityUseCase Tests ──────────────────────────────────

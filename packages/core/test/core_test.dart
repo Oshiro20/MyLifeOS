@@ -76,4 +76,19 @@ void main() {
       expect(await SharedIdentityService.getUserName(), '');
     });
   });
+
+  group('TikTokService URL helpers', () {
+    test('extractFirstUrl y extractSharedCaption separan texto y enlace', () {
+      const shared =
+          'Arroz Chaufa estos son los secretitos: https://vt.tiktok.com/ZSmAbC123/)';
+      expect(
+        TikTokService.extractFirstUrl(shared),
+        'https://vt.tiktok.com/ZSmAbC123/',
+      );
+      expect(
+        TikTokService.extractSharedCaption(shared),
+        'Arroz Chaufa estos son los secretitos:',
+      );
+    });
+  });
 }

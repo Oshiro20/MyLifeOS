@@ -27,7 +27,13 @@ class ExtractRecipeUseCase {
       String cleanJson = _extractJsonFromResponse(jsonString);
 
       final decoded = jsonDecode(cleanJson) as Map<String, dynamic>;
+      final err = decoded['error_extraccion']?.toString().trim();
+      if (err != null && err.isNotEmpty) {
+        throw FormatException(err);
+      }
       return _parseRecipe(decoded, sourceUrl: sourceUrl);
+    } on FormatException catch (e) {
+      throw Exception(e.message);
     } catch (e, stackTrace) {
       debugPrint('❌ Error parsing recipe JSON: $e');
       debugPrint(

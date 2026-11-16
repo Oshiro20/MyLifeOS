@@ -55,7 +55,9 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   }
 
   Future<void> importFromTikTokUrl(String url) async {
-    final cleanUrl = url.trim();
+    final rawInput = url.trim();
+    final extractedUrl = TikTokService.extractFirstUrl(rawInput);
+    final cleanUrl = extractedUrl ?? rawInput;
     if (cleanUrl.isEmpty) {
       errorMessage = 'Ingresa una URL válida de receta o video.';
       state = RecipeImportState.error;
@@ -109,7 +111,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         // Extracción alternativa pública vía oEmbed + OpenGraph / JSON-LD
         currentStatusMessage = 'Extrayendo metadatos y descripción del enlace...';
         final metadata =
-            await tikTokService.extractPublicRecipeMetadata(cleanUrl);
+            await tikTokService.extractPublicRecipeMetadata(rawInput);
         if (metadata == null) {
           throw Exception(
             'No se pudo leer este enlace automáticamente (puede ser privado o estar protegido).\n\n'
@@ -123,12 +125,25 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
             final imgResp = await http
                 .get(Uri.parse(metadata.thumbnailUrl!))
                 .timeout(const Duration(seconds: 15));
-            if (imgResp.statusCode == 200 && imgResp.bodyBytes.isNotEmpty) {
+            final contentType =
+                (imgResp.headers['content-type'] ?? '').toLowerCase();
+            final isValidImage =
+                imgResp.statusCode == 200 &&
+                imgResp.bodyBytes.length > 2048 &&
+                (contentType.isEmpty || contentType.startsWith('image/'));
+            if (isValidImage) {
               tempThumbPath =
                   '${(await getTemporaryDirectory()).path}/url_thumb_${DateTime.now().millisecondsSinceEpoch}.jpg';
               await File(tempThumbPath).writeAsBytes(imgResp.bodyBytes);
             }
           } catch (_) {}
+        }
+
+        if (metadata.contextText.isEmpty && tempThumbPath == null) {
+          throw Exception(
+            'El enlace no expone el título ni la portada de la receta.\n\n'
+            'Prueba tomando una captura de pantalla ("Galería"), subiendo el video descargado o pegando la descripción de ingredientes.',
+          );
         }
 
         state = RecipeImportState.extractingAI;
@@ -139,7 +154,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
           final jsonString = await geminiService.extractRecipe(
             textContext: metadata.contextText.isNotEmpty
                 ? metadata.contextText
-                : 'Receta desde $cleanUrl',
+                : null,
             mediaPath: tempThumbPath,
           );
           if (jsonString == null || jsonString.isEmpty) {

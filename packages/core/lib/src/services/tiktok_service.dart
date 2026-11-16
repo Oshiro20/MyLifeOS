@@ -56,16 +56,96 @@ class TikTokService {
     return null;
   }
 
+  /// Extrae la primera URL HTTP(S) encontrada dentro de un texto libre compartido.
+  static String? extractFirstUrl(String rawInput) {
+    final match = RegExp(r'https?://[^\s]+', caseSensitive: false)
+        .firstMatch(rawInput.trim());
+    if (match != null) {
+      return match.group(0)!.replaceAll(RegExp(r'[.,;)\]]+$'), '');
+    }
+    return null;
+  }
+
+  /// Devuelve el texto descriptivo fuera de la URL cuando apps como TikTok
+  /// comparten título/caption junto al enlace.
+  static String extractSharedCaption(String rawInput) {
+    return rawInput
+        .replaceAll(RegExp(r'https?://[^\s]+', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  static bool _isGenericPlatformTitle(String title) {
+    final lower = title.trim().toLowerCase();
+    if (lower.isEmpty) return true;
+    const genericTitles = {
+      'tiktok',
+      'tiktok - make your day',
+      'make your day',
+      'youtube',
+      'instagram',
+      'facebook',
+      'watch',
+      'reel',
+      'just a moment...',
+      'access denied',
+    };
+    return genericTitles.contains(lower);
+  }
+
+  /// Resuelve enlaces cortos (vt.tiktok.com, vm.tiktok.com, etc.) siguiendo
+  /// redirecciones hasta obtener la URL canónica del video.
+  Future<String> _resolveCanonicalUrl(String normalizedUrl) async {
+    final lower = normalizedUrl.toLowerCase();
+    final isShort = lower.contains('vm.tiktok.com') ||
+        lower.contains('vt.tiktok.com') ||
+        lower.contains('youtu.be') ||
+        lower.contains('instagr.am') ||
+        lower.contains('fb.watch');
+    if (!isShort) return normalizedUrl;
+
+    try {
+      final client = http.Client();
+      try {
+        final req = http.Request('GET', Uri.parse(normalizedUrl))
+          ..followRedirects = true
+          ..maxRedirects = 5
+          ..headers.addAll({
+            'User-Agent':
+                'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36',
+          });
+        final streamed =
+            await client.send(req).timeout(const Duration(seconds: 10));
+        final resolved = streamed.request?.url.toString();
+        await streamed.stream.drain<void>();
+        if (resolved != null && resolved.startsWith('http')) {
+          return resolved;
+        }
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Canonical redirect lookup failed: $e');
+    }
+    return normalizedUrl;
+  }
+
   /// Extracción pública alternativa sin API key mediante oEmbed y metadatos HTML
   /// (título, descripción/caption, JSON-LD Recipe e imagen portada).
   Future<({String contextText, String? thumbnailUrl})?>
       extractPublicRecipeMetadata(String rawUrl) async {
-    final normalizedUrl =
-        rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-            ? rawUrl.trim()
-            : 'https://${rawUrl.trim()}';
+    final extractedUrl = extractFirstUrl(rawUrl) ?? rawUrl.trim();
+    final sharedCaption = extractSharedCaption(rawUrl);
+    final normalizedInitial =
+        extractedUrl.startsWith('http://') || extractedUrl.startsWith('https://')
+            ? extractedUrl
+            : 'https://$extractedUrl';
+    final normalizedUrl = await _resolveCanonicalUrl(normalizedInitial);
     final lower = normalizedUrl.toLowerCase();
-    final parts = <String>[];
+    final parts = <String>[
+      if (sharedCaption.isNotEmpty && !_isGenericPlatformTitle(sharedCaption))
+        'Texto compartido con el enlace: $sharedCaption',
+    ];
     String? thumbnailUrl;
 
     // 1. Intentar endpoints oEmbed públicos de TikTok o YouTube
@@ -86,7 +166,7 @@ class TikTokService {
       try {
         final resp = await http.get(
           oembedUri,
-          headers: {'User-Agent': 'Mozilla/5.0 (compatible; MyLifeOS/3.7)'},
+          headers: {'User-Agent': 'Mozilla/5.0 (compatible; MyLifeOS/3.8)'},
         ).timeout(const Duration(seconds: 12));
         if (resp.statusCode == 200) {
           final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
@@ -94,7 +174,7 @@ class TikTokService {
             final title = decoded['title']?.toString().trim() ?? '';
             final author = decoded['author_name']?.toString().trim() ?? '';
             final thumb = decoded['thumbnail_url']?.toString().trim();
-            if (title.isNotEmpty) {
+            if (title.isNotEmpty && !_isGenericPlatformTitle(title)) {
               parts.add('Título/Descripción del video: $title');
             }
             if (author.isNotEmpty) {
@@ -131,11 +211,13 @@ class TikTokService {
 
         if (ogTitle != null &&
             ogTitle.isNotEmpty &&
+            !_isGenericPlatformTitle(ogTitle) &&
             !parts.any((p) => p.contains(ogTitle))) {
           parts.add('Título página: $ogTitle');
         }
         if (ogDesc != null &&
             ogDesc.isNotEmpty &&
+            !_isGenericPlatformTitle(ogDesc) &&
             !parts.any((p) => p.contains(ogDesc))) {
           parts.add('Descripción/Caption: $ogDesc');
         }
@@ -144,7 +226,8 @@ class TikTokService {
         }
         if (thumbnailUrl == null &&
             ogImg != null &&
-            ogImg.startsWith('http')) {
+            ogImg.startsWith('http') &&
+            !ogImg.toLowerCase().contains('tiktok-logo')) {
           thumbnailUrl = ogImg;
         }
       }

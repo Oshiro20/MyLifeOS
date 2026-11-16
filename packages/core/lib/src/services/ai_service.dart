@@ -359,16 +359,17 @@ PASO 7 - ESTIMA CALORÍAS
 13. "ingredientes_inferidos" → lista de ingredientes esenciales que NO aparecen en el video pero son necesarios (aceite, sal, pimienta, agua, etc.)
 14. Si ves texto en el video (nombres, cantidades), ÚSALO.
 15. Si el video muestra postre/mazamorra/plato dulce, adáptalo accordingly.
-16. Si no estás seguro de algo, INFIÉRELO lógicamente pero completa TODOS los campos.
-17. Si el video está resumido → reconstruye pasos faltantes con lógica culinaria.
+16. Si el texto o imagen sí identifican el plato, completa TODOS los campos respetando FIELMENTE ese plato (el "nombre_receta" y los ingredientes deben corresponder al plato indicado en el contexto o visible en la imagen).
+17. REGLA ESTRICTA ANTI-ALUCINACIÓN: Si NO ves ninguna imagen/video adjunto ni recibiste un título o descripción clara de un plato específico (por ejemplo, solo un enlace genérico o texto vacío sin receta), NUNCA inventes ni sustituyas otra receta distinta o viral (como pastas, postres o ejemplos aleatorios). En ese caso devuelve ÚNICAMENTE:
+{"error_extraccion": "No hay información suficiente visible del plato en el enlace o imagen para extraer la receta."}
 
 ${textContext != null && textContext.isNotEmpty ? '''
-📌 CONTEXTO ADICIONAL DEL USUARIO:
+📌 CONTEXTO DEL VIDEO/ENLACE (OBLIGATORIO RESPETAR ESTE PLATO):
 "$textContext"
-Usa esta información como referencia adicional.
+Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reemplaces por otra receta.
 ''' : ''}
 
-🎥 AHORA ANALIZA EL VIDEO/IMAGEN ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
+🎥 AHORA ANALIZA EL VIDEO/IMAGEN Y CONTEXTO ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
 
     try {
       debugPrint('🤖 Calling Gemini recipe extraction (${mediaPath ?? "text only"})');
@@ -454,6 +455,8 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
 - "cantidad" debe ser NÚMERO (float)
 - "unidad" en español
 - Mínimo 2 ingredientes, 3 pasos
+- NUNCA inventes una receta diferente a la mostrada en las imágenes. Si no puedes ver ninguna imagen o las imágenes no contienen comida ni receta legible, devuelve ÚNICAMENTE:
+{"error_extraccion": "No se detectó ninguna receta legible en las imágenes adjuntas."}
 
 📸 ANALIZA LAS IMÁGENES Y DEVUELVE LA RECETA EN JSON.''';
 
