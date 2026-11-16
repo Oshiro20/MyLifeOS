@@ -138,39 +138,48 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
           await ref.read(recipesProvider.notifier).load();
         },
         color: const Color(0xFF00C896),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.menu_book_outlined,
-                  size: 64,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.18)),
-              const SizedBox(height: 12),
-              Text('Sin recetas guardadas',
-                  style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.45),
-                      fontSize: 17)),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => _showAddRecipeSheet(context, ref),
-                icon: const Icon(Icons.add, color: Color(0xFF00C896)),
-                label: const Text('Agregar receta',
-                    style: TextStyle(color: Color(0xFF00C896))),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.menu_book_outlined,
+                        size: 64,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.18)),
+                    const SizedBox(height: 12),
+                    Text('Sin recetas guardadas',
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.45),
+                            fontSize: 17)),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _showAddRecipeSheet(context, ref),
+                      icon: const Icon(Icons.add, color: Color(0xFF00C896)),
+                      label: const Text('Agregar receta',
+                          style: TextStyle(color: Color(0xFF00C896))),
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                      onPressed: () => _showLocalRecipesSheet(context, ref),
+                      icon:
+                          const Icon(Icons.menu_book, color: Color(0xFFFF9800)),
+                      label: const Text('📚 Explorar 315 recetas locales',
+                          style: TextStyle(color: Color(0xFFFF9800))),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 4),
-              TextButton.icon(
-                onPressed: () => _showLocalRecipesSheet(context, ref),
-                icon: const Icon(Icons.menu_book, color: Color(0xFFFF9800)),
-                label: const Text('📚 Explorar 315 recetas locales',
-                    style: TextStyle(color: Color(0xFFFF9800))),
-              ),
-            ],
+            ),
           ),
         ),
       );
@@ -881,7 +890,8 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
     await CookingHistoryService().recordCooked(recipe.name);
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
       SnackBar(
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -897,25 +907,24 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
           ],
         ),
         backgroundColor: const Color(0xFFFF9800),
-        duration: const Duration(milliseconds: 2000),
+        duration: const Duration(milliseconds: 2500),
         action: SnackBarAction(
           label: 'Deshacer',
           textColor: Colors.white,
           onPressed: () async {
             await inventoryNotifier.revertDeduction(scaledIngredients);
             await inventoryNotifier.load();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('↩️ Deducción revertida'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('↩️ Deducción revertida'),
+                backgroundColor: Colors.green,
+              ),
+            );
           },
         ),
       ),
     );
+    await inventoryNotifier.load();
     if (!context.mounted) return;
     Navigator.of(context).pop();
   }
@@ -958,6 +967,22 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
   final List<_IngEntry> _ingredients = [];
   // Instrucciones dinámicas
   final List<TextEditingController> _instructions = [];
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _descCtrl.dispose();
+    _durCtrl.dispose();
+    _srvCtrl.dispose();
+    for (final ing in _ingredients) {
+      ing.nameCtrl.dispose();
+      ing.qtyCtrl.dispose();
+    }
+    for (final inst in _instructions) {
+      inst.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1503,6 +1528,7 @@ class _LocalRecipesSheetState extends State<_LocalRecipesSheet>
   Future<void> _loadRecipes() async {
     final localDb = LocalRecipeDatabaseService();
     final recipes = await localDb.loadRecipes();
+    if (!mounted) return;
     setState(() {
       _allRecipes = recipes;
       _isLoading = false;
@@ -1726,14 +1752,18 @@ class _RecipeGroupTileState extends State<_RecipeGroupTile> with AppFeedback {
   final Set<String> _savingIds = {};
 
   static const Map<String, String> _groupEmojis = {
-    'Desayunos': '🌅',
-    'Almuerzos': '🍲',
-    'Cenas': '🌙',
-    'Snacks': '🍿',
-    'Postres': '🍰',
-    'Bebidas': '🥤',
-    'Entradas': '🥗',
-    'Sopas': '🍜',
+    'Desayuno': '🌅',
+    'Almuerzo': '🍛',
+    'Cena': '🌙',
+    'Entrada': '🥗',
+    'Sopa': '🍲',
+    'Seco': '🥘',
+    'Postre': '🍰',
+    'Mazamorra': '🍮',
+    'Bebida': '🥤',
+    'Snack': '🍿',
+    'Jugo': '🧃',
+    'Otro': '🍽️',
     'Otras': '🍽️',
   };
 
@@ -1743,9 +1773,6 @@ class _RecipeGroupTileState extends State<_RecipeGroupTile> with AppFeedback {
     });
     try {
       await widget.onSave(recipe);
-      if (mounted) {
-        showSuccess(context, '"${recipe.name}" guardada');
-      }
     } catch (e) {
       if (mounted) {
         showError(context, 'Error al guardar: $e');

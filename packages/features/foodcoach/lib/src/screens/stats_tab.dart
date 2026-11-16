@@ -12,6 +12,48 @@ class StatsTab extends ConsumerWidget {
 
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
+    if (state.isLoading && stats == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00C896)),
+      );
+    }
+
+    if (state.error != null && stats == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 48, color: Colors.redAccent),
+              const SizedBox(height: 12),
+              Text(
+                'Error al cargar estadísticas',
+                style: TextStyle(
+                    color: onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                state.error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.6), fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => ref.read(foodCoachProvider.notifier).load(),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (stats == null || stats.totalMeals == 0) {
       return Center(
         child: Column(

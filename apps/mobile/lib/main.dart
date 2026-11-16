@@ -138,6 +138,10 @@ Future<void> main() async {
             armarioRepositoryProvider.overrideWithValue(ArmarioRepository(_db)),
             foodCoachRepositoryProvider.overrideWith(
                 (ref) => FoodCoachRepository(_db, ref.watch(geminiProvider))),
+            pantryIngredientsFeedProvider.overrideWith((ref) =>
+                ref.read(cocinaRepositoryProvider).getAllIngredients),
+            recipesFeedProvider.overrideWith(
+                (ref) => ref.read(cocinaRepositoryProvider).getAllRecipes),
             // Register cocina providers
             inventoryProvider.overrideWith(InventoryNotifier.new),
             recipesProvider.overrideWith(RecipesNotifier.new),

@@ -60,7 +60,7 @@ class InventoryIngredient extends Equatable {
   }
 
   bool get isExpiringSoon {
-    if (expirationDate == null) return false;
+    if (expirationDate == null || isExpired) return false;
     return expirationDate!.difference(DateTime.now()).inDays <= 3;
   }
 
@@ -100,6 +100,23 @@ class ShoppingItem extends Equatable {
     this.bought = false,
     required this.createdAt,
   });
+
+  ShoppingItem copyWith({
+    String? id,
+    String? name,
+    double? quantity,
+    String? unit,
+    bool? bought,
+    DateTime? createdAt,
+  }) =>
+      ShoppingItem(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        quantity: quantity ?? this.quantity,
+        unit: unit ?? this.unit,
+        bought: bought ?? this.bought,
+        createdAt: createdAt ?? this.createdAt,
+      );
 
   @override
   List<Object?> get props => [id, name, quantity, unit, bought, createdAt];

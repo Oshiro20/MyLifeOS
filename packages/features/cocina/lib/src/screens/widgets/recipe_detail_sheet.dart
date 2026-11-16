@@ -19,7 +19,10 @@ class RecipeDetailSheet extends StatelessWidget {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
-        return _RecipeDetailContent(recipe: recipe);
+        return _RecipeDetailContent(
+          recipe: recipe,
+          scrollController: scrollController,
+        );
       },
     );
   }
@@ -27,7 +30,11 @@ class RecipeDetailSheet extends StatelessWidget {
 
 class _RecipeDetailContent extends StatefulWidget {
   final Recipe recipe;
-  const _RecipeDetailContent({required this.recipe});
+  final ScrollController scrollController;
+  const _RecipeDetailContent({
+    required this.recipe,
+    required this.scrollController,
+  });
 
   @override
   State<_RecipeDetailContent> createState() => _RecipeDetailContentState();
@@ -59,7 +66,7 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
     final maxServings = (_baseServings * 2).clamp(2, 24);
 
     return ListView(
-      controller: PrimaryScrollController.of(context),
+      controller: widget.scrollController,
       padding: const EdgeInsets.all(16),
       children: [
         Center(
@@ -347,7 +354,8 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
     await CookingHistoryService().recordCooked(widget.recipe.name);
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
       SnackBar(
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -359,26 +367,26 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
           ],
         ),
         backgroundColor: const Color(0xFFFF9800),
-        duration: const Duration(milliseconds: 2000),
+        duration: const Duration(milliseconds: 2500),
         action: SnackBarAction(
           label: 'Deshacer',
           textColor: Colors.white,
           onPressed: () async {
             await inventoryNotifier.revertDeduction(scaledIngredients);
             await inventoryNotifier.load();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('↩️ Deducción revertida'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('↩️ Deducción revertida'),
+                backgroundColor: Colors.green,
+              ),
+            );
           },
         ),
       ),
     );
-    inventoryNotifier.load();
-    Navigator.of(context).pop();
+    await inventoryNotifier.load();
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }

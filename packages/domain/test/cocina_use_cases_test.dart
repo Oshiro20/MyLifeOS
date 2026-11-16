@@ -207,4 +207,78 @@ void main() {
       expect(huevosMissing.unit, 'unidades');
     });
   });
+
+  group('GenerateWeeklyMenuUseCase', () {
+    test('no borra el menú existente si no hay recetas guardadas', () async {
+      final repo = _FakeWeeklyMenuRepo(recipes: const []);
+      final useCase = GenerateWeeklyMenuUseCase(repository: repo);
+
+      await expectLater(useCase.execute(), throwsException);
+      expect(repo.clearCalls, 0);
+    });
+
+    test('prioriza recetas por MealType en desayuno, almuerzo y cena',
+        () async {
+      final repo = _FakeWeeklyMenuRepo(recipes: [
+        Recipe(
+          id: 'r_b',
+          name: 'Avena',
+          durationMinutes: 10,
+          servings: 1,
+          tipoComida: MealType.desayuno,
+          createdAt: DateTime(2026),
+        ),
+        Recipe(
+          id: 'r_l',
+          name: 'Seco de pollo',
+          durationMinutes: 30,
+          servings: 2,
+          tipoComida: MealType.seco,
+          createdAt: DateTime(2026),
+        ),
+        Recipe(
+          id: 'r_d',
+          name: 'Crema de verduras',
+          durationMinutes: 20,
+          servings: 2,
+          tipoComida: MealType.cena,
+          createdAt: DateTime(2026),
+        ),
+      ]);
+      final useCase = GenerateWeeklyMenuUseCase(repository: repo);
+
+      await useCase.execute();
+      expect(repo.clearCalls, 1);
+      expect(repo.savedEntries.length, 21);
+      expect(
+        repo.savedEntries.where((e) => e.mealType == 0).every((e) => e.recipeId == 'r_b'),
+        isTrue,
+      );
+    });
+  });
+}
+
+class _FakeWeeklyMenuRepo implements ICocinaRepository {
+  final List<Recipe> recipes;
+  int clearCalls = 0;
+  final List<WeeklyMenuEntry> savedEntries = [];
+
+  _FakeWeeklyMenuRepo({required this.recipes});
+
+  @override
+  Future<void> clearWeeklyMenu() async {
+    clearCalls++;
+    savedEntries.clear();
+  }
+
+  @override
+  Future<List<Recipe>> getAllRecipes() async => recipes;
+
+  @override
+  Future<void> saveWeeklyMenuEntry(WeeklyMenuEntry entry) async {
+    savedEntries.add(entry);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

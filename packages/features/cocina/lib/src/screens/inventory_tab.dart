@@ -275,6 +275,46 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
           onDelete: () => _confirmDelete(context, ref, i.id, i.name))));
     }
 
+    if (filteredIngredients.isEmpty) {
+      listChildren.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+          child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.kitchen_outlined,
+                  size: 64,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.18)),
+              const SizedBox(height: 12),
+              Text(
+                  _searchQuery.isNotEmpty
+                      ? 'No se encontraron resultados para "$_searchQuery"'
+                      : 'Tu despensa está vacía',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.45),
+                      fontSize: 17)),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => _showAddDialog(context, ref),
+                icon: const Icon(Icons.add, color: Color(0xFF00C896)),
+                label: Text(
+                    _searchQuery.isNotEmpty
+                        ? 'Agregar este ingrediente'
+                        : 'Agregar ingrediente',
+                    style: const TextStyle(color: Color(0xFF00C896))),
+              ),
+            ]),
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         RefreshIndicator(
@@ -282,42 +322,11 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
             await ref.read(inventoryProvider.notifier).load();
           },
           color: const Color(0xFF00C896),
-          child: filteredIngredients.isEmpty
-              ? Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.kitchen_outlined,
-                        size: 64,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.18)),
-                    const SizedBox(height: 12),
-                    Text(
-                        _searchQuery.isNotEmpty
-                            ? 'No se encontraron resultados para "$_searchQuery"'
-                            : 'Tu despensa está vacía',
-                        style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.45),
-                            fontSize: 17)),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => _showAddDialog(context, ref),
-                      icon: const Icon(Icons.add, color: Color(0xFF00C896)),
-                      label: Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Agregar este ingrediente'
-                              : 'Agregar ingrediente',
-                          style: const TextStyle(color: Color(0xFF00C896))),
-                    ),
-                  ]),
-                )
-              : ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: listChildren,
-                ),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(12),
+            children: listChildren,
+          ),
         ),
         Positioned(
           right: 16,
@@ -905,6 +914,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 flex: 3,
                 child: DropdownButtonFormField<MeasurementUnit>(
+                  key: ValueKey('unit_${_unit.name}'),
                   initialValue: _unit,
                   dropdownColor: Theme.of(context).cardColor,
                   style:
@@ -930,6 +940,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 flex: 1,
                 child: DropdownButtonFormField<String>(
+                  key: ValueKey('cat_$_primaryCategory'),
                   initialValue: _primaryCategory,
                   dropdownColor: Theme.of(context).cardColor,
                   isExpanded: true,
@@ -961,6 +972,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
             // Preparación/Estado
             DropdownButtonFormField<String>(
+              key: ValueKey('prep_$_preparation'),
               initialValue:
                   _preparations.contains(_preparation) ? _preparation : '',
               dropdownColor: Theme.of(context).cardColor,
@@ -982,6 +994,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
             // Lugar de Guardado
             DropdownButtonFormField<String>(
+              key: ValueKey('area_$_storageArea'),
               initialValue: _storageArea,
               dropdownColor: Theme.of(context).cardColor,
               isExpanded: true,
@@ -1127,7 +1140,12 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
   Future<void> _aiScan() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (pickedFile == null) return;
 
     setState(() => _saving = true);
@@ -1162,7 +1180,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 orElse: () => MeasurementUnit.unidades);
           } catch (_) {}
 
-          final pDays = item['pantryLifeDays'] as int?;
+          final pDays = (item['pantryLifeDays'] as num?)?.toInt();
           DateTime? exp;
           if (pDays != null && pDays > 0) {
             exp = DateTime.now().add(Duration(days: pDays));
@@ -1210,7 +1228,12 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
   Future<void> _aiScanSingle() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (pickedFile == null) return;
 
     setState(() => _saving = true);
@@ -1241,9 +1264,9 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
             orElse: () => MeasurementUnit.unidades);
       } catch (_) {}
 
-      final pDays = item['pantryLifeDays'] as int?;
-      final rDays = item['fridgeLifeDays'] as int?;
-      final cDays = item['freezerLifeDays'] as int?;
+      final pDays = (item['pantryLifeDays'] as num?)?.toInt();
+      final rDays = (item['fridgeLifeDays'] as num?)?.toInt();
+      final cDays = (item['freezerLifeDays'] as num?)?.toInt();
       final sTip = item['storageTip']?.toString();
 
       if (mounted) {
@@ -1290,9 +1313,11 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
   Future<void> _save() async {
     final nameVal = Validator.ingredientName(_nameCtrl.text);
-    final qtyVal = Validator.ingredientQuantity(double.tryParse(_qtyCtrl.text));
+    final parsedQty =
+        double.tryParse(_qtyCtrl.text.trim().replaceAll(',', '.'));
+    final qtyVal = Validator.ingredientQuantity(parsedQty);
 
-    if (!nameVal.isValid || !qtyVal.isValid) {
+    if (!nameVal.isValid || !qtyVal.isValid || parsedQty == null) {
       setState(() {
         _nameError = nameVal.errorMessage;
         _qtyError = qtyVal.errorMessage;
@@ -1311,9 +1336,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               ? null
               : _subCategoryCtrl.text.trim(),
           preparation: _preparation,
-          quantity: double.parse(_qtyCtrl.text),
+          quantity: parsedQty,
           unit: _unit.label,
           expirationDate: _expiry,
+          imageAssetId: widget.itemToEdit?.imageAssetId,
           storageArea: _storageArea,
         )
       ]);
@@ -1431,13 +1457,7 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                             isDense: true,
                             contentPadding: EdgeInsets.zero),
                         onChanged: (val) {
-                          items[i] = InventoryIngredient(
-                              id: item.id,
-                              name: val,
-                              primaryCategory: item.primaryCategory,
-                              subCategory: item.subCategory,
-                              quantity: item.quantity,
-                              unit: item.unit);
+                          items[i] = item.copyWith(name: val);
                         },
                       ),
                       subtitle: Row(
@@ -1458,13 +1478,11 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                                   isDense: true,
                                   contentPadding: EdgeInsets.zero),
                               onChanged: (val) {
-                                items[i] = InventoryIngredient(
-                                    id: item.id,
-                                    name: item.name,
-                                    primaryCategory: item.primaryCategory,
-                                    subCategory: item.subCategory,
-                                    quantity: double.tryParse(val) ?? 1.0,
-                                    unit: item.unit);
+                                final parsed = double.tryParse(
+                                    val.trim().replaceAll(',', '.'));
+                                if (parsed != null && parsed > 0) {
+                                  items[i] = item.copyWith(quantity: parsed);
+                                }
                               },
                             ),
                           ),

@@ -85,12 +85,65 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                       inventory: invState.ingredients,
                       day: day,
                       onTapRecipe: (entry) => _showRecipeDetail(context, entry),
+                      onClearSlot: (entry) =>
+                          ref.read(weeklyMenuProvider.notifier).clearSlot(entry),
                       onAssignEmpty: (d, mealType) => _showRecipePicker(
                           context, d, mealType, state.entries),
                     );
                   },
                 )
-              : const Center(child: Text('Error cargando menú')),
+              : state is WeeklyMenuError
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline,
+                              color: Colors.redAccent, size: 48),
+                          const SizedBox(height: 12),
+                          Text('Error cargando menú: ${state.message}',
+                              textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () =>
+                                ref.read(weeklyMenuProvider.notifier).load(),
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.calendar_month_outlined,
+                                color: Color(0xFF00E676), size: 56),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Sin menú semanal planificado aún',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Genera un plan automático basado en tus recetas y despensa.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _generateMenu(context),
         label: const Text('Planificar Semana'),
@@ -206,11 +259,19 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
       return;
     }
 
-    // Add to shopping list
+    // Add to shopping list (deduplicating against existing unbought items)
+    final existingPending = ref
+        .read(recipesProvider)
+        .shoppingList
+        .where((s) => !s.bought)
+        .map((s) => s.name.trim().toLowerCase())
+        .toSet();
     const uuid = Uuid();
     final notifier = ref.read(recipesProvider.notifier);
     int added = 0;
     for (final entry in missingMap.entries) {
+      if (existingPending.contains(entry.key)) continue;
+      existingPending.add(entry.key);
       final units = entry.value.toList();
       await notifier.addShoppingItem(ShoppingItem(
         id: uuid.v4(),
@@ -226,8 +287,9 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              '🛒 $added ingredientes añadidos a la lista de compras ($recipeCount recetas)'),
+          content: Text(added == 0
+              ? '✅ Todos los ingredientes faltantes ya están en tu lista de compras'
+              : '🛒 $added ingredientes añadidos a la lista de compras ($recipeCount recetas)'),
           backgroundColor: const Color(0xFF00E676),
           duration: const Duration(milliseconds: 1800),
           action: SnackBarAction(
@@ -394,12 +456,20 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     );
 
     if (selected != null) {
-      // Save to weekly menu
+      // Save to weekly menu (preserving slot entry ID if updating an existing row)
+      final parsedMeal = int.parse(mealType);
+      String? existingId;
+      for (final e in currentEntries) {
+        if (e.dayOfWeek == day && e.mealType == parsedMeal) {
+          existingId = e.id;
+          break;
+        }
+      }
       final repo = ref.read(cocinaRepositoryProvider);
       await repo.saveWeeklyMenuEntry(WeeklyMenuEntry(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: existingId ?? const Uuid().v4(),
         dayOfWeek: day,
-        mealType: int.parse(mealType),
+        mealType: parsedMeal,
         recipeId: selected.id,
         isCustom: false,
       ));
@@ -424,11 +494,12 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
 class _DaySection extends StatelessWidget {
   final String dayLabel;
   final List<Map<String, dynamic>> meals;
-  final List<dynamic> entries;
+  final List<WeeklyMenuEntry> entries;
   final List<Recipe> recipes;
   final List<InventoryIngredient> inventory;
   final int day;
-  final Function(dynamic recipe) onTapRecipe;
+  final Function(WeeklyMenuEntry entry) onTapRecipe;
+  final Function(WeeklyMenuEntry entry) onClearSlot;
   final Function(int day, String mealType) onAssignEmpty;
 
   const _DaySection({
@@ -439,6 +510,7 @@ class _DaySection extends StatelessWidget {
     required this.inventory,
     required this.day,
     required this.onTapRecipe,
+    required this.onClearSlot,
     required this.onAssignEmpty,
   });
 
@@ -484,28 +556,31 @@ class _DaySection extends StatelessWidget {
                   fontWeight: FontWeight.bold)),
         ),
         ...meals.map((m) {
-          dynamic entry;
-          try {
-            entry = dayEntries.firstWhere((e) => e.mealType == m['type']);
-          } catch (e) {
-            entry = null;
+          WeeklyMenuEntry? entry;
+          for (final e in dayEntries) {
+            if (e.mealType == m['type']) {
+              entry = e;
+              break;
+            }
           }
 
-          final recipeName = entry != null && entry.recipeId.isNotEmpty
-              ? _getRecipeName(entry.recipeId)
-              : null;
+          final activeEntry =
+              (entry != null && entry.recipeId.isNotEmpty) ? entry : null;
+          final recipeName =
+              activeEntry != null ? _getRecipeName(activeEntry.recipeId) : null;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _MealTile(
               mealLabel: m['label'],
               icon: m['icon'],
-              recipeId: entry?.recipeId,
+              recipeId: activeEntry?.recipeId,
               recipeName: recipeName,
-              matchPercentage: _getMatchPercentage(entry?.recipeId),
-              onTap: entry != null && entry.recipeId.isNotEmpty
-                  ? () => onTapRecipe(entry)
+              matchPercentage: _getMatchPercentage(activeEntry?.recipeId),
+              onTap: activeEntry != null
+                  ? () => onTapRecipe(activeEntry)
                   : () => onAssignEmpty(day, m['type'].toString()),
+              onClear: activeEntry != null ? () => onClearSlot(activeEntry) : null,
             ),
           );
         }),
@@ -521,6 +596,7 @@ class _MealTile extends StatelessWidget {
   final String? recipeName;
   final int matchPercentage;
   final VoidCallback? onTap;
+  final VoidCallback? onClear;
 
   const _MealTile({
     required this.mealLabel,
@@ -529,6 +605,7 @@ class _MealTile extends StatelessWidget {
     this.recipeName,
     this.matchPercentage = 0,
     this.onTap,
+    this.onClear,
   });
 
   @override
@@ -603,6 +680,20 @@ class _MealTile extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.bold),
               ),
+              if (onClear != null)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.only(left: 4),
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Quitar del plan',
+                  icon: Icon(Icons.close,
+                      size: 18,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.45)),
+                  onPressed: onClear,
+                ),
             ],
           ],
         ),

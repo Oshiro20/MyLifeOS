@@ -498,9 +498,16 @@ class CocinaRepository implements ICocinaRepository {
       }
     }
 
+    final existingShopping = await getShoppingList();
+    final existingPendingNames = existingShopping
+        .where((i) => !i.bought)
+        .map((i) => i.name.trim().toLowerCase())
+        .toSet();
+
     final now = DateTime.now();
     final items = <ShoppingItem>[];
     for (final entry in needed.entries) {
+      if (existingPendingNames.contains(entry.key)) continue;
       final item = await addShoppingItem(ShoppingItem(
         id: '',
         name: entry.key,

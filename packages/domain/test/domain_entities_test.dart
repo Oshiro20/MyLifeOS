@@ -35,6 +35,7 @@ void main() {
       );
 
       expect(ingredient.isExpired, isTrue);
+      expect(ingredient.isExpiringSoon, isFalse);
     });
 
     test('should detect expiring soon ingredient', () {

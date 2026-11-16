@@ -44,8 +44,52 @@ enum MeasurementUnit {
   /// Devuelve la unidad correspondiente a un string.
   static MeasurementUnit fromString(String s) {
     final lower = s.toLowerCase().trim();
+    const aliases = {
+      'u': MeasurementUnit.unidades,
+      'ud': MeasurementUnit.unidades,
+      'uds': MeasurementUnit.unidades,
+      'unidad': MeasurementUnit.unidades,
+      'unidades': MeasurementUnit.unidades,
+      'l': MeasurementUnit.litro,
+      'lt': MeasurementUnit.litro,
+      'litro': MeasurementUnit.litro,
+      'litros': MeasurementUnit.litro,
+      'mililitro': MeasurementUnit.ml,
+      'mililitros': MeasurementUnit.ml,
+      'gr': MeasurementUnit.g,
+      'gramo': MeasurementUnit.g,
+      'gramos': MeasurementUnit.g,
+      'kilo': MeasurementUnit.kg,
+      'kilos': MeasurementUnit.kg,
+      'kilogramo': MeasurementUnit.kg,
+      'kilogramos': MeasurementUnit.kg,
+      'cda': MeasurementUnit.cucharada,
+      'cdas': MeasurementUnit.cucharada,
+      'cucharadas': MeasurementUnit.cucharada,
+      'cdta': MeasurementUnit.cucharadita,
+      'cdtas': MeasurementUnit.cucharadita,
+      'cucharaditas': MeasurementUnit.cucharadita,
+      'tazas': MeasurementUnit.taza,
+      'docenas': MeasurementUnit.docena,
+      'lb': MeasurementUnit.libra,
+      'lbs': MeasurementUnit.libra,
+      'libras': MeasurementUnit.libra,
+      'oz': MeasurementUnit.onza,
+      'onzas': MeasurementUnit.onza,
+      'botellas': MeasurementUnit.botella,
+      'latas': MeasurementUnit.lata,
+      'paquetes': MeasurementUnit.paquete,
+      'sobres': MeasurementUnit.sobre,
+      'cajas': MeasurementUnit.caja,
+      'bolsas': MeasurementUnit.bolsa,
+    };
+    final aliased = aliases[lower];
+    if (aliased != null) return aliased;
+
     for (final u in MeasurementUnit.values) {
-      if (u.name == lower || u.label == lower) return u;
+      if (u.name.toLowerCase() == lower || u.label.toLowerCase() == lower) {
+        return u;
+      }
     }
     return MeasurementUnit.unidades;
   }

@@ -16,6 +16,8 @@ class EvaluateTab extends ConsumerStatefulWidget with AppFeedback {
 class _EvaluateTabState extends ConsumerState<EvaluateTab> {
   final _ingredientCtrl = TextEditingController();
   String? _photoPath;
+  String? _loadedRecipeName;
+  bool _consumingPending = false;
 
   @override
   void dispose() {
@@ -23,13 +25,38 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
     super.dispose();
   }
 
+  void _consumePendingMeal(PendingMealEvaluation? pending) {
+    if (pending == null || _consumingPending) return;
+    _consumingPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consumingPending = false;
+      if (!mounted) return;
+      final notifier = ref.read(foodCoachProvider.notifier);
+      notifier.clearResult();
+      notifier.clearIngredients();
+      for (final ing in pending.ingredients) {
+        if (ing.trim().isNotEmpty) {
+          notifier.addIngredient(ing.trim());
+        }
+      }
+      setState(() {
+        _photoPath = null;
+        _loadedRecipeName = pending.recipeName;
+      });
+      ref.read(pendingMealEvaluationProvider.notifier).clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final pending = ref.watch(pendingMealEvaluationProvider);
+    _consumePendingMeal(pending);
+
     final state = ref.watch(foodCoachProvider);
     final canEvaluate = state.currentIngredients.isNotEmpty || _photoPath != null;
 
-    // Mostrar resultado si hay evaluación
-    if (state.currentEvaluation != null) {
+    // Mostrar resultado si hay evaluación (salvo que haya una nueva receta por cargar)
+    if (state.currentEvaluation != null && pending == null) {
       return _ResultView(
         evaluation: state.currentEvaluation!,
         onReset: () {
@@ -248,7 +275,10 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                       fontSize: 13)),
             ),
 
-          const _PendingMealSyncBanner(),
+          _PendingMealSyncBanner(
+            recipeName: _loadedRecipeName,
+            onDismiss: () => setState(() => _loadedRecipeName = null),
+          ),
 
           // Sugerencias rápidas
           const SizedBox(height: 8),
@@ -638,41 +668,18 @@ final _foodCoachRecipesFeedProvider =
   return loader();
 });
 
-class _PendingMealSyncBanner extends ConsumerStatefulWidget {
-  const _PendingMealSyncBanner();
+class _PendingMealSyncBanner extends StatelessWidget {
+  final String? recipeName;
+  final VoidCallback onDismiss;
 
-  @override
-  ConsumerState<_PendingMealSyncBanner> createState() =>
-      _PendingMealSyncBannerState();
-}
-
-class _PendingMealSyncBannerState
-    extends ConsumerState<_PendingMealSyncBanner> {
-  String? _loadedRecipeName;
-
-  void _consumeIfPending(PendingMealEvaluation? pending) {
-    if (pending == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final notifier = ref.read(foodCoachProvider.notifier);
-      notifier.clearResult();
-      notifier.clearIngredients();
-      for (final ing in pending.ingredients) {
-        if (ing.trim().isNotEmpty) {
-          notifier.addIngredient(ing.trim());
-        }
-      }
-      setState(() => _loadedRecipeName = pending.recipeName);
-      ref.read(pendingMealEvaluationProvider.notifier).clear();
-    });
-  }
+  const _PendingMealSyncBanner({
+    required this.recipeName,
+    required this.onDismiss,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final pending = ref.watch(pendingMealEvaluationProvider);
-    _consumeIfPending(pending);
-
-    if (_loadedRecipeName == null) return const SizedBox.shrink();
+    if (recipeName == null) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -690,7 +697,7 @@ class _PendingMealSyncBannerState
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Receta cargada desde Cocina: $_loadedRecipeName',
+              'Receta cargada desde Cocina: $recipeName',
               style: const TextStyle(
                 color: Color(0xFF00C896),
                 fontSize: 12,
@@ -703,7 +710,7 @@ class _PendingMealSyncBannerState
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             icon: const Icon(Icons.close, size: 16, color: Color(0xFF00C896)),
-            onPressed: () => setState(() => _loadedRecipeName = null),
+            onPressed: onDismiss,
           ),
         ],
       ),

@@ -2,7 +2,6 @@ import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
 import 'package:domain/domain.dart';
 import 'package:data/data.dart';
-import 'dart:convert';
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,6 +15,7 @@ const Map<String, int> _ingredientScores = {
   'plátano': 1, 'uva': 1, 'melón': 1, 'sandía': 1, 'piña': 1,
 
   // ── Verduras (+3)
+  'ensalada': 3,
   'lechuga': 3, 'espinaca': 3, 'brócoli': 3, 'zanahoria': 3, 'apio': 3,
   'pepino': 3, 'tomate': 2, 'cebolla': 2, 'ajo': 3, 'pimiento': 2,
   'coliflor': 3, 'col': 2, 'remolacha': 2, 'calabacín': 2, 'acelga': 3,
@@ -23,6 +23,7 @@ const Map<String, int> _ingredientScores = {
 
   // ── Proteínas magras (+2)
   'pollo': 2, 'pavo': 2, 'atún': 2, 'salmón': 3, 'sardina': 2,
+  'pescado': 2, 'carne magra': 2, 'huevo cocido': 2,
   'huevo': 2, 'tofu': 2, 'legumbre': 2, 'lenteja': 2, 'garbanzo': 2,
   'frijol': 2, 'quinoa': 3, 'tempeh': 2, 'clara de huevo': 3,
 
@@ -110,22 +111,24 @@ class FoodCoachRepository implements IFoodCoachRepository {
           photoPath: photoPath,
         );
         if (jsonStr != null) {
-          final match = RegExp(r'\{[\s\S]*\}').firstMatch(jsonStr);
-          final cleanJson = match?.group(0) ?? jsonStr.trim();
-          final decoded = json.decode(cleanJson) as Map<String, dynamic>;
-          final clsStr =
-              decoded['classification']?.toString().toLowerCase() ?? 'balanced';
-          classification = FoodClassification.values.firstWhere(
-            (e) => e.name == clsStr,
-            orElse: () => FoodClassification.balanced,
-          );
-          healthScore =
-              ((decoded['healthScore'] as num?)?.toDouble() ?? 0.5).clamp(0.0, 1.0);
-          pos = List<String>.from(decoded['positiveFactors'] ?? []);
-          neg = List<String>.from(decoded['negativeFactors'] ?? []);
-          feedback = decoded['feedback'] as String? ?? '';
-          rec = decoded['recommendation'] as String? ?? '';
-          aiSuccess = true;
+          final decoded = AiJsonParser.decodeMap(jsonStr);
+          if (decoded != null) {
+            final clsStr =
+                decoded['classification']?.toString().toLowerCase() ??
+                    'balanced';
+            classification = FoodClassification.values.firstWhere(
+              (e) => e.name == clsStr,
+              orElse: () => FoodClassification.balanced,
+            );
+            healthScore =
+                ((decoded['healthScore'] as num?)?.toDouble() ?? 0.5)
+                    .clamp(0.0, 1.0);
+            pos = List<String>.from(decoded['positiveFactors'] ?? []);
+            neg = List<String>.from(decoded['negativeFactors'] ?? []);
+            feedback = decoded['feedback'] as String? ?? '';
+            rec = decoded['recommendation'] as String? ?? '';
+            aiSuccess = true;
+          }
         }
       } catch (e) {
         debugPrint('Error IA FoodCoach: $e'); // Log silencioso
@@ -133,27 +136,17 @@ class FoodCoachRepository implements IFoodCoachRepository {
     }
 
     if (!aiSuccess && lowerIngredients.isEmpty && photoPath != null) {
-      feedback =
-          'No se pudo analizar la fotografía sin conexión. Añade ingredientes manualmente.';
-      rec = 'Verifica tu conexión a internet o lista los ingredientes.';
+      throw Exception(
+          'No se pudo analizar la fotografía sin conexión. Añade ingredientes manualmente o verifica tu internet.');
     } else if (!aiSuccess) {
       // ── LOGICA OFFLINE (FALLBACK) ──────────────────────────────────────────────
       int totalScore = 0;
-      final matched = <String>{};
+      int scoredCount = 0;
 
       for (final ingredient in lowerIngredients) {
-        int? score = _ingredientScores[ingredient];
-        if (score == null) {
-          for (final key in _ingredientScores.keys) {
-            if (ingredient.contains(key) || key.contains(ingredient)) {
-              score = _ingredientScores[key];
-              break;
-            }
-          }
-        }
-
+        final score = scoreIngredientOffline(ingredient);
         if (score != null) {
-          matched.add(ingredient);
+          scoredCount++;
           totalScore += score;
           if (score >= 2) {
             pos.add(ingredient);
@@ -163,8 +156,8 @@ class FoodCoachRepository implements IFoodCoachRepository {
         }
       }
 
-      final maxPossible = lowerIngredients.length * 3;
-      final minPossible = lowerIngredients.length * -3;
+      final maxPossible = scoredCount * 3;
+      final minPossible = scoredCount * -3;
       final range = maxPossible - minPossible;
       healthScore = range == 0
           ? 0.5
@@ -204,6 +197,37 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
     await saveToHistory(evaluation);
     return evaluation;
+  }
+
+  /// Puntúa un ingrediente en modo offline usando coincidencia por palabra
+  /// completa y sumando modificadores compuestos (ej: "pollo frito" -> +2 - 2 = 0).
+  static final List<MapEntry<String, int>> _sortedIngredientEntries =
+      _ingredientScores.entries.toList()
+        ..sort((a, b) => b.key.length.compareTo(a.key.length));
+
+  static int? scoreIngredientOffline(String rawIngredient) {
+    final ingredient = rawIngredient.trim().toLowerCase();
+    if (ingredient.isEmpty) return null;
+
+    final exact = _ingredientScores[ingredient];
+    if (exact != null) return exact;
+
+    var remaining = ingredient;
+    var sum = 0;
+    var hits = 0;
+
+    for (final entry in _sortedIngredientEntries) {
+      final pattern = RegExp(
+        '(?:^|[^a-záéíóúüñ])${RegExp.escape(entry.key)}(?:s|es)?(?=\$|[^a-záéíóúüñ])',
+      );
+      if (pattern.hasMatch(remaining)) {
+        sum += entry.value;
+        hits++;
+        remaining = remaining.replaceAll(pattern, ' ');
+      }
+    }
+
+    return hits == 0 ? null : sum.clamp(-3, 3);
   }
 
   // ── Historial ────────────────────────────────────────────────────────────────

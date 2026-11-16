@@ -177,8 +177,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
           MeasurementUnit.fromString(recipeIng.unit),
           MeasurementUnit.fromString(pantryItem.unit),
         );
-        final delta = converted ?? recipeIng.quantity;
-        final newQty = pantryItem.quantity - delta;
+        if (converted == null) continue;
+        final newQty = pantryItem.quantity - converted;
 
         if (newQty <= 0) {
           updatedIngredients.removeAt(matchIndex);
@@ -217,8 +217,9 @@ class InventoryNotifier extends Notifier<InventoryState> {
           MeasurementUnit.fromString(recipeIng.unit),
           MeasurementUnit.fromString(pantryItem.unit),
         );
-        final delta = converted ?? recipeIng.quantity;
-        final updated = pantryItem.copyWith(quantity: pantryItem.quantity + delta);
+        if (converted == null) continue;
+        final updated =
+            pantryItem.copyWith(quantity: pantryItem.quantity + converted);
         revertedIngredients[matchIndex] = updated;
         await _repo.updateIngredient(updated);
       } else {
@@ -258,14 +259,18 @@ class InventoryNotifier extends Notifier<InventoryState> {
           MeasurementUnit.fromString(item.unit),
           MeasurementUnit.fromString(existing.unit),
         );
-        final delta = converted ?? item.quantity;
-        final updated = existing.copyWith(quantity: existing.quantity + delta);
-        await _repo.updateIngredient(updated);
-        state = state.copyWith(ingredients: [
-          for (int i = 0; i < state.ingredients.length; i++)
-            if (i == existingIndex) updated else state.ingredients[i]
-        ]);
-      } else {
+        if (converted != null) {
+          final updated =
+              existing.copyWith(quantity: existing.quantity + converted);
+          await _repo.updateIngredient(updated);
+          state = state.copyWith(ingredients: [
+            for (int i = 0; i < state.ingredients.length; i++)
+              if (i == existingIndex) updated else state.ingredients[i]
+          ]);
+          continue;
+        }
+      }
+      {
         final detected = IngredientDetector.detect(item.name);
         final newIng = InventoryIngredient(
           id: _cocinaUuid.v4(),
@@ -411,41 +416,50 @@ class RecipesNotifier extends Notifier<RecipesState> {
 
   Future<void> toggleShoppingItem(String id) async {
     await _repo.toggleShoppingItem(id);
-    await load();
+    state = state.copyWith(shoppingList: [
+      for (final item in state.shoppingList)
+        if (item.id == id) item.copyWith(bought: !item.bought) else item,
+    ]);
   }
 
   Future<void> deleteShoppingItem(String id) async {
     await _repo.deleteShoppingItem(id);
-    await load();
+    state = state.copyWith(
+      shoppingList: state.shoppingList.where((i) => i.id != id).toList(),
+    );
   }
 
   Future<void> clearBoughtShoppingItems() async {
-    final bought = state.shoppingList.where((i) => i.bought).toList();
-    for (final item in bought) {
-      await _repo.deleteShoppingItem(item.id);
-    }
-    await load();
+    final boughtIds =
+        state.shoppingList.where((i) => i.bought).map((i) => i.id).toSet();
+    if (boughtIds.isEmpty) return;
+    await Future.wait(boughtIds.map(_repo.deleteShoppingItem));
+    state = state.copyWith(
+      shoppingList:
+          state.shoppingList.where((i) => !boughtIds.contains(i.id)).toList(),
+    );
   }
 
   Future<void> addShoppingItem(ShoppingItem item) async {
     try {
-      await _repo.addShoppingItem(item);
-      state = state.copyWith(shoppingList: [item, ...state.shoppingList]);
+      final saved = await _repo.addShoppingItem(item);
+      state = state.copyWith(shoppingList: [saved, ...state.shoppingList]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
   }
 
   Future<void> clearAllShoppingList() async {
-    for (final item in state.shoppingList) {
-      await _repo.deleteShoppingItem(item.id);
-    }
+    final ids = state.shoppingList.map((i) => i.id).toList();
+    if (ids.isEmpty) return;
+    await Future.wait(ids.map(_repo.deleteShoppingItem));
     state = state.copyWith(shoppingList: []);
   }
 
   Future<void> generateShoppingList(List<Recipe> selected) async {
     final items = await _repo.generateShoppingListFromRecipes(
         selected, await _repo.getAllIngredients());
+    if (items.isEmpty) return;
     state = state.copyWith(shoppingList: [...state.shoppingList, ...items]);
   }
 
@@ -502,6 +516,11 @@ class WeeklyMenuLoaded extends WeeklyMenuState {
   WeeklyMenuLoaded(this.entries);
 }
 
+class WeeklyMenuError extends WeeklyMenuState {
+  final String message;
+  WeeklyMenuError(this.message);
+}
+
 class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
   ICocinaRepository get _repo => ref.read(cocinaRepositoryProvider);
 
@@ -514,8 +533,19 @@ class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
       final entries = await _repo.getWeeklyMenu();
       state = WeeklyMenuLoaded(entries);
     } catch (e) {
-      state = WeeklyMenuInitial();
+      state = WeeklyMenuError(e.toString());
     }
+  }
+
+  Future<void> clearSlot(WeeklyMenuEntry entry) async {
+    await _repo.saveWeeklyMenuEntry(WeeklyMenuEntry(
+      id: entry.id,
+      dayOfWeek: entry.dayOfWeek,
+      mealType: entry.mealType,
+      recipeId: '',
+      isCustom: true,
+    ));
+    await load();
   }
 
   Future<void> generate() async {
@@ -531,7 +561,8 @@ class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
       await useCase.execute(inventory: inventoryState.ingredients);
       await load();
     } catch (e) {
-      state = WeeklyMenuInitial();
+      final entries = await _repo.getWeeklyMenu().catchError((_) => <WeeklyMenuEntry>[]);
+      state = entries.isNotEmpty ? WeeklyMenuLoaded(entries) : WeeklyMenuInitial();
       rethrow;
     }
   }

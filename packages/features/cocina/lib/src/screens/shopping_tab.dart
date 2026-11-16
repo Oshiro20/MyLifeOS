@@ -525,10 +525,7 @@ class ShoppingTab extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final state = ref.read(recipesProvider);
-      for (final item in state.shoppingList) {
-        await ref.read(recipesProvider.notifier).deleteShoppingItem(item.id);
-      }
+      await ref.read(recipesProvider.notifier).clearAllShoppingList();
     }
   }
 
@@ -573,10 +570,7 @@ class ShoppingTab extends ConsumerWidget {
         await ref
             .read(inventoryProvider.notifier)
             .bulkAddBoughtToPantry(bought);
-        // Delete moved items
-        for (final item in bought) {
-          await ref.read(recipesProvider.notifier).deleteShoppingItem(item.id);
-        }
+        await ref.read(recipesProvider.notifier).clearBoughtShoppingItems();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -605,120 +599,125 @@ class ShoppingTab extends ConsumerWidget {
     final descCtrl = TextEditingController(
       text: 'Compra despensa (${bought.length} items)',
     );
-    final signedIn = await WalletCloudService.isSignedIn();
-    if (!context.mounted) return;
+    try {
+      final signedIn = await WalletCloudService.isSignedIn();
+      if (!context.mounted) return;
 
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) {
-        final onSurface = Theme.of(ctx).colorScheme.onSurface;
-        return AlertDialog(
-          backgroundColor: Theme.of(ctx).cardColor,
-          title: Text('💸 ¿Registrar gasto en WalletAI?',
-              style: TextStyle(color: onSurface, fontSize: 17)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Moviste ${bought.length} productos a tu despensa. Ingresa el total pagado si deseas enviarlo a WalletAI:',
-                style: TextStyle(
-                    color: onSurface.withValues(alpha: 0.72), fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: onSurface),
-                decoration: const InputDecoration(
-                  labelText: 'Monto total (PEN)',
-                  hintText: 'Ej: 45.50',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+      final action = await showDialog<String>(
+        context: context,
+        builder: (ctx) {
+          final onSurface = Theme.of(ctx).colorScheme.onSurface;
+          return AlertDialog(
+            backgroundColor: Theme.of(ctx).cardColor,
+            title: Text('💸 ¿Registrar gasto en WalletAI?',
+                style: TextStyle(color: onSurface, fontSize: 17)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Moviste ${bought.length} productos a tu despensa. Ingresa el total pagado si deseas enviarlo a WalletAI:',
+                  style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.72), fontSize: 13),
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descCtrl,
-                style: TextStyle(color: onSurface),
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: onSurface),
+                  decoration: const InputDecoration(
+                    labelText: 'Monto total (PEN)',
+                    hintText: 'Ej: 45.50',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'skip'),
-            child: const Text('Omitir'),
-          ),
-          if (signedIn)
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, 'cloud'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00C896),
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('Enviar en la nube'),
-            )
-          else
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, 'deeplink'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00C896),
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('Abrir WalletAI'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descCtrl,
+                  style: TextStyle(color: onSurface),
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ],
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'skip'),
+                child: const Text('Omitir'),
+              ),
+              if (signedIn)
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, 'cloud'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00C896),
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Enviar en la nube'),
+                )
+              else
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, 'deeplink'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00C896),
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Abrir WalletAI'),
+                ),
+            ],
+          );
+        },
+      );
+
+      final amount =
+          double.tryParse(amountCtrl.text.trim().replaceAll(',', '.')) ?? 0.0;
+      final description = descCtrl.text.trim().isEmpty
+          ? 'Compra despensa (${bought.length} items)'
+          : descCtrl.text.trim();
+
+      if (action == 'cloud') {
+        if (amount <= 0) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Ingresa un monto mayor a 0 para enviarlo a WalletAI'),
+                backgroundColor: Colors.orangeAccent,
+              ),
+            );
+          }
+          return;
+        }
+        final res = await WalletCloudService.sendPendingTransaction(
+          amount: amount,
+          description: description,
+          categoryHint: 'Alimentación',
+          items: bought
+              .map((e) =>
+                  {'name': e.name, 'quantity': e.quantity, 'unit': e.unit})
+              .toList(),
         );
-      },
-    );
-
-    final amount =
-        double.tryParse(amountCtrl.text.trim().replaceAll(',', '.')) ?? 0.0;
-    final description = descCtrl.text.trim().isEmpty
-        ? 'Compra despensa (${bought.length} items)'
-        : descCtrl.text.trim();
-    amountCtrl.dispose();
-    descCtrl.dispose();
-
-    if (action == 'cloud') {
-      if (amount <= 0) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ingresa un monto mayor a 0 para enviarlo a WalletAI'),
-              backgroundColor: Colors.orangeAccent,
+            SnackBar(
+              content: Text(res.message),
+              backgroundColor:
+                  res.success ? const Color(0xFF00C896) : Colors.redAccent,
             ),
           );
         }
-        return;
-      }
-      final res = await WalletCloudService.sendPendingTransaction(
-        amount: amount,
-        description: description,
-        categoryHint: 'Alimentación',
-        items: bought
-            .map((e) => {'name': e.name, 'quantity': e.quantity, 'unit': e.unit})
-            .toList(),
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.message),
-            backgroundColor:
-                res.success ? const Color(0xFF00C896) : Colors.redAccent,
-          ),
+      } else if (action == 'deeplink') {
+        await WalletAICommunicationService.openQuickExpense(
+          amount: amount > 0 ? amount : 0,
+          description: description,
         );
       }
-    } else if (action == 'deeplink') {
-      await WalletAICommunicationService.openQuickExpense(
-        amount: amount > 0 ? amount : 0,
-        description: description,
-      );
+    } finally {
+      amountCtrl.dispose();
+      descCtrl.dispose();
     }
   }
 
@@ -739,114 +738,139 @@ class ShoppingTab extends ConsumerWidget {
       'litros'
     ];
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final onSurface = Theme.of(ctx).colorScheme.onSurface;
-          return AlertDialog(
-            backgroundColor: Theme.of(ctx).cardColor,
-            title: Text('🛒 Agregar item manual',
-                style: TextStyle(color: onSurface)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  autofocus: true,
-                  style: TextStyle(color: onSurface),
-                  decoration: InputDecoration(
-                    labelText: 'Nombre del producto',
-                    hintText: 'Ej: Arroz, Leche, Aceite...',
-                    labelStyle:
-                        TextStyle(color: onSurface.withValues(alpha: 0.6)),
-                    hintStyle:
-                        TextStyle(color: onSurface.withValues(alpha: 0.4)),
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final onSurface = Theme.of(ctx).colorScheme.onSurface;
+            return AlertDialog(
+              backgroundColor: Theme.of(ctx).cardColor,
+              title: Text('🛒 Agregar item manual',
+                  style: TextStyle(color: onSurface)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    autofocus: true,
+                    style: TextStyle(color: onSurface),
+                    decoration: InputDecoration(
+                      labelText: 'Nombre del producto',
+                      hintText: 'Ej: Arroz, Leche, Aceite...',
+                      labelStyle:
+                          TextStyle(color: onSurface.withValues(alpha: 0.6)),
+                      hintStyle:
+                          TextStyle(color: onSurface.withValues(alpha: 0.4)),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: qtyCtrl,
-                        keyboardType: TextInputType.number,
-                        style: TextStyle(color: onSurface),
-                        decoration: InputDecoration(
-                          labelText: 'Cantidad',
-                          labelStyle: TextStyle(
-                              color: onSurface.withValues(alpha: 0.6)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: qtyCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          style: TextStyle(color: onSurface),
+                          decoration: InputDecoration(
+                            labelText: 'Cantidad',
+                            labelStyle: TextStyle(
+                                color: onSurface.withValues(alpha: 0.6)),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: selectedUnit,
-                        dropdownColor: Theme.of(ctx).cardColor,
-                        items: units.map((u) {
-                          return DropdownMenuItem(
-                            value: u,
-                            child: Text(u, style: TextStyle(color: onSurface)),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setDialogState(() => selectedUnit = val);
-                          }
-                        },
-                        decoration: InputDecoration(
-                          labelText: 'Unidad',
-                          labelStyle: TextStyle(
-                              color: onSurface.withValues(alpha: 0.6)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 3,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: selectedUnit,
+                          dropdownColor: Theme.of(ctx).cardColor,
+                          items: units.map((u) {
+                            return DropdownMenuItem(
+                              value: u,
+                              child:
+                                  Text(u, style: TextStyle(color: onSurface)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() => selectedUnit = val);
+                            }
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Unidad',
+                            labelStyle: TextStyle(
+                                color: onSurface.withValues(alpha: 0.6)),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('Cancelar',
-                    style: TextStyle(color: onSurface.withValues(alpha: 0.55))),
+                    ],
+                  ),
+                ],
               ),
-            ElevatedButton(
-              onPressed: () {
-                final name = nameCtrl.text.trim();
-                final qty = double.tryParse(qtyCtrl.text) ?? 1.0;
-                if (name.isNotEmpty) {
-                  ref.read(recipesProvider.notifier).addShoppingItem(
-                        ShoppingItem(
-                          id: const Uuid().v4(),
-                          name: name,
-                          quantity: qty,
-                          unit: selectedUnit,
-                          bought: false,
-                          createdAt: DateTime.now(),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancelar',
+                      style:
+                          TextStyle(color: onSurface.withValues(alpha: 0.55))),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final name = nameCtrl.text.trim();
+                    final qty = double.tryParse(
+                        qtyCtrl.text.trim().replaceAll(',', '.'));
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ingresa el nombre del producto'),
+                          backgroundColor: Colors.orangeAccent,
                         ),
                       );
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('🛒 "$name" añadido a la lista'),
-                      backgroundColor: const Color(0xFF00E676),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00C896)),
-              child: const Text('Agregar'),
-            ),
-          ],
-        );
-        },
-      ),
-    );
+                      return;
+                    }
+                    if (qty == null || qty <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('La cantidad debe ser mayor a 0'),
+                          backgroundColor: Colors.orangeAccent,
+                        ),
+                      );
+                      return;
+                    }
+                    ref.read(recipesProvider.notifier).addShoppingItem(
+                          ShoppingItem(
+                            id: const Uuid().v4(),
+                            name: name,
+                            quantity: qty,
+                            unit: selectedUnit,
+                            bought: false,
+                            createdAt: DateTime.now(),
+                          ),
+                        );
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('🛒 "$name" añadido a la lista'),
+                        backgroundColor: const Color(0xFF00E676),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00C896)),
+                  child: const Text('Agregar'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      nameCtrl.dispose();
+      qtyCtrl.dispose();
+    }
   }
 }
 
