@@ -305,6 +305,23 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
       listChildren.addAll(itemsInCat.map((i) => _IngredientTile(
           ingredient: i,
           onEdit: () => _showEditDialog(context, ref, i),
+          onQuickLevel: (factor) async {
+            if (factor <= 0) {
+              await ref.read(inventoryProvider.notifier).delete(i.id);
+              if (context.mounted) {
+                showSuccess(context, '"${i.name}" marcado como agotado.');
+              }
+              return;
+            }
+            final newQty =
+                double.parse((i.quantity * factor).toStringAsFixed(2));
+            await ref.read(inventoryProvider.notifier).update(
+                  i.copyWith(
+                    quantity: newQty <= 0 ? 0.1 : newQty,
+                    preparation: 'abierto / en uso',
+                  ),
+                );
+          },
           onDelete: () => _confirmDelete(context, ref, i.id, i.name))));
     }
 
@@ -486,8 +503,13 @@ class _IngredientTile extends StatelessWidget {
   final InventoryIngredient ingredient;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
-  const _IngredientTile(
-      {required this.ingredient, required this.onDelete, required this.onEdit});
+  final Future<void> Function(double factor)? onQuickLevel;
+  const _IngredientTile({
+    required this.ingredient,
+    required this.onDelete,
+    required this.onEdit,
+    this.onQuickLevel,
+  });
 
   static String _getCategoryIcon(String primaryCategory) {
     final lower = primaryCategory.toLowerCase();
@@ -544,14 +566,57 @@ class _IngredientTile extends StatelessWidget {
           '${ingredient.expirationDate != null ? " · cad. ${_fmt(ingredient.expirationDate!)}" : ""}',
           style: TextStyle(color: expiryColor, fontSize: 12),
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline,
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert,
               color: Theme.of(context)
                   .colorScheme
                   .onSurface
-                  .withValues(alpha: 0.35),
+                  .withValues(alpha: 0.55),
               size: 20),
-          onPressed: onDelete,
+          tooltip: 'Ajustar o eliminar',
+          onSelected: (value) async {
+            if (value == 'edit') {
+              onEdit();
+            } else if (value == 'delete') {
+              onDelete();
+            } else if (value == 'use_25') {
+              await onQuickLevel?.call(0.75);
+            } else if (value == 'use_50') {
+              await onQuickLevel?.call(0.5);
+            } else if (value == 'low_10') {
+              await onQuickLevel?.call(0.1);
+            } else if (value == 'empty') {
+              await onQuickLevel?.call(0.0);
+            }
+          },
+          itemBuilder: (ctx) => const [
+            PopupMenuItem(
+              value: 'use_25',
+              child: Text('🥄 Usé un poco (-25%)'),
+            ),
+            PopupMenuItem(
+              value: 'use_50',
+              child: Text('➗ Queda la mitad (50%)'),
+            ),
+            PopupMenuItem(
+              value: 'low_10',
+              child: Text('⚠️ Queda poco (10%)'),
+            ),
+            PopupMenuItem(
+              value: 'empty',
+              child: Text('✅ Se acabó (quitar)'),
+            ),
+            PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'edit',
+              child: Text('✏️ Editar / ver detalle'),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: Text('🗑️ Eliminar',
+                  style: TextStyle(color: Color(0xFFFF5252))),
+            ),
+          ],
         ),
       ),
     );
@@ -804,9 +869,13 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
   String? _nameError;
   bool _saving = false;
   bool _autoDetected = false;
+  double? _packageBaseQty;
+  double? _selectedFraction;
+  bool _opaqueContainerWarning = false;
 
   static const List<String> _preparations = [
     '',
+    'abierto / en uso',
     'entero',
     'licuado',
     'molido',
@@ -818,6 +887,33 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     'en rodajas',
     'desmenuzado',
   ];
+
+  String _formatQtyValue(double v) {
+    if ((v - v.roundToDouble()).abs() < 0.01) {
+      return v.round().toString();
+    }
+    return double.parse(v.toStringAsFixed(2)).toString();
+  }
+
+  void _applyFraction(double factor) {
+    final current =
+        double.tryParse(_qtyCtrl.text.trim().replaceAll(',', '.')) ?? 1.0;
+    final base = (_packageBaseQty != null && _packageBaseQty! > 0)
+        ? _packageBaseQty!
+        : (current > 0 ? current : 1.0);
+    final scaled = base * factor;
+    setState(() {
+      _packageBaseQty = base;
+      _selectedFraction = factor;
+      _qtyCtrl.text = _formatQtyValue(scaled);
+      _qtyError = null;
+      if (factor < 0.99) {
+        _preparation = 'abierto / en uso';
+      } else if (_preparation == 'abierto / en uso') {
+        _preparation = '';
+      }
+    });
+  }
 
   String _storageArea = 'Alacena';
   final List<String> _storageAreas = ['Alacena', 'Refrigerador', 'Congelador'];
@@ -843,7 +939,8 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     if (widget.itemToEdit != null) {
       final i = widget.itemToEdit!;
       _nameCtrl.text = i.name;
-      _qtyCtrl.text = i.quantity.toString();
+      _qtyCtrl.text = _formatQtyValue(i.quantity);
+      _packageBaseQty = i.quantity > 0 ? i.quantity : null;
       _primaryCategory = _masterCategories.contains(i.primaryCategory)
           ? i.primaryCategory
           : 'Otros';
@@ -939,9 +1036,19 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
               Expanded(
                 flex: 2,
                 child: _field(_qtyCtrl, 'Cantidad', Icons.exposure,
-                    keyboardType: TextInputType.number,
-                    errorText: _qtyError,
-                    onChanged: (_) => setState(() => _qtyError = null)),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    errorText: _qtyError, onChanged: (val) {
+                  final parsed =
+                      double.tryParse(val.trim().replaceAll(',', '.'));
+                  setState(() {
+                    _qtyError = null;
+                    _selectedFraction = null;
+                    if (parsed != null && parsed > 0) {
+                      _packageBaseQty = parsed;
+                    }
+                  });
+                }),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -966,6 +1073,69 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                 ),
               ),
             ]),
+            const SizedBox(height: 8),
+            // Nivel restante rápido para envases abiertos / usados
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_opaqueContainerWarning)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFB300).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFFFB300).withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      '⚠️ Envase opaco detectado (${_packageBaseQty != null ? _formatQtyValue(_packageBaseQty!) : ''} ${_unit.label}). Elige cuánto te queda:',
+                      style: const TextStyle(
+                          fontSize: 11.5, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Nivel envase:',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      for (final opt in const [
+                        (1.0, 'Nuevo (100%)'),
+                        (0.75, '3/4'),
+                        (0.5, 'Mitad (1/2)'),
+                        (0.25, '1/4'),
+                        (0.1, 'Poco'),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(opt.$2,
+                                style: const TextStyle(fontSize: 11)),
+                            selected: _selectedFraction == opt.$1,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onSelected: (_) => _applyFraction(opt.$1),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
 
             // Categoría
@@ -1196,6 +1366,8 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         throw const FormatException('La IA no devolvió una lista JSON válida');
       }
       final newItems = <InventoryIngredient>[];
+      final basePackageQtyById = <String, double>{};
+      final opaqueIds = <String>{};
 
       for (var item in data) {
         if (item is Map<String, dynamic>) {
@@ -1203,6 +1375,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
           final subCatString = item['subCategory']?.toString();
           final unitStr = item['unit']?.toString() ?? 'unidades';
           final qty = (item['quantity'] as num?)?.toDouble() ?? 1.0;
+          final pkgQty = (item['packageQuantity'] as num?)?.toDouble();
+          final isOpened = item['isOpened'] == true;
+          final fillPct = (item['fillLevelPercent'] as num?)?.toInt();
+          final isOpaque = item['opaqueContainer'] == true;
 
           MeasurementUnit properUnit = MeasurementUnit.unidades;
           try {
@@ -1219,12 +1395,28 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
             exp = DateTime.now().add(Duration(days: pDays));
           }
 
+          final id = const Uuid().v4();
+          final resolvedBase =
+              (pkgQty != null && pkgQty > 0) ? pkgQty : qty;
+          basePackageQtyById[id] = resolvedBase;
+          if (isOpaque) opaqueIds.add(id);
+
+          final openNote = (isOpened && fillPct != null && fillPct < 100)
+              ? '~$fillPct% restante'
+              : null;
+          final combinedSub = [
+            if (subCatString != null && subCatString.trim().isNotEmpty)
+              subCatString.trim(),
+            if (openNote != null) openNote,
+          ].join(' · ');
+
           newItems.add(InventoryIngredient(
-            id: const Uuid().v4(),
+            id: id,
             name: item['name']?.toString() ?? 'Producto',
             primaryCategory:
                 _masterCategories.contains(catString) ? catString : 'Otros',
-            subCategory: subCatString,
+            subCategory: combinedSub.isEmpty ? null : combinedSub,
+            preparation: isOpened ? 'abierto / en uso' : '',
             quantity: qty,
             unit: properUnit.label,
             expirationDate: exp,
@@ -1237,7 +1429,11 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         if (!mounted) return;
         final confirmed = await showDialog<List<InventoryIngredient>>(
           context: context,
-          builder: (_) => _ReviewMultipleDialog(items: newItems),
+          builder: (_) => _ReviewMultipleDialog(
+            items: newItems,
+            basePackageQtyById: basePackageQtyById,
+            opaqueIds: opaqueIds,
+          ),
         );
         if (confirmed != null && confirmed.isNotEmpty) {
           await widget.onAdd(confirmed);
@@ -1287,6 +1483,10 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       final subCatString = item['subCategory']?.toString();
       final unitStr = item['unit']?.toString() ?? 'unidades';
       final qty = (item['quantity'] as num?)?.toDouble() ?? 1.0;
+      final pkgQty = (item['packageQuantity'] as num?)?.toDouble();
+      final isOpened = item['isOpened'] == true;
+      final fillPct = (item['fillLevelPercent'] as num?)?.toInt();
+      final isOpaque = item['opaqueContainer'] == true;
 
       MeasurementUnit properUnit = MeasurementUnit.unidades;
       try {
@@ -1303,13 +1503,26 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       final sTip = item['storageTip']?.toString();
 
       if (mounted) {
+        final resolvedBase =
+            (pkgQty != null && pkgQty > 0) ? pkgQty : qty;
+        final inferredFraction = (resolvedBase > 0 && isOpened && qty < resolvedBase)
+            ? qty / resolvedBase
+            : (fillPct != null && fillPct > 0 && fillPct < 100
+                ? fillPct / 100.0
+                : null);
         setState(() {
           _nameCtrl.text = item['name']?.toString() ?? 'Producto';
-          _qtyCtrl.text = qty.toString();
+          _qtyCtrl.text = _formatQtyValue(qty);
+          _packageBaseQty = resolvedBase;
+          _selectedFraction = inferredFraction;
+          _opaqueContainerWarning = isOpaque;
           _unit = properUnit;
           _primaryCategory =
               _masterCategories.contains(catString) ? catString : 'Otros';
           _subCategoryCtrl.text = subCatString ?? '';
+          if (isOpened) {
+            _preparation = 'abierto / en uso';
+          }
           _autoDetected = true;
 
           _aiPantryLifeDays = pDays;
@@ -1438,19 +1651,41 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
 class _ReviewMultipleDialog extends StatefulWidget {
   final List<InventoryIngredient> items;
-  const _ReviewMultipleDialog({required this.items});
+  final Map<String, double> basePackageQtyById;
+  final Set<String> opaqueIds;
+  const _ReviewMultipleDialog({
+    required this.items,
+    this.basePackageQtyById = const {},
+    this.opaqueIds = const {},
+  });
   @override
   State<_ReviewMultipleDialog> createState() => _ReviewMultipleDialogState();
 }
 
 class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
   late List<InventoryIngredient> items;
+  late List<TextEditingController> _qtyCtrls;
 
   @override
   void initState() {
     super.initState();
     items = List.from(widget.items);
+    _qtyCtrls = items
+        .map((e) => TextEditingController(text: _fmtQty(e.quantity)))
+        .toList();
   }
+
+  @override
+  void dispose() {
+    for (final c in _qtyCtrls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  String _fmtQty(double v) => (v - v.roundToDouble()).abs() < 0.01
+      ? v.round().toString()
+      : double.parse(v.toStringAsFixed(2)).toString();
 
   @override
   Widget build(BuildContext context) {
@@ -1474,67 +1709,160 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                 itemCount: items.length,
                 itemBuilder: (ctx, i) {
                   final item = items[i];
+                  final base = widget.basePackageQtyById[item.id] ?? item.quantity;
+                  final isOpaque = widget.opaqueIds.contains(item.id);
                   return Card(
                     color: Theme.of(context).appBarTheme.backgroundColor,
                     margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 0),
-                      title: TextFormField(
-                        initialValue: item.name,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 15),
-                        decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero),
-                        onChanged: (val) {
-                          items[i] = item.copyWith(name: val);
-                        },
-                      ),
-                      subtitle: Row(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 6, 4, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            width: 60,
-                            child: TextFormField(
-                              initialValue: item.quantity.toString(),
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.7),
-                                  fontSize: 13),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero),
-                              onChanged: (val) {
-                                final parsed = double.tryParse(
-                                    val.trim().replaceAll(',', '.'));
-                                if (parsed != null && parsed > 0) {
-                                  items[i] = item.copyWith(quantity: parsed);
-                                }
-                              },
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: item.name,
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600),
+                                  decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero),
+                                  onChanged: (val) {
+                                    items[i] = item.copyWith(name: val);
+                                  },
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.45)),
+                                onPressed: () {
+                                  setState(() {
+                                    items.removeAt(i);
+                                    _qtyCtrls[i].dispose();
+                                    _qtyCtrls.removeAt(i);
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                          Text(item.unit,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.7),
-                                  fontSize: 13)),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 62,
+                                child: TextField(
+                                  controller: _qtyCtrls[i],
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.78),
+                                      fontSize: 13),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero),
+                                  onChanged: (val) {
+                                    final parsed = double.tryParse(
+                                        val.trim().replaceAll(',', '.'));
+                                    if (parsed != null && parsed > 0) {
+                                      items[i] = item.copyWith(quantity: parsed);
+                                    }
+                                  },
+                                ),
+                              ),
+                              Text(item.unit,
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
+                                      fontSize: 13)),
+                              if (item.preparation == 'abierto / en uso') ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFB300)
+                                        .withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'Abierto',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFFFFB300),
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                              if (isOpaque) ...[
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Opaco',
+                                  style: TextStyle(
+                                      fontSize: 10, color: Colors.orangeAccent),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            children: [
+                              for (final f in const [
+                                (1.0, '100%'),
+                                (0.75, '3/4'),
+                                (0.5, '1/2'),
+                                (0.25, '1/4'),
+                              ])
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () {
+                                    final newQty = base * f.$1;
+                                    setState(() {
+                                      _qtyCtrls[i].text = _fmtQty(newQty);
+                                      items[i] = item.copyWith(
+                                        quantity: newQty,
+                                        preparation: f.$1 < 0.99
+                                            ? 'abierto / en uso'
+                                            : '',
+                                      );
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      f.$2,
+                                      style: const TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
-                      ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete_outline,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.45)),
-                        onPressed: () => setState(() => items.removeAt(i)),
                       ),
                     ),
                   );

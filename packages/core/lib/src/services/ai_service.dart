@@ -567,14 +567,18 @@ ${textContext != null && textContext.isNotEmpty ? '''
         if (!await file.exists()) return null;
 
         final prompt = '''
-Analiza esta imagen de productos de despensa (pueden ser varios). 
-Identifica cada producto y extrae la siguiente información en un formato JSON (una lista de objetos):
+Analiza esta imagen de productos de despensa (pueden ser varios, nuevos o ya abiertos/usados).
+Identifica cada producto y extrae la siguiente información en formato JSON (una lista de objetos):
 
-- name: nombre del producto (ej: Arroz, Leche, Atún)
+- name: nombre del producto (ej: Sillao, Arroz, Leche, Atún)
 - primaryCategory: una de estas exactas: [Proteínas animales, Lácteos, Frutas, Verduras, Tubérculos y raíces, Legumbres, Cereales y granos, Harinas y derivados, Aceites y grasas, Salsas, Condimentos y especias, Endulzantes, Frutos secos y semillas, Otros]
-- subCategory: descripción corta (ej: Integral, Entera, en lata)
-- quantity: cantidad numérica estimada (ej: 1, 0.5, 3)
+- subCategory: descripción corta (ej: Integral, Entera, Botella vidrio)
+- packageQuantity: número de capacidad total impresa en la etiqueta si se ve (ej: 500 si dice 500ml, o igual a quantity si es a granel)
+- quantity: cantidad RESTANTE real estimada dentro del envase. ¡IMPORTANTE!: si la botella, bolsa o frasco se ve parcialmente usado/abierto (ej. botella de 500 ml a la mitad), pon el restante estimado (250), NO el total de la etiqueta
 - unit: una de estas exactas: [kg, g, l, ml, unidades, tazas, cucharadas, oz]
+- isOpened: boolean (true si parece abierto o parcialmente consumido, false si está nuevo/sellado)
+- fillLevelPercent: entero de 5 a 100 con el porcentaje aproximado que queda dentro (ej: 100 si lleno, 50 si va por la mitad, 25 si queda un cuarto)
+- opaqueContainer: boolean (true si el envase es opaco o botella muy oscura/lata/caja donde no se distingue cuánto líquido o contenido queda adentro)
 - pantryLifeDays: días aproximados que dura en la alacena antes de vencer (número entero)
 
 La respuesta DEBE ser solo el JSON, sin bloques de código markdown ni texto adicional.
@@ -601,18 +605,22 @@ La respuesta DEBE ser solo el JSON, sin bloques de código markdown ni texto adi
         if (!await file.exists()) return null;
 
         final prompt = '''
-Analiza este producto de despensa en detalle. 
+Analiza este producto de despensa en detalle (puede estar nuevo o ya abierto/usado).
 Extrae la información en formato JSON (un solo objeto):
 
-- name: nombre del producto
+- name: nombre del producto (ej: Sillao, Aceite de oliva, Leche)
 - primaryCategory: una de estas exactas: [Proteínas animales, Lácteos, Frutas, Verduras, Tubérculos y raíces, Legumbres, Cereales y granos, Harinas y derivados, Aceites y grasas, Salsas, Condimentos y especias, Endulzantes, Frutos secos y semillas, Otros]
 - subCategory: descripción corta
-- quantity: cantidad numérica estimada
+- packageQuantity: número con la capacidad total impresa en la etiqueta si es visible (ej: 500 si dice 500ml)
+- quantity: cantidad RESTANTE real estimada dentro del envase. Si ves el frasco/botella/bolsa parcialmente vacío (ej. etiqueta 500 ml pero lleno al 40%), calcula la cantidad restante (200)
 - unit: una de estas exactas: [kg, g, l, ml, unidades, tazas, cucharadas, oz]
+- isOpened: boolean (true si el producto se ve abierto o parcialmente consumido)
+- fillLevelPercent: entero de 5 a 100 con el porcentaje visual restante (100 si lleno/sellado)
+- opaqueContainer: boolean (true si el envase es opaco o vidrio muy oscuro donde no se alcanza a ver el nivel interno)
 - pantryLifeDays: días que dura en alacena
 - fridgeLifeDays: días que dura en refrigerador
 - freezerLifeDays: días que dura en congelador
-- storageTip: consejo corto de conservación
+- storageTip: consejo corto de conservación (menciona si conviene refrigerar tras abrir)
 
 La respuesta DEBE ser solo el JSON.
 ''';
