@@ -118,14 +118,31 @@ class ExtractRecipeUseCase {
         decoded['name'] ?? decoded['nombre_receta'] ?? 'Receta Importada';
     final description = decoded['description'] ?? decoded['descripcion'] ?? '';
 
-    // Support both formats for time (num/string safe)
-    final rawDuration =
-        decoded['durationMinutes'] ?? decoded['tiempo_total_min'];
-    final durationMinutes = rawDuration is num
-        ? rawDuration.round()
-        : (rawDuration is String
-            ? (double.tryParse(rawDuration.replaceAll(',', '.'))?.round() ?? 30)
-            : 30);
+    // Parsear desglose de tiempos (preparación + cocción vs refrigeración/reposo)
+    final prepMin = _parseMinutes(decoded['tiempo_preparacion_min']);
+    final cookMin = _parseMinutes(decoded['tiempo_coccion_min']);
+    final chillMin = _parseMinutes(
+      decoded['tiempo_refrigeracion_min'] ?? decoded['tiempo_reposo_min'],
+    );
+    final rawDuration = _parseMinutes(
+      decoded['durationMinutes'] ?? decoded['tiempo_total_min'],
+    );
+
+    final activeMin =
+        (prepMin != null || cookMin != null) ? (prepMin ?? 0) + (cookMin ?? 0) : null;
+    final chill = chillMin ?? 0;
+
+    int durationMinutes;
+    if (rawDuration != null && rawDuration > 0) {
+      durationMinutes = rawDuration;
+    } else if ((activeMin ?? 0) + chill > 0) {
+      durationMinutes = (activeMin ?? 0) + chill;
+    } else {
+      durationMinutes = 30;
+    }
+    if (activeMin != null && chill > 0 && durationMinutes < activeMin + chill) {
+      durationMinutes = activeMin + chill;
+    }
 
     // Support both formats for servings
     final servings = decoded['servings'] ?? decoded['porciones'];
@@ -222,9 +239,20 @@ class ExtractRecipeUseCase {
 
     final instructions = rawInstructions.map((e) => e.toString()).toList();
 
-    // Support both tag formats
+    // Support both tag formats y preservar desglose activo/refri sin migrar DB
     final rawTags = decoded['tags'] as List<dynamic>? ?? [];
-    final tags = rawTags.map((e) => e.toString()).toList();
+    final tags = rawTags
+        .map((e) => e.toString())
+        .where((t) =>
+            !t.toLowerCase().startsWith('activo:') &&
+            !t.toLowerCase().startsWith('refri:'))
+        .toList();
+    if (chill > 0) {
+      final resolvedActive = activeMin ??
+          (durationMinutes > chill ? durationMinutes - chill : 15);
+      tags.add('activo:${resolvedActive}m');
+      tags.add('refri:${chill}m');
+    }
 
     // Parsear campos adicionales si existen
     final utensilios = (decoded['utensilios'] as List<dynamic>?)
@@ -344,6 +372,14 @@ class ExtractRecipeUseCase {
       fuenteLabel:
           fuenteLabel ?? (sourceUrl != null ? 'Video/Red social' : 'Chef IA'),
     );
+  }
+
+  static int? _parseMinutes(dynamic raw) {
+    if (raw is num) return raw.round();
+    if (raw is String) {
+      return double.tryParse(raw.trim().replaceAll(',', '.'))?.round();
+    }
+    return null;
   }
 
   /// Robustly extracts JSON from a response string that may contain markdown, extra text, etc.

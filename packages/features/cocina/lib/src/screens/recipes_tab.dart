@@ -580,7 +580,7 @@ class _RecipeTile extends StatelessWidget {
                         fontWeight: FontWeight.w500)),
               const SizedBox(height: 2),
               Text(
-                '${recipe.durationMinutes} min · ${recipe.servings} porciones · ${recipe.ingredients.length} ingredientes',
+                '${RecipeTimeBreakdown.summaryLabel(recipe)} · ${recipe.servings} porciones · ${recipe.ingredients.length} ingredientes',
                 style: TextStyle(
                     color: Theme.of(context)
                         .colorScheme
@@ -598,7 +598,7 @@ class _RecipeTile extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: _getTimeColor(recipe.durationMinutes).withAlpha(30),
                     borderRadius: BorderRadius.circular(6)),
-                child: Text('${recipe.durationMinutes}m',
+                child: Text(RecipeTimeBreakdown.compactChip(recipe),
                     style: TextStyle(
                         color: _getTimeColor(recipe.durationMinutes),
                         fontSize: 11,
@@ -748,8 +748,30 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             onChanged: (v) => setState(() => _scaledServings = v.toInt()),
           ),
           const SizedBox(height: 8),
-          Wrap(spacing: 8, children: [
-            _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
+          Wrap(spacing: 8, runSpacing: 6, children: [
+            Builder(
+              builder: (context) {
+                final tb = RecipeTimeBreakdown.extract(widget.recipe);
+                if (tb.chillMinutes != null && tb.chillMinutes! > 0) {
+                  final active = tb.activeMinutes ??
+                      (widget.recipe.durationMinutes > tb.chillMinutes!
+                          ? widget.recipe.durationMinutes - tb.chillMinutes!
+                          : widget.recipe.durationMinutes);
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      _chip(context,
+                          '⏱ ${RecipeTimeBreakdown.formatMinutes(active)} activo'),
+                      _chip(context,
+                          '❄️ ${RecipeTimeBreakdown.formatMinutes(tb.chillMinutes!)} refri'),
+                    ],
+                  );
+                }
+                return _chip(context,
+                    '⏱ ${RecipeTimeBreakdown.formatMinutes(widget.recipe.durationMinutes)}');
+              },
+            ),
             _chip(
                 context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
             if (isScaled)

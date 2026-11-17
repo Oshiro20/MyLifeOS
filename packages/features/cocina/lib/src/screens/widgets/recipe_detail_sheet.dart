@@ -197,7 +197,29 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
         ),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 6, children: [
-          _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
+          Builder(
+            builder: (context) {
+              final tb = RecipeTimeBreakdown.extract(widget.recipe);
+              if (tb.chillMinutes != null && tb.chillMinutes! > 0) {
+                final active = tb.activeMinutes ??
+                    (widget.recipe.durationMinutes > tb.chillMinutes!
+                        ? widget.recipe.durationMinutes - tb.chillMinutes!
+                        : widget.recipe.durationMinutes);
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _chip(context,
+                        '⏱ ${RecipeTimeBreakdown.formatMinutes(active)} activo'),
+                    _chip(context,
+                        '❄️ ${RecipeTimeBreakdown.formatMinutes(tb.chillMinutes!)} refri'),
+                  ],
+                );
+              }
+              return _chip(context,
+                  '⏱ ${RecipeTimeBreakdown.formatMinutes(widget.recipe.durationMinutes)}');
+            },
+          ),
           _chip(context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
           GestureDetector(
             onTap: () => _pickCategory(context),

@@ -213,6 +213,42 @@ void main() {
       expect(list[1].cuisineStyle, 'Saludable');
       expect(list[1].fuenteUrl, 'https://www.tiktok.com/@chef/video/123');
     });
+
+    test(
+        'parseFromJson separa tiempo activo y refrigeración en RecipeTimeBreakdown',
+        () {
+      const jellyJson = '''
+      {
+        "nombre_receta": "Gelatina Pie de Limón Saludable",
+        "tipo_comida": "Mazamorra",
+        "porciones": 4,
+        "tiempo_preparacion_min": 15,
+        "tiempo_coccion_min": 0,
+        "tiempo_refrigeracion_min": 180,
+        "tiempo_total_min": 195,
+        "ingredientes": [
+          {"nombre": "Gelatina sin sabor", "cantidad": 14, "unidad": "gramos"},
+          {"nombre": "Limón", "cantidad": 3, "unidad": "unidades"}
+        ],
+        "pasos": [
+          "Hidratar y disolver la gelatina",
+          "Mezclar con jugo de limón",
+          "Refrigerar durante 3 horas hasta cuajar firme"
+        ]
+      }
+      ''';
+
+      final useCase = ExtractRecipeUseCase(FakeAIExtractor());
+      final recipe = useCase.parseFromJson(jellyJson);
+      final breakdown = RecipeTimeBreakdown.extract(recipe);
+
+      expect(recipe.durationMinutes, 195);
+      expect(breakdown.activeMinutes, 15);
+      expect(breakdown.chillMinutes, 180);
+      expect(RecipeTimeBreakdown.summaryLabel(recipe),
+          '15 min activo + 3 h refri');
+      expect(RecipeTimeBreakdown.compactChip(recipe), '15m+3 h❄');
+    });
   });
 
   // ── CalculateRecipeViabilityUseCase Tests ──────────────────────────────────

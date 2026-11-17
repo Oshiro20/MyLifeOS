@@ -412,7 +412,7 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '⏱ ${recipes[i].durationMinutes} min · 🍽️ ${recipes[i].servings} porc. · 🍳 ${recipes[i].ingredients.length} ingr.',
+                                    '⏱ ${RecipeTimeBreakdown.summaryLabel(recipes[i])} · 🍽️ ${recipes[i].servings} porc. · 🍳 ${recipes[i].ingredients.length} ingr.',
                                     style: TextStyle(
                                       color: onSurface.withValues(alpha: 0.7),
                                       fontSize: 12,
@@ -630,10 +630,14 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                         const Icon(Icons.timer_outlined,
                             color: Color(0xFF00E676), size: 18),
                         const SizedBox(width: 8),
-                        Text('${recipe.durationMinutes} min',
+                        Flexible(
+                          child: Text(
+                            RecipeTimeBreakdown.summaryLabel(recipe),
                             style: TextStyle(
-                                color: onSurface, fontWeight: FontWeight.w600)),
-                        const SizedBox(width: 24),
+                                color: onSurface, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
                         const Icon(Icons.restaurant_outlined,
                             color: Color(0xFF00E676), size: 18),
                         const SizedBox(width: 8),

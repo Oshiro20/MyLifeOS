@@ -259,17 +259,19 @@ PASO 2 - DETECTA TODOS LOS INGREDIENTES
 PASO 3 - DETECTA LOS PASOS DE PREPARACIÓN
 • Identifica el ORDEN EXACTO de cada paso
 • Describe cada paso de forma CLARA y DETALLADA
-• Incluye: qué se hace, con qué ingrediente, a qué temperatura, por cuánto tiempo
+• Incluye: qué se hace, con qué ingrediente, a qué temperatura, y **EXACTAMENTE por cuánto tiempo**
+• Si un paso requiere **refrigeración, congelación, reposo o marinado** (ej. gelatinas, postres fríos, masas, carnes), especifica OBLIGATORIAMENTE el tiempo exacto en horas o minutos dentro del texto del paso (ej: "Refrigerar durante 3 horas hasta que cuaje firme"), NUNCA pongas solo "hasta que cuaje"
 • Mínimo 3 pasos, máximo 15 pasos
 • Separa acciones importantes (no mezcles pasos)
 
 PASO 4 - ESTIMA TIEMPOS Y PORCIONES (¡CRÍTICO!)
-• ⏱️ TIEMPO PREPARACIÓN: minutos de corte/mezcla/preparación (NUNCA 0, mínimo 1)
-• 🔥 TIEMPO COCCIÓN: minutos de fuego/horno/etc. (NUNCA 0, mínimo 1)
-• ⏱️ TIEMPO TOTAL: preparación + cocción (en minutos, realista: 15-180)
-  - NO pongas 30 por defecto. CALCULA basándote en lo que ves.
+• ⏱️ TIEMPO PREPARACIÓN: minutos activos de corte/mezcla/disolución/armado (mínimo 1)
+• 🔥 TIEMPO COCCIÓN: minutos reales al fuego/horno/licuadora/batidora (`0` si es receta fría sin calor, como gelatinas o batidos)
+• ❄️ TIEMPO REFRIGERACIÓN/REPOSO: minutos de refrigeradora, congelador o reposo pasivo (`0` si se sirve de inmediato; si una gelatina tarda 3 h en refri, pon `180`)
+• ⏱️ TIEMPO TOTAL: `tiempo_preparacion_min + tiempo_coccion_min + tiempo_refrigeracion_min` (NO pongas 30 por defecto; CALCULA cada componente con realismo)
   - Si ves que corta vegetales → prep ~5-10 min
   - Si ves que fríe/hornea → cocción ~10-45 min
+  - Si lleva gelatina, agar o cuajado en nevera → indica tiempo_refrigeracion_min realista (ej. 120-240 min) y escríbelo en el paso correspondiente
 • 👥 PORCIONES: para cuántas personas alcanza (entero: 1-12)
   - OBSERVA cuántos platos/porciones se sirven en el video
   - Si no se ve claro, INFIERE según la cantidad de ingredientes:
@@ -312,6 +314,7 @@ PASO 7 - ESTIMA CALORÍAS
   "porciones": 4,
   "tiempo_preparacion_min": 15,
   "tiempo_coccion_min": 30,
+  "tiempo_refrigeracion_min": 0,
   "tiempo_total_min": 45,
   "dificultad": "Fácil",
   "tipo_comida": "Seco",
@@ -348,9 +351,9 @@ PASO 7 - ESTIMA CALORÍAS
 4. "pasos" debe tener AL MENOS 3 pasos claros y detallados.
 5. "cantidad" debe ser un NÚMERO (float), no texto. Ejemplo: 2.0, 0.5, 1.0
 6. "unidad" en ESPAÑOL: "unidades", "gramos", "kilos", "mililitros", "tazas", "cucharadas", "cucharaditas", "pizca", "litros", "al gusto"
-7. "tiempo_total_min" debe ser realista: entre 15 y 180 minutos. NO uses valores por defecto.
+7. "tiempo_total_min" debe ser realista: `tiempo_preparacion_min + tiempo_coccion_min + tiempo_refrigeracion_min` (puede ir desde 3 min en jugos hasta 360+ min si lleva varias horas de refrigeración o marinado). NO uses valores por defecto.
 8. "porciones" debe ser entero: 1 a 12. CALCULA o INFIERE, no uses 4 por defecto.
-9. "tiempo_preparacion_min" y "tiempo_coccion_min" deben ser >= 1. NUNCA 0.
+9. "tiempo_preparacion_min" debe ser >= 1; "tiempo_coccion_min" puede ser 0 en recetas sin fuego/horno; "tiempo_refrigeracion_min" debe ser 0 salvo que requiera frío o reposo prolongado.
 10. "nivel_confianza":
    - "Alto" → video claro, ingredientes visibles, pasos completos
    - "Medio" → video resumido, algunas inferencias necesarias
@@ -483,7 +486,8 @@ Analiza las IMÁGENES proporcionadas:
 2. Identifica ingredientes, cantidades, unidades y pasos
 3. Si todas las fotos son del mismo plato, combina la información en una sola receta
 4. Clasifica "tipo_comida" usando EXACTAMENTE uno de: "Desayuno" | "Entrada" | "Sopa" | "Seco" | "Postre" | "Mazamorra" | "Bebida" | "Jugo" | "Snack" (usa "Seco" para platos principales/fondos, no uses "Almuerzo"/"Cena")
-5. Si falta información, infiérelo con lógica culinaria manteniendo el mismo plato mostrado
+5. Si requiere refrigeración, congelación o reposo, indica SIEMPRE las horas o minutos exactos dentro del paso correspondiente y en "tiempo_refrigeracion_min" (0 si no requiere frío/reposo)
+6. Si falta información, infiérelo con lógica culinaria manteniendo el mismo plato mostrado
 
 📝 FORMATO JSON (o {"recetas": [ ... ]} si hay múltiples recetas):
 {
@@ -492,6 +496,7 @@ Analiza las IMÁGENES proporcionadas:
   "porciones": 4,
   "tiempo_preparacion_min": 15,
   "tiempo_coccion_min": 30,
+  "tiempo_refrigeracion_min": 0,
   "tiempo_total_min": 45,
   "dificultad": "Fácil",
   "tipo_comida": "Seco",

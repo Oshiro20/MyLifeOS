@@ -419,3 +419,57 @@ class RecipeVariation extends Equatable {
     );
   }
 }
+
+/// Desglose legible de tiempos (activo vs refrigeración/reposo) codificado de forma
+/// retrocompatible en `Recipe.tags` (`activo:<N>m`, `refri:<N>m`).
+class RecipeTimeBreakdown {
+  const RecipeTimeBreakdown._();
+
+  static String formatMinutes(int minutes) {
+    if (minutes <= 0) return '0 min';
+    if (minutes < 60) return '$minutes min';
+    final hours = minutes ~/ 60;
+    final rem = minutes % 60;
+    return rem == 0 ? '$hours h' : '$hours h $rem min';
+  }
+
+  static ({int? activeMinutes, int? chillMinutes}) extract(Recipe recipe) {
+    int? active;
+    int? chill;
+    for (final tag in recipe.tags) {
+      final t = tag.trim().toLowerCase();
+      if (t.startsWith('activo:') && t.endsWith('m')) {
+        active = int.tryParse(t.substring(7, t.length - 1));
+      } else if (t.startsWith('refri:') && t.endsWith('m')) {
+        chill = int.tryParse(t.substring(6, t.length - 1));
+      }
+    }
+    return (activeMinutes: active, chillMinutes: chill);
+  }
+
+  static String summaryLabel(Recipe recipe) {
+    final parts = extract(recipe);
+    if (parts.chillMinutes != null && parts.chillMinutes! > 0) {
+      final active = parts.activeMinutes ??
+          (recipe.durationMinutes > parts.chillMinutes!
+              ? recipe.durationMinutes - parts.chillMinutes!
+              : recipe.durationMinutes);
+      return '${formatMinutes(active)} activo + ${formatMinutes(parts.chillMinutes!)} refri';
+    }
+    return formatMinutes(recipe.durationMinutes);
+  }
+
+  static String compactChip(Recipe recipe) {
+    final parts = extract(recipe);
+    if (parts.chillMinutes != null && parts.chillMinutes! > 0) {
+      final active = parts.activeMinutes ??
+          (recipe.durationMinutes > parts.chillMinutes!
+              ? recipe.durationMinutes - parts.chillMinutes!
+              : recipe.durationMinutes);
+      return '${active}m+${formatMinutes(parts.chillMinutes!)}❄';
+    }
+    return recipe.durationMinutes >= 60
+        ? formatMinutes(recipe.durationMinutes)
+        : '${recipe.durationMinutes}m';
+  }
+}
