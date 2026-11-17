@@ -169,6 +169,50 @@ void main() {
         ),
       );
     });
+
+    test('parseManyFromJson extrae múltiples recetas con tipoComida y cocina',
+        () {
+      const multiJson = '''
+      {
+        "recetas": [
+          {
+            "nombre_receta": "Arroz Chaufa",
+            "tipo_comida": "Seco",
+            "cocina": "Peruana-China",
+            "porciones": 2,
+            "tiempo_total_min": 25,
+            "ingredientes": [{"nombre": "Arroz", "cantidad": 2, "unidad": "tazas"}],
+            "pasos": ["Cocinar arroz", "Saltear", "Servir"]
+          },
+          {
+            "nombre_receta": "Jugo Verde Detox",
+            "tipo_comida": "Jugo",
+            "cocina": "Saludable",
+            "porciones": 1,
+            "tiempo_total_min": 5,
+            "ingredientes": [{"nombre": "Espinaca", "cantidad": 50, "unidad": "gramos"}],
+            "pasos": ["Lavar", "Licuar", "Servir"]
+          }
+        ]
+      }
+      ''';
+
+      final useCase = ExtractRecipeUseCase(FakeAIExtractor());
+      final list = useCase.parseManyFromJson(
+        multiJson,
+        sourceUrl: 'https://www.tiktok.com/@chef/video/123',
+      );
+
+      expect(list.length, 2);
+      expect(list[0].id, isNot(equals(list[1].id)));
+      expect(list[0].name, 'Arroz Chaufa');
+      expect(list[0].tipoComida, MealType.seco);
+      expect(list[0].cuisineStyle, 'Peruana-China');
+      expect(list[1].name, 'Jugo Verde Detox');
+      expect(list[1].tipoComida, MealType.jugo);
+      expect(list[1].cuisineStyle, 'Saludable');
+      expect(list[1].fuenteUrl, 'https://www.tiktok.com/@chef/video/123');
+    });
   });
 
   // ── CalculateRecipeViabilityUseCase Tests ──────────────────────────────────

@@ -17,7 +17,13 @@ enum RecipeImportState {
 }
 
 class RecipeImportNotifier extends Notifier<RecipeImportState> {
-  Recipe? importedRecipe;
+  List<Recipe> importedRecipes = [];
+  Recipe? get importedRecipe =>
+      importedRecipes.isNotEmpty ? importedRecipes.first : null;
+  set importedRecipe(Recipe? value) {
+    importedRecipes = value == null ? [] : [value];
+  }
+
   String? errorMessage;
   String currentStatusMessage = '';
   List<DuplicateMatch> duplicateMatches = [];
@@ -25,6 +31,14 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   @override
   RecipeImportState build() {
     return RecipeImportState.initial;
+  }
+
+  void updateImportedRecipeAt(int index, Recipe updated) {
+    if (index < 0 || index >= importedRecipes.length) return;
+    importedRecipes = [
+      for (int i = 0; i < importedRecipes.length; i++)
+        if (i == index) updated else importedRecipes[i],
+    ];
   }
 
   /// Validates if the URL is a valid TikTok, Instagram, or YouTube URL
@@ -119,7 +133,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
             importedFromDownloadedVideo = state == RecipeImportState.success;
           }
         } catch (e) {
-          debugPrint('⚠️ Fallo descargando MP4 de TikTok, probando metadatos: $e');
+          debugPrint(
+              '⚠️ Fallo descargando MP4 de TikTok, probando metadatos: $e');
         } finally {
           if (tempFile.existsSync()) tempFile.deleteSync();
         }
@@ -127,7 +142,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
       if (!importedFromDownloadedVideo && state != RecipeImportState.error) {
         // Extracción alternativa pública vía oEmbed + OpenGraph / JSON-LD
-        currentStatusMessage = 'Extrayendo metadatos y descripción del enlace...';
+        currentStatusMessage =
+            'Extrayendo metadatos y descripción del enlace...';
         final metadata =
             await tikTokService.extractPublicRecipeMetadata(rawInput);
         if (metadata == null) {
@@ -145,8 +161,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
                 .timeout(const Duration(seconds: 15));
             final contentType =
                 (imgResp.headers['content-type'] ?? '').toLowerCase();
-            final isValidImage =
-                imgResp.statusCode == 200 &&
+            final isValidImage = imgResp.statusCode == 200 &&
                 imgResp.bodyBytes.length > 2048 &&
                 (contentType.isEmpty || contentType.startsWith('image/'));
             if (isValidImage) {
@@ -170,9 +185,8 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
         try {
           final geminiService = ref.read(geminiProvider);
           final jsonString = await geminiService.extractRecipe(
-            textContext: metadata.contextText.isNotEmpty
-                ? metadata.contextText
-                : null,
+            textContext:
+                metadata.contextText.isNotEmpty ? metadata.contextText : null,
             mediaPath: tempThumbPath,
           );
           if (jsonString == null || jsonString.isEmpty) {
@@ -260,8 +274,11 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   void importFromJson(String jsonString, {String? sourceUrl}) {
     try {
       final useCase = ref.read(extractRecipeUseCaseProvider);
-      importedRecipe = useCase.parseFromJson(jsonString, sourceUrl: sourceUrl);
-      currentStatusMessage = '¡Receta encontrada!';
+      importedRecipes =
+          useCase.parseManyFromJson(jsonString, sourceUrl: sourceUrl);
+      currentStatusMessage = importedRecipes.length > 1
+          ? '¡${importedRecipes.length} recetas encontradas!'
+          : '¡Receta encontrada!';
       state = RecipeImportState.success;
     } catch (e) {
       errorMessage = 'Error al procesar la receta: $e';
@@ -355,9 +372,12 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
           '📝 Gemini returned: ${jsonString.substring(0, jsonString.length > 200 ? 200 : jsonString.length)}...');
 
       final useCase = ref.read(extractRecipeUseCaseProvider);
-      importedRecipe = useCase.parseFromJson(jsonString, sourceUrl: sourceUrl);
+      importedRecipes =
+          useCase.parseManyFromJson(jsonString, sourceUrl: sourceUrl);
 
-      currentStatusMessage = '¡Receta encontrada!';
+      currentStatusMessage = importedRecipes.length > 1
+          ? '¡${importedRecipes.length} recetas encontradas!'
+          : '¡Receta encontrada!';
       state = RecipeImportState.success;
     } catch (e) {
       errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -377,7 +397,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
   void reset() {
     state = RecipeImportState.initial;
-    importedRecipe = null;
+    importedRecipes = [];
     errorMessage = null;
     currentStatusMessage = '';
     duplicateMatches = [];

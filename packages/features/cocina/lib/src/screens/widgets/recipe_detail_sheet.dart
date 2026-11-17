@@ -43,6 +43,7 @@ class _RecipeDetailContent extends ConsumerStatefulWidget {
 
 class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   int _scaledServings = 1;
+  MealType? _tipoComida;
 
   int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
 
@@ -50,6 +51,57 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   void initState() {
     super.initState();
     _scaledServings = _baseServings;
+    _tipoComida = widget.recipe.tipoComida;
+  }
+
+  static const _editableMealTypes = [
+    MealType.desayuno,
+    MealType.entrada,
+    MealType.sopa,
+    MealType.seco,
+    MealType.postre,
+    MealType.mazamorra,
+    MealType.bebida,
+    MealType.jugo,
+    MealType.snack,
+  ];
+
+  Future<void> _pickCategory(BuildContext context) async {
+    final isSaved = ref
+        .read(recipesProvider)
+        .recipes
+        .any((r) => r.id == widget.recipe.id);
+    if (!isSaved) return;
+
+    final chosen = await showModalBottomSheet<MealType>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            const ListTile(
+              title: Text(
+                'Cambiar categoría de receta',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            for (final type in _editableMealTypes)
+              ListTile(
+                leading: Text(type.emoji, style: const TextStyle(fontSize: 20)),
+                title: Text(type.label),
+                trailing: _tipoComida == type
+                    ? const Icon(Icons.check, color: Color(0xFF00C896))
+                    : null,
+                onTap: () => Navigator.pop(ctx, type),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    setState(() => _tipoComida = chosen);
+    await ref
+        .read(recipesProvider.notifier)
+        .saveRecipe(widget.recipe.copyWith(tipoComida: chosen));
   }
 
   double _getScaledQuantity(double original) {
@@ -147,6 +199,18 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
         Wrap(spacing: 8, runSpacing: 6, children: [
           _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
           _chip(context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
+          GestureDetector(
+            onTap: () => _pickCategory(context),
+            child: _chip(
+              context,
+              _tipoComida != null
+                  ? '${_tipoComida!.emoji} ${_tipoComida!.label} ▾'
+                  : '🏷️ Sin categoría ▾',
+            ),
+          ),
+          if (widget.recipe.cuisineStyle != null &&
+              widget.recipe.cuisineStyle!.isNotEmpty)
+            _chip(context, '🌍 ${widget.recipe.cuisineStyle!}'),
           if (isScaled)
             _chip(context,
                 '📏 x${(_scaledServings / _baseServings).toStringAsFixed(1)}'),

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:core/core.dart';
+import 'package:domain/domain.dart';
 import '../providers/recipe_importer_provider.dart';
 import '../providers/cocina_providers.dart';
 
@@ -22,8 +23,83 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
   final _urlController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
+  final Set<int> _deselectedRecipeIndices = {};
   List<String> _importHistory = [];
   bool _showHistory = false;
+
+  static const _dishCategories = [
+    MealType.desayuno,
+    MealType.entrada,
+    MealType.sopa,
+    MealType.seco,
+    MealType.postre,
+    MealType.mazamorra,
+    MealType.bebida,
+    MealType.jugo,
+    MealType.snack,
+  ];
+
+  Future<void> _pickCategoryForImported(int index, Recipe recipe) async {
+    final chosen = await showModalBottomSheet<MealType>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            const ListTile(
+              title: Text(
+                'Categoría de la receta',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            for (final type in _dishCategories)
+              ListTile(
+                leading: Text(type.emoji, style: const TextStyle(fontSize: 20)),
+                title: Text(type.label),
+                trailing: recipe.tipoComida == type
+                    ? const Icon(Icons.check, color: Color(0xFF00E676))
+                    : null,
+                onTap: () => Navigator.pop(ctx, type),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    ref
+        .read(recipeImportProvider.notifier)
+        .updateImportedRecipeAt(index, recipe.copyWith(tipoComida: chosen));
+    setState(() {});
+  }
+
+  Widget _buildCategoryBadgeRow(int index, Recipe recipe) {
+    final cat = recipe.tipoComida;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        ActionChip(
+          avatar: Text(
+            cat?.emoji ?? '🏷️',
+            style: const TextStyle(fontSize: 14),
+          ),
+          label: Text(
+            cat != null ? '${cat.label} ▾' : 'Sin categoría ▾',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          onPressed: () => _pickCategoryForImported(index, recipe),
+          visualDensity: VisualDensity.compact,
+        ),
+        if (recipe.cuisineStyle != null && recipe.cuisineStyle!.isNotEmpty)
+          Chip(
+            label: Text(
+              '🌍 ${recipe.cuisineStyle!}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            visualDensity: VisualDensity.compact,
+          ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -262,6 +338,253 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
       );
     }
 
+    if (state == RecipeImportState.success &&
+        notifier.importedRecipes.length > 1) {
+      final recipes = notifier.importedRecipes;
+      final onSurface = Theme.of(context).colorScheme.onSurface;
+      final selectedIndices = [
+        for (int i = 0; i < recipes.length; i++)
+          if (!_deselectedRecipeIndices.contains(i)) i,
+      ];
+
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(Icons.auto_awesome,
+                color: Color(0xFF00E676), size: 52),
+            const SizedBox(height: 12),
+            Text(
+              '¡Se detectaron ${recipes.length} recetas!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: onSurface,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Selecciona cuáles deseas guardar y verifica su categoría:',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: onSurface.withValues(alpha: 0.65),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 18),
+            for (int i = 0; i < recipes.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _GlassCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Checkbox(
+                              value: !_deselectedRecipeIndices.contains(i),
+                              activeColor: const Color(0xFF00E676),
+                              onChanged: (checked) {
+                                setState(() {
+                                  if (checked == true) {
+                                    _deselectedRecipeIndices.remove(i);
+                                  } else {
+                                    _deselectedRecipeIndices.add(i);
+                                  }
+                                });
+                              },
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    recipes[i].name,
+                                    style: const TextStyle(
+                                      color: Color(0xFF00F0FF),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '⏱ ${recipes[i].durationMinutes} min · 🍽️ ${recipes[i].servings} porc. · 🍳 ${recipes[i].ingredients.length} ingr.',
+                                    style: TextStyle(
+                                      color: onSurface.withValues(alpha: 0.7),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildCategoryBadgeRow(i, recipes[i]),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+                          title: Text(
+                            'Ver ingredientes y pasos',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: onSurface.withValues(alpha: 0.75),
+                            ),
+                          ),
+                          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                          children: [
+                            if (recipes[i].description.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  recipes[i].description,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: onSurface.withValues(alpha: 0.72),
+                                  ),
+                                ),
+                              ),
+                            ...recipes[i].ingredients.map(
+                                  (ing) => Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 3),
+                                      child: Text(
+                                        '• ${ing.quantity} ${ing.unit} de ${ing.ingredientName}',
+                                        style: TextStyle(
+                                            fontSize: 12, color: onSurface),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            if (recipes[i].instructions.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              ...recipes[i].instructions.asMap().entries.map(
+                                    (step) => Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 4),
+                                        child: Text(
+                                          '${step.key + 1}. ${step.value}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                onSurface.withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00E676),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: selectedIndices.isEmpty
+                  ? null
+                  : () async {
+                      int savedCount = 0;
+                      for (final idx in selectedIndices) {
+                        final item = recipes[idx];
+                        final res = await ref
+                            .read(recipesProvider.notifier)
+                            .saveRecipeWithDuplicateCheck(item);
+                        if (!mounted) return;
+                        if (res.hasDuplicates) {
+                          final dupNames = res.duplicates
+                              .map((d) =>
+                                  '${d.recipe.name} (${(d.similarityScore * 100).round()}%)')
+                              .join(', ');
+                          final keep = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: Text('⚠️ ${item.name}'),
+                                  content: Text(
+                                    'Parece similar a: $dupNames.\n¿Guardar de todos modos?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Omitir'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Guardar igual'),
+                                    ),
+                                  ],
+                                ),
+                              ) ??
+                              false;
+                          if (keep) {
+                            final forced = await ref
+                                .read(recipesProvider.notifier)
+                                .saveRecipeWithDuplicateCheck(item,
+                                    forceSave: true);
+                            if (forced.success) savedCount++;
+                          }
+                        } else if (res.success) {
+                          savedCount++;
+                        }
+                      }
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            savedCount > 0
+                                ? '✅ $savedCount receta(s) guardadas en tu recetario'
+                                : 'No se guardó ninguna receta',
+                          ),
+                          backgroundColor: savedCount > 0
+                              ? const Color(0xFF00E676)
+                              : Colors.orange,
+                        ),
+                      );
+                      if (savedCount > 0) {
+                        _deselectedRecipeIndices.clear();
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          context.go('/cocina');
+                        }
+                      }
+                    },
+              child: Text(
+                'Guardar seleccionadas (${selectedIndices.length})',
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                _deselectedRecipeIndices.clear();
+                notifier.reset();
+              },
+              child: Text('Empezar de nuevo',
+                  style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.55))),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (state == RecipeImportState.success && notifier.importedRecipe != null) {
       final recipe = notifier.importedRecipe!;
       final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -319,6 +642,8 @@ class _RecipeImporterScreenState extends ConsumerState<RecipeImporterScreen> {
                                 color: onSurface, fontWeight: FontWeight.w600)),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    _buildCategoryBadgeRow(0, recipe),
                     Divider(
                         color: onSurface.withValues(alpha: 0.12), height: 40),
 

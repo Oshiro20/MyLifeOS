@@ -219,7 +219,9 @@ Tu especialidad:
 
 📋 TU MISIÓN
 
-Analiza DETENIDAMENTE el video/imagen de cocina proporcionado y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
+Analiza DETENIDAMENTE el video/imagen/texto de cocina proporcionado:
+• Si muestra **UN plato** (aunque incluya su salsa o guarnición), extrae **1 objeto JSON** completo.
+• Si muestra o lista **2 O MÁS recetas independientes** (por ejemplo: "3 desayunos rápidos", "4 jugos", "2 postres sin horno", etc.), devuelve un objeto con la clave `"recetas": [ { ... }, { ... } ]` manteniendo cada receta separada con sus propios ingredientes, pasos y categoría. No mezcles recetas distintas en una sola.
 
 🔍 PASOS DE ANÁLISIS (SIGUE CADA UNO):
 
@@ -282,16 +284,18 @@ PASO 5 - DETECTA UTENSILIOS
 
 PASO 6 - CLASIFICACIÓN
 • Dificultad: "Fácil" (≤5 pasos), "Media" (6-10), "Difícil" (>10)
-• Tipo de comida: Debes usar EXACTAMENTE uno de estos valores:
-  "Desayuno" | "Almuerzo" | "Cena" | "Entrada" | "Sopa" | "Seco" | "Postre" | "Mazamorra" | "Bebida" | "Snack"
-  - Postre: tartas, flanes, alfajores, etc.
-  - Mazamorra: mazamorras, gelatinas, puddings
-  - Entrada: ceviches, causa, tiradito, etc.
-  - Sopa: caldos, cremas, aguaditos, etc.
-  - Seco: platos fuertes con salsa espesa
-  - Bebida: jugos, chicha, limonada, emoliente
-  - Snack: botanas, pasabocas
-• Cocina: según estilo (peruana, italiana, asiática, etc.)
+• Tipo de comida ("tipo_comida"): Debes usar EXACTAMENTE uno de estos valores según el TIPO DE PLATO (evita usar "Almuerzo" o "Cena"):
+  "Desayuno" | "Entrada" | "Sopa" | "Seco" | "Postre" | "Mazamorra" | "Bebida" | "Jugo" | "Snack"
+  - Seco: platos fuertes / segundos / fondos (arroces, guisos, pastas, carnes, pescados, arroz chaufa, lomo saltado)
+  - Sopa: caldos, cremas, aguaditos, ramen, chupe
+  - Entrada: ceviches, causa, tiradito, ensaladas, aperitivos
+  - Desayuno: panqueques, avena, huevos revueltos, tostadas, desayunos completos
+  - Postre: tortas, tartas, flanes, alfajores, brownies, helados
+  - Mazamorra: mazamorras, arroz con leche, gelatinas, puddings
+  - Jugo: jugos naturales, extractos, batidos, smoothies
+  - Bebida: refrescos, chicha, limonada, emoliente, infusiones, cócteles
+  - Snack: piqueos, botanas, pasabocas, barritas
+• Cocina: según estilo (Peruana, Italiana, Asiática, Mexicana, Internacional, etc.)
 • Tags: 3-5 tags relevantes
 
 PASO 7 - ESTIMA CALORÍAS
@@ -300,6 +304,7 @@ PASO 7 - ESTIMA CALORÍAS
 -----------------------------------------------------
 
 📝 FORMATO DE SALIDA (JSON PURO - SIN MARKDOWN):
+(Si hay 2 o más recetas independientes en el video/texto, envuélvelas en {"recetas": [ ... ]} usando este mismo esquema por cada receta):
 
 {
   "nombre_receta": "Nombre completo del plato",
@@ -309,7 +314,7 @@ PASO 7 - ESTIMA CALORÍAS
   "tiempo_coccion_min": 30,
   "tiempo_total_min": 45,
   "dificultad": "Fácil",
-  "tipo_comida": "Postre",
+  "tipo_comida": "Seco",
   "cocina": "Peruana",
   "ingredientes": [
     {
@@ -408,6 +413,57 @@ Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reempl
     }
   }
 
+  /// Clasifica automáticamente un lote de recetas guardadas sin categoría usando Gemini.
+  /// Retorna un mapa `recipeId -> etiqueta de MealType` (ej. 'Seco', 'Sopa', 'Postre').
+  Future<Map<String, String>> categorizeRecipesWithGemini(
+    List<({String id, String name, List<String> ingredients, String description})>
+        recipes,
+  ) async {
+    if (recipes.isEmpty) return const {};
+    final subset = recipes.take(30).toList();
+    final catalogText = subset
+        .map((r) =>
+            '- id="${r.id}" | nombre="${r.name}" | ingredientes=[${r.ingredients.take(8).join(", ")}]${r.description.isNotEmpty ? ' | desc="${r.description}"' : ''}')
+        .join('\n');
+
+    final prompt = '''
+Clasifica cada receta exactamente en UNA de estas categorías:
+["Desayuno", "Entrada", "Sopa", "Seco", "Postre", "Mazamorra", "Bebida", "Jugo", "Snack"]
+
+Guía:
+- Platos de fondo / segundos / pastas / arroces / guisos / carnes -> "Seco"
+- Caldos / cremas / chupes -> "Sopa"
+- Ensaladas / ceviches / causas / piqueos previos -> "Entrada"
+- Batidos / smoothies / zumos -> "Jugo"
+- Infusiones / refrescos / chicha / bebidas -> "Bebida"
+
+Recetas:
+$catalogText
+
+Devuelve ÚNICAMENTE un objeto JSON mapa donde la clave es el id exacto y el valor es una categoría exacta de la lista, sin markdown ni texto adicional:
+{"id_1": "Seco", "id_2": "Postre"}
+''';
+
+    final raw = await _executePrompt(prompt: prompt, expectJson: true)
+        .timeout(const Duration(seconds: 30));
+    if (raw == null || raw.isEmpty) return const {};
+
+    try {
+      final start = raw.indexOf('{');
+      final end = raw.lastIndexOf('}');
+      if (start == -1 || end <= start) return const {};
+      final decoded = jsonDecode(raw.substring(start, end + 1));
+      if (decoded is! Map) return const {};
+      return {
+        for (final entry in decoded.entries)
+          if (entry.key != null && entry.value != null)
+            entry.key.toString(): entry.value.toString(),
+      };
+    } catch (_) {
+      return const {};
+    }
+  }
+
   /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
   /// Returns structured JSON with the recipe.
   Future<String?> extractRecipeFromImages(
@@ -418,15 +474,18 @@ Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reempl
 👨‍ ERES UN CHEF PROFESIONAL + EXPERTO EN OCR Y ANÁLISIS DE IMÁGENES.
 
 📋 TU MISIÓN:
-Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA.
+Analiza las IMÁGENES proporcionadas:
+• Si muestran UN plato, devuelve 1 objeto JSON.
+• Si muestran 2 o más recetas independientes (ej. varias fichas o un carrusel con varios platos distintos), devuelve {"recetas": [ { ... }, { ... } ]} separando cada receta correctamente.
 
 🔍 INSTRUCCIONES:
 1. Lee TODO el texto visible en las imágenes (OCR)
 2. Identifica ingredientes, cantidades, unidades y pasos
-3. Si hay múltiples imágenes, combina la información de todas
-4. Si falta información, infiérelo con lógica culinaria manteniendo el mismo plato mostrado
+3. Si todas las fotos son del mismo plato, combina la información en una sola receta
+4. Clasifica "tipo_comida" usando EXACTAMENTE uno de: "Desayuno" | "Entrada" | "Sopa" | "Seco" | "Postre" | "Mazamorra" | "Bebida" | "Jugo" | "Snack" (usa "Seco" para platos principales/fondos, no uses "Almuerzo"/"Cena")
+5. Si falta información, infiérelo con lógica culinaria manteniendo el mismo plato mostrado
 
-📝 FORMATO JSON:
+📝 FORMATO JSON (o {"recetas": [ ... ]} si hay múltiples recetas):
 {
   "nombre_receta": "Nombre del plato",
   "descripcion": "Descripción de 2-3 oraciones",
@@ -435,7 +494,7 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
   "tiempo_coccion_min": 30,
   "tiempo_total_min": 45,
   "dificultad": "Fácil",
-  "tipo_comida": "Almuerzo",
+  "tipo_comida": "Seco",
   "cocina": "Peruana",
   "ingredientes": [
     {"nombre": "Arroz", "cantidad": 2.0, "unidad": "tazas"}

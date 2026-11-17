@@ -106,7 +106,63 @@ class RecipesTab extends ConsumerStatefulWidget {
 class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
   MealType? _selectedCategory;
   String _searchQuery = '';
+  bool _autoCategorizing = false;
   final TextEditingController _searchCtrl = TextEditingController();
+
+  bool _needsCategorization(Recipe r) =>
+      r.tipoComida == null ||
+      r.tipoComida == MealType.otro ||
+      r.tipoComida == MealType.almuerzo ||
+      r.tipoComida == MealType.cena;
+
+  Future<void> _autoCategorizeWithGemini(List<Recipe> candidates) async {
+    if (_autoCategorizing || candidates.isEmpty) return;
+    setState(() => _autoCategorizing = true);
+    try {
+      final gemini = ref.read(geminiProvider);
+      final mapping = await gemini.categorizeRecipesWithGemini(
+        candidates
+            .map((r) => (
+                  id: r.id,
+                  name: r.name,
+                  ingredients: r.ingredients.map((i) => i.ingredientName).toList(),
+                  description: r.description,
+                ))
+            .toList(),
+      );
+
+      if (mapping.isEmpty) {
+        if (mounted) {
+          showError(context,
+              'No se pudo categorizar automáticamente. Verifica tu conexión.');
+        }
+        return;
+      }
+
+      final notifier = ref.read(recipesProvider.notifier);
+      int updated = 0;
+      for (final recipe in candidates) {
+        final rawLabel = mapping[recipe.id];
+        if (rawLabel == null) continue;
+        final parsed = ExtractRecipeUseCase.parseMealType(rawLabel);
+        if (parsed != null && parsed != recipe.tipoComida) {
+          await notifier.saveRecipe(recipe.copyWith(tipoComida: parsed));
+          updated++;
+        }
+      }
+
+      if (mounted) {
+        showSuccess(context,
+            '✨ $updated receta(s) categorizadas automáticamente con IA');
+      }
+    } catch (e) {
+      if (mounted) {
+        showError(context, 'Error al categorizar con IA: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _autoCategorizing = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -252,11 +308,10 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                   onTap: () => setState(() => _selectedCategory = null),
                 ),
                 const SizedBox(width: 6),
-                // Recipe category chips (exclude meal periods: desayuno, almuerzo, cena)
+                // Recipe category chips (exclude generic meal periods: almuerzo, cena, otro)
                 ...MealType.values
                     .where((t) =>
                         t != MealType.otro &&
-                        t != MealType.desayuno &&
                         t != MealType.almuerzo &&
                         t != MealType.cena)
                     .map(
@@ -294,6 +349,48 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                 ),
               ),
             ),
+          ),
+          // Auto-categorize banner for uncategorized / generic recipes
+          Builder(
+            builder: (context) {
+              final uncategorized =
+                  state.recipes.where(_needsCategorization).toList();
+              if (uncategorized.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(12, 2, 12, 4),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _autoCategorizing
+                        ? null
+                        : () => _autoCategorizeWithGemini(uncategorized),
+                    icon: _autoCategorizing
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.auto_awesome,
+                            size: 16, color: Color(0xFF00C896)),
+                    label: Text(
+                      _autoCategorizing
+                          ? 'Categorizando con Gemini...'
+                          : '✨ Auto-categorizar ${uncategorized.length} receta(s) con IA',
+                      style: const TextStyle(
+                          color: Color(0xFF00C896), fontSize: 12.5),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                          color: Color(0xFF00C896), width: 1),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           // Recipe list
           Expanded(

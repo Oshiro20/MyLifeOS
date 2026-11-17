@@ -10,28 +10,93 @@ class ExtractRecipeUseCase {
   ExtractRecipeUseCase(this.aiExtractor);
 
   Future<Recipe?> execute({String? textContext, String? mediaPath}) async {
+    final list = await executeMany(
+      textContext: textContext,
+      mediaPath: mediaPath,
+    );
+    return list.isEmpty ? null : list.first;
+  }
+
+  /// Extrae una o múltiples recetas si el video/texto/enlace contiene varias preparaciones independientes.
+  Future<List<Recipe>> executeMany({
+    String? textContext,
+    String? mediaPath,
+  }) async {
     final jsonString = await aiExtractor.extractRecipeJson(
       textContext: textContext,
       mediaPath: mediaPath,
     );
 
-    if (jsonString == null || jsonString.isEmpty) return null;
-    return parseFromJson(jsonString);
+    if (jsonString == null || jsonString.isEmpty) return const [];
+    return parseManyFromJson(jsonString);
   }
 
   /// Parses a raw JSON string (possibly with markdown/extra text) into a Recipe.
   /// This is the single source of truth for JSON → Recipe parsing.
   Recipe parseFromJson(String jsonString, {String? sourceUrl}) {
-    try {
-      // Robust JSON cleaning - handle markdown, extra text, etc.
-      String cleanJson = _extractJsonFromResponse(jsonString);
+    final recipes = parseManyFromJson(jsonString, sourceUrl: sourceUrl);
+    if (recipes.isEmpty) {
+      throw Exception('La IA no devolvió ninguna receta válida.');
+    }
+    return recipes.first;
+  }
 
-      final decoded = jsonDecode(cleanJson) as Map<String, dynamic>;
+  /// Parsea una o varias recetas desde la respuesta JSON de Gemini (soporta `{ "recetas": [...] }`,
+  /// una lista JSON `[...]` o un único objeto `{ ... }`).
+  List<Recipe> parseManyFromJson(String jsonString, {String? sourceUrl}) {
+    try {
+      final cleanJson = _extractJsonFromResponse(jsonString);
+      final dynamic decodedRoot = jsonDecode(cleanJson);
+      final baseTs = DateTime.now().millisecondsSinceEpoch;
+
+      if (decodedRoot is List) {
+        final list = <Recipe>[];
+        for (int i = 0; i < decodedRoot.length; i++) {
+          final item = decodedRoot[i];
+          if (item is Map) {
+            list.add(_parseRecipe(
+              Map<String, dynamic>.from(item),
+              sourceUrl: sourceUrl,
+              recipeId: '${baseTs}_$i',
+            ));
+          }
+        }
+        if (list.isEmpty) {
+          throw const FormatException(
+              'La IA devolvió una lista vacía sin recetas.');
+        }
+        return list;
+      }
+
+      if (decodedRoot is! Map) {
+        throw const FormatException('Formato JSON inesperado de receta.');
+      }
+
+      final decoded = Map<String, dynamic>.from(decodedRoot);
       final err = decoded['error_extraccion']?.toString().trim();
       if (err != null && err.isNotEmpty) {
         throw FormatException(err);
       }
-      return _parseRecipe(decoded, sourceUrl: sourceUrl);
+
+      final rawMulti = decoded['recetas'] ?? decoded['recipes'];
+      if (rawMulti is List && rawMulti.isNotEmpty) {
+        final list = <Recipe>[];
+        for (int i = 0; i < rawMulti.length; i++) {
+          final item = rawMulti[i];
+          if (item is Map) {
+            list.add(_parseRecipe(
+              Map<String, dynamic>.from(item),
+              sourceUrl: sourceUrl,
+              recipeId: '${baseTs}_$i',
+            ));
+          }
+        }
+        if (list.isNotEmpty) return list;
+      }
+
+      return [
+        _parseRecipe(decoded, sourceUrl: sourceUrl, recipeId: baseTs.toString()),
+      ];
     } on FormatException catch (e) {
       throw Exception(e.message);
     } catch (e, stackTrace) {
@@ -43,7 +108,11 @@ class ExtractRecipeUseCase {
     }
   }
 
-  Recipe _parseRecipe(Map<String, dynamic> decoded, {String? sourceUrl}) {
+  Recipe _parseRecipe(
+    Map<String, dynamic> decoded, {
+    String? sourceUrl,
+    String? recipeId,
+  }) {
     // Support BOTH old and new JSON formats
     final name =
         decoded['name'] ?? decoded['nombre_receta'] ?? 'Receta Importada';
@@ -71,14 +140,15 @@ class ExtractRecipeUseCase {
     final rawIngredients = rawIngField is List ? rawIngField : const [];
 
     final List<RecipeIngredient> ingredients = [];
-    final recipeId = DateTime.now().millisecondsSinceEpoch.toString();
+    final resolvedId =
+        recipeId ?? DateTime.now().millisecondsSinceEpoch.toString();
 
     for (int i = 0; i < rawIngredients.length; i++) {
       final rawEntry = rawIngredients[i];
       if (rawEntry is String && rawEntry.trim().isNotEmpty) {
         ingredients.add(RecipeIngredient(
-          id: '${recipeId}_ing_$i',
-          recipeId: recipeId,
+          id: '${resolvedId}_ing_$i',
+          recipeId: resolvedId,
           ingredientName: rawEntry.trim(),
           quantity: 1.0,
           unit: 'unidades',
@@ -106,8 +176,8 @@ class ExtractRecipeUseCase {
           (item['unit'] ?? item['unidad'])?.toString() ?? 'unidades';
 
       ingredients.add(RecipeIngredient(
-        id: '${recipeId}_ing_$i',
-        recipeId: recipeId,
+        id: '${resolvedId}_ing_$i',
+        recipeId: resolvedId,
         ingredientName: ingName,
         quantity: qty,
         unit: rawUnit,
@@ -229,12 +299,19 @@ class ExtractRecipeUseCase {
       }
     }
 
-    // Parsear tipo de comida
+    // Parsear tipo de comida y estilo de cocina
     MealType? tipoComida;
     final rawTipoComida = decoded['tipo_comida']?.toString();
     if (rawTipoComida != null) {
       tipoComida = parseMealType(rawTipoComida);
     }
+    final rawCocina = (decoded['cocina'] ??
+            decoded['cuisineStyle'] ??
+            decoded['region'])
+        ?.toString()
+        .trim();
+    final cuisineStyle =
+        (rawCocina != null && rawCocina.isNotEmpty) ? rawCocina : null;
 
     // Parsear fuente (source URL)
     final fuenteUrl =
@@ -243,7 +320,7 @@ class ExtractRecipeUseCase {
         decoded['fuente_label'] as String? ?? decoded['tipo_fuente'] as String?;
 
     return Recipe(
-      id: recipeId,
+      id: resolvedId,
       name: name,
       description: description,
       durationMinutes: durationMinutes,
@@ -262,6 +339,7 @@ class ExtractRecipeUseCase {
       maridaje: maridaje,
       variaciones: variaciones,
       tipoComida: tipoComida,
+      cuisineStyle: cuisineStyle,
       fuenteUrl: fuenteUrl ?? sourceUrl,
       fuenteLabel:
           fuenteLabel ?? (sourceUrl != null ? 'Video/Red social' : 'Chef IA'),
@@ -304,10 +382,14 @@ class ExtractRecipeUseCase {
     if (lower.contains('mazamorr') || lower.contains('gelatin')) {
       return MealType.mazamorra;
     }
+    if (lower.contains('jugo') ||
+        lower.contains('zumo') ||
+        lower.contains('batido') ||
+        lower.contains('smoothie')) {
+      return MealType.jugo;
+    }
     if (lower.contains('bebida') ||
         lower.contains('refresco') ||
-        lower.contains('jugo') ||
-        lower.contains('zumo') ||
         lower.contains('limonad') ||
         lower.contains('chicha') ||
         lower.contains('emolient')) {
