@@ -50,9 +50,13 @@ jobs:
             echo "ERROR: Faltan secretos de firma (MYLIFEOS_KEYSTORE_BASE64 / PASSWORDS / ALIAS)."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > apps/mobile/android/app/mylifeos-release.jks
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > apps/mobile/android/app/mylifeos-release.jks
           printf "storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=mylifeos-release.jks\n" \
-            "$STORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > apps/mobile/android/key.properties
+            "$(printf '%s' "$STORE_PASSWORD" | tr -d '\r\n')" \
+            "$(printf '%s' "$KEY_PASSWORD" | tr -d '\r\n')" \
+            "$(printf '%s' "$KEY_ALIAS" | tr -d '\r\n')" > apps/mobile/android/key.properties
+          keytool -list -keystore apps/mobile/android/app/mylifeos-release.jks \
+            -storepass "$(printf '%s' "$STORE_PASSWORD" | tr -d '\r\n')" | grep -E "Alias|SHA256" || true
 
       # ── Build APK release universal ──────────────────────────────────────
       - name: Build APK
