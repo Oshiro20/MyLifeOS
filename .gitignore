@@ -40,3 +40,7 @@ pubspec.lock
 # Secrets
 .env
 *.env
+*.jks
+*.keystore
+**/android/key.properties
+**/android/app/key.properties
