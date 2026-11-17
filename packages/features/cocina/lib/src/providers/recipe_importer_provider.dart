@@ -73,6 +73,13 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
       final info = await tikTokService.getTikTokVideoInfo(cleanUrl);
 
       String? videoUrl;
+      String? videoCaption = TikTokService.extractCaptionFromInfo(info);
+      final sharedCaption = TikTokService.extractSharedCaption(rawInput);
+      final combinedCaption = [
+        if (sharedCaption.isNotEmpty) sharedCaption,
+        if (videoCaption != null && videoCaption.isNotEmpty) videoCaption,
+      ].join('\n').trim();
+
       if (info != null) {
         if (info.containsKey('data') && info['data'] is Map) {
           final data = info['data'] as Map<String, dynamic>;
@@ -88,26 +95,37 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
             info['wmplay'] ??
             info['hdplay'];
       }
+      if (videoUrl != null && videoUrl.startsWith('/')) {
+        videoUrl = 'https://www.tikwm.com$videoUrl';
+      }
 
+      bool importedFromDownloadedVideo = false;
       if (videoUrl != null && videoUrl.isNotEmpty) {
         currentStatusMessage = 'Descargando video...';
         final tempFile = File(
             '${(await getTemporaryDirectory()).path}/tiktok_${DateTime.now().millisecondsSinceEpoch}.mp4');
 
-        final response = await http
-            .get(Uri.parse(videoUrl))
-            .timeout(const Duration(seconds: 45));
-        if (response.statusCode != 200) {
-          throw Exception('Fallo al descargar el video.');
-        }
-        await tempFile.writeAsBytes(response.bodyBytes);
-
         try {
-          await importFromVideoFile(tempFile.path, sourceUrl: cleanUrl);
+          final response = await http
+              .get(Uri.parse(videoUrl))
+              .timeout(const Duration(seconds: 45));
+          if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+            await tempFile.writeAsBytes(response.bodyBytes);
+            await importFromVideoFile(
+              tempFile.path,
+              sourceUrl: cleanUrl,
+              textContext: combinedCaption.isNotEmpty ? combinedCaption : null,
+            );
+            importedFromDownloadedVideo = state == RecipeImportState.success;
+          }
+        } catch (e) {
+          debugPrint('⚠️ Fallo descargando MP4 de TikTok, probando metadatos: $e');
         } finally {
           if (tempFile.existsSync()) tempFile.deleteSync();
         }
-      } else {
+      }
+
+      if (!importedFromDownloadedVideo && state != RecipeImportState.error) {
         // Extracción alternativa pública vía oEmbed + OpenGraph / JSON-LD
         currentStatusMessage = 'Extrayendo metadatos y descripción del enlace...';
         final metadata =
@@ -254,6 +272,7 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
   Future<void> importFromVideoFile(
     String filePath, {
     String? sourceUrl,
+    String? textContext,
   }) async {
     state = RecipeImportState.extractingAI;
     currentStatusMessage = 'El Chef IA está extrayendo fotogramas del video...';
@@ -314,9 +333,15 @@ class RecipeImportNotifier extends Notifier<RecipeImportState> {
 
       final String? jsonString;
       if (frames.length > 1) {
-        jsonString = await geminiService.extractRecipeFromImages(frames);
+        jsonString = await geminiService.extractRecipeFromImages(
+          frames,
+          textContext: textContext,
+        );
       } else {
-        jsonString = await geminiService.extractRecipe(mediaPath: frames.first);
+        jsonString = await geminiService.extractRecipe(
+          mediaPath: frames.first,
+          textContext: textContext,
+        );
       }
 
       if (jsonString == null || jsonString.isEmpty) {

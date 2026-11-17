@@ -58,10 +58,28 @@ jobs:
           keytool -list -keystore apps/mobile/android/app/mylifeos-release.jks \
             -storepass "$(printf '%s' "$STORE_PASSWORD" | tr -d '\r\n')" | grep -E "Alias|SHA256" || true
 
+      # ── Preparar defines de entorno (.env temporal de compilación) ───────
+      - name: Prepare Dart Defines
+        env:
+          TIKTOK_API_KEY: ${{ secrets.TIKTOK_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          : > .env.build
+          [ -n "$TIKTOK_API_KEY" ] && printf "TIKTOK_API_KEY=%s\n" "$TIKTOK_API_KEY" >> .env.build || true
+          [ -n "$GEMINI_API_KEY" ] && printf "GEMINI_API_KEY=%s\n" "$GEMINI_API_KEY" >> .env.build || true
+          [ -n "$SUPABASE_URL" ] && printf "SUPABASE_URL=%s\n" "$SUPABASE_URL" >> .env.build || true
+          [ -n "$SUPABASE_ANON_KEY" ] && printf "SUPABASE_ANON_KEY=%s\n" "$SUPABASE_ANON_KEY" >> .env.build || true
+
       # ── Build APK release universal ──────────────────────────────────────
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define-from-file=../../.env.build
         working-directory: apps/mobile
+
+      - name: Cleanup env defines
+        if: always()
+        run: rm -f .env.build
 
       # ── Renombrar APK universal con versión ──────────────────────────────
       - name: Rename APK

@@ -410,7 +410,10 @@ Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reempl
 
   /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
   /// Returns structured JSON with the recipe.
-  Future<String?> extractRecipeFromImages(List<String> imagePaths) async {
+  Future<String?> extractRecipeFromImages(
+    List<String> imagePaths, {
+    String? textContext,
+  }) async {
     final prompt = '''
 👨‍ ERES UN CHEF PROFESIONAL + EXPERTO EN OCR Y ANÁLISIS DE IMÁGENES.
 
@@ -421,7 +424,7 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
 1. Lee TODO el texto visible en las imágenes (OCR)
 2. Identifica ingredientes, cantidades, unidades y pasos
 3. Si hay múltiples imágenes, combina la información de todas
-4. Si falta información, infiérelo con lógica culinaria
+4. Si falta información, infiérelo con lógica culinaria manteniendo el mismo plato mostrado
 
 📝 FORMATO JSON:
 {
@@ -457,6 +460,11 @@ Analiza las IMÁGENES proporcionadas y extrae UNA RECETA COMPLETA Y ESTRUCTURADA
 - Mínimo 2 ingredientes, 3 pasos
 - NUNCA inventes una receta diferente a la mostrada en las imágenes. Si no puedes ver ninguna imagen o las imágenes no contienen comida ni receta legible, devuelve ÚNICAMENTE:
 {"error_extraccion": "No se detectó ninguna receta legible en las imágenes adjuntas."}
+
+${textContext != null && textContext.isNotEmpty ? '''
+📌 CONTEXTO / DESCRIPCIÓN DEL VIDEO (RESPETAR ESTE PLATO):
+"$textContext"
+''' : ''}
 
 📸 ANALIZA LAS IMÁGENES Y DEVUELVE LA RECETA EN JSON.''';
 

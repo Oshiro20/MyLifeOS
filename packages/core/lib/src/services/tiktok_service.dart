@@ -9,48 +9,97 @@ class TikTokService {
 
   TikTokService(this.apiKey);
 
-  /// Obtiene la información del video de TikTok cuando existe una API key de RapidAPI.
+  /// Obtiene la información del video de TikTok cuando existe una API key de RapidAPI,
+  /// con respaldo público vía TikWM si RapidAPI no está configurado o falla.
   Future<Map<String, dynamic>?> getTikTokVideoInfo(String tiktokUrl) async {
-    if (apiKey.trim().isEmpty) {
-      debugPrint('ℹ️ [TikTokService] Sin TIKTOK_API_KEY, omitiendo RapidAPI.');
-      return null;
+    final extracted = extractFirstUrl(tiktokUrl) ?? tiktokUrl.trim();
+    final canonicalUrl = await _resolveCanonicalUrl(
+      extracted.startsWith('http://') || extracted.startsWith('https://')
+          ? extracted
+          : 'https://$extracted',
+    );
+    final encodedUrl = Uri.encodeComponent(canonicalUrl);
+
+    if (apiKey.trim().isNotEmpty) {
+      final masked = apiKey.length > 8
+          ? '***${apiKey.substring(apiKey.length - 8)}'
+          : '***';
+      debugPrint('🔍 TikTokService: Trying RapidAPI ($masked) for: $canonicalUrl');
+
+      final endpoints = [
+        '/tiktok/info?url=$encodedUrl',
+        '/tiktok?url=$encodedUrl',
+        '/api?url=$encodedUrl',
+      ];
+
+      for (final endpoint in endpoints) {
+        final uri = Uri.parse('https://$_apiHost$endpoint');
+        try {
+          final response = await http.get(
+            uri,
+            headers: {
+              'x-rapidapi-host': _apiHost,
+              'x-rapidapi-key': apiKey,
+              'Content-Type': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 25));
+
+          if (response.statusCode == 200) {
+            final decoded = json.decode(response.body);
+            if (decoded is Map<String, dynamic> &&
+                (decoded.containsKey('data') ||
+                    decoded.containsKey('url') ||
+                    decoded.containsKey('video_link_nwm'))) {
+              return decoded;
+            }
+          }
+        } catch (e) {
+          debugPrint('❌ RapidAPI endpoint $endpoint error: $e');
+        }
+      }
+    } else {
+      debugPrint('ℹ️ [TikTokService] Sin TIKTOK_API_KEY, probando respaldo TikWM.');
     }
 
-    final encodedUrl = Uri.encodeComponent(tiktokUrl);
-    final masked = apiKey.length > 8
-        ? '***${apiKey.substring(apiKey.length - 8)}'
-        : '***';
-    debugPrint('🔍 TikTokService: Trying RapidAPI ($masked) for: $tiktokUrl');
-
-    final endpoints = [
-      '/tiktok/info?url=$encodedUrl',
-      '/tiktok?url=$encodedUrl',
-      '/api?url=$encodedUrl',
-    ];
-
-    for (final endpoint in endpoints) {
-      final uri = Uri.parse('https://$_apiHost$endpoint');
+    // Respaldo público para enlaces de TikTok cuando RapidAPI no está disponible o falla
+    if (canonicalUrl.toLowerCase().contains('tiktok.com')) {
       try {
+        final tikwmUri =
+            Uri.parse('https://www.tikwm.com/api/?url=$encodedUrl');
         final response = await http.get(
-          uri,
-          headers: {
-            'x-rapidapi-host': _apiHost,
-            'x-rapidapi-key': apiKey,
-            'Content-Type': 'application/json',
-          },
-        ).timeout(const Duration(seconds: 25));
-
+          tikwmUri,
+          headers: {'Accept': 'application/json'},
+        ).timeout(const Duration(seconds: 20));
         if (response.statusCode == 200) {
-          final decoded = json.decode(response.body);
-          if (decoded is Map<String, dynamic> &&
-              (decoded.containsKey('data') ||
-                  decoded.containsKey('url') ||
-                  decoded.containsKey('video_link_nwm'))) {
-            return decoded;
+          final decoded = json.decode(utf8.decode(response.bodyBytes));
+          if (decoded is Map<String, dynamic> && decoded['data'] is Map) {
+            final data = decoded['data'] as Map<String, dynamic>;
+            if (data['play'] != null || data['wmplay'] != null) {
+              return decoded;
+            }
           }
         }
       } catch (e) {
-        debugPrint('❌ RapidAPI endpoint $endpoint error: $e');
+        debugPrint('⚠️ TikWM fallback error: $e');
+      }
+    }
+    return null;
+  }
+
+  /// Extrae título o caption descriptivo desde la respuesta de RapidAPI / TikWM.
+  static String? extractCaptionFromInfo(Map<String, dynamic>? info) {
+    if (info == null) return null;
+    final data = info['data'];
+    final candidates = [
+      if (data is Map) ...[data['title'], data['desc'], data['description']],
+      info['title'],
+      info['desc'],
+      info['description'],
+    ];
+    for (final c in candidates) {
+      final text = c?.toString().trim() ?? '';
+      if (text.isNotEmpty && !_isGenericPlatformTitle(text)) {
+        return text;
       }
     }
     return null;

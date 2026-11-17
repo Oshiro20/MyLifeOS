@@ -89,6 +89,12 @@ void main() {
         TikTokService.extractSharedCaption(shared),
         'Arroz Chaufa estos son los secretitos:',
       );
+      expect(
+        TikTokService.extractCaptionFromInfo({
+          'data': {'title': 'Arroz Chaufa Peruano por Pisu Cocina'}
+        }),
+        'Arroz Chaufa Peruano por Pisu Cocina',
+      );
     });
   });
 }
