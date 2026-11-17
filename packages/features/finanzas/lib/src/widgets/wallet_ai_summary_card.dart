@@ -7,7 +7,8 @@ import '../screens/walletai_connection_screen.dart';
 /// Card que muestra el resumen ejecutivo de WalletAI en el módulo de Finanzas.
 /// Si WalletAI no está instalado o no ha exportado datos, muestra un estado vacío.
 class WalletAiSummaryCard extends ConsumerStatefulWidget {
-  const WalletAiSummaryCard({super.key});
+  final bool hideAmounts;
+  const WalletAiSummaryCard({super.key, this.hideAmounts = false});
 
   @override
   ConsumerState<WalletAiSummaryCard> createState() =>
@@ -198,7 +199,9 @@ class _WalletAiSummaryCardState extends ConsumerState<WalletAiSummaryCard> {
           ),
           const SizedBox(height: 12),
           Text(
-            '${s.currency} ${s.balance.toStringAsFixed(2)}',
+            widget.hideAmounts
+                ? '${s.currency} ••••'
+                : '${s.currency} ${s.balance.toStringAsFixed(2)}',
             style: TextStyle(
               color: isPositive
                   ? (isDark ? const Color(0xFF00E5FF) : const Color(0xFF00838F))
@@ -216,7 +219,9 @@ class _WalletAiSummaryCardState extends ConsumerState<WalletAiSummaryCard> {
             children: [
               _MetricChip(
                 label: 'Ingresos',
-                value: '+${s.currency} ${s.income.toStringAsFixed(0)}',
+                value: widget.hideAmounts
+                    ? '+••••'
+                    : '+${s.currency} ${s.income.toStringAsFixed(0)}',
                 color: isDark
                     ? const Color(0xFF00E5FF)
                     : const Color(0xFF00838F),
@@ -224,7 +229,9 @@ class _WalletAiSummaryCardState extends ConsumerState<WalletAiSummaryCard> {
               const SizedBox(width: 8),
               _MetricChip(
                 label: 'Gastos',
-                value: '-${s.currency} ${s.expenses.toStringAsFixed(0)}',
+                value: widget.hideAmounts
+                    ? '-••••'
+                    : '-${s.currency} ${s.expenses.toStringAsFixed(0)}',
                 color: const Color(0xFFFF6B6B),
               ),
               const Spacer(),

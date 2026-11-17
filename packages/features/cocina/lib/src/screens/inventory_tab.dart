@@ -50,6 +50,39 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
     final expiredCount = state.ingredients.where((i) => i.isExpired).length;
 
     final List<Widget> listChildren = [];
+    final walletCandidates =
+        ref.watch(walletGroceryCandidatesProvider).asData?.value ?? const [];
+
+    if (_searchQuery.isEmpty && walletCandidates.isNotEmpty) {
+      listChildren.add(
+        _WalletGroceryImportBanner(
+          candidates: walletCandidates,
+          onImportAll: () async {
+            final added = await ref
+                .read(inventoryProvider.notifier)
+                .importGroceryCandidates(walletCandidates);
+            if (context.mounted && added > 0) {
+              showSuccess(
+                  context, '$added ingredientes importados desde WalletAI');
+            }
+          },
+          onImportOne: (c) async {
+            final added = await ref
+                .read(inventoryProvider.notifier)
+                .importGroceryCandidates([c]);
+            if (context.mounted && added > 0) {
+              showSuccess(context, '${c.itemName} agregado a despensa');
+            }
+          },
+          onDismissOne: (c) async {
+            await ref
+                .read(walletGroceryBridgeProvider)
+                .markTxProcessed(c.transactionKey);
+            ref.read(walletPendingGroceryRefreshProvider.notifier).bump();
+          },
+        ),
+      );
+    }
 
     // Stats Panel (only if not searching)
     if (_searchQuery.isEmpty) {
@@ -1546,6 +1579,145 @@ class _StatBadge extends StatelessWidget {
         const SizedBox(height: 2),
         Text(subtitle, style: TextStyle(color: color, fontSize: 10)),
       ],
+    );
+  }
+}
+
+class _WalletGroceryImportBanner extends StatelessWidget {
+  final List<WalletGroceryCandidate> candidates;
+  final VoidCallback onImportAll;
+  final ValueChanged<WalletGroceryCandidate> onImportOne;
+  final ValueChanged<WalletGroceryCandidate> onDismissOne;
+
+  const _WalletGroceryImportBanner({
+    required this.candidates,
+    required this.onImportAll,
+    required this.onImportOne,
+    required this.onDismissOne,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    const accent = Color(0xFF00C896);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined,
+                  size: 18, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '🛒 Detectado en WalletAI (${candidates.length})',
+                  style: TextStyle(
+                    color: onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (candidates.length > 1)
+                TextButton(
+                  onPressed: onImportAll,
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Agregar todo',
+                    style: TextStyle(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...candidates.take(4).map((c) {
+            final priceLabel = c.totalPrice != null
+                ? ' · ${c.currency} ${c.totalPrice!.toStringAsFixed(2)}'
+                : '';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${c.itemName} (${c.quantity == c.quantity.roundToDouble() ? c.quantity.toInt() : c.quantity.toStringAsFixed(1)} ${c.unit})$priceLabel',
+                          style: TextStyle(
+                            color: onSurface,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (c.rawDescription != c.itemName)
+                          Text(
+                            c.rawDescription,
+                            style: TextStyle(
+                              color: onSurface.withValues(alpha: 0.55),
+                              fontSize: 10.5,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close,
+                        size: 17, color: onSurface.withValues(alpha: 0.5)),
+                    tooltip: 'Omitir',
+                    onPressed: () => onDismissOne(c),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton(
+                    onPressed: () => onImportOne(c),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Agregar',
+                        style: TextStyle(
+                            fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (candidates.length > 4)
+            Text(
+              '+ ${candidates.length - 4} productos más esperando confirmación',
+              style: TextStyle(
+                fontSize: 11,
+                color: onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

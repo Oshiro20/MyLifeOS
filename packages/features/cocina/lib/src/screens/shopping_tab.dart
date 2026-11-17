@@ -14,6 +14,30 @@ class ShoppingTab extends ConsumerWidget {
     final state = ref.watch(recipesProvider);
     final items = state.shoppingList;
     final notifier = ref.read(recipesProvider.notifier);
+    final catalogState = ref.watch(ingredientPriceCatalogProvider);
+    final walletSummary = ref.watch(walletSummaryProvider).asData?.value;
+
+    final pendingItems = items.where((i) => !i.bought).toList();
+    final budgetEstimate = IngredientPriceService.estimateList(
+      catalog: catalogState.catalog,
+      items: pendingItems.map(
+        (i) => (name: i.name, quantity: i.quantity, unit: i.unit),
+      ),
+      defaultCurrency: walletSummary?.currency ?? 'PEN',
+    );
+    double? monthlyFoodSpent;
+    if (walletSummary != null) {
+      for (final cat in walletSummary.byCategory) {
+        final lower = cat.name.toLowerCase();
+        if (lower.contains('aliment') ||
+            lower.contains('comida') ||
+            lower.contains('supermerc') ||
+            lower.contains('mercado') ||
+            lower.contains('despensa')) {
+          monthlyFoodSpent = (monthlyFoodSpent ?? 0.0) + cat.amount;
+        }
+      }
+    }
 
     // Group items by category
     final grouped = _groupByCategory(items);
@@ -60,6 +84,8 @@ class ShoppingTab extends ConsumerWidget {
                   _SummaryCard(
                     total: items.length,
                     bought: items.where((i) => i.bought).length,
+                    estimate: budgetEstimate,
+                    monthlyFoodSpent: monthlyFoodSpent,
                     onShare: () => _shareList(context, items),
                     onClearAll: () => _confirmClearAll(context, ref),
                   ),
@@ -71,6 +97,7 @@ class ShoppingTab extends ConsumerWidget {
                     return _CategorySection(
                       category: category,
                       items: categoryItems,
+                      catalog: catalogState.catalog,
                       onToggle: (item) => notifier.toggleShoppingItem(item.id),
                       onDelete: (item) => notifier.deleteShoppingItem(item.id),
                       onAddToPantry: (item) => _addToPantry(context, ref, item),
@@ -577,7 +604,7 @@ class ShoppingTab extends ConsumerWidget {
                 content: Text('✅ Items movidos a despensa'),
                 backgroundColor: Color(0xFF00E676)),
           );
-          await _offerLogExpenseToWalletAI(context, bought);
+          await _offerLogExpenseToWalletAI(context, ref, bought);
         }
       } catch (e) {
         if (context.mounted) {
@@ -593,12 +620,29 @@ class ShoppingTab extends ConsumerWidget {
 
   Future<void> _offerLogExpenseToWalletAI(
     BuildContext context,
+    WidgetRef ref,
     List<ShoppingItem> bought,
   ) async {
     final amountCtrl = TextEditingController();
     final descCtrl = TextEditingController(
       text: 'Compra despensa (${bought.length} items)',
     );
+    final itemPriceCtrls = <String, TextEditingController>{
+      if (bought.length > 1 && bought.length <= 6)
+        for (final item in bought) item.id: TextEditingController(),
+    };
+
+    void syncTotalFromItems() {
+      if (itemPriceCtrls.isEmpty) return;
+      double sum = 0.0;
+      for (final ctrl in itemPriceCtrls.values) {
+        sum += double.tryParse(ctrl.text.trim().replaceAll(',', '.')) ?? 0.0;
+      }
+      if (sum > 0) {
+        amountCtrl.text = sum.toStringAsFixed(2);
+      }
+    }
+
     try {
       final signedIn = await WalletCloudService.isSignedIn();
       if (!context.mounted) return;
@@ -611,38 +655,91 @@ class ShoppingTab extends ConsumerWidget {
             backgroundColor: Theme.of(ctx).cardColor,
             title: Text('💸 ¿Registrar gasto en WalletAI?',
                 style: TextStyle(color: onSurface, fontSize: 17)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Moviste ${bought.length} productos a tu despensa. Ingresa el total pagado si deseas enviarlo a WalletAI:',
-                  style: TextStyle(
-                      color: onSurface.withValues(alpha: 0.72), fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: amountCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  style: TextStyle(color: onSurface),
-                  decoration: const InputDecoration(
-                    labelText: 'Monto total (PEN)',
-                    hintText: 'Ej: 45.50',
-                    border: OutlineInputBorder(),
-                    isDense: true,
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Moviste ${bought.length} productos a tu despensa. Ingresa el total pagado si deseas enviarlo a WalletAI:',
+                    style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.72), fontSize: 13),
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: descCtrl,
-                  style: TextStyle(color: onSurface),
-                  decoration: const InputDecoration(
-                    labelText: 'Descripción',
-                    border: OutlineInputBorder(),
-                    isDense: true,
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: onSurface),
+                    decoration: const InputDecoration(
+                      labelText: 'Monto total (PEN)',
+                      hintText: 'Ej: 45.50',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: descCtrl,
+                    style: TextStyle(color: onSurface),
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  if (itemPriceCtrls.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Precios por producto (opcional, mejora estimados):',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: onSurface.withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    for (final item in bought)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${item.name} (${item.quantity} ${item.unit})',
+                                style: TextStyle(
+                                    fontSize: 12, color: onSurface),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 82,
+                              child: TextField(
+                                controller: itemPriceCtrls[item.id],
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                style:
+                                    TextStyle(color: onSurface, fontSize: 12),
+                                decoration: const InputDecoration(
+                                  hintText: 'S/ 0.00',
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 6),
+                                ),
+                                onChanged: (_) => syncTotalFromItems(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -678,6 +775,38 @@ class ShoppingTab extends ConsumerWidget {
           ? 'Compra despensa (${bought.length} items)'
           : descCtrl.text.trim();
 
+      if (action == 'cloud' || action == 'deeplink') {
+        final priceNotifier =
+            ref.read(ingredientPriceCatalogProvider.notifier);
+        if (bought.length == 1 && amount > 0) {
+          final only = bought.first;
+          await priceNotifier.recordPurchase(
+            name: only.name,
+            quantity: only.quantity,
+            unit: only.unit,
+            totalPrice: amount,
+            source: 'shopping_list',
+          );
+        } else {
+          for (final item in bought) {
+            final ctrl = itemPriceCtrls[item.id];
+            if (ctrl == null) continue;
+            final p = double.tryParse(
+                    ctrl.text.trim().replaceAll(',', '.')) ??
+                0.0;
+            if (p > 0) {
+              await priceNotifier.recordPurchase(
+                name: item.name,
+                quantity: item.quantity,
+                unit: item.unit,
+                totalPrice: p,
+                source: 'shopping_list',
+              );
+            }
+          }
+        }
+      }
+
       if (action == 'cloud') {
         if (amount <= 0) {
           if (context.mounted) {
@@ -695,10 +824,18 @@ class ShoppingTab extends ConsumerWidget {
           amount: amount,
           description: description,
           categoryHint: 'Alimentación',
-          items: bought
-              .map((e) =>
-                  {'name': e.name, 'quantity': e.quantity, 'unit': e.unit})
-              .toList(),
+          items: bought.map((e) {
+            final ctrl = itemPriceCtrls[e.id];
+            final itemPrice = ctrl != null
+                ? double.tryParse(ctrl.text.trim().replaceAll(',', '.'))
+                : (bought.length == 1 ? amount : null);
+            return {
+              'name': e.name,
+              'quantity': e.quantity,
+              'unit': e.unit,
+              if (itemPrice != null && itemPrice > 0) 'price': itemPrice,
+            };
+          }).toList(),
         );
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -718,6 +855,9 @@ class ShoppingTab extends ConsumerWidget {
     } finally {
       amountCtrl.dispose();
       descCtrl.dispose();
+      for (final c in itemPriceCtrls.values) {
+        c.dispose();
+      }
     }
   }
 
@@ -879,12 +1019,16 @@ class ShoppingTab extends ConsumerWidget {
 class _SummaryCard extends StatelessWidget {
   final int total;
   final int bought;
+  final GroceryBudgetEstimate estimate;
+  final double? monthlyFoodSpent;
   final VoidCallback onShare;
   final VoidCallback onClearAll;
 
   const _SummaryCard({
     required this.total,
     required this.bought,
+    required this.estimate,
+    this.monthlyFoodSpent,
     required this.onShare,
     required this.onClearAll,
   });
@@ -968,6 +1112,39 @@ class _SummaryCard extends StatelessWidget {
             style: TextStyle(
                 color: onSurface.withValues(alpha: 0.58), fontSize: 11),
           ),
+          if (estimate.pricedCount > 0 || monthlyFoodSpent != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00C896).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (estimate.pricedCount > 0)
+                    Text(
+                      '💰 Presupuesto aprox. pendiente: ${estimate.currency} ${estimate.totalEstimated.toStringAsFixed(2)} (${estimate.pricedCount}/${estimate.totalCount} con precio)',
+                      style: TextStyle(
+                        color: onSurface,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  if (monthlyFoodSpent != null)
+                    Text(
+                      '📊 Gastado este mes en alimentación (WalletAI): ${estimate.currency} ${monthlyFoodSpent!.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.65),
+                        fontSize: 11,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -979,6 +1156,7 @@ class _SummaryCard extends StatelessWidget {
 class _CategorySection extends StatelessWidget {
   final String category;
   final List<ShoppingItem> items;
+  final Map<String, IngredientPriceEntry> catalog;
   final Function(ShoppingItem) onToggle;
   final Function(ShoppingItem) onDelete;
   final Function(ShoppingItem) onAddToPantry;
@@ -986,6 +1164,7 @@ class _CategorySection extends StatelessWidget {
   const _CategorySection({
     required this.category,
     required this.items,
+    required this.catalog,
     required this.onToggle,
     required this.onDelete,
     required this.onAddToPantry,
@@ -1008,6 +1187,12 @@ class _CategorySection extends StatelessWidget {
         ),
         ...items.map((item) => _ShoppingTile(
               item: item,
+              estimate: IngredientPriceService.estimateItem(
+                catalog: catalog,
+                name: item.name,
+                quantity: item.quantity,
+                unit: item.unit,
+              ),
               onToggle: () => onToggle(item),
               onDelete: () => onDelete(item),
               onAddToPantry: () => onAddToPantry(item),
@@ -1021,12 +1206,15 @@ class _CategorySection extends StatelessWidget {
 
 class _ShoppingTile extends StatelessWidget {
   final ShoppingItem item;
+  final ({double estimatedPrice, String currency, IngredientPriceEntry entry})?
+      estimate;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
   final VoidCallback onAddToPantry;
 
   const _ShoppingTile({
     required this.item,
+    this.estimate,
     required this.onToggle,
     required this.onDelete,
     required this.onAddToPantry,
@@ -1068,14 +1256,29 @@ class _ShoppingTile extends StatelessWidget {
             fontSize: 14,
           ),
         ),
-        subtitle: Text(
-          '${item.quantity} ${item.unit}',
-          style: TextStyle(
-            color: item.bought
-                ? onSurface.withValues(alpha: 0.3)
-                : onSurface.withValues(alpha: 0.6),
-            fontSize: 12,
-          ),
+        subtitle: Row(
+          children: [
+            Text(
+              '${item.quantity} ${item.unit}',
+              style: TextStyle(
+                color: item.bought
+                    ? onSurface.withValues(alpha: 0.3)
+                    : onSurface.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
+            ),
+            if (estimate != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                '≈ ${estimate!.currency} ${estimate!.estimatedPrice.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Color(0xFF00C896),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11.5,
+                ),
+              ),
+            ],
+          ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
 import '../utils/cooking_history_service.dart';
@@ -72,9 +73,35 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: days.length + 1,
                   itemBuilder: (ctx, i) {
-                    // First item: cooking history banner
+                    // First item: cooking history & estimated missing budget banner
                     if (i == 0) {
-                      return _CookingHistoryBanner();
+                      final catalogState =
+                          ref.watch(ingredientPriceCatalogProvider);
+                      final missing = _collectMissingItems(
+                        entries: state.entries,
+                        recipes: recipesState.recipes,
+                        inventory: invState.ingredients,
+                      );
+                      final estimate = IngredientPriceService.estimateList(
+                        catalog: catalogState.catalog,
+                        items: missing.map((m) => (
+                              name: m.name,
+                              quantity: m.quantity,
+                              unit: m.unit,
+                            )),
+                      );
+                      return Column(
+                        children: [
+                          _CookingHistoryBanner(),
+                          if (missing.isNotEmpty)
+                            _WeeklyBudgetBanner(
+                              missingCount: missing.length,
+                              estimate: estimate,
+                              onSendToShoppingList: () =>
+                                  _addMissingIngredientsToList(context),
+                            ),
+                        ],
+                      );
                     }
                     final day = i; // shifted by 1
                     return _DaySection(
@@ -199,28 +226,19 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
     }
   }
 
-  Future<void> _addMissingIngredientsToList(BuildContext context) async {
-    final state = ref.read(weeklyMenuProvider);
-    if (state is! WeeklyMenuLoaded || state.entries.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('No hay menú generado para agregar ingredientes.'),
-            backgroundColor: Colors.orange),
-      );
-      return;
-    }
+  List<({String name, double quantity, String unit})> _collectMissingItems({
+    required List<WeeklyMenuEntry> entries,
+    required List<Recipe> recipes,
+    required List<InventoryIngredient> inventory,
+  }) {
+    final availableKeys = inventory
+        .map((i) => IngredientPriceService.normalizeKey(i.name))
+        .toSet();
+    final aggregated =
+        <String, ({String name, double quantity, String unit})>{};
 
-    final recipes = ref.read(recipesProvider).recipes;
-    final inventory = ref.read(inventoryProvider).ingredients;
-    final availableNames = inventory.map((i) => i.name.toLowerCase()).toSet();
-
-    // Collect all missing ingredients from all recipes in the plan
-    final missingMap = <String, Set<String>>{}; // name -> units
-    int recipeCount = 0;
-
-    for (final entry in state.entries) {
+    for (final entry in entries) {
       if (entry.recipeId.isEmpty) continue;
-
       final recipe = recipes.firstWhere(
         (r) => r.id == entry.recipeId,
         orElse: () => Recipe(
@@ -235,22 +253,60 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
           createdAt: DateTime.now(),
         ),
       );
-
       if (recipe.id.isEmpty) continue;
-      recipeCount++;
 
       for (final ing in recipe.ingredients) {
-        final ingName = ing.ingredientName.toLowerCase();
-        if (!availableNames.contains(ingName)) {
-          if (!missingMap.containsKey(ingName)) {
-            missingMap[ingName] = {};
+        final key = IngredientPriceService.normalizeKey(ing.ingredientName);
+        if (key.isEmpty || availableKeys.contains(key)) continue;
+
+        final existing = aggregated[key];
+        if (existing == null) {
+          aggregated[key] = (
+            name: ing.ingredientName.trim(),
+            quantity: ing.quantity > 0 ? ing.quantity : 1.0,
+            unit: ing.unit,
+          );
+        } else {
+          final converted = IngredientUnitNormalizer.convert(
+            ing.quantity > 0 ? ing.quantity : 1.0,
+            MeasurementUnit.fromString(ing.unit),
+            MeasurementUnit.fromString(existing.unit),
+          );
+          if (converted != null) {
+            aggregated[key] = (
+              name: existing.name,
+              quantity: existing.quantity + converted,
+              unit: existing.unit,
+            );
           }
-          missingMap[ingName]!.add(ing.unit);
         }
       }
     }
+    return aggregated.values.toList();
+  }
 
-    if (missingMap.isEmpty) {
+  Future<void> _addMissingIngredientsToList(BuildContext context) async {
+    final state = ref.read(weeklyMenuProvider);
+    if (state is! WeeklyMenuLoaded || state.entries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No hay menú generado para agregar ingredientes.'),
+            backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final recipes = ref.read(recipesProvider).recipes;
+    final inventory = ref.read(inventoryProvider).ingredients;
+    final missingItems = _collectMissingItems(
+      entries: state.entries,
+      recipes: recipes,
+      inventory: inventory,
+    );
+    final recipeCount =
+        state.entries.where((e) => e.recipeId.isNotEmpty).length;
+
+    if (missingItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('✅ Ya tienes todos los ingredientes del plan'),
@@ -264,20 +320,20 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
         .read(recipesProvider)
         .shoppingList
         .where((s) => !s.bought)
-        .map((s) => s.name.trim().toLowerCase())
+        .map((s) => IngredientPriceService.normalizeKey(s.name))
         .toSet();
     const uuid = Uuid();
     final notifier = ref.read(recipesProvider.notifier);
     int added = 0;
-    for (final entry in missingMap.entries) {
-      if (existingPending.contains(entry.key)) continue;
-      existingPending.add(entry.key);
-      final units = entry.value.toList();
+    for (final item in missingItems) {
+      final key = IngredientPriceService.normalizeKey(item.name);
+      if (existingPending.contains(key)) continue;
+      existingPending.add(key);
       await notifier.addShoppingItem(ShoppingItem(
         id: uuid.v4(),
-        name: entry.key,
-        quantity: 1,
-        unit: units.length == 1 ? units.first : 'unidades',
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
         bought: false,
         createdAt: DateTime.now(),
       ));
@@ -803,6 +859,83 @@ class _CookingHistoryBannerState extends State<_CookingHistoryBanner> {
           ),
         );
       },
+    );
+  }
+}
+
+class _WeeklyBudgetBanner extends StatelessWidget {
+  final int missingCount;
+  final GroceryBudgetEstimate estimate;
+  final VoidCallback onSendToShoppingList;
+
+  const _WeeklyBudgetBanner({
+    required this.missingCount,
+    required this.estimate,
+    required this.onSendToShoppingList,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    const accent = Color(0xFF00C896);
+    final hasEstimate = estimate.pricedCount > 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.savings_outlined, color: accent, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasEstimate
+                      ? 'Estimado faltante: ${estimate.currency} ${estimate.totalEstimated.toStringAsFixed(2)}'
+                      : '$missingCount ingredientes faltantes esta semana',
+                  style: TextStyle(
+                    color: onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  hasEstimate
+                      ? '${estimate.pricedCount}/$missingCount con precio histórico WalletAI'
+                      : 'Registra compras en WalletAI para estimar el costo semanal',
+                  style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.6),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onSendToShoppingList,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'A Lista',
+              style: TextStyle(
+                color: accent,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

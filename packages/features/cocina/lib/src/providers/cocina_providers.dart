@@ -108,6 +108,7 @@ class RecipesState {
 // ── Notifiers (Riverpod v3) ───────────────────────────────────────────────────
 class InventoryNotifier extends Notifier<InventoryState> {
   ICocinaRepository get _repo => ref.read(cocinaRepositoryProvider);
+  bool _hasLoaded = false;
 
   @override
   InventoryState build() {
@@ -119,6 +120,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
     state = state.copyWith(isLoading: true);
     try {
       final items = await _repo.getAllIngredients();
+      _hasLoaded = true;
       state = state.copyWith(ingredients: items, isLoading: false);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
@@ -244,19 +246,29 @@ class InventoryNotifier extends Notifier<InventoryState> {
     state = state.copyWith(ingredients: revertedIngredients);
   }
 
-  /// Move bought shopping items to pantry inventory
-  Future<void> bulkAddBoughtToPantry(List<ShoppingItem> boughtItems) async {
-    if (boughtItems.isEmpty) return;
+  /// Inserta o fusiona ingredientes (por nombre y unidad compatible) en despensa.
+  Future<int> _upsertToPantry(
+    Iterable<({String name, double quantity, String unit})> entries,
+  ) async {
+    if (!_hasLoaded) {
+      await load();
+    }
+    int count = 0;
+    for (final entry in entries) {
+      final cleanName = entry.name.trim();
+      if (cleanName.isEmpty || entry.quantity <= 0) continue;
 
-    for (final item in boughtItems) {
       final existingIndex = state.ingredients.indexWhere(
-          (ing) => ing.name.toLowerCase() == item.name.toLowerCase());
+        (ing) =>
+            IngredientPriceService.normalizeKey(ing.name) ==
+            IngredientPriceService.normalizeKey(cleanName),
+      );
 
       if (existingIndex != -1) {
         final existing = state.ingredients[existingIndex];
         final converted = IngredientUnitNormalizer.convert(
-          item.quantity,
-          MeasurementUnit.fromString(item.unit),
+          entry.quantity,
+          MeasurementUnit.fromString(entry.unit),
           MeasurementUnit.fromString(existing.unit),
         );
         if (converted != null) {
@@ -267,27 +279,75 @@ class InventoryNotifier extends Notifier<InventoryState> {
             for (int i = 0; i < state.ingredients.length; i++)
               if (i == existingIndex) updated else state.ingredients[i]
           ]);
+          count++;
           continue;
         }
       }
-      {
-        final detected = IngredientDetector.detect(item.name);
-        final newIng = InventoryIngredient(
-          id: _cocinaUuid.v4(),
-          name: item.name,
-          primaryCategory: detected.primaryCategory ?? 'Otros',
-          subCategory: detected.subCategory ?? '',
-          preparation: '',
-          quantity: item.quantity,
-          unit: item.unit,
-          expirationDate: null,
-          imageAssetId: null,
-          storageArea: 'Alacena',
+
+      final detected = IngredientDetector.detect(cleanName);
+      final newIng = InventoryIngredient(
+        id: _cocinaUuid.v4(),
+        name: cleanName,
+        primaryCategory: detected.primaryCategory ?? 'Otros',
+        subCategory: detected.subCategory ?? '',
+        preparation: '',
+        quantity: entry.quantity,
+        unit: entry.unit,
+        expirationDate: null,
+        imageAssetId: null,
+        storageArea: 'Alacena',
+      );
+      await _repo.addIngredient(newIng);
+      state = state.copyWith(ingredients: [newIng, ...state.ingredients]);
+      count++;
+    }
+    return count;
+  }
+
+  /// Move bought shopping items to pantry inventory
+  Future<void> bulkAddBoughtToPantry(List<ShoppingItem> boughtItems) async {
+    if (boughtItems.isEmpty) return;
+    await _upsertToPantry(
+      boughtItems.map(
+        (item) => (name: item.name, quantity: item.quantity, unit: item.unit),
+      ),
+    );
+  }
+
+  /// Importa compras detectadas desde WalletAI a despensa, registra precios y deduplica.
+  Future<int> importGroceryCandidates(
+    List<WalletGroceryCandidate> candidates,
+  ) async {
+    if (candidates.isEmpty) return 0;
+
+    final added = await _upsertToPantry(
+      candidates.map(
+        (c) => (name: c.itemName, quantity: c.quantity, unit: c.unit),
+      ),
+    );
+
+    final priceNotifier = ref.read(ingredientPriceCatalogProvider.notifier);
+    final bridge = ref.read(walletGroceryBridgeProvider);
+    final seenTxKeys = <String>{};
+
+    for (final c in candidates) {
+      if (c.totalPrice != null && c.totalPrice! > 0) {
+        await priceNotifier.recordPurchase(
+          name: c.itemName,
+          quantity: c.quantity,
+          unit: c.unit,
+          totalPrice: c.totalPrice!,
+          currency: c.currency,
+          source: 'walletai',
         );
-        await _repo.addIngredient(newIng);
-        state = state.copyWith(ingredients: [newIng, ...state.ingredients]);
+      }
+      if (seenTxKeys.add(c.transactionKey)) {
+        await bridge.markTxProcessed(c.transactionKey);
       }
     }
+
+    ref.read(walletPendingGroceryRefreshProvider.notifier).bump();
+    return added;
   }
 
   void clearError() => state = state.copyWith(error: null);

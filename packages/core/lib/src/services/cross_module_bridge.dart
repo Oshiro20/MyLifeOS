@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:domain/domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ingredient_price_and_wallet_bridge.dart';
 
 /// Carga de una comida desde Cocina hacia FoodCoach sin acoplar feature packages.
 class PendingMealEvaluation {
@@ -41,6 +42,12 @@ final pantryIngredientsFeedProvider =
 
 final recipesFeedProvider = Provider<Future<List<Recipe>> Function()>(
   (ref) => () async => const [],
+);
+
+/// Callback desacoplado para importar compras detectadas de WalletAI a Despensa.
+final walletPantryDirectImportProvider = Provider<
+    Future<int> Function(List<WalletGroceryCandidate> candidates)?>(
+  (ref) => null,
 );
 
 /// Devuelve nombres de recetas cocinadas recientemente (últimos 7 días) desde SharedPreferences.

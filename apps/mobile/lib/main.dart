@@ -145,6 +145,8 @@ Future<void> main() async {
             // Register cocina providers
             inventoryProvider.overrideWith(InventoryNotifier.new),
             recipesProvider.overrideWith(RecipesNotifier.new),
+            walletPantryDirectImportProvider.overrideWith((ref) =>
+                ref.read(inventoryProvider.notifier).importGroceryCandidates),
             // Real clear-all-data callback for SettingsScreen
             clearAllDataCallbackProvider.overrideWith((ref) => () async {
                   await _db.clearAllUserData();

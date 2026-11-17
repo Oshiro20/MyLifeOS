@@ -28,7 +28,7 @@ class RecipeDetailSheet extends StatelessWidget {
   }
 }
 
-class _RecipeDetailContent extends StatefulWidget {
+class _RecipeDetailContent extends ConsumerStatefulWidget {
   final Recipe recipe;
   final ScrollController scrollController;
   const _RecipeDetailContent({
@@ -37,10 +37,11 @@ class _RecipeDetailContent extends StatefulWidget {
   });
 
   @override
-  State<_RecipeDetailContent> createState() => _RecipeDetailContentState();
+  ConsumerState<_RecipeDetailContent> createState() =>
+      _RecipeDetailContentState();
 }
 
-class _RecipeDetailContentState extends State<_RecipeDetailContent> {
+class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   int _scaledServings = 1;
 
   int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
@@ -143,12 +144,35 @@ class _RecipeDetailContentState extends State<_RecipeDetailContent> {
           ],
         ),
         const SizedBox(height: 8),
-        Wrap(spacing: 8, children: [
+        Wrap(spacing: 8, runSpacing: 6, children: [
           _chip(context, '⏱ ${widget.recipe.durationMinutes} min'),
           _chip(context, '🍳 ${widget.recipe.ingredients.length} ingredientes'),
           if (isScaled)
             _chip(context,
                 '📏 x${(_scaledServings / _baseServings).toStringAsFixed(1)}'),
+          Builder(
+            builder: (context) {
+              final catalogState = ref.watch(ingredientPriceCatalogProvider);
+              final estimate = IngredientPriceService.estimateList(
+                catalog: catalogState.catalog,
+                items: widget.recipe.ingredients.map((i) => (
+                      name: i.ingredientName,
+                      quantity: _getScaledQuantity(i.quantity),
+                      unit: i.unit,
+                    )),
+              );
+              if (estimate.pricedCount == 0) {
+                return const SizedBox.shrink();
+              }
+              final perServing = _scaledServings > 0
+                  ? estimate.totalEstimated / _scaledServings
+                  : estimate.totalEstimated;
+              return _chip(
+                context,
+                '💰 ≈ ${estimate.currency} ${estimate.totalEstimated.toStringAsFixed(2)} (${perServing.toStringAsFixed(2)}/p)',
+              );
+            },
+          ),
         ]),
         // Ingredients
         if (widget.recipe.ingredients.isNotEmpty) ...[
