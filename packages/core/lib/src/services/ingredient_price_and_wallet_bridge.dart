@@ -92,6 +92,60 @@ class WalletGroceryCandidate {
           : null;
 }
 
+/// Prenda detectada automáticamente en una transacción de WalletAI para Armario.
+class WalletWardrobeCandidate {
+  final String transactionKey;
+  final String itemName;
+  final double? price;
+  final String currency;
+  final int garmentTypeIndex;
+  final String? date;
+
+  const WalletWardrobeCandidate({
+    required this.transactionKey,
+    required this.itemName,
+    required this.garmentTypeIndex,
+    this.price,
+    this.currency = 'PEN',
+    this.date,
+  });
+}
+
+/// Utensilio o electrodoméstico detectado en WalletAI para Cocina (`Appliances`).
+class WalletApplianceCandidate {
+  final String transactionKey;
+  final String name;
+  final String type;
+  final String? date;
+
+  const WalletApplianceCandidate({
+    required this.transactionKey,
+    required this.name,
+    required this.type,
+    this.date,
+  });
+}
+
+/// Lote de registros NUEVOS detectados tras el punto de corte para auto-ingresar.
+class WalletAutoSyncBatch {
+  final bool baselineJustInitialized;
+  final List<WalletGroceryCandidate> groceries;
+  final List<WalletWardrobeCandidate> wardrobe;
+  final List<WalletApplianceCandidate> appliances;
+  final List<String> allProcessedKeys;
+
+  const WalletAutoSyncBatch({
+    this.baselineJustInitialized = false,
+    this.groceries = const [],
+    this.wardrobe = const [],
+    this.appliances = const [],
+    this.allProcessedKeys = const [],
+  });
+
+  bool get hasAny =>
+      groceries.isNotEmpty || wardrobe.isNotEmpty || appliances.isNotEmpty;
+}
+
 /// Catálogo persistente de precios unitarios históricos por ingrediente.
 class IngredientPriceService {
   static const _catalogKey = 'ingredient_price_catalog_v1';
@@ -347,6 +401,7 @@ final ingredientPriceCatalogProvider = NotifierProvider<
 class WalletPantryBridgeService {
   static const _importedTxKey = 'wallet_pantry_imported_tx_ids_v1';
   static const _hideAmountsPrefKey = 'finanzas_hide_amounts_v1';
+  static const _baselineCutoffKey = 'wallet_bridge_baseline_cutoff_v1';
 
   static const _foodKeywords = [
     'alimentacion',
@@ -375,6 +430,72 @@ class WalletPantryBridgeService {
     'zapatilla',
     'prenda',
     'moda',
+    'camisa',
+    'polo',
+    'camiseta',
+    'pantalon',
+    'pantalón',
+    'jean',
+    'polera',
+    'hoodie',
+    'casaca',
+    'chaqueta',
+    'vestido',
+    'falda',
+    'short',
+    'chompa',
+    'sueter',
+    'suéter',
+    'bota',
+    'sandalia',
+  ];
+
+  static const _applianceKeywords = [
+    'licuadora',
+    'freidora',
+    'air fryer',
+    'airfryer',
+    'horno',
+    'microondas',
+    'sarten',
+    'sartén',
+    'olla',
+    'batidora',
+    'cafetera',
+    'tostadora',
+    'procesador',
+    'exprimidor',
+    'hervidor',
+    'wok',
+    'arrocer',
+    'waflera',
+    'extract',
+  ];
+
+  static const _genericStoreNames = [
+    'supermercado',
+    'mercado',
+    'bodega',
+    'tienda',
+    'metro',
+    'tottus',
+    'wong',
+    'plaza vea',
+    'plazavea',
+    'vivanda',
+    'makro',
+    'mass',
+    'tambe',
+    'tambo',
+    'oxxo',
+    'compras',
+    'compra despensa',
+    'alimentacion',
+    'alimentación',
+    'viveres',
+    'víveres',
+    'abarrotes',
+    'movimiento',
   ];
 
   static const _healthKeywords = [
@@ -411,14 +532,20 @@ class WalletPantryBridgeService {
   /// Clasifica una transacción en `'cocina'`, `'armario'`, `'salud'` o `null` (irrelevante/privada).
   static String? classifyRelevantModule(Map<String, dynamic> tx) {
     final category = (tx['category'] ?? '').toString().toLowerCase();
-    final name = (tx['name'] ?? tx['description'] ?? '').toString().toLowerCase();
+    final name = (tx['name'] ?? tx['description'] ?? tx['productName'] ?? '')
+        .toString()
+        .toLowerCase();
     final combined = '$category $name';
 
     if (tx['items'] is List && (tx['items'] as List).isNotEmpty) {
       return 'cocina';
     }
-    if (_foodKeywords.any(combined.contains)) return 'cocina';
+    if ((tx['productName'] ?? '').toString().trim().isNotEmpty &&
+        _foodKeywords.any(category.contains)) {
+      return 'cocina';
+    }
     if (_wardrobeKeywords.any(combined.contains)) return 'armario';
+    if (_foodKeywords.any(combined.contains)) return 'cocina';
     if (_healthKeywords.any(combined.contains)) return 'salud';
     return null;
   }
@@ -541,13 +668,17 @@ class WalletPantryBridgeService {
     return s[0].toUpperCase() + s.substring(1);
   }
 
-  /// Extrae ítems comprados de una sola transacción (para botón rápido en Finanzas).
+  /// Extrae ítems comprados de una sola transacción (Despensa).
+  /// Soporta `items`, `productName`+`quantity`+`unit`, texto con cantidad o producto directo (ej. "Plátano Seda").
   static List<WalletGroceryCandidate> extractCandidatesForTx(
     Map<String, dynamic> tx, {
     String currency = 'PEN',
   }) {
     final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
-    if (amount > 0 && tx['items'] == null) return const [];
+    if (amount > 0 && tx['items'] == null && tx['productName'] == null) {
+      return const [];
+    }
+    if (extractApplianceCandidateForTx(tx) != null) return const [];
     if (classifyRelevantModule(tx) != 'cocina') return const [];
 
     final key = txStableKey(tx);
@@ -584,30 +715,251 @@ class WalletPantryBridgeService {
           ));
         }
       }
-      return list;
+      if (list.isNotEmpty) return list;
+    }
+
+    final productName = tx['productName']?.toString().trim();
+    if (productName != null && productName.isNotEmpty) {
+      final qty = (tx['quantity'] as num?)?.toDouble() ?? 1.0;
+      final unit = MeasurementUnit.fromString(
+        (tx['unit'] ?? 'unidades').toString(),
+      ).label;
+      return [
+        WalletGroceryCandidate(
+          transactionKey: key,
+          rawDescription: desc,
+          itemName: _capitalize(productName),
+          quantity: qty > 0 ? qty : 1.0,
+          unit: unit,
+          totalPrice: amount != 0 ? amount.abs() : null,
+          currency: currency,
+          date: date,
+        ),
+      ];
     }
 
     final parsed = parseGroceryDescription(desc);
-    if (parsed == null) return const [];
-    return [
-      WalletGroceryCandidate(
-        transactionKey: key,
-        rawDescription: desc,
-        itemName: parsed.name,
-        quantity: parsed.quantity,
-        unit: parsed.unit,
-        totalPrice: amount != 0 ? amount.abs() : null,
-        currency: currency,
-        date: date,
-      ),
-    ];
+    if (parsed != null) {
+      return [
+        WalletGroceryCandidate(
+          transactionKey: key,
+          rawDescription: desc,
+          itemName: parsed.name,
+          quantity: parsed.quantity,
+          unit: parsed.unit,
+          totalPrice: amount != 0 ? amount.abs() : null,
+          currency: currency,
+          date: date,
+        ),
+      ];
+    }
+
+    // Si es compra de alimentos con nombre de producto directo sin dígitos (ej. "Plátano Seda")
+    final lowerDesc = desc.trim().toLowerCase();
+    final isNoise = _restaurantNoiseKeywords.any(lowerDesc.contains);
+    final isGenericStore =
+        _genericStoreNames.any((g) => lowerDesc == g || lowerDesc.startsWith('$g '));
+    if (desc.trim().length >= 2 && !isNoise && !isGenericStore) {
+      return [
+        WalletGroceryCandidate(
+          transactionKey: key,
+          rawDescription: desc,
+          itemName: _capitalize(desc.trim()),
+          quantity: 1.0,
+          unit: 'unidades',
+          totalPrice: amount != 0 ? amount.abs() : null,
+          currency: currency,
+          date: date,
+        ),
+      ];
+    }
+
+    return const [];
   }
 
-  /// Extrae ítems comprados en WalletAI que pueden ingresar a Despensa.
+  /// Detecta compra de ropa/calzado para auto-agregar al Armario.
+  static WalletWardrobeCandidate? extractWardrobeCandidateForTx(
+    Map<String, dynamic> tx, {
+    String currency = 'PEN',
+  }) {
+    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    if (amount > 0 && tx['productName'] == null) return null;
+    if (classifyRelevantModule(tx) != 'armario') return null;
+
+    final rawName =
+        (tx['productName'] ?? tx['name'] ?? tx['description'] ?? '').toString().trim();
+    if (rawName.length < 2) return null;
+    final lower = rawName.toLowerCase();
+
+    return WalletWardrobeCandidate(
+      transactionKey: txStableKey(tx),
+      itemName: _capitalize(rawName),
+      price: amount != 0 ? amount.abs() : null,
+      currency: currency,
+      garmentTypeIndex: _inferGarmentTypeIndex(lower),
+      date: tx['date']?.toString(),
+    );
+  }
+
+  static int _inferGarmentTypeIndex(String lower) {
+    // Índices alineados con `enum GarmentType` (packages/domain):
+    // 0:shirt, 1:tshirt, 2:pants, 3:jeans, 4:shoes, 5:jacket, 6:accessories,
+    // 7:dress, 8:shorts, 9:sweater, 10:hoodie, 11:skirt, 12:other,
+    // 13:polo, 14:sneakers, 15:boots, 16:sandals
+    if (lower.contains('polo')) return 13;
+    if (lower.contains('camisa')) return 0;
+    if (lower.contains('camiseta')) return 1;
+    if (lower.contains('jean')) return 3;
+    if (lower.contains('pantalon') || lower.contains('pantalón')) return 2;
+    if (lower.contains('zapatilla') || lower.contains('sneaker')) return 14;
+    if (lower.contains('bota')) return 15;
+    if (lower.contains('sandalia')) return 16;
+    if (lower.contains('zapato') || lower.contains('calzado')) return 4;
+    if (lower.contains('polera') || lower.contains('hoodie')) return 10;
+    if (lower.contains('casaca') || lower.contains('chaqueta') || lower.contains('abrigo')) {
+      return 5;
+    }
+    if (lower.contains('chompa') || lower.contains('sueter') || lower.contains('suéter')) {
+      return 9;
+    }
+    if (lower.contains('vestido')) return 7;
+    if (lower.contains('falda')) return 11;
+    if (lower.contains('short')) return 8;
+    if (lower.contains('gorra') || lower.contains('lentes') || lower.contains('reloj') || lower.contains('cinturon') || lower.contains('accesorio')) {
+      return 6;
+    }
+    return 12;
+  }
+
+  /// Detecta compra de electrodomésticos/utensilios de cocina (`Appliances`).
+  static WalletApplianceCandidate? extractApplianceCandidateForTx(
+    Map<String, dynamic> tx,
+  ) {
+    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    if (amount > 0 && tx['productName'] == null) return null;
+
+    final rawName =
+        (tx['productName'] ?? tx['name'] ?? tx['description'] ?? '').toString().trim();
+    if (rawName.length < 2) return null;
+    final lower = rawName.toLowerCase();
+    if (!_applianceKeywords.any(lower.contains)) return null;
+
+    return WalletApplianceCandidate(
+      transactionKey: txStableKey(tx),
+      name: _capitalize(rawName),
+      type: lower.contains('sart') || lower.contains('olla') || lower.contains('wok') || lower.contains('cuchillo')
+          ? 'Utensilio'
+          : 'Electrodoméstico',
+      date: tx['date']?.toString(),
+    );
+  }
+
+  Future<DateTime?> getBaselineCutoff() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_baselineCutoffKey);
+    return raw != null ? DateTime.tryParse(raw) : null;
+  }
+
+  /// Asegura punto de corte inicial: marca las transacciones históricas actuales sin importarlas,
+  /// para que SOLO los registros nuevos posteriores disparen auto-importación.
+  Future<({DateTime cutoff, bool initializedNow})> ensureBaselineInitialized(
+    WalletSummary summary,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawCutoff = prefs.getString(_baselineCutoffKey);
+    if (rawCutoff != null) {
+      final parsed = DateTime.tryParse(rawCutoff);
+      if (parsed != null) {
+        return (cutoff: parsed, initializedNow: false);
+      }
+    }
+
+    final cutoff = DateTime.now();
+    await prefs.setString(_baselineCutoffKey, cutoff.toIso8601String());
+    for (final tx in summary.recentTransactions) {
+      await markTxProcessed(txStableKey(tx));
+    }
+    return (cutoff: cutoff, initializedNow: true);
+  }
+
+  static bool _isNewSinceCutoff(Map<String, dynamic> tx, DateTime cutoff) {
+    final createdAtRaw = tx['createdAt']?.toString();
+    if (createdAtRaw != null && createdAtRaw.isNotEmpty) {
+      final dt = DateTime.tryParse(createdAtRaw);
+      if (dt != null) {
+        return !dt.isBefore(cutoff);
+      }
+    }
+    final dateRaw = tx['date']?.toString();
+    if (dateRaw != null && dateRaw.isNotEmpty) {
+      final d = DateTime.tryParse(dateRaw);
+      if (d != null) {
+        final cutoffDay = DateTime(cutoff.year, cutoff.month, cutoff.day);
+        return !d.isBefore(cutoffDay);
+      }
+    }
+    return false;
+  }
+
+  /// Extrae únicamente las compras NUEVAS posteriores al punto de corte para auto-ingreso.
+  Future<WalletAutoSyncBatch> extractPendingAutoSyncBatch(
+    WalletSummary? summary,
+  ) async {
+    if (summary == null) return const WalletAutoSyncBatch();
+    final baseline = await ensureBaselineInitialized(summary);
+    if (baseline.initializedNow) {
+      return const WalletAutoSyncBatch(baselineJustInitialized: true);
+    }
+
+    final processed = await loadProcessedTxKeys();
+    final groceries = <WalletGroceryCandidate>[];
+    final wardrobe = <WalletWardrobeCandidate>[];
+    final appliances = <WalletApplianceCandidate>[];
+    final keys = <String>[];
+
+    for (final tx in summary.recentTransactions) {
+      final key = txStableKey(tx);
+      if (processed.contains(key)) continue;
+      if (!_isNewSinceCutoff(tx, baseline.cutoff)) continue;
+
+      final appliance = extractApplianceCandidateForTx(tx);
+      if (appliance != null) {
+        appliances.add(appliance);
+        keys.add(key);
+        continue;
+      }
+
+      final garment = extractWardrobeCandidateForTx(
+        tx,
+        currency: summary.currency,
+      );
+      if (garment != null) {
+        wardrobe.add(garment);
+        keys.add(key);
+        continue;
+      }
+
+      final gList = extractCandidatesForTx(tx, currency: summary.currency);
+      if (gList.isNotEmpty) {
+        groceries.addAll(gList);
+        keys.add(key);
+      }
+    }
+
+    return WalletAutoSyncBatch(
+      groceries: groceries,
+      wardrobe: wardrobe,
+      appliances: appliances,
+      allProcessedKeys: keys,
+    );
+  }
+
+  /// Extrae ítems comprados en WalletAI que pueden ingresar a Despensa (manual / banner).
   Future<List<WalletGroceryCandidate>> extractPendingGroceryCandidates(
     WalletSummary? summary,
   ) async {
     if (summary == null) return const [];
+    final baseline = await getBaselineCutoff();
     final processed = await loadProcessedTxKeys();
     final candidates = <WalletGroceryCandidate>[];
 
@@ -621,6 +973,7 @@ class WalletPantryBridgeService {
     for (final tx in allTx) {
       final key = txStableKey(tx);
       if (processed.contains(key)) continue;
+      if (baseline != null && !_isNewSinceCutoff(tx, baseline)) continue;
       candidates.addAll(
         extractCandidatesForTx(tx, currency: summary.currency),
       );

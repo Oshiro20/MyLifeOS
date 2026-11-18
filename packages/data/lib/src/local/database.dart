@@ -214,6 +214,29 @@ class AppDatabase extends _$AppDatabase {
       await deleteLocalFileIfPresent(path);
     }
   }
+
+  /// Inserta un electrodoméstico/utensilio si no existe uno con el mismo nombre.
+  Future<bool> upsertApplianceIfMissing({
+    required String id,
+    required String name,
+    required String type,
+  }) async {
+    final normalized = name.trim().toLowerCase();
+    if (normalized.isEmpty) return false;
+    final existing = await select(appliances).get();
+    final alreadyExists = existing.any(
+      (a) => a.name.trim().toLowerCase() == normalized,
+    );
+    if (alreadyExists) return false;
+    await into(appliances).insert(
+      AppliancesCompanion.insert(
+        id: id,
+        name: name.trim(),
+        type: type,
+      ),
+    );
+    return true;
+  }
 }
 
 /// Usa drift_flutter que maneja sqlite3_flutter_libs automáticamente.

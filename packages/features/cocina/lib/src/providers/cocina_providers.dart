@@ -346,6 +346,10 @@ class InventoryNotifier extends Notifier<InventoryState> {
       }
     }
 
+    await ref
+        .read(recipesProvider.notifier)
+        .markMatchingShoppingItemsBought(candidates.map((c) => c.itemName));
+
     ref.read(walletPendingGroceryRefreshProvider.notifier).bump();
     return added;
   }
@@ -480,6 +484,25 @@ class RecipesNotifier extends Notifier<RecipesState> {
       for (final item in state.shoppingList)
         if (item.id == id) item.copyWith(bought: !item.bought) else item,
     ]);
+  }
+
+  /// Marca como comprados los ítems pendientes en Lista que coincidan con lo recién ingresado.
+  Future<int> markMatchingShoppingItemsBought(Iterable<String> names) async {
+    final targetKeys = names
+        .map(IngredientPriceService.normalizeKey)
+        .where((k) => k.isNotEmpty)
+        .toSet();
+    if (targetKeys.isEmpty) return 0;
+    int marked = 0;
+    for (final item in state.shoppingList) {
+      if (item.bought) continue;
+      final itemKey = IngredientPriceService.normalizeKey(item.name);
+      if (targetKeys.contains(itemKey)) {
+        await toggleShoppingItem(item.id);
+        marked++;
+      }
+    }
+    return marked;
   }
 
   Future<void> deleteShoppingItem(String id) async {

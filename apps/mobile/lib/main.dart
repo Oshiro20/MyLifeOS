@@ -12,6 +12,7 @@ import 'package:armario/armario.dart';
 import 'package:foodcoach/foodcoach.dart';
 import 'package:settings/settings.dart';
 import 'package:core/core.dart';
+import 'package:domain/domain.dart';
 import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -186,12 +187,17 @@ class MyLifeOSApp extends ConsumerStatefulWidget {
   ConsumerState<MyLifeOSApp> createState() => _MyLifeOSAppState();
 }
 
-class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
+class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
+    with WidgetsBindingObserver {
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   StreamSubscription? _intentDataStreamSubscription;
+  bool _runningWalletAutoSync = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Listen to media sharing incoming links while the app is in memory
     _intentDataStreamSubscription = ReceiveSharingIntent.instance
@@ -206,6 +212,102 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
         .then((List<SharedMediaFile> value) {
       _handleSharedMedia(value);
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      ref.invalidate(walletSummaryProvider);
+    }
+  }
+
+  Future<void> _autoSyncWalletPurchases(WalletSummary summary) async {
+    if (_runningWalletAutoSync || !mounted) return;
+    _runningWalletAutoSync = true;
+    try {
+      final bridge = ref.read(walletGroceryBridgeProvider);
+      final batch = await bridge.extractPendingAutoSyncBatch(summary);
+      if (batch.baselineJustInitialized || !batch.hasAny) return;
+
+      final addedLabels = <String>[];
+
+      if (batch.groceries.isNotEmpty) {
+        final count = await ref
+            .read(inventoryProvider.notifier)
+            .importGroceryCandidates(batch.groceries);
+        if (count > 0) {
+          final names =
+              batch.groceries.map((g) => g.itemName).take(2).join(', ');
+          addedLabels.add(
+            '🛒 Despensa: $names${batch.groceries.length > 2 ? ' (+${batch.groceries.length - 2})' : ''}',
+          );
+        }
+      }
+
+      if (batch.wardrobe.isNotEmpty) {
+        final armarioState = ref.read(armarioProvider);
+        final armarioNotifier = ref.read(armarioProvider.notifier);
+        final existingNames = armarioState.garments
+            .map((g) => g.name.trim().toLowerCase())
+            .toSet();
+        int wardrobeCount = 0;
+        for (final w in batch.wardrobe) {
+          if (existingNames.contains(w.itemName.trim().toLowerCase())) continue;
+          final idx = w.garmentTypeIndex.clamp(0, GarmentType.values.length - 1);
+          await armarioNotifier.addGarment(WardrobeGarment(
+            id: 'wal_${DateTime.now().microsecondsSinceEpoch}_$wardrobeCount',
+            name: w.itemName,
+            type: GarmentType.values[idx],
+            primaryColor: '#4A5568',
+            price: w.price,
+            addedAt: DateTime.now(),
+          ));
+          existingNames.add(w.itemName.trim().toLowerCase());
+          wardrobeCount++;
+        }
+        if (wardrobeCount > 0) {
+          addedLabels.add(
+            '👕 Armario: ${batch.wardrobe.first.itemName}',
+          );
+        }
+      }
+
+      if (batch.appliances.isNotEmpty) {
+        int appCount = 0;
+        for (final a in batch.appliances) {
+          final inserted = await _db.upsertApplianceIfMissing(
+            id: 'app_${DateTime.now().microsecondsSinceEpoch}_$appCount',
+            name: a.name,
+            type: a.type,
+          );
+          if (inserted) appCount++;
+        }
+        if (appCount > 0) {
+          addedLabels.add(
+            '🍳 Utensilio: ${batch.appliances.first.name}',
+          );
+        }
+      }
+
+      for (final key in batch.allProcessedKeys) {
+        await bridge.markTxProcessed(key);
+      }
+      ref.read(walletPendingGroceryRefreshProvider.notifier).bump();
+
+      if (addedLabels.isNotEmpty && mounted) {
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text('WalletAI → ${addedLabels.join(' · ')}'),
+            backgroundColor: const Color(0xFF00C896),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      developer.log('WalletAI auto-sync error: $e', name: 'MyLifeOS.Wallet');
+    } finally {
+      _runningWalletAutoSync = false;
+    }
   }
 
   void _handleSharedMedia(List<SharedMediaFile> value) {
@@ -226,15 +328,23 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _intentDataStreamSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<WalletSummary?>>(walletSummaryProvider, (_, next) {
+      final summary = next.asData?.value;
+      if (summary != null) {
+        unawaited(_autoSyncWalletPurchases(summary));
+      }
+    });
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'MyLifeOS',
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),

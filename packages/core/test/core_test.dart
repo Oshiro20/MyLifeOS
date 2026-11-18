@@ -224,5 +224,91 @@ void main() {
       expect(est.pricedCount, 1);
       expect(est.totalEstimated, closeTo(5.0, 0.01));
     });
+
+    test(
+        'extractPendingAutoSyncBatch ignora historial inicial y solo importa registros nuevos (Plátano Seda, Armario, Utensilio)',
+        () async {
+      final bridge = WalletPantryBridgeService();
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final futureCreatedAt = DateTime.now().add(const Duration(minutes: 2));
+
+      // 1ra sincronización: establece punto de corte sin importar historial viejo
+      final initialSummary = WalletSummary(
+        version: '1.4.5',
+        month: '2026-11',
+        balance: 500,
+        income: 1000,
+        expenses: 500,
+        currency: 'PEN',
+        exportedAt: DateTime.now(),
+        recentTransactions: [
+          {
+            'id': 'old-1',
+            'name': 'Arroz antiguo',
+            'category': 'Alimentación',
+            'amount': -10.0,
+            'date': yesterday.toIso8601String().split('T').first,
+            'createdAt': yesterday.toIso8601String(),
+          },
+        ],
+      );
+
+      final firstBatch = await bridge.extractPendingAutoSyncBatch(initialSummary);
+      expect(firstBatch.baselineJustInitialized, isTrue);
+      expect(firstBatch.hasAny, isFalse);
+
+      // 2da sincronización: trae registros NUEVOS posteriores al punto de corte
+      final nextSummary = WalletSummary(
+        version: '1.4.5',
+        month: '2026-11',
+        balance: 400,
+        income: 1000,
+        expenses: 600,
+        currency: 'PEN',
+        exportedAt: futureCreatedAt,
+        recentTransactions: [
+          ...initialSummary.recentTransactions,
+          {
+            'id': 'new-platano',
+            'name': 'Platano Seda',
+            'productName': 'Platano Seda',
+            'quantity': 6,
+            'unit': 'UND',
+            'category': 'Alimentación',
+            'amount': -5.0,
+            'date': futureCreatedAt.toIso8601String().split('T').first,
+            'createdAt': futureCreatedAt.toIso8601String(),
+          },
+          {
+            'id': 'new-polo',
+            'name': 'Polo negro Nike',
+            'productName': 'Polo negro Nike',
+            'category': 'Ropa',
+            'amount': -65.0,
+            'date': futureCreatedAt.toIso8601String().split('T').first,
+            'createdAt': futureCreatedAt.toIso8601String(),
+          },
+          {
+            'id': 'new-freidora',
+            'name': 'Freidora de aire Oster',
+            'category': 'Hogar',
+            'amount': -250.0,
+            'date': futureCreatedAt.toIso8601String().split('T').first,
+            'createdAt': futureCreatedAt.toIso8601String(),
+          },
+        ],
+      );
+
+      final secondBatch = await bridge.extractPendingAutoSyncBatch(nextSummary);
+      expect(secondBatch.baselineJustInitialized, isFalse);
+      expect(secondBatch.groceries.length, 1);
+      expect(secondBatch.groceries.single.itemName, 'Platano Seda');
+      expect(secondBatch.groceries.single.quantity, 6.0);
+      expect(secondBatch.groceries.single.unit, 'unidades');
+      expect(secondBatch.wardrobe.length, 1);
+      expect(secondBatch.wardrobe.single.itemName, 'Polo negro Nike');
+      expect(secondBatch.appliances.length, 1);
+      expect(secondBatch.appliances.single.name, 'Freidora de aire Oster');
+    });
   });
 }
