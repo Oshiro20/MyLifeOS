@@ -529,13 +529,6 @@ class _RecipeTile extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _goalEmoji = {
-    NutritionGoal.loseWeight: '🥗',
-    NutritionGoal.maintain: '⚖️',
-    NutritionGoal.gainMuscle: '💪',
-    NutritionGoal.other: '🍽️',
-  };
-
   Color _getTimeColor(int minutes) {
     if (minutes < 20) return const Color(0xFF00E676);
     if (minutes <= 45) return const Color(0xFFFFB300);
@@ -561,7 +554,7 @@ class _RecipeTile extends StatelessWidget {
           leading: CircleAvatar(
             backgroundColor:
                 Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Text(_goalEmoji[recipe.goal] ?? '🍽️',
+            child: Text(recipe.goal.emoji,
                 style: const TextStyle(fontSize: 22)),
           ),
           title: Text(recipe.name,
@@ -1057,27 +1050,21 @@ class _AddRecipeSheetState extends State<_AddRecipeSheet> {
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: _deco('Objetivo nutricional', Icons.flag_outlined),
               items: [
-                DropdownMenuItem(
-                    value: NutritionGoal.loseWeight,
-                    child: Text('🥗 Adelgazar',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface))),
-                DropdownMenuItem(
-                    value: NutritionGoal.maintain,
-                    child: Text('⚖️ Mantener',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface))),
-                DropdownMenuItem(
-                    value: NutritionGoal.gainMuscle,
-                    child: Text('💪 Ganar músculo',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface))),
-                DropdownMenuItem(
-                    value: NutritionGoal.other,
-                    child: Text('🍽️ Otro',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface))),
-              ],
+                NutritionGoal.maintain,
+                NutritionGoal.loseWeight,
+                NutritionGoal.gainMuscle,
+                NutritionGoal.light,
+                NutritionGoal.other,
+              ]
+                  .map(
+                    (g) => DropdownMenuItem(
+                      value: g,
+                      child: Text('${g.emoji} ${g.label}',
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface)),
+                    ),
+                  )
+                  .toList(),
               onChanged: (v) => setState(() => _goal = v!),
             ),
 

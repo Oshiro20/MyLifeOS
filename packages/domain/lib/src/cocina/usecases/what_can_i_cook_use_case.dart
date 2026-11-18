@@ -344,6 +344,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     Map<String, dynamic> recipeData,
     int index, {
     int? menuNumber,
+    NutritionGoal goal = NutritionGoal.maintain,
   }) {
     final name = recipeData['nombre_receta']?.toString().trim();
     if (name == null || name.isEmpty) return null;
@@ -471,6 +472,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
       ingredientesInferidos: ingredientesInferidos,
       caloriasAproximadas: caloriasAproximadas,
       tipoComida: mealType,
+      goal: goal,
     );
 
     return RecipeSuggestion(
@@ -572,7 +574,30 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     return text;
   }
 
-  /// NEW: Execute with personalized menu components (loteado automático y objeto JSON).
+  String _buildGoalContext(NutritionGoal goal) {
+    return switch (goal) {
+      NutritionGoal.loseWeight => '''
+🎯 META NUTRICIONAL: BAJAR DE PESO (DÉFICIT CALÓRICO).
+- Prioriza proteínas magras, verduras y carbohidratos medidos (~300–450 kcal por plato fuerte).
+- Métodos ligeros: plancha, vapor, horno, ensaladas, caldos desgrasados. EVITA frituras pesadas, embutidos, postres calóricos o bebidas con azúcar añadida (usa infusiones o refrescos sin azúcar).''',
+      NutritionGoal.gainMuscle => '''
+🎯 META NUTRICIONAL: GANAR MASA MUSCULAR (HIPERTROFIA).
+- Prioriza alta densidad proteica y carbohidratos complejos (~550–750 kcal por plato fuerte): pollo, pescado, carne magra, huevos, menestras, quinua, papa, arroz o avena.
+- En bebidas/postres favorece licuados o preparaciones con lácteos, avena, plátano o frutos secos.''',
+      NutritionGoal.light => '''
+🎯 META NUTRICIONAL: COMIDA LIGERA / DIGESTIÓN SUAVE.
+- Platos suaves, fáciles de digerir: sopas livianas, cremas vegetales, pollo/pescado al vapor o plancha, frutas cocidas o frescas suaves.
+- Evita picantes fuertes, condimentos pesados, legumbres pesadas de noche y frituras.''',
+      NutritionGoal.other => '''
+🎯 META NUTRICIONAL: PERSONALIZADA.
+- Respeta al máximo las preferencias y restricciones alimentarias indicadas del usuario.''',
+      NutritionGoal.maintain => '''
+🎯 META NUTRICIONAL: NORMAL / MANTENIMIENTO BALANCEADO.
+- Platos peruanos equilibrados y cotidianos con balance normal entre proteína, carbohidrato y verduras.''',
+    };
+  }
+
+  /// NEW: Execute with personalized menu components (loteado automático y completado de menús).
   Future<List<RecipeSuggestion>> executeWithMenu({
     required List<InventoryIngredient> inventory,
     required dynamic mealPeriod, // MealPeriod enum
@@ -583,6 +608,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     List<String>? recentlyUsedRecipeNames,
     ChefPreferences? userPreferences,
     bool budgetSaverMode = false,
+    NutritionGoal nutritionGoal = NutritionGoal.maintain,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -592,52 +618,74 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     final safeComponents =
         components.isNotEmpty ? components : const ['platoFuerte'];
     final safeMenuCount = menuCount.clamp(1, 5);
-    final totalRecipes = safeMenuCount * safeComponents.length;
+    final maxBatchMenus = safeComponents.length >= 2 ? 2 : 3;
 
-    // Si supera 6 recetas en una sola llamada, dividir en lotes de máximo 2 menús
-    // para no truncar tokens ni superar timeouts.
-    if (totalRecipes > 6 && safeMenuCount > 2) {
-      final results = <RecipeSuggestion>[];
-      final usedNames = <String>[...?recentlyUsedRecipeNames];
-      int nextMenuIndex = 1;
-      int remaining = safeMenuCount;
+    final results = <RecipeSuggestion>[];
+    final usedNames = <String>[...?recentlyUsedRecipeNames];
+    var completedMenus = 0;
+    var attempts = 0;
+    final maxAttempts = safeMenuCount + 2;
 
-      while (remaining > 0) {
-        final batchMenus = remaining >= 2 ? 2 : 1;
-        final batch = await _executeMenuBatch(
+    while (completedMenus < safeMenuCount && attempts < maxAttempts) {
+      attempts++;
+      final remaining = safeMenuCount - completedMenus;
+      final batchMenus =
+          remaining > maxBatchMenus ? maxBatchMenus : remaining;
+
+      final List<RecipeSuggestion> batch;
+      try {
+        batch = await _executeMenuBatch(
           inventory: inventory,
           mealPeriod: mealPeriod,
           components: safeComponents,
           batchMenuCount: batchMenus,
-          startMenuNumber: nextMenuIndex,
+          startMenuNumber: completedMenus + 1,
           dislikedIngredients: dislikedIngredients,
           cuisinePreference: cuisinePreference,
           recentlyUsedRecipeNames: usedNames,
           userPreferences: userPreferences,
           budgetSaverMode: budgetSaverMode,
+          nutritionGoal: nutritionGoal,
         );
-        for (final s in batch) {
-          results.add(s);
+      } catch (_) {
+        if (results.isNotEmpty) break;
+        rethrow;
+      }
+
+      // Agrupar respetando el menuNumber devuelto, renumerando de forma contigua
+      // para garantizar Menú 1..N aunque la IA devuelva menos elementos en un lote.
+      final grouped = <int, List<RecipeSuggestion>>{};
+      for (final item in batch) {
+        final key = item.menuNumber ?? (completedMenus + 1);
+        grouped.putIfAbsent(key, () => []).add(item);
+      }
+
+      if (grouped.isEmpty) break;
+
+      final sortedKeys = grouped.keys.toList()..sort();
+      for (final rawKey in sortedKeys) {
+        if (completedMenus >= safeMenuCount) break;
+        completedMenus++;
+        for (final s in grouped[rawKey]!) {
+          results.add(
+            RecipeSuggestion(
+              recipe: s.recipe,
+              matchPercentage: s.matchPercentage,
+              missingIngredients: s.missingIngredients,
+              menuNumber: completedMenus,
+            ),
+          );
           usedNames.add(s.recipe.name);
         }
-        nextMenuIndex += batchMenus;
-        remaining -= batchMenus;
       }
-      return results;
     }
 
-    return _executeMenuBatch(
-      inventory: inventory,
-      mealPeriod: mealPeriod,
-      components: safeComponents,
-      batchMenuCount: safeMenuCount,
-      startMenuNumber: 1,
-      dislikedIngredients: dislikedIngredients,
-      cuisinePreference: cuisinePreference,
-      recentlyUsedRecipeNames: recentlyUsedRecipeNames,
-      userPreferences: userPreferences,
-      budgetSaverMode: budgetSaverMode,
-    );
+    if (results.isEmpty) {
+      throw Exception(
+          'La IA no encontró recetas válidas con tus ingredientes actuales.');
+    }
+
+    return results;
   }
 
   Future<List<RecipeSuggestion>> _executeMenuBatch({
@@ -651,6 +699,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     List<String>? recentlyUsedRecipeNames,
     ChefPreferences? userPreferences,
     bool budgetSaverMode = false,
+    NutritionGoal nutritionGoal = NutritionGoal.maintain,
   }) async {
     final inventoryDescription = inventory.map((item) {
       return '- ${item.name}: ${item.quantity} ${item.unit}${item.preparation.isNotEmpty ? ' (${item.preparation})' : ''}';
@@ -723,16 +772,19 @@ ${recentlyUsedRecipeNames.take(12).map((e) => '- $e').join('\n')}
         ? '💰 MODO AHORRO ACTIVO: Prioriza recetas económicas usando al máximo lo que ya existe en la despensa y minimizando ingredientes por comprar.\n'
         : '';
 
+    final goalContext = _buildGoalContext(nutritionGoal);
     final userPrefsContext = _buildUserPrefsContext(userPreferences);
     final endMenuNumber = startMenuNumber + batchMenuCount - 1;
 
     final prompt = '''
 $emoji Chef peruano. Genera EXACTAMENTE $batchMenuCount menú(s) completo(s) numerado(s) del $startMenuNumber al $endMenuNumber para $mealPeriodName.
-Cada menú DEBE incluir estos componentes en su lista "platos": $componentNames (tipos válidos: $mealTypeList).
+Cada menú DEBE incluir estos ${components.length} componentes en su lista "platos": $componentNames (tipos válidos: $mealTypeList).
+OBLIGATORIO: La lista "menus" DEBE contener exactamente $batchMenuCount objetos distintos (menu_numero $startMenuNumber${batchMenuCount > 1 ? ' hasta $endMenuNumber' : ''}), sin omitir ninguno.
 
 INGREDIENTES DISPONIBLES EN DESPENSA:
 $inventoryDescription
 
+$goalContext
 $dinnerNote$budgetNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
 REGLAS:
 - Recetas peruanas reales priorizando los ingredientes disponibles, SIN repetir platos.
@@ -793,6 +845,7 @@ FORMATO JSON EXACTO:
           entry.recipeMap,
           suggestions.length,
           menuNumber: effectiveMenuNum,
+          goal: nutritionGoal,
         );
         if (parsed != null) suggestions.add(parsed);
       }

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:domain/domain.dart';
 import 'package:data/data.dart';
@@ -6,6 +7,7 @@ import 'package:core/core.dart';
 import '../utils/cooking_history_service.dart';
 
 const _cocinaUuid = Uuid();
+const _activeGoalPrefKey = 'cocina_active_nutrition_goal_v1';
 
 /// Helper to navigate/switch Cocina tabs (0=Despensa, 1=Recetas, ..., 4=Lista)
 class CocinaTabNotifier extends Notifier<int> {
@@ -401,11 +403,24 @@ class RecipesNotifier extends Notifier<RecipesState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true);
     try {
+      var persistedGoal = state.activeGoal;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final goalName = prefs.getString(_activeGoalPrefKey);
+        if (goalName != null) {
+          persistedGoal = NutritionGoal.values.firstWhere(
+            (g) => g.name == goalName,
+            orElse: () => state.activeGoal,
+          );
+        }
+      } catch (_) {}
+
       final recipes = await _repo.getAllRecipes();
       final shopping = await _repo.getShoppingList();
       state = state.copyWith(
         recipes: recipes,
         shoppingList: shopping,
+        activeGoal: persistedGoal,
         isLoading: false,
       );
       await refreshSuggestions();
@@ -505,9 +520,13 @@ class RecipesNotifier extends Notifier<RecipesState> {
     );
   }
 
-  void setGoal(NutritionGoal goal) {
+  Future<void> setGoal(NutritionGoal goal) async {
     state = state.copyWith(activeGoal: goal);
-    refreshSuggestions();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_activeGoalPrefKey, goal.name);
+    } catch (_) {}
+    await refreshSuggestions();
   }
 
   Future<void> toggleShoppingItem(String id) async {

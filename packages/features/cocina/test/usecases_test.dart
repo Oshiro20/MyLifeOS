@@ -691,5 +691,88 @@ void main() {
       expect(res.first.recipe.tipoComida, MealType.seco);
       expect(res.first.recipe.instructions, hasLength(3));
     });
+
+    test(
+        'executeWithMenu completa los 3 menús e inyecta meta nutricional si la IA devuelve menos por lote',
+        () async {
+      final prompts = <String>[];
+      var callCount = 0;
+      final fake = _SequencedFakeAIExtractor((textContext) {
+        prompts.add(textContext ?? '');
+        callCount++;
+        return '''
+{
+  "menus": [
+    {
+      "menu_numero": 1,
+      "platos": [
+        {
+          "nombre_receta": "Pollo a la plancha $callCount",
+          "descripcion": "Ligero",
+          "porciones": 1,
+          "tiempo_total_min": 20,
+          "tipo_comida": "seco",
+          "calorias_aproximadas": 340,
+          "ingredientes": [
+            {"nombre": "Pollo", "cantidad": 200, "unidad": "g"},
+            {"nombre": "Limón", "cantidad": 1, "unidad": "unidades"}
+          ],
+          "pasos": ["Sazonar", "Cocinar a la plancha", "Servir"]
+        },
+        {
+          "nombre_receta": "Infusión de hierba luisa $callCount",
+          "descripcion": "Sin azúcar",
+          "porciones": 1,
+          "tiempo_total_min": 5,
+          "tipo_comida": "bebida",
+          "calorias_aproximadas": 15,
+          "ingredientes": [
+            {"nombre": "Hierba luisa", "cantidad": 1, "unidad": "sobre"},
+            {"nombre": "Agua", "cantidad": 250, "unidad": "ml"}
+          ],
+          "pasos": ["Hervir agua", "Infusionar", "Servir"]
+        }
+      ]
+    }
+  ]
+}''';
+      });
+
+      final useCase = WhatCanICookUseCase(fake);
+      final res = await useCase.executeWithMenu(
+        inventory: const [
+          InventoryIngredient(
+            id: 'i1',
+            name: 'Pollo',
+            primaryCategory: 'Carnes',
+            quantity: 1,
+            unit: 'kg',
+          ),
+        ],
+        mealPeriod: 'almuerzo',
+        components: const ['platoFuerte', 'refresco'],
+        menuCount: 3,
+        nutritionGoal: NutritionGoal.loseWeight,
+      );
+
+      final menuNumbers = res.map((s) => s.menuNumber).toSet();
+      expect(menuNumbers, {1, 2, 3});
+      expect(res, hasLength(6));
+      expect(
+        res.every((s) => s.recipe.goal == NutritionGoal.loseWeight),
+        isTrue,
+      );
+      expect(prompts.first, contains('BAJAR DE PESO'));
+      expect(prompts[1], contains('Pollo a la plancha 1'));
+    });
   });
+}
+
+class _SequencedFakeAIExtractor implements IAIRecipeExtractor {
+  final String Function(String? textContext) onCall;
+  _SequencedFakeAIExtractor(this.onCall);
+
+  @override
+  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) =>
+      Future.value(onCall(textContext));
 }

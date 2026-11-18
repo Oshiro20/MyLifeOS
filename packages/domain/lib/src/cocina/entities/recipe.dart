@@ -1,6 +1,38 @@
 import 'package:equatable/equatable.dart';
 
-enum NutritionGoal { loseWeight, maintain, gainMuscle, other }
+/// Enfoque o meta nutricional (mantener índices 0..3 intactos por compatibilidad SQLite).
+enum NutritionGoal {
+  loseWeight(
+    'Bajar de peso',
+    '🥗',
+    'Déficit ligero, platos hipocalóricos y sin frituras',
+  ),
+  maintain(
+    'Normal',
+    '⚖️',
+    'Comida casera balanceada para el día a día',
+  ),
+  gainMuscle(
+    'Ganar músculo',
+    '💪',
+    'Alta proteína y carbohidratos complejos',
+  ),
+  other(
+    'Personalizado',
+    '⚙️',
+    'Adaptado a tus preferencias y restricciones',
+  ),
+  light(
+    'Ligera',
+    '🌿',
+    'Digestión suave, vapor, sopas y plancha',
+  );
+
+  final String label;
+  final String emoji;
+  final String hint;
+  const NutritionGoal(this.label, this.emoji, this.hint);
+}
 
 /// Tipos de comida soportados por la app
 enum MealType {

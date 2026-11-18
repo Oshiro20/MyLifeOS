@@ -86,60 +86,85 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           ),
         ),
         actions: [
-          // Nutrition goal selector - always visible
-          PopupMenuButton<NutritionGoal>(
-            icon: const Icon(Icons.fitness_center, color: Color(0xFF00C896)),
-            tooltip: 'Objetivo nutricional',
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: NutritionGoal.loseWeight,
-                child: Row(
-                  children: [
-                    Text('🥗', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text('Adelgazar'),
-                  ],
+          // Meta nutricional activa (sincronizada con Arma tu Menú)
+          Builder(
+            builder: (context) {
+              final activeGoal =
+                  ref.watch(recipesProvider.select((s) => s.activeGoal));
+              const orderedGoals = [
+                NutritionGoal.maintain,
+                NutritionGoal.loseWeight,
+                NutritionGoal.gainMuscle,
+                NutritionGoal.light,
+                NutritionGoal.other,
+              ];
+              return PopupMenuButton<NutritionGoal>(
+                tooltip: 'Meta nutricional: ${activeGoal.label}',
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00C896).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF00C896).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(activeGoal.emoji,
+                          style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 4),
+                      Text(
+                        activeGoal.label,
+                        style: const TextStyle(
+                          color: Color(0xFF00C896),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuItem(
-                value: NutritionGoal.maintain,
-                child: Row(
-                  children: [
-                    Text('⚖️', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text('Mantener'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: NutritionGoal.gainMuscle,
-                child: Row(
-                  children: [
-                    Text('💪', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text('Ganar músculo'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: NutritionGoal.other,
-                child: Row(
-                  children: [
-                    Text('🍽️', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text('Otro'),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (goal) {
-              ref.read(recipesProvider.notifier).setGoal(goal);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Objetivo cambiado: ${goal.name}'),
-                  backgroundColor: const Color(0xFF00C896),
-                  duration: const Duration(seconds: 1),
-                ),
+                itemBuilder: (context) => orderedGoals
+                    .map(
+                      (g) => PopupMenuItem<NutritionGoal>(
+                        value: g,
+                        child: Row(
+                          children: [
+                            Text(g.emoji, style: const TextStyle(fontSize: 18)),
+                            const SizedBox(width: 8),
+                            Text(
+                              g.label,
+                              style: TextStyle(
+                                fontWeight: g == activeGoal
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            if (g == activeGoal) ...[
+                              const Spacer(),
+                              const Icon(Icons.check,
+                                  size: 16, color: Color(0xFF00C896)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onSelected: (goal) {
+                  ref.read(recipesProvider.notifier).setGoal(goal);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Meta nutricional: ${goal.emoji} ${goal.label}'),
+                      backgroundColor: const Color(0xFF00C896),
+                      duration: const Duration(milliseconds: 1400),
+                    ),
+                  );
+                },
               );
             },
           ),

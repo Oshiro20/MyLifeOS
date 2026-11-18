@@ -64,6 +64,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final aiState = ref.watch(whatCanICookProvider);
     final aiNotifier = ref.read(whatCanICookProvider.notifier);
     final cookingSession = ref.watch(cookingSessionProvider);
+    final activeGoal = ref.watch(recipesProvider.select((s) => s.activeGoal));
 
     _listenInventoryChanges(ref);
 
@@ -95,7 +96,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             constraints: BoxConstraints(
-              maxHeight: _isMenuCreatorExpanded ? 540.0 : 0.0,
+              maxHeight: _isMenuCreatorExpanded ? 640.0 : 0.0,
             ),
             child: _isMenuCreatorExpanded
                 ? SingleChildScrollView(
@@ -104,6 +105,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                       selectedComponents: _selectedComponents,
                       menuCount: _menuCount,
                       budgetSaverMode: _budgetSaverMode,
+                      activeGoal: activeGoal,
                       onMealPeriodChanged: (period) =>
                           setState(() => _selectedMealPeriod = period),
                       onComponentToggle: (component) {
@@ -119,6 +121,8 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                       },
                       onMenuCountChanged: (count) =>
                           setState(() => _menuCount = count),
+                      onGoalChanged: (goal) =>
+                          ref.read(recipesProvider.notifier).setGoal(goal),
                       onBudgetSaverChanged: (val) =>
                           setState(() => _budgetSaverMode = val),
                       onGenerateAI: () {
@@ -133,6 +137,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                           components: _selectedComponents.toList(),
                           menuCount: _menuCount,
                           budgetSaverMode: _budgetSaverMode,
+                          nutritionGoal: activeGoal,
                           forceRefresh: true,
                         );
                         setState(() => _isMenuCreatorExpanded = false);
@@ -144,7 +149,9 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                               menuCount: _menuCount,
                               budgetSaverMode: _budgetSaverMode,
                             );
-                        aiNotifier.generateRapidMenus();
+                        aiNotifier.generateRapidMenus(
+                          nutritionGoal: activeGoal,
+                        );
                         setState(() => _isMenuCreatorExpanded = false);
                       },
                       isLoading: aiState == WhatCanICookState.loading,
@@ -266,6 +273,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                   components: _selectedComponents.toList(),
                   menuCount: _menuCount,
                   budgetSaverMode: _budgetSaverMode,
+                  nutritionGoal: ref.read(recipesProvider).activeGoal,
                   forceRefresh: true,
                 ),
                 icon: const Icon(Icons.refresh, size: 16),
@@ -369,6 +377,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
                     components: _selectedComponents.toList(),
                     menuCount: _menuCount,
                     budgetSaverMode: _budgetSaverMode,
+                    nutritionGoal: ref.read(recipesProvider).activeGoal,
                     forceRefresh: true,
                   ),
                   icon: const Icon(Icons.refresh, size: 14),
@@ -648,9 +657,11 @@ class _MenuCreatorCard extends StatelessWidget {
   final Set<MenuComponent> selectedComponents;
   final int menuCount;
   final bool budgetSaverMode;
+  final NutritionGoal activeGoal;
   final Function(MealPeriod) onMealPeriodChanged;
   final Function(MenuComponent) onComponentToggle;
   final Function(int) onMenuCountChanged;
+  final ValueChanged<NutritionGoal> onGoalChanged;
   final ValueChanged<bool> onBudgetSaverChanged;
   final VoidCallback onGenerateAI;
   final VoidCallback onGenerateLocal;
@@ -662,9 +673,11 @@ class _MenuCreatorCard extends StatelessWidget {
     required this.selectedComponents,
     required this.menuCount,
     required this.budgetSaverMode,
+    required this.activeGoal,
     required this.onMealPeriodChanged,
     required this.onComponentToggle,
     required this.onMenuCountChanged,
+    required this.onGoalChanged,
     required this.onBudgetSaverChanged,
     required this.onGenerateAI,
     required this.onGenerateLocal,
@@ -855,6 +868,74 @@ class _MenuCreatorCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
+          // 4. Meta nutricional / estilo
+          Text('4. Meta / Estilo de alimentación',
+              style: TextStyle(
+                  color: onSurface.withValues(alpha: 0.72),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: const [
+              NutritionGoal.maintain,
+              NutritionGoal.loseWeight,
+              NutritionGoal.gainMuscle,
+              NutritionGoal.light,
+              NutritionGoal.other,
+            ].map((goal) {
+              final isSelected = activeGoal == goal;
+              return GestureDetector(
+                onTap: () => onGoalChanged(goal),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF00C896).withValues(alpha: 0.22)
+                        : chipBg,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF00C896)
+                          : Colors.transparent,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(goal.emoji, style: const TextStyle(fontSize: 13)),
+                      const SizedBox(width: 4),
+                      Text(
+                        goal.label,
+                        style: TextStyle(
+                          color: isSelected
+                              ? const Color(0xFF00C896)
+                              : onSurface.withValues(alpha: 0.78),
+                          fontSize: 11,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            activeGoal.hint,
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.55),
+              fontSize: 11,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
           // Modo ahorro opcional
           FilterChip(
             avatar: Icon(
@@ -1037,9 +1118,22 @@ class _CompleteMenuCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '${recipes.length} platos · ${recipes.fold(0, (sum, r) => sum + r.recipe.durationMinutes)} min total',
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                Builder(
+                  builder: (_) {
+                    final totalKcal = recipes.fold<int>(
+                      0,
+                      (sum, r) => sum + (r.recipe.caloriasAproximadas ?? 0),
+                    );
+                    final totalMin = recipes.fold<int>(
+                      0,
+                      (sum, r) => sum + r.recipe.durationMinutes,
+                    );
+                    final goal = recipes.first.recipe.goal;
+                    return Text(
+                      '${recipes.length} platos · $totalMin min${totalKcal > 0 ? ' · ~$totalKcal kcal' : ''} · ${goal.emoji}',
+                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    );
+                  },
                 ),
                 if (onDismiss != null)
                   IconButton(
