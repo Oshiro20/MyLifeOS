@@ -4,8 +4,7 @@ import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/cocina_providers.dart';
-import '../../providers/cooking_session_provider.dart';
-import '../../utils/cooking_history_service.dart';
+import 'recipe_cook_helper.dart';
 
 /// Shared recipe detail sheet widget used across all tabs.
 class RecipeDetailSheet extends StatelessWidget {
@@ -106,11 +105,6 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
 
   double _getScaledQuantity(double original) {
     return original * (_scaledServings / _baseServings);
-  }
-
-  String _formatQuantity(double value) {
-    if (value == value.toInt()) return value.toInt().toString();
-    return value.toStringAsFixed(1);
   }
 
   @override
@@ -273,32 +267,11 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5)),
           const SizedBox(height: 8),
-          ...widget.recipe.ingredients.map((ing) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(children: [
-                  const Icon(Icons.fiber_manual_record,
-                      size: 8, color: Color(0xFF00C896)),
-                  const SizedBox(width: 10),
-                  Text(ing.ingredientName,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontSize: 14)),
-                  const Spacer(),
-                  Text(
-                    '${_formatQuantity(_getScaledQuantity(ing.quantity))} ${ing.unit}',
-                    style: TextStyle(
-                        color: isScaled
-                            ? const Color(0xFFFF9800)
-                            : Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                        fontSize: 12,
-                        fontWeight:
-                            isScaled ? FontWeight.w700 : FontWeight.w400),
-                  ),
-                ]),
-              )),
+          RecipeIngredientCheckList(
+            scaledIngredients:
+                scaleRecipeIngredients(widget.recipe, _scaledServings),
+            isScaled: isScaled,
+          ),
         ],
         // Instructions
         if (widget.recipe.instructions.isNotEmpty) ...[
@@ -425,78 +398,11 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   }
 
   Future<void> _cookRecipe(BuildContext context) async {
-    final container = ProviderScope.containerOf(context);
-    final inventoryNotifier = container.read(inventoryProvider.notifier);
-
-    final scaleRatio = _scaledServings / _baseServings;
-    final scaledIngredients = widget.recipe.ingredients.map((ing) {
-      return RecipeIngredient(
-        id: ing.id,
-        recipeId: ing.recipeId,
-        ingredientName: ing.ingredientName,
-        quantity: ing.quantity * scaleRatio,
-        unit: ing.unit,
-      );
-    }).toList();
-
-    final deducted =
-        await inventoryNotifier.deductRecipeIngredients(scaledIngredients);
-
-    if (!context.mounted) return;
-    if (deducted.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    container.read(cookingSessionProvider.notifier).startSession(
-          recipeName: widget.recipe.name,
-          recipeId: widget.recipe.id,
-          originalServings: _baseServings,
-          scaledServings: _scaledServings,
-          estimatedDurationMinutes: widget.recipe.durationMinutes,
-        );
-    await CookingHistoryService().recordCooked(widget.recipe.name);
-
-    if (!context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
-            const SizedBox(height: 4),
-            Text(deducted.join(', '), style: const TextStyle(fontSize: 12)),
-          ],
-        ),
-        backgroundColor: const Color(0xFFFF9800),
-        duration: const Duration(milliseconds: 2500),
-        action: SnackBarAction(
-          label: 'Deshacer',
-          textColor: Colors.white,
-          onPressed: () async {
-            await inventoryNotifier.revertDeduction(scaledIngredients);
-            await inventoryNotifier.load();
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('↩️ Deducción revertida'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          },
-        ),
-      ),
+    await confirmAndCookRecipe(
+      context: context,
+      recipe: widget.recipe,
+      scaledServings: _scaledServings,
+      popSheetOnSuccess: true,
     );
-    await inventoryNotifier.load();
-    if (context.mounted) {
-      Navigator.of(context).pop();
-    }
   }
 }

@@ -162,36 +162,46 @@ class InventoryNotifier extends Notifier<InventoryState> {
   /// Deduct recipe ingredients from pantry
   /// Returns list of ingredient names that were deducted (for feedback)
   Future<List<String>> deductRecipeIngredients(
-      List<RecipeIngredient> recipeIngredients) async {
+    List<RecipeIngredient> recipeIngredients, {
+    Set<String> skipPantryIds = const {},
+  }) async {
+    if (!_hasLoaded) {
+      await load();
+    }
     final deducted = <String>[];
     final updatedIngredients =
         List<InventoryIngredient>.from(state.ingredients);
 
     for (final recipeIng in recipeIngredients) {
-      final matchIndex = updatedIngredients.indexWhere((pantryItem) =>
-          pantryItem.name.toLowerCase() ==
-          recipeIng.ingredientName.toLowerCase());
+      final match = IngredientMatcher.findBestMatch(
+        updatedIngredients,
+        recipeIng.ingredientName,
+        preferredUnit: recipeIng.unit,
+      );
+      if (match == null || skipPantryIds.contains(match.id)) continue;
 
-      if (matchIndex != -1) {
-        final pantryItem = updatedIngredients[matchIndex];
-        final converted = IngredientUnitNormalizer.convert(
-          recipeIng.quantity,
-          MeasurementUnit.fromString(recipeIng.unit),
-          MeasurementUnit.fromString(pantryItem.unit),
-        );
-        if (converted == null) continue;
-        final newQty = pantryItem.quantity - converted;
+      final matchIndex =
+          updatedIngredients.indexWhere((item) => item.id == match.id);
+      if (matchIndex == -1) continue;
 
-        if (newQty <= 0) {
-          updatedIngredients.removeAt(matchIndex);
-          deducted.add(recipeIng.ingredientName);
-          await _repo.deleteIngredient(pantryItem.id);
-        } else {
-          final updated = pantryItem.copyWith(quantity: newQty);
-          updatedIngredients[matchIndex] = updated;
-          deducted.add(recipeIng.ingredientName);
-          await _repo.updateIngredient(updated);
-        }
+      final pantryItem = updatedIngredients[matchIndex];
+      final converted = IngredientUnitNormalizer.convert(
+        recipeIng.quantity,
+        MeasurementUnit.fromString(recipeIng.unit),
+        MeasurementUnit.fromString(pantryItem.unit),
+      );
+      if (converted == null) continue;
+      final newQty = pantryItem.quantity - converted;
+
+      if (newQty <= 0.0001) {
+        updatedIngredients.removeAt(matchIndex);
+        deducted.add(pantryItem.name);
+        await _repo.deleteIngredient(pantryItem.id);
+      } else {
+        final updated = pantryItem.copyWith(quantity: newQty);
+        updatedIngredients[matchIndex] = updated;
+        deducted.add(pantryItem.name);
+        await _repo.updateIngredient(updated);
       }
     }
 
@@ -202,15 +212,37 @@ class InventoryNotifier extends Notifier<InventoryState> {
     return deducted;
   }
 
+  /// Restaura exactamente los ítems afectados al deshacer una cocción.
+  Future<void> restoreCookedIngredients(
+      List<InventoryIngredient> previousPantryItems) async {
+    final restoredList = List<InventoryIngredient>.from(state.ingredients);
+    for (final orig in previousPantryItems) {
+      final idx = restoredList.indexWhere((i) => i.id == orig.id);
+      if (idx != -1) {
+        restoredList[idx] = orig;
+        await _repo.updateIngredient(orig);
+      } else {
+        restoredList.add(orig);
+        await _repo.addIngredient(orig);
+      }
+    }
+    state = state.copyWith(ingredients: restoredList);
+  }
+
   /// Revert a deduction (undo last cook action)
   Future<void> revertDeduction(List<RecipeIngredient> recipeIngredients) async {
     final revertedIngredients =
         List<InventoryIngredient>.from(state.ingredients);
 
     for (final recipeIng in recipeIngredients) {
-      final matchIndex = revertedIngredients.indexWhere((pantryItem) =>
-          pantryItem.name.toLowerCase() ==
-          recipeIng.ingredientName.toLowerCase());
+      final match = IngredientMatcher.findBestMatch(
+        revertedIngredients,
+        recipeIng.ingredientName,
+        preferredUnit: recipeIng.unit,
+      );
+      final matchIndex = match == null
+          ? -1
+          : revertedIngredients.indexWhere((i) => i.id == match.id);
 
       if (matchIndex != -1) {
         final pantryItem = revertedIngredients[matchIndex];
@@ -530,6 +562,38 @@ class RecipesNotifier extends Notifier<RecipesState> {
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
+  }
+
+  /// Agrega ingredientes faltantes o agotados a Lista de compras evitando duplicados pendientes.
+  Future<int> addMissingToShoppingList(
+    Iterable<({String name, double quantity, String unit})> entries,
+  ) async {
+    var added = 0;
+    final pendingKeys = state.shoppingList
+        .where((item) => !item.bought)
+        .map((item) => IngredientMatcher.normalizeText(item.name))
+        .toSet();
+
+    for (final entry in entries) {
+      final cleanName = entry.name.trim();
+      final key = IngredientMatcher.normalizeText(cleanName);
+      if (cleanName.isEmpty || key.isEmpty || pendingKeys.contains(key)) {
+        continue;
+      }
+      final saved = await _repo.addShoppingItem(
+        ShoppingItem(
+          id: _cocinaUuid.v4(),
+          name: cleanName,
+          quantity: entry.quantity > 0 ? entry.quantity : 1,
+          unit: entry.unit.trim().isNotEmpty ? entry.unit.trim() : 'unidades',
+          createdAt: DateTime.now(),
+        ),
+      );
+      state = state.copyWith(shoppingList: [saved, ...state.shoppingList]);
+      pendingKeys.add(key);
+      added++;
+    }
+    return added;
   }
 
   Future<void> clearAllShoppingList() async {

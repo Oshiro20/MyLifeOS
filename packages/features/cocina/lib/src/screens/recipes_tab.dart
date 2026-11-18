@@ -5,8 +5,7 @@ import 'package:core/core.dart';
 import 'package:uuid/uuid.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/cocina_providers.dart';
-import '../providers/cooking_session_provider.dart';
-import '../utils/cooking_history_service.dart';
+import 'widgets/recipe_cook_helper.dart';
 
 class RecipesTab extends ConsumerStatefulWidget {
   const RecipesTab({super.key});
@@ -655,13 +654,6 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
     _scaledServings = _baseServings;
   }
 
-  /// Get scaled quantity for an ingredient
-  double _getScaledQuantity(double originalQuantity) {
-    final scale = _scaledServings / _baseServings;
-    final result = originalQuantity * scale;
-    return (result * 100).round() / 100; // Round to 2 decimal places
-  }
-
   @override
   Widget build(BuildContext context) {
     final isScaled = _scaledServings != _baseServings;
@@ -813,32 +805,11 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
               ],
             ),
             const SizedBox(height: 8),
-            ...widget.recipe.ingredients.map((ing) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Row(children: [
-                    const Icon(Icons.fiber_manual_record,
-                        size: 8, color: Color(0xFF00C896)),
-                    const SizedBox(width: 10),
-                    Text(ing.ingredientName,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 14)),
-                    const Spacer(),
-                    Text(
-                      '${_getScaledQuantity(ing.quantity)} ${ing.unit}',
-                      style: TextStyle(
-                          color: isScaled
-                              ? const Color(0xFFFF9800)
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.38),
-                          fontSize: 12,
-                          fontWeight:
-                              isScaled ? FontWeight.w700 : FontWeight.w400),
-                    ),
-                  ]),
-                )),
+            RecipeIngredientCheckList(
+              scaledIngredients:
+                  scaleRecipeIngredients(widget.recipe, _scaledServings),
+              isScaled: isScaled,
+            ),
           ],
           if (widget.recipe.instructions.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -965,87 +936,12 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
 
   Future<void> _cookRecipe(
       BuildContext context, Recipe recipe, int scaledServings) async {
-    // Start cooking session with scaled servings
-    final baseServings = recipe.servings > 0 ? recipe.servings : 1;
-    final container = ProviderScope.containerOf(context);
-
-    // Deduct ingredients with scaling
-    final scaleRatio = scaledServings / baseServings;
-    final scaledIngredients = recipe.ingredients.map((ing) {
-      return RecipeIngredient(
-        id: ing.id,
-        recipeId: ing.recipeId,
-        ingredientName: ing.ingredientName,
-        quantity: ing.quantity * scaleRatio,
-        unit: ing.unit,
-      );
-    }).toList();
-
-    final inventoryNotifier = container.read(inventoryProvider.notifier);
-    final deducted =
-        await inventoryNotifier.deductRecipeIngredients(scaledIngredients);
-
-    if (!context.mounted) return;
-    if (deducted.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('⚠️ No tienes ingredientes coincidentes en tu despensa.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    container.read(cookingSessionProvider.notifier).startSession(
-          recipeName: recipe.name,
-          recipeId: recipe.id,
-          originalServings: baseServings,
-          scaledServings: scaledServings,
-          estimatedDurationMinutes: recipe.durationMinutes,
-        );
-
-    // Record in cooking history
-    await CookingHistoryService().recordCooked(recipe.name);
-
-    if (!context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-                '🍳 ¡Cocinando "${recipe.name}" para $scaledServings persona${scaledServings == 1 ? '' : 's'}!'),
-            const SizedBox(height: 4),
-            Text(
-              'Descontados: ${deducted.join(", ")}',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFFFF9800),
-        duration: const Duration(milliseconds: 2500),
-        action: SnackBarAction(
-          label: 'Deshacer',
-          textColor: Colors.white,
-          onPressed: () async {
-            await inventoryNotifier.revertDeduction(scaledIngredients);
-            await inventoryNotifier.load();
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('↩️ Deducción revertida'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          },
-        ),
-      ),
+    await confirmAndCookRecipe(
+      context: context,
+      recipe: recipe,
+      scaledServings: scaledServings,
+      popSheetOnSuccess: true,
     );
-    await inventoryNotifier.load();
-    if (!context.mounted) return;
-    Navigator.of(context).pop();
   }
 
   Widget _chip(BuildContext context, String text) => Container(

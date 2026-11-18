@@ -6,6 +6,7 @@ import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
 import '../providers/cooking_session_provider.dart';
+import 'widgets/recipe_cook_helper.dart';
 import 'widgets/recipe_detail_sheet.dart';
 
 /// Tab "Sugeridas" — Creador de Menú personalizado con IA
@@ -595,29 +596,13 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     WhatCanICookNotifier notifier,
     RecipeSuggestion suggestion,
   ) async {
-    final result = await notifier.cookSuggestion(suggestion);
-    if (context.mounted) {
-      if (result.success) {
-        ref.read(cookingSessionProvider.notifier).startSession(
-              recipeName: suggestion.recipe.name,
-              recipeId: suggestion.recipe.id,
-              originalServings: suggestion.recipe.servings,
-              scaledServings: 1,
-              estimatedDurationMinutes: suggestion.recipe.durationMinutes,
-            );
-        ref.read(inventoryProvider.notifier).load();
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.success
-              ? '🍳 ¡Cocinando ${suggestion.recipe.name}!'
-              : '⚠️ ${result.message}'),
-          backgroundColor:
-              result.success ? const Color(0xFFFF9800) : Colors.redAccent,
-          duration: const Duration(milliseconds: 1500),
-        ),
-      );
-    }
+    await confirmAndCookRecipe(
+      context: context,
+      recipe: suggestion.recipe,
+      scaledServings:
+          suggestion.recipe.servings > 0 ? suggestion.recipe.servings : 1,
+      popSheetOnSuccess: false,
+    );
   }
 
   String _greeting() {

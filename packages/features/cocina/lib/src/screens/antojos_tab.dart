@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
-import '../providers/cooking_session_provider.dart';
-import '../utils/cooking_history_service.dart';
+import 'widgets/recipe_cook_helper.dart';
 import 'widgets/recipe_detail_sheet.dart';
 
 /// "Antojos" tab - Shows Cravings (Desserts, Snacks) from LOCAL Spanish recipes
@@ -290,67 +289,11 @@ class _AntojosTabState extends ConsumerState<AntojosTab> {
   }
 
   Future<void> _cookRecipe(BuildContext context, Recipe recipe) async {
-    final inventoryNotifier = ref.read(inventoryProvider.notifier);
-    final deducted =
-        await inventoryNotifier.deductRecipeIngredients(recipe.ingredients);
-
-    if (context.mounted) {
-      if (deducted.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '⚠️ No tienes ingredientes coincidentes en tu despensa para ${recipe.name}.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      } else {
-        ref.read(cookingSessionProvider.notifier).startSession(
-              recipeName: recipe.name,
-              recipeId: recipe.id,
-              originalServings: recipe.servings,
-              estimatedDurationMinutes: recipe.durationMinutes,
-            );
-        // Record in cooking history
-        await CookingHistoryService().recordCooked(recipe.name);
-
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('🍳 ¡Cocinando! Ingredientes descontados:'),
-                const SizedBox(height: 4),
-                Text(
-                  deducted.join(', '),
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFFFF9800),
-            duration: const Duration(milliseconds: 1000),
-            action: SnackBarAction(
-              label: 'Deshacer',
-              textColor: Colors.white,
-              onPressed: () async {
-                await inventoryNotifier.revertDeduction(recipe.ingredients);
-                await inventoryNotifier.load();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('↩️ Deducción revertida'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-        );
-        inventoryNotifier.load();
-      }
-    }
+    await confirmAndCookRecipe(
+      context: context,
+      recipe: recipe,
+      popSheetOnSuccess: false,
+    );
   }
 }
 

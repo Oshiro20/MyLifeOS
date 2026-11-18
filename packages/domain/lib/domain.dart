@@ -11,6 +11,7 @@ export 'src/cocina/entities/weekly_menu_entry.dart';
 export 'src/cocina/usecases/extract_recipe_use_case.dart';
 export 'src/cocina/usecases/calculate_recipe_viability_use_case.dart';
 export 'src/cocina/usecases/generate_shopping_list_use_case.dart';
+export 'src/cocina/usecases/ingredient_matcher.dart';
 export 'src/cocina/usecases/ingredient_unit_normalizer.dart';
 export 'src/cocina/usecases/what_can_i_cook_use_case.dart';
 export 'src/cocina/usecases/generate_weekly_menu_use_case.dart';

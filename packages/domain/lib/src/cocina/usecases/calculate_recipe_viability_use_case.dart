@@ -1,6 +1,7 @@
 import '../entities/ingredient_units.dart';
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
+import 'ingredient_matcher.dart';
 import 'ingredient_unit_normalizer.dart';
 
 class CalculateRecipeViabilityUseCase {
@@ -19,12 +20,15 @@ class CalculateRecipeViabilityUseCase {
     int totalRequiredItems = recipeIngredients.length;
 
     for (final requirement in recipeIngredients) {
-      final reqName = requirement.ingredientName.toLowerCase().trim();
       final reqQuantity = requirement.quantity;
       final reqUnit = MeasurementUnit.fromString(requirement.unit);
 
-      // Buscar en el inventario
-      final match = _findInInventory(inventory, reqName);
+      // Buscar en el inventario usando coincidencia inteligente
+      final match = IngredientMatcher.findBestMatch(
+        inventory,
+        requirement.ingredientName,
+        preferredUnit: requirement.unit,
+      );
 
       if (match != null) {
         final invQuantity = match.quantity;
@@ -54,15 +58,5 @@ class CalculateRecipeViabilityUseCase {
     }
 
     return totalViabilitySum / totalRequiredItems;
-  }
-
-  InventoryIngredient? _findInInventory(
-      List<InventoryIngredient> inventory, String name) {
-    for (final inv in inventory) {
-      if (inv.name.toLowerCase().trim() == name) {
-        return inv;
-      }
-    }
-    return null;
   }
 }

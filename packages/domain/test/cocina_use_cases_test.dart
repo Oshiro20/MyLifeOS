@@ -256,6 +256,132 @@ void main() {
       );
     });
   });
+
+  group('IngredientMatcher', () {
+    test('empareja frasco de Ajos molidos 300 ml con 2 cucharadas de ajos y descuenta 30 ml', () {
+      const pantry = [
+        InventoryIngredient(
+          id: 'p_ajos',
+          name: 'Ajos molidos',
+          primaryCategory: 'Condimentos',
+          quantity: 300.0,
+          unit: 'ml',
+        ),
+      ];
+      const recipe = [
+        RecipeIngredient(
+          id: 'r_ajos',
+          recipeId: 'r1',
+          ingredientName: 'ajos',
+          quantity: 2.0,
+          unit: 'cucharadas',
+        ),
+      ];
+
+      final checks = IngredientMatcher.evaluateRecipe(
+        recipeIngredients: recipe,
+        inventory: pantry,
+      );
+
+      expect(checks.length, 1);
+      final c = checks.first;
+      expect(c.pantryMatch?.id, 'p_ajos');
+      expect(c.availability, IngredientAvailability.available);
+      expect(c.deductedInPantryUnit, closeTo(30.0, 0.001));
+      expect(c.remainingAfterCook, closeTo(270.0, 0.001));
+    });
+
+    test('tolera tildes, plurales y variantes sin falsos positivos como salsa de tomate', () {
+      const pantry = [
+        InventoryIngredient(
+          id: 'p_platano',
+          name: 'Plátano Seda',
+          primaryCategory: 'Frutas',
+          quantity: 4.0,
+          unit: 'unidades',
+        ),
+        InventoryIngredient(
+          id: 'p_salsa',
+          name: 'Salsa de tomate',
+          primaryCategory: 'Despensa',
+          quantity: 200.0,
+          unit: 'g',
+        ),
+        InventoryIngredient(
+          id: 'p_sillao',
+          name: 'Sillao',
+          primaryCategory: 'Condimentos',
+          quantity: 500.0,
+          unit: 'ml',
+        ),
+      ];
+
+      expect(
+        IngredientMatcher.findBestMatch(pantry, 'platano')?.id,
+        'p_platano',
+      );
+      expect(
+        IngredientMatcher.findBestMatch(pantry, 'tomate'),
+        isNull,
+      );
+      expect(
+        IngredientMatcher.findBestMatch(pantry, 'salsa de soya')?.id,
+        'p_sillao',
+      );
+    });
+
+    test('clasifica faltantes, insuficientes, unidades incompatibles y agotamientos', () {
+      const pantry = [
+        InventoryIngredient(
+          id: 'p_huevo',
+          name: 'Huevos',
+          primaryCategory: 'Frescos',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+        InventoryIngredient(
+          id: 'p_pollo',
+          name: 'Pollo',
+          primaryCategory: 'Carnes',
+          quantity: 1.0,
+          unit: 'unidades',
+        ),
+      ];
+      const recipe = [
+        RecipeIngredient(
+          id: 'r_huevo',
+          recipeId: 'r1',
+          ingredientName: 'huevo',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+        RecipeIngredient(
+          id: 'r_pollo',
+          recipeId: 'r1',
+          ingredientName: 'pollo',
+          quantity: 500.0,
+          unit: 'g',
+        ),
+        RecipeIngredient(
+          id: 'r_sal',
+          recipeId: 'r1',
+          ingredientName: 'sal',
+          quantity: 1.0,
+          unit: 'cdta',
+        ),
+      ];
+
+      final checks = IngredientMatcher.evaluateRecipe(
+        recipeIngredients: recipe,
+        inventory: pantry,
+      );
+
+      expect(checks[0].availability, IngredientAvailability.available);
+      expect(checks[0].willDeplete, isTrue);
+      expect(checks[1].availability, IngredientAvailability.incompatibleUnit);
+      expect(checks[2].availability, IngredientAvailability.missing);
+    });
+  });
 }
 
 class _FakeWeeklyMenuRepo implements ICocinaRepository {

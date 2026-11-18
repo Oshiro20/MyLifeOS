@@ -1,6 +1,7 @@
 import '../entities/ingredient_units.dart';
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
+import 'ingredient_matcher.dart';
 import 'ingredient_unit_normalizer.dart';
 
 class GenerateShoppingListUseCase {
@@ -12,11 +13,14 @@ class GenerateShoppingListUseCase {
     final List<ShoppingItem> missingItems = [];
 
     for (final requirement in recipeIngredients) {
-      final reqName = requirement.ingredientName.toLowerCase().trim();
       final reqQuantity = requirement.quantity;
       final reqUnit = MeasurementUnit.fromString(requirement.unit);
 
-      final match = _findInInventory(inventory, reqName);
+      final match = IngredientMatcher.findBestMatch(
+        inventory,
+        requirement.ingredientName,
+        preferredUnit: requirement.unit,
+      );
 
       if (match != null) {
         final invQuantity = match.quantity;
@@ -83,15 +87,5 @@ class GenerateShoppingListUseCase {
     }
 
     return missingItems;
-  }
-
-  InventoryIngredient? _findInInventory(
-      List<InventoryIngredient> inventory, String name) {
-    for (final inv in inventory) {
-      if (inv.name.toLowerCase().trim() == name) {
-        return inv;
-      }
-    }
-    return null;
   }
 }

@@ -427,20 +427,14 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       final deducted = await inventoryNotifier
           .deductRecipeIngredients(suggestion.recipe.ingredients);
 
-      if (deducted.isEmpty) {
-        return const CookResult(
-          success: false,
-          message: 'No tienes ingredientes coincidentes en tu despensa.',
-          deducted: [],
-        );
-      }
-
       final historyService = CookingHistoryService();
       await historyService.recordCooked(suggestion.recipe.name);
 
       return CookResult(
         success: true,
-        message: '🍳 ¡Cocinando ${suggestion.recipe.name}!',
+        message: deducted.isEmpty
+            ? '🍳 ¡Cocinando ${suggestion.recipe.name} (sin descuentos en despensa)!'
+            : '🍳 ¡Cocinando ${suggestion.recipe.name}!',
         deducted: deducted,
       );
     } catch (e) {

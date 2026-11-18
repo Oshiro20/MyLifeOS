@@ -43,7 +43,10 @@ enum MeasurementUnit {
 
   /// Devuelve la unidad correspondiente a un string.
   static MeasurementUnit fromString(String s) {
-    final lower = s.toLowerCase().trim();
+    var lower = s.toLowerCase().trim();
+    if (lower.endsWith('.')) {
+      lower = lower.substring(0, lower.length - 1).trim();
+    }
     const aliases = {
       'u': MeasurementUnit.unidades,
       'ud': MeasurementUnit.unidades,
@@ -57,6 +60,7 @@ enum MeasurementUnit {
       'ltr': MeasurementUnit.litro,
       'litro': MeasurementUnit.litro,
       'litros': MeasurementUnit.litro,
+      'mls': MeasurementUnit.ml,
       'mililitro': MeasurementUnit.ml,
       'mililitros': MeasurementUnit.ml,
       'gr': MeasurementUnit.g,
@@ -73,6 +77,8 @@ enum MeasurementUnit {
       'cdta': MeasurementUnit.cucharadita,
       'cdtas': MeasurementUnit.cucharadita,
       'cucharaditas': MeasurementUnit.cucharadita,
+      'tz': MeasurementUnit.taza,
+      'tzs': MeasurementUnit.taza,
       'tazas': MeasurementUnit.taza,
       'docenas': MeasurementUnit.docena,
       'lb': MeasurementUnit.libra,
