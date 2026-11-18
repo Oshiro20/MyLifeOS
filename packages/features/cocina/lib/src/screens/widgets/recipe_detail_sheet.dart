@@ -44,6 +44,7 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   int _scaledServings = 1;
   MealType? _tipoComida;
   Map<String, AdaptedSubstitute> _adaptedSubstitutes = const {};
+  Map<int, double> _quantityOverrides = const {};
 
   int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
 
@@ -110,6 +111,12 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
 
   @override
   Widget build(BuildContext context) {
+    final liveRecipe = ref.watch(
+          recipesProvider.select(
+            (s) => s.recipes.where((r) => r.id == widget.recipe.id).firstOrNull,
+          ),
+        ) ??
+        widget.recipe;
     final isScaled = _scaledServings != _baseServings;
     final maxServings = (_baseServings * 2).clamp(2, 24);
 
@@ -270,10 +277,13 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
           const SizedBox(height: 8),
           RecipeIngredientCheckList(
             scaledIngredients:
-                scaleRecipeIngredients(widget.recipe, _scaledServings),
+                scaleRecipeIngredients(liveRecipe, _scaledServings),
             isScaled: isScaled,
-            recipeName: widget.recipe.name,
+            recipeName: liveRecipe.name,
+            recipe: liveRecipe,
+            scaleRatio: _scaledServings / _baseServings,
             onSubstitutesChanged: (subs) => _adaptedSubstitutes = subs,
+            onQuantityOverridesChanged: (ov) => _quantityOverrides = ov,
           ),
         ],
         // Instructions
@@ -401,12 +411,19 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   }
 
   Future<void> _cookRecipe(BuildContext context) async {
+    final liveRecipe = ref
+            .read(recipesProvider)
+            .recipes
+            .where((r) => r.id == widget.recipe.id)
+            .firstOrNull ??
+        widget.recipe;
     await confirmAndCookRecipe(
       context: context,
-      recipe: widget.recipe,
+      recipe: liveRecipe,
       scaledServings: _scaledServings,
       popSheetOnSuccess: true,
       adaptedSubstitutes: _adaptedSubstitutes,
+      quantityOverrides: _quantityOverrides,
     );
   }
 }

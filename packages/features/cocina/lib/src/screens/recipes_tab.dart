@@ -704,17 +704,18 @@ class _RecipeTile extends StatelessWidget {
 
 // ── Detalle de receta ────────────────────────────────────────────────────────
 
-class _RecipeDetailSheet extends StatefulWidget {
+class _RecipeDetailSheet extends ConsumerStatefulWidget {
   final Recipe recipe;
   const _RecipeDetailSheet({required this.recipe});
 
   @override
-  State<_RecipeDetailSheet> createState() => _RecipeDetailSheetState();
+  ConsumerState<_RecipeDetailSheet> createState() => _RecipeDetailSheetState();
 }
 
-class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
+class _RecipeDetailSheetState extends ConsumerState<_RecipeDetailSheet> {
   int _scaledServings = 1; // Current scaled servings (default 1 person)
   Map<String, AdaptedSubstitute> _adaptedSubstitutes = const {};
+  Map<int, double> _quantityOverrides = const {};
 
   int get _baseServings =>
       widget.recipe.servings > 0 ? widget.recipe.servings : 1;
@@ -727,6 +728,12 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final liveRecipe = ref.watch(
+          recipesProvider.select(
+            (s) => s.recipes.where((r) => r.id == widget.recipe.id).firstOrNull,
+          ),
+        ) ??
+        widget.recipe;
     final isScaled = _scaledServings != _baseServings;
     final maxServings = (_baseServings * 2).clamp(2, 24);
 
@@ -876,10 +883,13 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             const SizedBox(height: 8),
             RecipeIngredientCheckList(
               scaledIngredients:
-                  scaleRecipeIngredients(widget.recipe, _scaledServings),
+                  scaleRecipeIngredients(liveRecipe, _scaledServings),
               isScaled: isScaled,
-              recipeName: widget.recipe.name,
+              recipeName: liveRecipe.name,
+              recipe: liveRecipe,
+              scaleRatio: _scaledServings / _baseServings,
               onSubstitutesChanged: (subs) => _adaptedSubstitutes = subs,
+              onQuantityOverridesChanged: (ov) => _quantityOverrides = ov,
             ),
           ],
           if (widget.recipe.instructions.isNotEmpty) ...[
@@ -1007,12 +1017,19 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
 
   Future<void> _cookRecipe(
       BuildContext context, Recipe recipe, int scaledServings) async {
+    final liveRecipe = ref
+            .read(recipesProvider)
+            .recipes
+            .where((r) => r.id == recipe.id)
+            .firstOrNull ??
+        recipe;
     await confirmAndCookRecipe(
       context: context,
-      recipe: recipe,
+      recipe: liveRecipe,
       scaledServings: scaledServings,
       popSheetOnSuccess: true,
       adaptedSubstitutes: _adaptedSubstitutes,
+      quantityOverrides: _quantityOverrides,
     );
   }
 

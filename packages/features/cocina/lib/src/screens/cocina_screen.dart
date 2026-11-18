@@ -9,6 +9,8 @@ import 'antojos_tab.dart';
 import 'shopping_tab.dart';
 import 'weekly_plan_screen.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/cooking_session_provider.dart';
+import 'widgets/cooking_session_banner.dart';
 
 class CocinaScreen extends ConsumerStatefulWidget {
   const CocinaScreen({super.key});
@@ -181,16 +183,29 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
           tabs: _buildTabs(ref),
         ),
       ),
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          const InventoryTab(),
-          const RecipesTab(),
-          const SuggestionsTab(),
-          const AntojosTab(),
-          const ShoppingTab(),
-          const WeeklyPlanScreen(),
-        ],
+      body: Consumer(
+        builder: (context, ref, _) {
+          final cookingSession = ref.watch(cookingSessionProvider);
+          return Column(
+            children: [
+              if (cookingSession != null)
+                CookingSessionBanner(session: cookingSession),
+              Expanded(
+                child: TabBarView(
+                  controller: _tab,
+                  children: [
+                    const InventoryTab(),
+                    const RecipesTab(),
+                    const SuggestionsTab(),
+                    const AntojosTab(),
+                    const ShoppingTab(),
+                    const WeeklyPlanScreen(),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: showFabs
           ? Column(

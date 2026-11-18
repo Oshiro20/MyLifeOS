@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/cocina_providers.dart';
 import '../../providers/cooking_session_provider.dart';
 import '../../utils/cooking_history_service.dart';
+import 'cooking_session_banner.dart';
 
 String formatIngredientQty(double qty) {
   if (qty == qty.roundToDouble()) return qty.toInt().toString();
@@ -31,6 +32,27 @@ List<RecipeIngredient> scaleRecipeIngredients(
       .toList();
 }
 
+/// Aplica ajustes manuales por índice (solo para esta cocción) sobre la lista escalada.
+List<RecipeIngredient> applyIngredientQuantityOverrides(
+  List<RecipeIngredient> scaledIngredients,
+  Map<int, double> quantityOverrides,
+) {
+  if (quantityOverrides.isEmpty) return scaledIngredients;
+  return [
+    for (var i = 0; i < scaledIngredients.length; i++)
+      if (quantityOverrides.containsKey(i))
+        RecipeIngredient(
+          id: scaledIngredients[i].id,
+          recipeId: scaledIngredients[i].recipeId,
+          ingredientName: scaledIngredients[i].ingredientName,
+          quantity: quantityOverrides[i]!,
+          unit: scaledIngredients[i].unit,
+        )
+      else
+        scaledIngredients[i],
+  ];
+}
+
 typedef AdaptedSubstitute = ({
   String pantryId,
   String pantryName,
@@ -40,18 +62,25 @@ typedef AdaptedSubstitute = ({
 });
 
 /// Lista de ingredientes con semáforo de disponibilidad real frente a la despensa,
+/// edición inline de cantidad (solo esta cocción o guardar en receta),
 /// validación/adaptación bajo demanda con Gemini y botón rápido para Lista de compras.
 class RecipeIngredientCheckList extends ConsumerStatefulWidget {
   final List<RecipeIngredient> scaledIngredients;
   final bool isScaled;
   final String recipeName;
+  final Recipe? recipe;
+  final double scaleRatio;
   final ValueChanged<Map<String, AdaptedSubstitute>>? onSubstitutesChanged;
+  final ValueChanged<Map<int, double>>? onQuantityOverridesChanged;
 
   const RecipeIngredientCheckList({
     required this.scaledIngredients,
     this.isScaled = false,
     this.recipeName = '',
+    this.recipe,
+    this.scaleRatio = 1.0,
     this.onSubstitutesChanged,
+    this.onQuantityOverridesChanged,
     super.key,
   });
 
@@ -64,6 +93,23 @@ class _RecipeIngredientCheckListState
     extends ConsumerState<RecipeIngredientCheckList> {
   bool _validatingAI = false;
   final Map<String, ({AdaptedSubstitute sub, bool accepted})> _aiSubstitutes = {};
+  final Map<int, double> _qtyOverrides = {};
+
+  @override
+  void didUpdateWidget(covariant RecipeIngredientCheckList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recipe?.id != widget.recipe?.id ||
+        oldWidget.scaleRatio != widget.scaleRatio ||
+        oldWidget.scaledIngredients.length !=
+            widget.scaledIngredients.length) {
+      if (_qtyOverrides.isNotEmpty) {
+        _qtyOverrides.clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _emitQuantityOverrides();
+        });
+      }
+    }
+  }
 
   void _emitSubstitutes() {
     final cb = widget.onSubstitutesChanged;
@@ -72,6 +118,218 @@ class _RecipeIngredientCheckListState
       for (final entry in _aiSubstitutes.entries)
         if (entry.value.accepted) entry.key: entry.value.sub,
     });
+  }
+
+  void _emitQuantityOverrides() {
+    widget.onQuantityOverridesChanged?.call(Map.unmodifiable(_qtyOverrides));
+  }
+
+  Future<void> _editIngredientQuantity(
+    int index,
+    RecipeIngredient currentReq,
+  ) async {
+    final originalQty = widget.scaledIngredients[index].quantity;
+    var editedQty = currentReq.quantity;
+    var saveToRecipe = false;
+    final canSaveToRecipe = widget.recipe != null &&
+        index < widget.recipe!.ingredients.length;
+    final ctrl = TextEditingController(text: formatIngredientQty(editedQty));
+    final step = currentReq.quantity >= 20 ||
+            currentReq.unit.toLowerCase().contains('g') ||
+            currentReq.unit.toLowerCase().contains('ml')
+        ? 10.0
+        : (currentReq.quantity == currentReq.quantity.roundToDouble()
+            ? 1.0
+            : 0.5);
+
+    final action = await showDialog<({double qty, bool save, bool reset})>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void applyDelta(double delta) {
+            final next = (editedQty + delta).clamp(0.0, 99999.0);
+            final rounded = double.parse(next.toStringAsFixed(2));
+            editedQty = rounded;
+            ctrl.text = formatIngredientQty(rounded);
+            setDialogState(() {});
+          }
+
+          return AlertDialog(
+            title: Text(
+              currentReq.ingredientName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Receta indica: ${formatIngredientQty(originalQty)} ${currentReq.unit}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(ctx)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    IconButton.outlined(
+                      onPressed: () => applyDelta(-step),
+                      icon: const Icon(Icons.remove, size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: ctrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          suffixText: currentReq.unit,
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onChanged: (v) {
+                          final parsed =
+                              double.tryParse(v.trim().replaceAll(',', '.'));
+                          if (parsed != null && parsed >= 0) {
+                            editedQty = parsed;
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.outlined(
+                      onPressed: () => applyDelta(step),
+                      icon: const Icon(Icons.add, size: 18),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pon 0 si no usarás este ingrediente hoy.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(ctx)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55),
+                  ),
+                ),
+                if (canSaveToRecipe) ...[
+                  const SizedBox(height: 10),
+                  SwitchListTile.adaptive(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: saveToRecipe,
+                    activeTrackColor: const Color(0xFF00C896),
+                    title: const Text(
+                      'Guardar este cambio en la receta',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    subtitle: Text(
+                      saveToRecipe
+                          ? 'Se actualizará la receta permanente'
+                          : 'Solo aplica para esta cocción',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    onChanged: (v) => setDialogState(() => saveToRecipe = v),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              if (_qtyOverrides.containsKey(index))
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(
+                    (qty: originalQty, save: false, reset: true),
+                  ),
+                  child: const Text('Restaurar'),
+                ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final parsed =
+                      double.tryParse(ctrl.text.trim().replaceAll(',', '.'));
+                  final finalQty = (parsed != null && parsed >= 0)
+                      ? parsed
+                      : editedQty;
+                  Navigator.of(ctx).pop(
+                    (qty: finalQty, save: saveToRecipe, reset: false),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF00C896),
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('Aplicar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    ctrl.dispose();
+    if (action == null || !mounted) return;
+
+    if (action.reset) {
+      setState(() => _qtyOverrides.remove(index));
+      _emitQuantityOverrides();
+      return;
+    }
+
+    if (action.save && canSaveToRecipe) {
+      final recipe = widget.recipe!;
+      final ratio = widget.scaleRatio > 0 ? widget.scaleRatio : 1.0;
+      final newBaseQty = double.parse((action.qty / ratio).toStringAsFixed(2));
+      final updatedIngredients = [
+        for (var i = 0; i < recipe.ingredients.length; i++)
+          if (i == index)
+            RecipeIngredient(
+              id: recipe.ingredients[i].id,
+              recipeId: recipe.ingredients[i].recipeId,
+              ingredientName: recipe.ingredients[i].ingredientName,
+              quantity: newBaseQty,
+              unit: recipe.ingredients[i].unit,
+            )
+          else
+            recipe.ingredients[i],
+      ];
+      await ref.read(recipesProvider.notifier).saveRecipe(
+            recipe.copyWith(ingredients: updatedIngredients),
+          );
+      if (!mounted) return;
+      setState(() => _qtyOverrides.remove(index));
+      _emitQuantityOverrides();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '💾 "${currentReq.ingredientName}" actualizado en "${recipe.name}"',
+          ),
+          backgroundColor: const Color(0xFF00C896),
+          duration: const Duration(milliseconds: 2000),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      if ((action.qty - originalQty).abs() < 0.001) {
+        _qtyOverrides.remove(index);
+      } else {
+        _qtyOverrides[index] = action.qty;
+      }
+    });
+    _emitQuantityOverrides();
   }
 
   Future<void> _validateWithGemini(
@@ -191,8 +449,13 @@ class _RecipeIngredientCheckListState
         .map((i) => IngredientMatcher.normalizeText(i.name))
         .toSet();
 
+    final effectiveIngredients = applyIngredientQuantityOverrides(
+      widget.scaledIngredients,
+      _qtyOverrides,
+    );
+
     final checks = IngredientMatcher.evaluateRecipe(
-      recipeIngredients: widget.scaledIngredients,
+      recipeIngredients: effectiveIngredients,
       inventory: inventory,
       customGramsPerUnit: equivalences,
       learnedAliases: learnedAliases,
@@ -274,184 +537,235 @@ class _RecipeIngredientCheckListState
               ],
             ),
           ),
-        ...checks.map((check) {
-          final req = check.requirement;
-          final reqKey = IngredientMatcher.normalizeText(req.ingredientName);
-          final subEntry = _aiSubstitutes[reqKey];
-          final usingSub = subEntry != null && subEntry.accepted;
+        for (var idx = 0; idx < checks.length; idx++)
+          Builder(builder: (context) {
+            final check = checks[idx];
+            final req = check.requirement;
+            final isOverridden = _qtyOverrides.containsKey(idx);
+            final reqKey = IngredientMatcher.normalizeText(req.ingredientName);
+            final subEntry = _aiSubstitutes[reqKey];
+            final usingSub = subEntry != null && subEntry.accepted;
 
-          final (dotColor, subtitleText) = switch (check.availability) {
-            IngredientAvailability.available => (
-                const Color(0xFF00C896),
-                () {
-                  final match = check.pantryMatch;
-                  if (match == null) return null;
-                  if (IngredientUnitNormalizer.isCookedLegume(
-                      match.name, match.preparation)) {
-                    return 'Cubierto por ${match.name} (${match.preparation}) · ahorras hervor/remojo';
-                  }
-                  final diffName = IngredientMatcher.normalizeText(match.name) !=
-                      IngredientMatcher.normalizeText(req.ingredientName);
-                  if (check.isApproximateConversion &&
-                      check.deductedInPantryUnit != null) {
-                    return 'Descontará ≈ ${formatIngredientQty(check.deductedInPantryUnit!)} ${match.unit} de ${match.name}';
-                  }
-                  if (diffName) {
-                    return 'En despensa: ${match.name} (${formatIngredientQty(match.quantity)} ${match.unit})';
-                  }
-                  return null;
-                }(),
-              ),
-            IngredientAvailability.insufficient => (
-                Colors.amber,
-                'Tienes ${formatIngredientQty(check.availableInRecipeUnit ?? check.pantryMatch!.quantity)} de ${formatIngredientQty(req.quantity)} ${req.unit} (se usarán tus ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit})',
-              ),
-            IngredientAvailability.incompatibleUnit => usingSub
-                ? (
-                    const Color(0xFF00F0FF),
-                    'Adaptado con ${subEntry.sub.pantryName} (${subEntry.sub.reason})',
-                  )
-                : (
-                    Colors.orange,
-                    'En despensa: ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit} (otra unidad)',
-                  ),
-            IngredientAvailability.missing => usingSub
-                ? (
-                    const Color(0xFF00F0FF),
-                    'Adaptado con ${subEntry.sub.pantryName} (${subEntry.sub.reason})',
-                  )
-                : (
-                    Colors.redAccent,
-                    'No en despensa',
-                  ),
-          };
+            final (dotColor, subtitleText) = switch (check.availability) {
+              IngredientAvailability.available => (
+                  const Color(0xFF00C896),
+                  () {
+                    if (req.quantity <= 0) {
+                      return 'Omitido para esta cocción';
+                    }
+                    final match = check.pantryMatch;
+                    if (match == null) return null;
+                    if (IngredientUnitNormalizer.isCookedLegume(
+                        match.name, match.preparation)) {
+                      return 'Cubierto por ${match.name} (${match.preparation}) · ahorras hervor/remojo';
+                    }
+                    final diffName = IngredientMatcher.normalizeText(match.name) !=
+                        IngredientMatcher.normalizeText(req.ingredientName);
+                    if (check.isApproximateConversion &&
+                        check.deductedInPantryUnit != null) {
+                      return 'Descontará ≈ ${formatIngredientQty(check.deductedInPantryUnit!)} ${match.unit} de ${match.name}';
+                    }
+                    if (diffName) {
+                      return 'En despensa: ${match.name} (${formatIngredientQty(match.quantity)} ${match.unit})';
+                    }
+                    return null;
+                  }(),
+                ),
+              IngredientAvailability.insufficient => (
+                  Colors.amber,
+                  'Tienes ${formatIngredientQty(check.availableInRecipeUnit ?? check.pantryMatch!.quantity)} de ${formatIngredientQty(req.quantity)} ${req.unit} (se usarán tus ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit})',
+                ),
+              IngredientAvailability.incompatibleUnit => usingSub
+                  ? (
+                      const Color(0xFF00F0FF),
+                      'Adaptado con ${subEntry.sub.pantryName} (${subEntry.sub.reason})',
+                    )
+                  : (
+                      Colors.orange,
+                      'En despensa: ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit} (otra unidad)',
+                    ),
+              IngredientAvailability.missing => usingSub
+                  ? (
+                      const Color(0xFF00F0FF),
+                      'Adaptado con ${subEntry.sub.pantryName} (${subEntry.sub.reason})',
+                    )
+                  : (
+                      Colors.redAccent,
+                      'No en despensa',
+                    ),
+            };
 
-          final alreadyInList = pendingShoppingKeys.contains(reqKey);
-          final showShoppingAction = !usingSub &&
-              (check.availability == IngredientAvailability.missing ||
-                  check.availability == IngredientAvailability.insufficient);
+            final alreadyInList = pendingShoppingKeys.contains(reqKey);
+            final showShoppingAction = !usingSub &&
+                req.quantity > 0 &&
+                (check.availability == IngredientAvailability.missing ||
+                    check.availability == IngredientAvailability.insufficient);
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(Icons.fiber_manual_record, size: 9, color: dotColor),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            req.ingredientName,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontSize: 14,
-                            ),
-                          ),
-                          if (subtitleText != null)
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(Icons.fiber_manual_record, size: 9, color: dotColor),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              subtitleText,
+                              req.ingredientName,
                               style: TextStyle(
-                                color: dotColor.withValues(alpha: 0.9),
-                                fontSize: 11,
+                                color: req.quantity <= 0
+                                    ? theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.45)
+                                    : theme.colorScheme.onSurface,
+                                decoration: req.quantity <= 0
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                fontSize: 14,
                               ),
                             ),
-                        ],
+                            if (subtitleText != null)
+                              Text(
+                                subtitleText,
+                                style: TextStyle(
+                                  color: dotColor.withValues(alpha: 0.9),
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${formatIngredientQty(req.quantity)} ${req.unit}',
-                      style: TextStyle(
-                        color: widget.isScaled
-                            ? const Color(0xFFFF9800)
-                            : theme.colorScheme.onSurface
-                                .withValues(alpha: 0.55),
-                        fontSize: 12,
-                        fontWeight:
-                            widget.isScaled ? FontWeight.w700 : FontWeight.w400,
-                      ),
-                    ),
-                    if (showShoppingAction) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       InkWell(
-                        borderRadius: BorderRadius.circular(6),
-                        onTap: alreadyInList
-                            ? null
-                            : () async {
-                                final qtyToAdd =
-                                    check.missingInRecipeUnit ?? req.quantity;
-                                await ref
-                                    .read(recipesProvider.notifier)
-                                    .addMissingToShoppingList([
-                                  (
-                                    name: req.ingredientName,
-                                    quantity: qtyToAdd,
-                                    unit: req.unit,
-                                  )
-                                ]);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        '🛒 ${req.ingredientName} agregado a Lista de compras'),
-                                    duration:
-                                        const Duration(milliseconds: 1600),
-                                  ),
-                                );
-                              },
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => _editIngredientQuantity(idx, req),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: (alreadyInList
-                                    ? const Color(0xFF00C896)
-                                    : Colors.amber)
-                                .withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(6),
+                            horizontal: 7,
+                            vertical: 3,
                           ),
-                          child: Icon(
-                            alreadyInList
-                                ? Icons.check
-                                : Icons.add_shopping_cart,
-                            size: 14,
-                            color: alreadyInList
-                                ? const Color(0xFF00C896)
-                                : Colors.amber,
+                          decoration: isOverridden
+                              ? BoxDecoration(
+                                  color: const Color(0xFF00F0FF)
+                                      .withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF00F0FF)
+                                        .withValues(alpha: 0.45),
+                                  ),
+                                )
+                              : null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${formatIngredientQty(req.quantity)} ${req.unit}',
+                                style: TextStyle(
+                                  color: isOverridden
+                                      ? const Color(0xFF00F0FF)
+                                      : (widget.isScaled
+                                          ? const Color(0xFFFF9800)
+                                          : theme.colorScheme.onSurface
+                                              .withValues(alpha: 0.55)),
+                                  fontSize: 12,
+                                  fontWeight: (widget.isScaled || isOverridden)
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.edit_outlined,
+                                size: 12,
+                                color: isOverridden
+                                    ? const Color(0xFF00F0FF)
+                                    : theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.4),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                      if (showShoppingAction) ...[
+                        const SizedBox(width: 6),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: alreadyInList
+                              ? null
+                              : () async {
+                                  final qtyToAdd =
+                                      check.missingInRecipeUnit ?? req.quantity;
+                                  await ref
+                                      .read(recipesProvider.notifier)
+                                      .addMissingToShoppingList([
+                                    (
+                                      name: req.ingredientName,
+                                      quantity: qtyToAdd,
+                                      unit: req.unit,
+                                    )
+                                  ]);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          '🛒 ${req.ingredientName} agregado a Lista de compras'),
+                                      duration:
+                                          const Duration(milliseconds: 1600),
+                                    ),
+                                  );
+                                },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: (alreadyInList
+                                      ? const Color(0xFF00C896)
+                                      : Colors.amber)
+                                  .withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              alreadyInList
+                                  ? Icons.check
+                                  : Icons.add_shopping_cart,
+                              size: 14,
+                              color: alreadyInList
+                                  ? const Color(0xFF00C896)
+                                  : Colors.amber,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                if (subEntry != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 19, top: 4),
-                    child: FilterChip(
-                      label: Text(
-                        '🔄 Usar ${subEntry.sub.pantryName} en vez (-${formatIngredientQty(subEntry.sub.quantity)} ${subEntry.sub.pantryUnit})',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      selected: subEntry.accepted,
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      onSelected: (sel) {
-                        setState(() {
-                          _aiSubstitutes[reqKey] =
-                              (sub: subEntry.sub, accepted: sel);
-                        });
-                        _emitSubstitutes();
-                      },
-                    ),
                   ),
-              ],
-            ),
-          );
-        }),
+                  if (subEntry != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 19, top: 4),
+                      child: FilterChip(
+                        label: Text(
+                          '🔄 Usar ${subEntry.sub.pantryName} en vez (-${formatIngredientQty(subEntry.sub.quantity)} ${subEntry.sub.pantryUnit})',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        selected: subEntry.accepted,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onSelected: (sel) {
+                          setState(() {
+                            _aiSubstitutes[reqKey] =
+                                (sub: subEntry.sub, accepted: sel);
+                          });
+                          _emitSubstitutes();
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
@@ -477,11 +791,15 @@ class _RecipeIngredientCheckListState
 
 class _CookConfirmPlan {
   final Set<String> skipPantryIds;
+  final Map<String, double> deductedQtyOverrides;
+  final List<({InventoryIngredient item, double qty})> extraItems;
   final bool addMissingToShoppingList;
   final bool addDepletedToShoppingList;
 
   const _CookConfirmPlan({
     required this.skipPantryIds,
+    this.deductedQtyOverrides = const {},
+    this.extraItems = const [],
     required this.addMissingToShoppingList,
     required this.addDepletedToShoppingList,
   });
@@ -490,6 +808,7 @@ class _CookConfirmPlan {
 /// Flujo unificado al pulsar "¡Cocinar!":
 /// - Si faltan ingredientes, hay unidades incompatibles o alguno quedará en 0,
 ///   abre confirmación editable antes de descontar (nunca bloquea cocinar).
+/// - Respeta ajustes manuales (`quantityOverrides`), extras pre-cocción y sustitutos IA.
 /// - Descuenta lo disponible con `IngredientMatcher`, inicia sesión y ofrece "Deshacer" real.
 Future<bool> confirmAndCookRecipe({
   required BuildContext context,
@@ -497,6 +816,7 @@ Future<bool> confirmAndCookRecipe({
   int? scaledServings,
   bool popSheetOnSuccess = false,
   Map<String, AdaptedSubstitute> adaptedSubstitutes = const {},
+  Map<int, double> quantityOverrides = const {},
 }) async {
   final container = ProviderScope.containerOf(context);
   final inventoryNotifier = container.read(inventoryProvider.notifier);
@@ -504,7 +824,10 @@ Future<bool> confirmAndCookRecipe({
 
   final baseServings = recipe.servings > 0 ? recipe.servings : 1;
   final targetServings = scaledServings ?? baseServings;
-  final scaledIngredients = scaleRecipeIngredients(recipe, targetServings);
+  final scaledIngredients = applyIngredientQuantityOverrides(
+    scaleRecipeIngredients(recipe, targetServings),
+    quantityOverrides,
+  ).where((i) => i.quantity > 0).toList();
   final pantryBefore =
       List<InventoryIngredient>.from(container.read(inventoryProvider).ingredients);
   final equivalences = container.read(ingredientEquivalencesProvider);
@@ -545,23 +868,33 @@ Future<bool> confirmAndCookRecipe({
     plan = confirmed;
   }
 
-  // Capturar snapshot exacto solo de ítems que se intentarán descontar (incluyendo sustitutos adaptados).
+  // Capturar snapshot exacto solo de ítems que se intentarán descontar (incluyendo sustitutos y extras).
   final affectedSnapshots = <InventoryIngredient>[];
   final seenSnapshotIds = <String>{};
+  final effectiveSkipIds = Set<String>.from(plan.skipPantryIds);
+  final extraDeductions = <({String pantryId, double quantity})>[];
+
   for (final check in checks) {
     final pantry = check.pantryMatch;
     if (check.canDeduct &&
         pantry != null &&
-        !plan.skipPantryIds.contains(pantry.id) &&
-        seenSnapshotIds.add(pantry.id)) {
-      final original =
-          pantryBefore.where((i) => i.id == pantry.id).firstOrNull;
-      if (original != null) affectedSnapshots.add(original);
+        !effectiveSkipIds.contains(pantry.id)) {
+      if (seenSnapshotIds.add(pantry.id)) {
+        final original =
+            pantryBefore.where((i) => i.id == pantry.id).firstOrNull;
+        if (original != null) affectedSnapshots.add(original);
+      }
+      final overrideQty = plan.deductedQtyOverrides[pantry.id];
+      if (overrideQty != null) {
+        effectiveSkipIds.add(pantry.id);
+        if (overrideQty > 0) {
+          extraDeductions.add((pantryId: pantry.id, quantity: overrideQty));
+        }
+      }
     }
   }
-  final extraDeductions = <({String pantryId, double quantity})>[];
   for (final sub in adaptedSubstitutes.values) {
-    if (plan.skipPantryIds.contains(sub.pantryId)) continue;
+    if (effectiveSkipIds.contains(sub.pantryId)) continue;
     extraDeductions.add((pantryId: sub.pantryId, quantity: sub.quantity));
     if (seenSnapshotIds.add(sub.pantryId)) {
       final original =
@@ -569,10 +902,18 @@ Future<bool> confirmAndCookRecipe({
       if (original != null) affectedSnapshots.add(original);
     }
   }
+  for (final ex in plan.extraItems) {
+    extraDeductions.add((pantryId: ex.item.id, quantity: ex.qty));
+    if (seenSnapshotIds.add(ex.item.id)) {
+      final original =
+          pantryBefore.where((i) => i.id == ex.item.id).firstOrNull;
+      if (original != null) affectedSnapshots.add(original);
+    }
+  }
 
   final deducted = await inventoryNotifier.deductRecipeIngredients(
     scaledIngredients,
-    skipPantryIds: plan.skipPantryIds,
+    skipPantryIds: effectiveSkipIds,
     extraDeductions: extraDeductions,
   );
 
@@ -615,13 +956,22 @@ Future<bool> confirmAndCookRecipe({
         .addMissingToShoppingList(shoppingEntries);
   }
 
-  container.read(cookingSessionProvider.notifier).startSession(
-        recipeName: recipe.name,
-        recipeId: recipe.id,
-        originalServings: baseServings,
-        scaledServings: targetServings,
-        estimatedDurationMinutes: recipe.durationMinutes,
-      );
+  final sessionNotifier = container.read(cookingSessionProvider.notifier);
+  sessionNotifier.startSession(
+    recipeName: recipe.name,
+    recipeId: recipe.id,
+    originalServings: baseServings,
+    scaledServings: targetServings,
+    estimatedDurationMinutes: recipe.durationMinutes,
+  );
+  for (final ex in plan.extraItems) {
+    sessionNotifier.addExtra(
+      pantryId: ex.item.id,
+      name: ex.item.name,
+      quantity: ex.qty,
+      unit: ex.item.unit,
+    );
+  }
   await CookingHistoryService().recordCooked(recipe.name);
 
   if (!context.mounted) return true;
@@ -696,6 +1046,8 @@ class _CookConfirmationSheet extends ConsumerStatefulWidget {
 
 class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> {
   final Set<String> _skipPantryIds = {};
+  final Map<String, double> _deductedOverrides = {};
+  final List<({InventoryIngredient item, double qty})> _extraItems = [];
   late bool _addMissingToShoppingList;
   bool _addDepletedToShoppingList = false;
   bool _loadingSubstitutes = false;
@@ -784,21 +1136,90 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                     ..._deductibleChecks.map((c) {
                       final pantry = c.pantryMatch!;
                       final checked = !_skipPantryIds.contains(pantry.id);
-                      final remText = c.willDeplete
+                      final defaultDeduct = c.deductedInPantryUnit!;
+                      final activeDeduct =
+                          _deductedOverrides[pantry.id] ?? defaultDeduct;
+                      final remaining = (pantry.quantity - activeDeduct)
+                          .clamp(0.0, pantry.quantity);
+                      final willDepleteNow = remaining <= 0.001;
+                      final step = activeDeduct >= 20 ||
+                              pantry.unit.toLowerCase().contains('g') ||
+                              pantry.unit.toLowerCase().contains('ml')
+                          ? 10.0
+                          : (activeDeduct == activeDeduct.roundToDouble()
+                              ? 1.0
+                              : 0.5);
+                      final remText = willDepleteNow
                           ? 'quedará en 0'
-                          : 'quedarán ${formatIngredientQty(c.remainingAfterCook)} ${pantry.unit}';
+                          : 'quedarán ${formatIngredientQty(remaining)} ${pantry.unit}';
                       return CheckboxListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
                         value: checked,
                         activeColor: const Color(0xFF00C896),
-                        title: Text(pantry.name,
-                            style: const TextStyle(fontSize: 14)),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                pantry.name,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                            if (checked) ...[
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline,
+                                    size: 18),
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
+                                onPressed: activeDeduct <= 0
+                                    ? null
+                                    : () {
+                                        final next = (activeDeduct - step)
+                                            .clamp(0.0, pantry.quantity);
+                                        setState(() {
+                                          if (next <= 0) {
+                                            _skipPantryIds.add(pantry.id);
+                                          } else {
+                                            _deductedOverrides[pantry.id] =
+                                                double.parse(
+                                                    next.toStringAsFixed(2));
+                                          }
+                                        });
+                                      },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline,
+                                    size: 18),
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
+                                onPressed: activeDeduct >= pantry.quantity
+                                    ? null
+                                    : () {
+                                        final next = (activeDeduct + step)
+                                            .clamp(0.0, pantry.quantity);
+                                        setState(() {
+                                          _deductedOverrides[pantry.id] =
+                                              double.parse(
+                                                  next.toStringAsFixed(2));
+                                        });
+                                      },
+                              ),
+                            ],
+                          ],
+                        ),
                         subtitle: Text(
-                          '-${formatIngredientQty(c.deductedInPantryUnit!)} ${pantry.unit} ($remText)',
+                          '-${formatIngredientQty(activeDeduct)} ${pantry.unit} ($remText)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: c.willDeplete
+                            color: willDepleteNow
                                 ? Colors.amber
                                 : theme.colorScheme.onSurface
                                     .withValues(alpha: 0.6),
@@ -817,6 +1238,82 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                     }),
                     const SizedBox(height: 10),
                   ],
+                  // Sección para sumar extras (ej. 6 huevos) desde el inicio
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'EXTRAS EN ESTA COCCIÓN',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.1,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.55),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () async {
+                                final pantry =
+                                    ref.read(inventoryProvider).ingredients;
+                                if (pantry.isEmpty) return;
+                                final picked =
+                                    await pickCookingExtra(context, pantry);
+                                if (picked != null && mounted) {
+                                  setState(() => _extraItems.add(picked));
+                                }
+                              },
+                              icon: const Icon(Icons.add,
+                                  size: 16, color: Color(0xFF00F0FF)),
+                              label: const Text(
+                                'Añadir extra',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF00F0FF),
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_extraItems.isEmpty)
+                          Text(
+                            'Opcional: suma otros ingredientes de tu despensa (ej. 6 huevos sancochados).',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
+                            ),
+                          )
+                        else
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (var i = 0; i < _extraItems.length; i++)
+                                Chip(
+                                  label: Text(
+                                    '${formatIngredientQty(_extraItems[i].qty)} ${_extraItems[i].item.unit} ${_extraItems[i].item.name}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  onDeleted: () =>
+                                      setState(() => _extraItems.removeAt(i)),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
                   if (_alertChecks.isNotEmpty) ...[
                     Text(
                       'FALTANTES O CON OTRA UNIDAD',
@@ -999,6 +1496,9 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                   onPressed: () => Navigator.of(context).pop(
                     _CookConfirmPlan(
                       skipPantryIds: Set<String>.from(_skipPantryIds),
+                      deductedQtyOverrides:
+                          Map<String, double>.from(_deductedOverrides),
+                      extraItems: List.of(_extraItems),
                       addMissingToShoppingList: _addMissingToShoppingList,
                       addDepletedToShoppingList: _addDepletedToShoppingList,
                     ),

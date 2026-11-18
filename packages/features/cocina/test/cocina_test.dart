@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cocina/cocina.dart';
+import 'package:cocina/src/providers/cooking_session_provider.dart';
+import 'package:cocina/src/screens/widgets/recipe_cook_helper.dart';
 import 'package:domain/domain.dart';
 
 class _FakeCocinaRepo implements ICocinaRepository {
@@ -164,6 +166,91 @@ void main() {
       // 3 papas * 170 g = 0.51 kg descontados → quedan ~0.49 kg
       expect(container.read(inventoryProvider).ingredients.single.quantity,
           closeTo(0.49, 0.05));
+    });
+
+    test(
+        'applyIngredientQuantityOverrides reduce 2 papas a 1 papa solo para esta cocción y descuenta solo 1',
+        () async {
+      const papa = InventoryIngredient(
+        id: 'inv_papa',
+        name: 'Papa blanca',
+        primaryCategory: 'Tubérculos y raíces',
+        quantity: 4.0,
+        unit: 'unidades',
+      );
+      final repo = _FakeCocinaRepo([papa]);
+      final container = ProviderContainer(
+        overrides: [cocinaRepositoryProvider.overrideWithValue(repo)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(inventoryProvider.notifier);
+      await notifier.load();
+
+      const scaled = [
+        RecipeIngredient(
+          id: 'r_papa',
+          recipeId: 'rec_menestra',
+          ingredientName: 'papa blanca picada en cuadritos',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+        RecipeIngredient(
+          id: 'r_sal',
+          recipeId: 'rec_menestra',
+          ingredientName: 'sal',
+          quantity: 1.0,
+          unit: 'cdta',
+        ),
+      ];
+
+      final adjusted = applyIngredientQuantityOverrides(scaled, {0: 1.0, 1: 0.0})
+          .where((i) => i.quantity > 0)
+          .toList();
+
+      expect(adjusted.length, 1);
+      expect(adjusted.single.quantity, 1.0);
+
+      await notifier.deductRecipeIngredients(adjusted);
+      expect(container.read(inventoryProvider).ingredients.single.quantity,
+          closeTo(3.0, 0.001));
+    });
+
+    test('CookingSessionNotifier.addExtra acumula extras añadidos durante la cocción',
+        () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final sessionNotifier = container.read(cookingSessionProvider.notifier);
+      sessionNotifier.startSession(
+        recipeName: 'Menestra de lentejas baby',
+        recipeId: 'rec_menestra',
+        originalServings: 4,
+        scaledServings: 4,
+        estimatedDurationMinutes: 45,
+      );
+
+      sessionNotifier.addExtra(
+        pantryId: 'inv_huevo',
+        name: 'Huevo de gallina',
+        quantity: 4.0,
+        unit: 'unidades',
+      );
+      sessionNotifier.addExtra(
+        pantryId: 'inv_huevo',
+        name: 'Huevo de gallina',
+        quantity: 2.0,
+        unit: 'unidades',
+      );
+
+      final session = container.read(cookingSessionProvider);
+      expect(session, isNotNull);
+      expect(session!.extras.length, 1);
+      expect(session.extras.single.quantity, closeTo(6.0, 0.001));
+      expect(session.extras.single.name, 'Huevo de gallina');
+
+      sessionNotifier.endSession();
+      expect(container.read(cookingSessionProvider), isNull);
     });
   });
 }

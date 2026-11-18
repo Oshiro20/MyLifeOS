@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:domain/domain.dart';
@@ -63,7 +62,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final invState = ref.watch(inventoryProvider);
     final aiState = ref.watch(whatCanICookProvider);
     final aiNotifier = ref.read(whatCanICookProvider.notifier);
-    final cookingSession = ref.watch(cookingSessionProvider);
     final activeGoal = ref.watch(recipesProvider.select((s) => s.activeGoal));
 
     _listenInventoryChanges(ref);
@@ -75,10 +73,6 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cooking Session Banner
-          if (cookingSession != null)
-            _CookingSessionBanner(session: cookingSession),
-
           // Header con saludo
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -1334,93 +1328,4 @@ class _CompleteMenuCard extends StatelessWidget {
 
 // ── Cooking Session Banner ───────────────────────────────────────────────────
 
-class _CookingSessionBanner extends StatefulWidget {
-  final CookingSession session;
-  const _CookingSessionBanner({required this.session});
 
-  @override
-  State<_CookingSessionBanner> createState() => _CookingSessionBannerState();
-}
-
-class _CookingSessionBannerState extends State<_CookingSessionBanner> {
-  late Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final notifier = ProviderScope.containerOf(context)
-        .read(cookingSessionProvider.notifier);
-
-    final elapsed = DateTime.now().difference(widget.session.startedAt);
-    final elapsedMinutes = elapsed.inMinutes;
-    final estimatedMinutes = widget.session.estimatedDurationMinutes;
-
-    String timeInfo;
-    Color bgColor;
-    if (estimatedMinutes != null) {
-      final remaining = estimatedMinutes - elapsedMinutes;
-      if (remaining > 0) {
-        timeInfo = '~$remaining min restantes';
-        bgColor = const Color(0xFFFF9800);
-      } else {
-        timeInfo = '⏰ Tiempo cumplido — tocando "X" para terminar';
-        bgColor = const Color(0xFF4CAF50);
-      }
-    } else {
-      timeInfo = '$elapsedMinutes min transcurridos';
-      bgColor = const Color(0xFFFF9800);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: bgColor,
-      child: Row(
-        children: [
-          const Icon(Icons.restaurant_menu, color: Colors.black, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  timeInfo,
-                  style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  widget.session.recipeName,
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.black, size: 20),
-            onPressed: notifier.endSession,
-            tooltip: 'Terminar sesión',
-          ),
-        ],
-      ),
-    );
-  }
-}
