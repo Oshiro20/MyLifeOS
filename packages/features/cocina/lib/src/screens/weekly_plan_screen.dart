@@ -46,7 +46,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                 fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme:
+            IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         actions: [
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined,
@@ -112,8 +113,9 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                       inventory: invState.ingredients,
                       day: day,
                       onTapRecipe: (entry) => _showRecipeDetail(context, entry),
-                      onClearSlot: (entry) =>
-                          ref.read(weeklyMenuProvider.notifier).clearSlot(entry),
+                      onClearSlot: (entry) => ref
+                          .read(weeklyMenuProvider.notifier)
+                          .clearSlot(entry),
                       onAssignEmpty: (d, mealType) => _showRecipePicker(
                           context, d, mealType, state.entries),
                     );
@@ -181,37 +183,46 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
   }
 
   Future<void> _generateMenu(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final activeGoal = ref.read(recipesProvider).activeGoal;
+    final choice = await showDialog<String>(
       context: context,
       builder: (ctx) {
         final onSurface = Theme.of(ctx).colorScheme.onSurface;
         return AlertDialog(
           backgroundColor: Theme.of(ctx).cardColor,
-          title: Text('¿Generar Menú Semanal?',
+          title: Text('📅 Generar Menú Semanal',
               style: TextStyle(color: onSurface)),
           content: Text(
-              'Se armará un menú variado para la semana usando tus recetas guardadas. ¿Continuar?',
+              'Se priorizarán ingredientes disponibles y por vencer según tu meta (${activeGoal.emoji} ${activeGoal.label}). ¿Cómo prefieres generarlo?',
               style: TextStyle(color: onSurface.withValues(alpha: 0.72))),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
+                onPressed: () => Navigator.pop(ctx),
                 child: const Text('Cancelar')),
-            ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Generar')),
+            OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, 'local'),
+                child: const Text('⚡ Rápido')),
+            ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, 'ai'),
+                icon: const Icon(Icons.auto_awesome, size: 16),
+                label: const Text('Con Gemini IA')),
           ],
         );
       },
     );
 
-    if (confirmed == true) {
+    if (choice == 'local' || choice == 'ai') {
       try {
-        await ref.read(weeklyMenuProvider.notifier).generate();
+        await ref
+            .read(weeklyMenuProvider.notifier)
+            .generate(useAI: choice == 'ai');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('✅ Menú semanal generado'),
-                backgroundColor: Color(0xFF00E676)),
+            SnackBar(
+                content: Text(choice == 'ai'
+                    ? '✨ Menú semanal optimizado con IA (${activeGoal.label})'
+                    : '✅ Menú semanal generado'),
+                backgroundColor: const Color(0xFF00E676)),
           );
         }
       } catch (e) {
@@ -497,8 +508,8 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                     title: Text(allRecipes[i].name,
                         style: TextStyle(color: onSurface)),
                     subtitle: Text('${allRecipes[i].durationMinutes} min',
-                        style: TextStyle(
-                            color: onSurface.withValues(alpha: 0.6))),
+                        style:
+                            TextStyle(color: onSurface.withValues(alpha: 0.6))),
                     trailing: const Icon(Icons.add_circle_outline,
                         color: Color(0xFF00E676)),
                     onTap: () => Navigator.pop(ctx, allRecipes[i]),
@@ -636,7 +647,8 @@ class _DaySection extends StatelessWidget {
               onTap: activeEntry != null
                   ? () => onTapRecipe(activeEntry)
                   : () => onAssignEmpty(day, m['type'].toString()),
-              onClear: activeEntry != null ? () => onClearSlot(activeEntry) : null,
+              onClear:
+                  activeEntry != null ? () => onClearSlot(activeEntry) : null,
             ),
           );
         }),
@@ -843,9 +855,8 @@ class _CookingHistoryBannerState extends State<_CookingHistoryBanner> {
                           label: Text(name,
                               style: TextStyle(
                                   fontSize: 11,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface)),
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface)),
                           backgroundColor:
                               const Color(0xFFFF9800).withAlpha(40),
                           labelPadding: const EdgeInsets.symmetric(

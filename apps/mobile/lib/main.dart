@@ -231,6 +231,15 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
 
       final addedLabels = <String>[];
 
+      if (batch.poultryBreakdowns.isNotEmpty) {
+        await ref
+            .read(pendingPoultryBreakdownsProvider.notifier)
+            .enqueue(batch.poultryBreakdowns);
+        addedLabels.add(
+          '🍗 ${batch.poultryBreakdowns.first.itemName}: toca Despensa para dividir en presas',
+        );
+      }
+
       if (batch.groceries.isNotEmpty) {
         final count = await ref
             .read(inventoryProvider.notifier)

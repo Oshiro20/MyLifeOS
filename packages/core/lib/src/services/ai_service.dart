@@ -105,8 +105,8 @@ class GeminiService {
     if (decoded is! Map<String, dynamic>) return null;
     final candidates = decoded['candidates'] as List<dynamic>?;
     if (candidates == null || candidates.isEmpty) return null;
-    final content =
-        (candidates.first as Map<String, dynamic>)['content'] as Map<String, dynamic>?;
+    final content = (candidates.first as Map<String, dynamic>)['content']
+        as Map<String, dynamic>?;
     final parts = content?['parts'] as List<dynamic>?;
     if (parts == null || parts.isEmpty) return null;
     return parts
@@ -142,7 +142,8 @@ class GeminiService {
     bool expectJson = false,
   }) async {
     if (!await _connectivity.isOnline()) {
-      debugPrint('[GeminiService] Sin conexión a internet; omitiendo llamada remota.');
+      debugPrint(
+          '[GeminiService] Sin conexión a internet; omitiendo llamada remota.');
       return null;
     }
 
@@ -186,7 +187,8 @@ class GeminiService {
         );
         if (text != null && text.isNotEmpty) return text;
       } catch (e) {
-        debugPrint('[GeminiService] Direct call failed, trying Render proxy: $e');
+        debugPrint(
+            '[GeminiService] Direct call failed, trying Render proxy: $e');
       }
     }
 
@@ -203,7 +205,6 @@ class GeminiService {
     String? textContext,
     String? mediaPath,
   }) async {
-
     final prompt = '''
 👨‍🍳 ROL DEL SISTEMA
 
@@ -335,6 +336,7 @@ PASO 7 - ESTIMA CALORÍAS
   ],
   "utensilios": ["sartén", "cuchara de madera"],
   "calorias_aproximadas": 350,
+  "objetivo_nutricional": "normal | bajar_peso | ganar_musculo | ligera | personalizado",
   "tags": ["fácil", "rápido", "peruano"],
   "video_context": "resumido",
   "observaciones": "Los tiempos fueron inferidos según ingredientes.",
@@ -380,7 +382,8 @@ Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reempl
 🎥 AHORA ANALIZA EL VIDEO/IMAGEN Y CONTEXTO ADJUNTO Y DEVUELVE LA RECETA COMPLETA EN FORMATO JSON.''';
 
     try {
-      debugPrint('🤖 Calling Gemini recipe extraction (${mediaPath ?? "text only"})');
+      debugPrint(
+          '🤖 Calling Gemini recipe extraction (${mediaPath ?? "text only"})');
       final result = await _executePrompt(
         prompt: prompt,
         mediaPaths: mediaPath != null ? [mediaPath] : const [],
@@ -417,9 +420,16 @@ Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reempl
   }
 
   /// Clasifica automáticamente un lote de recetas guardadas sin categoría usando Gemini.
-  /// Retorna un mapa `recipeId -> etiqueta de MealType` (ej. 'Seco', 'Sopa', 'Postre').
-  Future<Map<String, String>> categorizeRecipesWithGemini(
-    List<({String id, String name, List<String> ingredients, String description})>
+  /// Clasifica recetas con categoría culinaria (`tipo_comida`), meta nutricional (`objetivo`) y calorías.
+  Future<Map<String, ({String? mealType, String? goal, int? calories})>>
+      categorizeRecipesDetailedWithGemini(
+    List<
+            ({
+              String id,
+              String name,
+              List<String> ingredients,
+              String description
+            })>
         recipes,
   ) async {
     if (recipes.isEmpty) return const {};
@@ -430,21 +440,20 @@ Identifica y extrae EXCLUSIVAMENTE la receta de ese plato/contexto. No la reempl
         .join('\n');
 
     final prompt = '''
-Clasifica cada receta exactamente en UNA de estas categorías:
-["Desayuno", "Entrada", "Sopa", "Seco", "Postre", "Mazamorra", "Bebida", "Jugo", "Snack"]
-
-Guía:
-- Platos de fondo / segundos / pastas / arroces / guisos / carnes -> "Seco"
-- Caldos / cremas / chupes -> "Sopa"
-- Ensaladas / ceviches / causas / piqueos previos -> "Entrada"
-- Batidos / smoothies / zumos -> "Jugo"
-- Infusiones / refrescos / chicha / bebidas -> "Bebida"
+Clasifica cada receta en:
+1) "tipo": UNO de ["Desayuno", "Entrada", "Sopa", "Seco", "Postre", "Mazamorra", "Bebida", "Jugo", "Snack"]
+2) "objetivo": UNO de ["normal", "bajar_peso", "ganar_musculo", "ligera", "personalizado"]
+   - Platos con frituras/balance casero estándar -> "normal"
+   - Ensaladas/plancha/bajo en grasa/infusiones sin azúcar -> "bajar_peso"
+   - Alta proteína (pollo/pescado/carne/huevos/menestras/quinua/avena) -> "ganar_musculo"
+   - Sopas livianas/vapor/cremas suaves -> "ligera"
+3) "kcal": calorías aproximadas por porción (entero)
 
 Recetas:
 $catalogText
 
-Devuelve ÚNICAMENTE un objeto JSON mapa donde la clave es el id exacto y el valor es una categoría exacta de la lista, sin markdown ni texto adicional:
-{"id_1": "Seco", "id_2": "Postre"}
+Devuelve ÚNICAMENTE un JSON válido con clave = id exacto:
+{"id_1": {"tipo": "Seco", "objetivo": "ganar_musculo", "kcal": 520}}
 ''';
 
     final raw = await _executePrompt(prompt: prompt, expectJson: true)
@@ -457,14 +466,88 @@ Devuelve ÚNICAMENTE un objeto JSON mapa donde la clave es el id exacto y el val
       if (start == -1 || end <= start) return const {};
       final decoded = jsonDecode(raw.substring(start, end + 1));
       if (decoded is! Map) return const {};
-      return {
-        for (final entry in decoded.entries)
-          if (entry.key != null && entry.value != null)
-            entry.key.toString(): entry.value.toString(),
-      };
+      final out = <String, ({String? mealType, String? goal, int? calories})>{};
+      for (final entry in decoded.entries) {
+        if (entry.key == null || entry.value == null) continue;
+        final k = entry.key.toString();
+        if (entry.value is Map) {
+          final m = Map<String, dynamic>.from(entry.value as Map);
+          out[k] = (
+            mealType: m['tipo']?.toString(),
+            goal: m['objetivo']?.toString(),
+            calories: (m['kcal'] as num?)?.round(),
+          );
+        } else {
+          out[k] = (
+            mealType: entry.value.toString(),
+            goal: null,
+            calories: null,
+          );
+        }
+      }
+      return out;
     } catch (_) {
       return const {};
     }
+  }
+
+  /// Sugiere sustitutos concretos usando ingredientes actuales de la despensa cuando falta algo al cocinar.
+  Future<String?> suggestIngredientSubstitutesGemini({
+    required String recipeName,
+    required List<String> missingIngredients,
+    required List<String> pantryNames,
+  }) async {
+    if (missingIngredients.isEmpty) return null;
+    final prompt = '''
+Eres un chef práctico peruano. El usuario va a cocinar "$recipeName" y le falta o tiene duda con:
+${missingIngredients.map((m) => '- $m').join('\n')}
+
+Lo que SÍ tiene en su despensa:
+${pantryNames.take(40).join(', ')}
+
+Sugiere sustituciones concretas y cortas (1 línea por ingrediente, priorizando lo que ya tiene en su despensa o alternativas caseras simples en español, sin relleno).''';
+
+    return _executePrompt(prompt: prompt, expectJson: false)
+        .timeout(const Duration(seconds: 25));
+  }
+
+  /// Propone 2 recetas express de rescate usando ingredientes por vencer o listos/cocidos.
+  Future<String?> suggestRescueRecipesGemini({
+    required List<String> priorityIngredients,
+    required List<String> allPantryNames,
+    required String goalLabel,
+  }) async {
+    if (priorityIngredients.isEmpty) return null;
+    final prompt = '''
+Chef peruano práctico. Meta nutricional del usuario: $goalLabel.
+Ingredientes URGENTES (por vencer o ya cocidos/listos para usar):
+${priorityIngredients.map((p) => '- $p').join('\n')}
+
+Otros ingredientes disponibles en despensa:
+${allPantryNames.take(35).join(', ')}
+
+Propón 2 ideas EXPRESS (5-15 min) para aprovecharlos HOY sin desperdiciar comida. Responde directo en español con viñetas claras (Nombre, Tiempo, Qué usas de tu refri, Pasos breves).''';
+
+    return _executePrompt(prompt: prompt, expectJson: false)
+        .timeout(const Duration(seconds: 25));
+  }
+
+  /// Retorna un mapa `recipeId -> etiqueta de MealType` (ej. 'Seco', 'Sopa', 'Postre').
+  Future<Map<String, String>> categorizeRecipesWithGemini(
+    List<
+            ({
+              String id,
+              String name,
+              List<String> ingredients,
+              String description
+            })>
+        recipes,
+  ) async {
+    final detailed = await categorizeRecipesDetailedWithGemini(recipes);
+    return {
+      for (final e in detailed.entries)
+        if (e.value.mealType != null) e.key: e.value.mealType!,
+    };
   }
 
   /// Extracts a recipe from multiple images (photos of cookbook pages, screenshots, etc.)
@@ -509,6 +592,7 @@ Analiza las IMÁGENES proporcionadas:
   ],
   "utensilios": ["olla", "cuchara"],
   "calorias_aproximadas": 350,
+  "objetivo_nutricional": "normal | bajar_peso | ganar_musculo | ligera | personalizado",
   "tags": ["fácil", "peruano"],
   "observaciones": "Texto extraído de imagen.",
   "nivel_confianza": "Alto",
@@ -771,9 +855,10 @@ Reglas:
     required String weatherContext,
     String? userProfileContext,
   }) async {
-    final profileText = (userProfileContext != null && userProfileContext.isNotEmpty)
-        ? userProfileContext
-        : 'Estilo versátil y cómodo';
+    final profileText =
+        (userProfileContext != null && userProfileContext.isNotEmpty)
+            ? userProfileContext
+            : 'Estilo versátil y cómodo';
     final prompt = '''
 Eres un estilista personal experto. Selecciona el mejor Outfit del Día usando ÚNICAMENTE prendas de este inventario limpio.
 

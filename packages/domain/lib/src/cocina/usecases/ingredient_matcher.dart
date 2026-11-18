@@ -19,6 +19,7 @@ class RecipeIngredientCheck {
   final double? deductedInPantryUnit;
   final double? availableInRecipeUnit;
   final double? missingInRecipeUnit;
+  final bool isApproximateConversion;
 
   const RecipeIngredientCheck({
     required this.requirement,
@@ -27,6 +28,7 @@ class RecipeIngredientCheck {
     this.deductedInPantryUnit,
     this.availableInRecipeUnit,
     this.missingInRecipeUnit,
+    this.isApproximateConversion = false,
   });
 
   bool get canDeduct =>
@@ -294,10 +296,31 @@ class IngredientMatcher {
     return best;
   }
 
+  /// Busca override personalizado de gramos/unidad por nombre de despensa o receta.
+  static double? resolveCustomGramsPerUnit(
+    Map<String, double>? customGramsPerUnit,
+    String ingredientName,
+    String? pantryName,
+  ) {
+    if (customGramsPerUnit == null || customGramsPerUnit.isEmpty) return null;
+    if (pantryName != null) {
+      final pNorm = normalizeText(pantryName);
+      if (customGramsPerUnit.containsKey(pNorm)) {
+        return customGramsPerUnit[pNorm];
+      }
+    }
+    final rNorm = normalizeText(ingredientName);
+    if (customGramsPerUnit.containsKey(rNorm)) {
+      return customGramsPerUnit[rNorm];
+    }
+    return null;
+  }
+
   /// Evalúa todos los ingredientes de una receta contra el inventario actual.
   static List<RecipeIngredientCheck> evaluateRecipe({
     required List<RecipeIngredient> recipeIngredients,
     required List<InventoryIngredient> inventory,
+    Map<String, double>? customGramsPerUnit,
   }) {
     final checks = <RecipeIngredientCheck>[];
     // Copia local de cantidades restantes por si la receta repite el mismo ingrediente.
@@ -327,14 +350,28 @@ class IngredientMatcher {
 
       final reqUnit = MeasurementUnit.fromString(req.unit);
       final invUnit = MeasurementUnit.fromString(match.unit);
+      final customGrams = resolveCustomGramsPerUnit(
+        customGramsPerUnit,
+        req.ingredientName,
+        match.name,
+      );
 
-      final deductedInPantryUnit = IngredientUnitNormalizer.convert(
+      final deductedConv = IngredientUnitNormalizer.convertForIngredient(
         req.quantity,
         reqUnit,
         invUnit,
-      );
+        req.ingredientName,
+        gramsPerUnitOverride: customGrams,
+      ) ??
+          IngredientUnitNormalizer.convertForIngredient(
+            req.quantity,
+            reqUnit,
+            invUnit,
+            match.name,
+            gramsPerUnitOverride: customGrams,
+          );
 
-      if (deductedInPantryUnit == null) {
+      if (deductedConv == null) {
         checks.add(RecipeIngredientCheck(
           requirement: req,
           pantryMatch: effectiveMatch,
@@ -343,11 +380,22 @@ class IngredientMatcher {
         continue;
       }
 
-      final availableInRecipeUnit = IngredientUnitNormalizer.convert(
+      final deductedInPantryUnit = deductedConv.value;
+      final availableConv = IngredientUnitNormalizer.convertForIngredient(
         currentQty,
         invUnit,
         reqUnit,
-      );
+        req.ingredientName,
+        gramsPerUnitOverride: customGrams,
+      ) ??
+          IngredientUnitNormalizer.convertForIngredient(
+            currentQty,
+            invUnit,
+            reqUnit,
+            match.name,
+            gramsPerUnitOverride: customGrams,
+          );
+      final availableInRecipeUnit = availableConv?.value;
 
       if (currentQty + 0.0001 >= deductedInPantryUnit) {
         simulatedQtyById[match.id] =
@@ -358,6 +406,7 @@ class IngredientMatcher {
           availability: IngredientAvailability.available,
           deductedInPantryUnit: deductedInPantryUnit,
           availableInRecipeUnit: availableInRecipeUnit,
+          isApproximateConversion: deductedConv.isApproximate,
         ));
       } else {
         simulatedQtyById[match.id] = 0;
@@ -372,6 +421,7 @@ class IngredientMatcher {
           deductedInPantryUnit: currentQty > 0 ? currentQty : 0,
           availableInRecipeUnit: availableInRecipeUnit,
           missingInRecipeUnit: missingInRecipe,
+          isApproximateConversion: deductedConv.isApproximate,
         ));
       }
     }

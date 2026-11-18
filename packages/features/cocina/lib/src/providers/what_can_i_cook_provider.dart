@@ -110,11 +110,13 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
 
   static int _countMissingIngredients(
     List<RecipeIngredient> recipeIngredients,
-    List<InventoryIngredient> inventory,
-  ) {
+    List<InventoryIngredient> inventory, {
+    Map<String, double>? customGramsPerUnit,
+  }) {
     final checks = IngredientMatcher.evaluateRecipe(
       recipeIngredients: recipeIngredients,
       inventory: inventory.where((i) => i.quantity > 0).toList(),
+      customGramsPerUnit: customGramsPerUnit,
     );
     return checks
         .where((c) => c.availability != IngredientAvailability.available)
@@ -138,7 +140,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
           if (kcal <= 420) bonus += 0.25;
           if (kcal >= 650) bonus -= 0.25;
         }
-        if (RegExp(r'\b(ensalada|plancha|vapor|horno|liger|light|pavo|pollo|pescado|verdur)\b')
+        if (RegExp(
+                r'\b(ensalada|plancha|vapor|horno|liger|light|pavo|pollo|pescado|verdur)\b')
             .hasMatch(text)) {
           bonus += 0.25;
         }
@@ -149,14 +152,16 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         break;
       case NutritionGoal.gainMuscle:
         if (kcal != null && kcal >= 480) bonus += 0.25;
-        if (RegExp(r'\b(pollo|carne|res|pescado|atun|huevo|quinua|avena|lentej|frijol|garbanz|batido|prote)\b')
+        if (RegExp(
+                r'\b(pollo|carne|res|pescado|atun|huevo|quinua|avena|lentej|frijol|garbanz|batido|prote)\b')
             .hasMatch(text)) {
           bonus += 0.30;
         }
         break;
       case NutritionGoal.light:
         if (kcal != null && kcal <= 380) bonus += 0.25;
-        if (RegExp(r'\b(sopa|crema|caldo|vapor|plancha|hervid|manzanilla|fruta|suave|liger)\b')
+        if (RegExp(
+                r'\b(sopa|crema|caldo|vapor|plancha|hervid|manzanilla|fruta|suave|liger)\b')
             .hasMatch(text)) {
           bonus += 0.30;
         }
@@ -253,15 +258,18 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       debugPrint('✅ Generated ${generated.length} recipes');
 
       // Recalcular localmente TANTO matchPercentage como missingIngredients reales
+      final equivalences = ref.read(ingredientEquivalencesProvider);
       final viabilityCalc = CalculateRecipeViabilityUseCase();
       generated = generated.map((s) {
         final viability = viabilityCalc.execute(
           recipeIngredients: s.recipe.ingredients,
           inventory: inventoryState.ingredients,
+          customGramsPerUnit: equivalences,
         );
         final realMissing = _countMissingIngredients(
           s.recipe.ingredients,
           inventoryState.ingredients,
+          customGramsPerUnit: equivalences,
         );
         return RecipeSuggestion(
           recipe: s.recipe,
@@ -283,7 +291,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
           startMenuNumber: distinctMenus + 1,
           goal: goal,
           budgetSaverMode: budgetSaverMode,
-          excludeNames: generated.map((s) => s.recipe.name.toLowerCase()).toSet(),
+          excludeNames:
+              generated.map((s) => s.recipe.name.toLowerCase()).toSet(),
         );
         if (extraLocal.isNotEmpty) {
           generated = [...generated, ...extraLocal];
@@ -358,6 +367,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
       }).toList();
     }
 
+    final equivalences = ref.read(ingredientEquivalencesProvider);
     final out = <RecipeSuggestion>[];
     final viabilityCalc = CalculateRecipeViabilityUseCase();
     final usedIds = <String>{};
@@ -373,8 +383,8 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
                 !usedIds.contains(r.id) &&
                 !usedNames.contains(r.name.toLowerCase()))
             .toList();
-        final pool = List<Recipe>.from(
-            unused.isNotEmpty ? unused : allForComponent);
+        final pool =
+            List<Recipe>.from(unused.isNotEmpty ? unused : allForComponent);
         if (pool.isEmpty) continue;
 
         pool.shuffle();
@@ -387,10 +397,10 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
           final viability = viabilityCalc.execute(
             recipeIngredients: recipe.ingredients,
             inventory: inventory,
+            customGramsPerUnit: equivalences,
           );
           final goalBonus = _scoreRecipeForGoal(recipe, goal);
-          final score =
-              viability * (budgetSaverMode ? 1.5 : 1.0) + goalBonus;
+          final score = viability * (budgetSaverMode ? 1.5 : 1.0) + goalBonus;
           if (score > bestScore) {
             bestScore = score;
             bestRecipe = recipe;
@@ -405,8 +415,11 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         out.add(RecipeSuggestion(
           recipe: bestRecipe,
           matchPercentage: (bestViability * 100).round(),
-          missingIngredients:
-              _countMissingIngredients(bestRecipe.ingredients, inventory),
+          missingIngredients: _countMissingIngredients(
+            bestRecipe.ingredients,
+            inventory,
+            customGramsPerUnit: equivalences,
+          ),
           menuNumber: startMenuNumber + menuIdx,
         ));
       }

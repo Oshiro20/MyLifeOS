@@ -104,6 +104,7 @@ class RecipesTab extends ConsumerStatefulWidget {
 
 class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
   MealType? _selectedCategory;
+  NutritionGoal? _selectedGoal;
   String _searchQuery = '';
   bool _autoCategorizing = false;
   final TextEditingController _searchCtrl = TextEditingController();
@@ -119,12 +120,13 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
     setState(() => _autoCategorizing = true);
     try {
       final gemini = ref.read(geminiProvider);
-      final mapping = await gemini.categorizeRecipesWithGemini(
+      final mapping = await gemini.categorizeRecipesDetailedWithGemini(
         candidates
             .map((r) => (
                   id: r.id,
                   name: r.name,
-                  ingredients: r.ingredients.map((i) => i.ingredientName).toList(),
+                  ingredients:
+                      r.ingredients.map((i) => i.ingredientName).toList(),
                   description: r.description,
                 ))
             .toList(),
@@ -141,11 +143,24 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
       final notifier = ref.read(recipesProvider.notifier);
       int updated = 0;
       for (final recipe in candidates) {
-        final rawLabel = mapping[recipe.id];
-        if (rawLabel == null) continue;
-        final parsed = ExtractRecipeUseCase.parseMealType(rawLabel);
-        if (parsed != null && parsed != recipe.tipoComida) {
-          await notifier.saveRecipe(recipe.copyWith(tipoComida: parsed));
+        final info = mapping[recipe.id];
+        if (info == null) continue;
+        final parsedType = info.mealType != null
+            ? ExtractRecipeUseCase.parseMealType(info.mealType!)
+            : null;
+        final parsedGoal = ExtractRecipeUseCase.parseNutritionGoal(info.goal);
+        final nextType = parsedType ?? recipe.tipoComida;
+        final nextGoal = parsedGoal ?? recipe.goal;
+        final nextKcal = info.calories ?? recipe.caloriasAproximadas;
+
+        if (nextType != recipe.tipoComida ||
+            nextGoal != recipe.goal ||
+            nextKcal != recipe.caloriasAproximadas) {
+          await notifier.saveRecipe(recipe.copyWith(
+            tipoComida: nextType,
+            goal: nextGoal,
+            caloriasAproximadas: nextKcal,
+          ));
           updated++;
         }
       }
@@ -326,6 +341,37 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
               ],
             ),
           ),
+          // Meta nutricional filter chips (dieta / normal / ganar músculo / ligera)
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+              children: [
+                _CategoryChip(
+                  label: '🎯 Todas metas',
+                  isSelected: _selectedGoal == null,
+                  onTap: () => setState(() => _selectedGoal = null),
+                ),
+                const SizedBox(width: 6),
+                for (final goal in const [
+                  NutritionGoal.maintain,
+                  NutritionGoal.loseWeight,
+                  NutritionGoal.gainMuscle,
+                  NutritionGoal.light,
+                  NutritionGoal.other,
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: _CategoryChip(
+                      label: '${goal.emoji} ${goal.label}',
+                      isSelected: _selectedGoal == goal,
+                      onTap: () => setState(() => _selectedGoal = goal),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           // Explore local recipes button
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
@@ -379,8 +425,8 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                           color: Color(0xFF00C896), fontSize: 12.5),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                          color: Color(0xFF00C896), width: 1),
+                      side:
+                          const BorderSide(color: Color(0xFF00C896), width: 1),
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -409,6 +455,11 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
           filtered.where((r) => r.tipoComida == _selectedCategory).toList();
     }
 
+    // Filter by nutrition goal
+    if (_selectedGoal != null) {
+      filtered = filtered.where((r) => r.goal == _selectedGoal).toList();
+    }
+
     // Filter by search query
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
@@ -432,7 +483,9 @@ class _RecipesTabState extends ConsumerState<RecipesTab> with AppFeedback {
                     .withValues(alpha: 0.28)),
             const SizedBox(height: 8),
             Text(
-              _searchQuery.isNotEmpty || _selectedCategory != null
+              _searchQuery.isNotEmpty ||
+                      _selectedCategory != null ||
+                      _selectedGoal != null
                   ? 'No se encontraron recetas con estos filtros'
                   : 'Sin recetas guardadas',
               style: TextStyle(
@@ -554,8 +607,8 @@ class _RecipeTile extends StatelessWidget {
           leading: CircleAvatar(
             backgroundColor:
                 Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Text(recipe.goal.emoji,
-                style: const TextStyle(fontSize: 22)),
+            child:
+                Text(recipe.goal.emoji, style: const TextStyle(fontSize: 22)),
           ),
           title: Text(recipe.name,
               style: TextStyle(
@@ -564,12 +617,35 @@ class _RecipeTile extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (typeLabel != null)
-                Text(typeLabel,
-                    style: const TextStyle(
-                        color: Color(0xFFFF9800),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
+              Wrap(
+                spacing: 6,
+                runSpacing: 2,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (typeLabel != null)
+                    Text(typeLabel,
+                        style: const TextStyle(
+                            color: Color(0xFFFF9800),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500)),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00C896).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${recipe.goal.emoji} ${recipe.goal.label}',
+                      style: const TextStyle(
+                        color: Color(0xFF00C896),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 2),
               Text(
                 '${RecipeTimeBreakdown.summaryLabel(recipe)} · ${recipe.servings} porciones · ${recipe.ingredients.length} ingredientes',
@@ -639,7 +715,8 @@ class _RecipeDetailSheet extends StatefulWidget {
 class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   int _scaledServings = 1; // Current scaled servings (default 1 person)
 
-  int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
+  int get _baseServings =>
+      widget.recipe.servings > 0 ? widget.recipe.servings : 1;
 
   @override
   void initState() {
@@ -726,10 +803,8 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
             divisions: maxServings - 1,
             value: _scaledServings.clamp(1, maxServings).toDouble(),
             activeColor: const Color(0xFFFF9800),
-            inactiveColor: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.14),
+            inactiveColor:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.14),
             onChanged: (v) => setState(() => _scaledServings = v.toInt()),
           ),
           const SizedBox(height: 8),

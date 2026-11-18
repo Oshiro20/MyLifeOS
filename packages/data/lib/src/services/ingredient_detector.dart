@@ -5,20 +5,32 @@ class IngredientSuggestion {
   final String? primaryCategory;
   final String? subCategory;
   final MeasurementUnit? suggestedUnit;
+  final String? suggestedPreparation;
 
-  const IngredientSuggestion(
-      {this.primaryCategory, this.subCategory, this.suggestedUnit});
+  const IngredientSuggestion({
+    this.primaryCategory,
+    this.subCategory,
+    this.suggestedUnit,
+    this.suggestedPreparation,
+  });
 }
 
 /// Motor offline de detección de ingredientes basado en diccionarios.
 class IngredientDetector {
-  /// Detecta categoría y unidad sugerida a partir del nombre.
+  /// Detecta categoría, unidad sugerida y preparación (ej. "cocido / listo") a partir del nombre.
   static IngredientSuggestion detect(String name) {
     final lower = name.trim().toLowerCase();
 
     String? primary;
     String? sub;
     MeasurementUnit? unit;
+    String? preparation;
+
+    if (RegExp(
+            r'\b(cocid[ao]s?|cocinad[ao]s?|pre-?cocid[ao]s?|list[ao]s?\s*(para|al))\b')
+        .hasMatch(lower)) {
+      preparation = 'cocido / listo';
+    }
 
     // Buscar en diccionario exacto primero
     for (final entry in _ingredients.entries) {
@@ -30,11 +42,19 @@ class IngredientDetector {
       }
     }
 
+    if (preparation == 'cocido / listo' && primary == 'Legumbres') {
+      sub = 'Menestra cocida / lista';
+    }
+
     // Fallback: buscar por categoría general
     primary ??= _guessCategory(lower);
 
     return IngredientSuggestion(
-        primaryCategory: primary, subCategory: sub, suggestedUnit: unit);
+      primaryCategory: primary,
+      subCategory: sub,
+      suggestedUnit: unit,
+      suggestedPreparation: preparation,
+    );
   }
 
   static String? _guessCategory(String lower) {
@@ -107,7 +127,20 @@ class IngredientDetector {
     'camaron': ('Proteínas animales', 'Mariscos', MeasurementUnit.kg),
     'lenteja': ('Legumbres', 'Comunes', MeasurementUnit.g),
     'frijol': ('Legumbres', 'Frejoles', MeasurementUnit.g),
+    'frejol': ('Legumbres', 'Frejoles', MeasurementUnit.g),
+    'menestra': ('Legumbres', 'Menestras', MeasurementUnit.g),
+    'pallar': ('Legumbres', 'Pallares', MeasurementUnit.g),
+    'arveja': ('Legumbres', 'Comunes', MeasurementUnit.g),
+    'alverja': ('Legumbres', 'Comunes', MeasurementUnit.g),
+    'habas': ('Legumbres', 'Comunes', MeasurementUnit.g),
     'garbanzo': ('Legumbres', 'Comunes', MeasurementUnit.g),
+    'tarwi': ('Legumbres', 'Andinas', MeasurementUnit.g),
+    'pechuga': ('Proteínas animales', 'Aves', MeasurementUnit.unidades),
+    'pierna': ('Proteínas animales', 'Aves', MeasurementUnit.unidades),
+    'encuentro': ('Proteínas animales', 'Aves', MeasurementUnit.unidades),
+    'ala': ('Proteínas animales', 'Aves', MeasurementUnit.unidades),
+    'camote': ('Tubérculos y raíces', 'Tubérculos andinos', MeasurementUnit.kg),
+    'yuca': ('Tubérculos y raíces', 'Raíces', MeasurementUnit.kg),
     'chorizo': ('Proteínas animales', 'Embutidos', MeasurementUnit.unidades),
     'jamón': ('Proteínas animales', 'Embutidos', MeasurementUnit.g),
     'jamon': ('Proteínas animales', 'Embutidos', MeasurementUnit.g),

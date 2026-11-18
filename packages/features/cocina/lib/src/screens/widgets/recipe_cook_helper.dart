@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,6 +49,7 @@ class RecipeIngredientCheckList extends ConsumerWidget {
         ref.watch(inventoryProvider.select((s) => s.ingredients));
     final shoppingList =
         ref.watch(recipesProvider.select((s) => s.shoppingList));
+    final equivalences = ref.watch(ingredientEquivalencesProvider);
     final pendingShoppingKeys = shoppingList
         .where((i) => !i.bought)
         .map((i) => IngredientMatcher.normalizeText(i.name))
@@ -56,6 +58,7 @@ class RecipeIngredientCheckList extends ConsumerWidget {
     final checks = IngredientMatcher.evaluateRecipe(
       recipeIngredients: scaledIngredients,
       inventory: inventory,
+      customGramsPerUnit: equivalences,
     );
 
     final theme = Theme.of(context);
@@ -93,12 +96,20 @@ class RecipeIngredientCheckList extends ConsumerWidget {
           final (dotColor, subtitleText) = switch (check.availability) {
             IngredientAvailability.available => (
                 const Color(0xFF00C896),
-                check.pantryMatch != null &&
-                        IngredientMatcher.normalizeText(
-                                check.pantryMatch!.name) !=
-                            IngredientMatcher.normalizeText(req.ingredientName)
-                    ? 'En despensa: ${check.pantryMatch!.name} (${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit})'
-                    : null,
+                () {
+                  final match = check.pantryMatch;
+                  if (match == null) return null;
+                  final diffName = IngredientMatcher.normalizeText(match.name) !=
+                      IngredientMatcher.normalizeText(req.ingredientName);
+                  if (check.isApproximateConversion &&
+                      check.deductedInPantryUnit != null) {
+                    return 'Descontará ≈ ${formatIngredientQty(check.deductedInPantryUnit!)} ${match.unit} de ${match.name}';
+                  }
+                  if (diffName) {
+                    return 'En despensa: ${match.name} (${formatIngredientQty(match.quantity)} ${match.unit})';
+                  }
+                  return null;
+                }(),
               ),
             IngredientAvailability.insufficient => (
                 Colors.amber,
@@ -267,10 +278,12 @@ Future<bool> confirmAndCookRecipe({
   final scaledIngredients = scaleRecipeIngredients(recipe, targetServings);
   final pantryBefore =
       List<InventoryIngredient>.from(container.read(inventoryProvider).ingredients);
+  final equivalences = container.read(ingredientEquivalencesProvider);
 
   final checks = IngredientMatcher.evaluateRecipe(
     recipeIngredients: scaledIngredients,
     inventory: pantryBefore,
+    customGramsPerUnit: equivalences,
   );
 
   final needsConfirmation = checks.any(
@@ -421,7 +434,7 @@ Future<bool> confirmAndCookRecipe({
   return true;
 }
 
-class _CookConfirmationSheet extends StatefulWidget {
+class _CookConfirmationSheet extends ConsumerStatefulWidget {
   final String recipeName;
   final List<RecipeIngredientCheck> checks;
 
@@ -431,13 +444,16 @@ class _CookConfirmationSheet extends StatefulWidget {
   });
 
   @override
-  State<_CookConfirmationSheet> createState() => _CookConfirmationSheetState();
+  ConsumerState<_CookConfirmationSheet> createState() =>
+      _CookConfirmationSheetState();
 }
 
-class _CookConfirmationSheetState extends State<_CookConfirmationSheet> {
+class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> {
   final Set<String> _skipPantryIds = {};
   late bool _addMissingToShoppingList;
   bool _addDepletedToShoppingList = false;
+  bool _loadingSubstitutes = false;
+  String? _aiSubstitutesText;
 
   late final List<RecipeIngredientCheck> _deductibleChecks;
   late final List<RecipeIngredientCheck> _alertChecks;
@@ -614,6 +630,86 @@ class _CookConfirmationSheetState extends State<_CookConfirmationSheet> {
                       );
                     }),
                     const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: _loadingSubstitutes
+                            ? null
+                            : () async {
+                                setState(() => _loadingSubstitutes = true);
+                                try {
+                                  final pantryNames = ref
+                                      .read(inventoryProvider)
+                                      .ingredients
+                                      .map((i) => i.name)
+                                      .toList();
+                                  final missingNames = _alertChecks
+                                      .map((c) => c.requirement.ingredientName)
+                                      .toList();
+                                  final reply = await ref
+                                      .read(geminiProvider)
+                                      .suggestIngredientSubstitutesGemini(
+                                        recipeName: widget.recipeName,
+                                        missingIngredients: missingNames,
+                                        pantryNames: pantryNames,
+                                      );
+                                  if (mounted) {
+                                    setState(() {
+                                      _aiSubstitutesText = (reply == null ||
+                                              reply.trim().isEmpty)
+                                          ? 'No se pudieron obtener sugerencias en este momento.'
+                                          : reply.trim();
+                                    });
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _loadingSubstitutes = false);
+                                  }
+                                }
+                              },
+                        icon: _loadingSubstitutes
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.auto_awesome,
+                                size: 16, color: Color(0xFF00C896)),
+                        label: Text(
+                          _loadingSubstitutes
+                              ? 'Buscando sustitutos en tu despensa...'
+                              : '✨ Sugerir sustituto con mi despensa (IA)',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF00C896),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_aiSubstitutesText != null)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color:
+                              const Color(0xFF00C896).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color:
+                                const Color(0xFF00C896).withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          _aiSubstitutesText!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.85),
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
                     SwitchListTile.adaptive(
                       dense: true,
                       contentPadding: EdgeInsets.zero,

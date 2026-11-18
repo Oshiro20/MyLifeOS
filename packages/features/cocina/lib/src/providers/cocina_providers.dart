@@ -161,6 +161,35 @@ class InventoryNotifier extends Notifier<InventoryState> {
     }
   }
 
+  double? _convertQtyForDeduction(
+    RecipeIngredient recipeIng,
+    InventoryIngredient pantryItem,
+    Map<String, double> equivalences,
+  ) {
+    final override = IngredientMatcher.resolveCustomGramsPerUnit(
+      equivalences,
+      recipeIng.ingredientName,
+      pantryItem.name,
+    );
+    final reqUnit = MeasurementUnit.fromString(recipeIng.unit);
+    final invUnit = MeasurementUnit.fromString(pantryItem.unit);
+    return (IngredientUnitNormalizer.convertForIngredient(
+              recipeIng.quantity,
+              reqUnit,
+              invUnit,
+              recipeIng.ingredientName,
+              gramsPerUnitOverride: override,
+            ) ??
+            IngredientUnitNormalizer.convertForIngredient(
+              recipeIng.quantity,
+              reqUnit,
+              invUnit,
+              pantryItem.name,
+              gramsPerUnitOverride: override,
+            ))
+        ?.value;
+  }
+
   /// Deduct recipe ingredients from pantry
   /// Returns list of ingredient names that were deducted (for feedback)
   Future<List<String>> deductRecipeIngredients(
@@ -170,6 +199,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
     if (!_hasLoaded) {
       await load();
     }
+    final equivalences = ref.read(ingredientEquivalencesProvider);
     final deducted = <String>[];
     final updatedIngredients =
         List<InventoryIngredient>.from(state.ingredients);
@@ -187,11 +217,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
       if (matchIndex == -1) continue;
 
       final pantryItem = updatedIngredients[matchIndex];
-      final converted = IngredientUnitNormalizer.convert(
-        recipeIng.quantity,
-        MeasurementUnit.fromString(recipeIng.unit),
-        MeasurementUnit.fromString(pantryItem.unit),
-      );
+      final converted =
+          _convertQtyForDeduction(recipeIng, pantryItem, equivalences);
       if (converted == null) continue;
       final newQty = pantryItem.quantity - converted;
 
@@ -233,6 +260,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
   /// Revert a deduction (undo last cook action)
   Future<void> revertDeduction(List<RecipeIngredient> recipeIngredients) async {
+    final equivalences = ref.read(ingredientEquivalencesProvider);
     final revertedIngredients =
         List<InventoryIngredient>.from(state.ingredients);
 
@@ -248,11 +276,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
       if (matchIndex != -1) {
         final pantryItem = revertedIngredients[matchIndex];
-        final converted = IngredientUnitNormalizer.convert(
-          recipeIng.quantity,
-          MeasurementUnit.fromString(recipeIng.unit),
-          MeasurementUnit.fromString(pantryItem.unit),
-        );
+        final converted =
+            _convertQtyForDeduction(recipeIng, pantryItem, equivalences);
         if (converted == null) continue;
         final updated =
             pantryItem.copyWith(quantity: pantryItem.quantity + converted);
@@ -265,7 +290,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
           name: recipeIng.ingredientName,
           primaryCategory: detected.primaryCategory ?? 'Otros',
           subCategory: detected.subCategory ?? '',
-          preparation: '',
+          preparation: detected.suggestedPreparation ?? '',
           quantity: recipeIng.quantity,
           unit: recipeIng.unit,
           expirationDate: null,
@@ -282,8 +307,11 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
   /// Inserta o fusiona ingredientes (por nombre y unidad compatible) en despensa.
   Future<int> _upsertToPantry(
-    Iterable<({String name, double quantity, String unit})> entries,
-  ) async {
+    Iterable<({String name, double quantity, String unit})> entries, {
+    String? storageAreaOverride,
+    String? preparationOverride,
+    DateTime? expirationDateOverride,
+  }) async {
     if (!_hasLoaded) {
       await load();
     }
@@ -306,8 +334,11 @@ class InventoryNotifier extends Notifier<InventoryState> {
           MeasurementUnit.fromString(existing.unit),
         );
         if (converted != null) {
-          final updated =
-              existing.copyWith(quantity: existing.quantity + converted);
+          final updated = existing.copyWith(
+            quantity: existing.quantity + converted,
+            storageArea: storageAreaOverride ?? existing.storageArea,
+            expirationDate: expirationDateOverride ?? existing.expirationDate,
+          );
           await _repo.updateIngredient(updated);
           state = state.copyWith(ingredients: [
             for (int i = 0; i < state.ingredients.length; i++)
@@ -324,12 +355,12 @@ class InventoryNotifier extends Notifier<InventoryState> {
         name: cleanName,
         primaryCategory: detected.primaryCategory ?? 'Otros',
         subCategory: detected.subCategory ?? '',
-        preparation: '',
+        preparation: preparationOverride ?? detected.suggestedPreparation ?? '',
         quantity: entry.quantity,
         unit: entry.unit,
-        expirationDate: null,
+        expirationDate: expirationDateOverride,
         imageAssetId: null,
-        storageArea: 'Alacena',
+        storageArea: storageAreaOverride ?? 'Alacena',
       );
       await _repo.addIngredient(newIng);
       state = state.copyWith(ingredients: [newIng, ...state.ingredients]);
@@ -337,6 +368,18 @@ class InventoryNotifier extends Notifier<InventoryState> {
     }
     return count;
   }
+
+  /// Inserta o fusiona presas/porciones desglosadas (ej. pollo en octavos).
+  Future<int> upsertPoultryPieces(
+    Iterable<({String name, double quantity, String unit})> entries, {
+    required String storageArea,
+    DateTime? expirationDate,
+  }) =>
+      _upsertToPantry(
+        entries,
+        storageAreaOverride: storageArea,
+        expirationDateOverride: expirationDate,
+      );
 
   /// Move bought shopping items to pantry inventory
   Future<void> bulkAddBoughtToPantry(List<ShoppingItem> boughtItems) async {
@@ -714,21 +757,116 @@ class WeeklyMenuNotifier extends Notifier<WeeklyMenuState> {
     await load();
   }
 
-  Future<void> generate() async {
+  Future<void> generate({bool useAI = false}) async {
     state = WeeklyMenuLoading();
     try {
-      final useCase = GenerateWeeklyMenuUseCase(repository: _repo);
-
-      // Get current inventory to prioritize recipes with available ingredients
       final inventoryNotifier = ref.read(inventoryProvider.notifier);
       await inventoryNotifier.load();
       final inventoryState = ref.read(inventoryProvider);
+      final activeGoal = ref.read(recipesProvider).activeGoal;
 
-      await useCase.execute(inventory: inventoryState.ingredients);
+      if (!useAI) {
+        final useCase = GenerateWeeklyMenuUseCase(repository: _repo);
+        await useCase.execute(
+          inventory: inventoryState.ingredients,
+          goal: activeGoal,
+        );
+        await load();
+        return;
+      }
+
+      final recipes = await _repo.getAllRecipes();
+      if (recipes.isEmpty) {
+        throw Exception(
+            'No tienes recetas guardadas para armar el menú semanal.');
+      }
+
+      final gemini = ref.read(geminiProvider);
+      final expiring = inventoryState.ingredients
+          .where((i) => i.isExpiringSoon)
+          .map((i) => i.name)
+          .toList();
+      final pantrySummary = inventoryState.ingredients
+          .take(35)
+          .map((i) =>
+              '${i.name} (${i.quantity} ${i.unit}${i.preparation.isNotEmpty ? ', ${i.preparation}' : ''})')
+          .join(', ');
+      final recipeCatalog = recipes
+          .take(60)
+          .map((r) =>
+              '{"id":"${r.id}","nombre":"${r.name}","tipo":"${r.tipoComida?.label ?? 'Otro'}","meta":"${r.goal.label}"}')
+          .join('\n');
+
+      final prompt = '''
+Planifica un menú semanal variado de Lunes (day=1) a Domingo (day=7) con Desayuno (mealType=0), Almuerzo (mealType=1) y Cena (mealType=2).
+Meta nutricional: ${activeGoal.label} (${activeGoal.hint}).
+Ingredientes por vencer pronto (priorizar al inicio de la semana): ${expiring.isEmpty ? 'ninguno' : expiring.join(', ')}.
+Despensa actual: $pantrySummary.
+
+Recetas disponibles (USA ÚNICAMENTE estos id exactos):
+$recipeCatalog
+
+Devuelve ÚNICAMENTE una lista JSON de 21 objetos:
+[{"day": 1, "mealType": 0, "recipeId": "..."}]''';
+
+      final raw = await gemini
+          .generateText(prompt: prompt)
+          .timeout(const Duration(seconds: 30));
+      final parsed = raw != null ? AiJsonParser.decodeList(raw) : null;
+      final validIds = {for (final r in recipes) r.id};
+
+      if (parsed == null || parsed.isEmpty) {
+        final fallback = GenerateWeeklyMenuUseCase(repository: _repo);
+        await fallback.execute(
+          inventory: inventoryState.ingredients,
+          goal: activeGoal,
+        );
+        await load();
+        return;
+      }
+
+      // Primero llenar todo con heurística de respaldo para asegurar 21 slots completos
+      final base = GenerateWeeklyMenuUseCase(repository: _repo);
+      await base.execute(
+        inventory: inventoryState.ingredients,
+        goal: activeGoal,
+      );
+      final baseEntries = await _repo.getWeeklyMenu();
+      final slotMap = <String, WeeklyMenuEntry>{
+        for (final e in baseEntries) '${e.dayOfWeek}_${e.mealType}': e,
+      };
+
+      for (final item in parsed) {
+        if (item is! Map) continue;
+        final day = (item['day'] as num?)?.toInt();
+        final mealType = (item['mealType'] as num?)?.toInt();
+        final recipeId = item['recipeId']?.toString();
+        if (day == null ||
+            day < 1 ||
+            day > 7 ||
+            mealType == null ||
+            mealType < 0 ||
+            mealType > 2 ||
+            recipeId == null ||
+            !validIds.contains(recipeId)) {
+          continue;
+        }
+        final key = '${day}_$mealType';
+        final existing = slotMap[key];
+        await _repo.saveWeeklyMenuEntry(WeeklyMenuEntry(
+          id: existing?.id ?? _cocinaUuid.v4(),
+          dayOfWeek: day,
+          mealType: mealType,
+          recipeId: recipeId,
+          isCustom: false,
+        ));
+      }
       await load();
     } catch (e) {
-      final entries = await _repo.getWeeklyMenu().catchError((_) => <WeeklyMenuEntry>[]);
-      state = entries.isNotEmpty ? WeeklyMenuLoaded(entries) : WeeklyMenuInitial();
+      final entries =
+          await _repo.getWeeklyMenu().catchError((_) => <WeeklyMenuEntry>[]);
+      state =
+          entries.isNotEmpty ? WeeklyMenuLoaded(entries) : WeeklyMenuInitial();
       rethrow;
     }
   }

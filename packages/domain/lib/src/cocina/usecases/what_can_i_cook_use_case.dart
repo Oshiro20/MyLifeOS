@@ -772,6 +772,16 @@ ${recentlyUsedRecipeNames.take(12).map((e) => '- $e').join('\n')}
         ? '💰 MODO AHORRO ACTIVO: Prioriza recetas económicas usando al máximo lo que ya existe en la despensa y minimizando ingredientes por comprar.\n'
         : '';
 
+    final hasReadyCooked = inventory.any((i) {
+      final prep = i.preparation.toLowerCase();
+      return prep.contains('cocido') ||
+          prep.contains('cocinad') ||
+          prep.contains('listo');
+    });
+    final readyCookedNote = hasReadyCooked
+        ? '⚡ INGREDIENTES YA COCIDOS/LISTOS: Si algún ingrediente indica (cocido / listo), sugiere recetas rápidas de 5-15 min (ej. tacu tacu, ensalada tibia, salteado express) sin pasos de remojo ni hervor largo.\n'
+        : '';
+
     final goalContext = _buildGoalContext(nutritionGoal);
     final userPrefsContext = _buildUserPrefsContext(userPreferences);
     final endMenuNumber = startMenuNumber + batchMenuCount - 1;
@@ -785,7 +795,7 @@ INGREDIENTES DISPONIBLES EN DESPENSA:
 $inventoryDescription
 
 $goalContext
-$dinnerNote$budgetNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
+$readyCookedNote$dinnerNote$budgetNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
 REGLAS:
 - Recetas peruanas reales priorizando los ingredientes disponibles, SIN repetir platos.
 - Cada plato DEBE tener mínimo 2 ingredientes reales y 3 pasos concisos.

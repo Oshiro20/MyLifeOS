@@ -3,17 +3,22 @@ import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
 import '../entities/weekly_menu_entry.dart';
 import 'calculate_recipe_viability_use_case.dart';
+import 'ingredient_matcher.dart';
 import '../repositories/i_cocina_repository.dart';
 
-/// Use Case to generate a weekly menu plan based on available inventory
+/// Use Case to generate a weekly menu plan based on available inventory, goal and expiring items
 class GenerateWeeklyMenuUseCase {
   final ICocinaRepository repository;
 
   GenerateWeeklyMenuUseCase({required this.repository});
 
   /// Generates or regenerates the weekly menu
-  /// If inventory is provided, prioritizes recipes with higher ingredient match
-  Future<void> execute({List<InventoryIngredient>? inventory}) async {
+  /// If inventory is provided, prioritizes recipes with higher ingredient match,
+  /// active [goal], and ingredients expiring soon.
+  Future<void> execute({
+    List<InventoryIngredient>? inventory,
+    NutritionGoal goal = NutritionGoal.maintain,
+  }) async {
     // Validate available recipes BEFORE clearing existing weekly plan
     final recipes = await repository.getAllRecipes();
     if (recipes.isEmpty) {
@@ -27,46 +32,51 @@ class GenerateWeeklyMenuUseCase {
     final days = [1, 2, 3, 4, 5, 6, 7]; // Mon-Sun
     final meals = [0, 1, 2]; // Breakfast, Lunch, Dinner
 
-    List<Recipe> sortedRecipes;
+    List<Recipe> sortedRecipes = List.from(recipes);
+    final expiring = (inventory ?? const <InventoryIngredient>[])
+        .where((i) => i.isExpiringSoon)
+        .toList();
 
-    // If inventory is available, sort recipes by viability
-    if (inventory != null && inventory.isNotEmpty) {
+    // Sort by pantry viability + goal alignment + rescue of expiring ingredients
+    if ((inventory != null && inventory.isNotEmpty) ||
+        goal != NutritionGoal.maintain) {
       final viabilityCalc = CalculateRecipeViabilityUseCase();
+      final recipeScore = <Recipe, double>{};
 
-      // Calculate viability for each recipe
-      final recipeViability = <Recipe, double>{};
       for (final recipe in recipes) {
-        final viability = viabilityCalc.execute(
-          recipeIngredients: recipe.ingredients,
-          inventory: inventory,
-        );
-        recipeViability[recipe] = viability;
+        final viability = (inventory != null && inventory.isNotEmpty)
+            ? viabilityCalc.execute(
+                recipeIngredients: recipe.ingredients,
+                inventory: inventory,
+              )
+            : 0.0;
+        final goalBonus =
+            (goal != NutritionGoal.maintain && recipe.goal == goal) ? 0.35 : 0.0;
+        var expiringBonus = 0.0;
+        if (expiring.isNotEmpty && recipe.ingredients.isNotEmpty) {
+          final usesExpiring = recipe.ingredients.any(
+            (req) => IngredientMatcher.findBestMatch(expiring, req.ingredientName) != null,
+          );
+          if (usesExpiring) expiringBonus = 0.25;
+        }
+        recipeScore[recipe] = viability + goalBonus + expiringBonus;
       }
 
-      // Sort recipes by viability (highest first), then by name for stability
-      sortedRecipes = List.from(recipes);
       sortedRecipes.sort((a, b) {
-        final viabilityA = recipeViability[a] ?? 0.0;
-        final viabilityB = recipeViability[b] ?? 0.0;
-        if (viabilityB != viabilityA) {
-          return viabilityB.compareTo(viabilityA);
+        final scoreA = recipeScore[a] ?? 0.0;
+        final scoreB = recipeScore[b] ?? 0.0;
+        if (scoreB != scoreA) {
+          return scoreB.compareTo(scoreA);
         }
         return a.name.compareTo(b.name);
       });
 
-      // Filter out recipes with 0% viability if we have enough viable ones
-      final viableRecipes = sortedRecipes.where((r) {
-        final viability = recipeViability[r] ?? 0.0;
-        return viability > 0.0;
-      }).toList();
-
-      // Use viable recipes if we have enough, otherwise use all sorted recipes
+      final viableRecipes =
+          sortedRecipes.where((r) => (recipeScore[r] ?? 0.0) > 0.0).toList();
       if (viableRecipes.length >= days.length * meals.length) {
         sortedRecipes = viableRecipes;
       }
     } else {
-      // No inventory available - fallback to random
-      sortedRecipes = List.from(recipes);
       sortedRecipes.shuffle();
     }
 

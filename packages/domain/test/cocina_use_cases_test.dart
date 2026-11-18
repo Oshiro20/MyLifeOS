@@ -340,11 +340,11 @@ void main() {
           unit: 'unidades',
         ),
         InventoryIngredient(
-          id: 'p_pollo',
-          name: 'Pollo',
-          primaryCategory: 'Carnes',
+          id: 'p_fideo',
+          name: 'Fideos',
+          primaryCategory: 'Secos',
           quantity: 1.0,
-          unit: 'unidades',
+          unit: 'paquete',
         ),
       ];
       const recipe = [
@@ -356,9 +356,9 @@ void main() {
           unit: 'unidades',
         ),
         RecipeIngredient(
-          id: 'r_pollo',
+          id: 'r_fideo',
           recipeId: 'r1',
-          ingredientName: 'pollo',
+          ingredientName: 'fideos',
           quantity: 500.0,
           unit: 'g',
         ),
@@ -380,6 +380,61 @@ void main() {
       expect(checks[0].willDeplete, isTrue);
       expect(checks[1].availability, IngredientAvailability.incompatibleUnit);
       expect(checks[2].availability, IngredientAvailability.missing);
+    });
+
+    test('convierte kg de papa <-> unidades usando peso promedio o equivalencia personalizada', () {
+      const pantry = [
+        InventoryIngredient(
+          id: 'p_papa',
+          name: 'Papa blanca',
+          primaryCategory: 'Tubérculos y raíces',
+          quantity: 1.0,
+          unit: 'kg',
+        ),
+      ];
+      const recipe = [
+        RecipeIngredient(
+          id: 'r_papa',
+          recipeId: 'r1',
+          ingredientName: 'papa',
+          quantity: 3.0,
+          unit: 'unidades',
+        ),
+      ];
+
+      final defaultChecks = IngredientMatcher.evaluateRecipe(
+        recipeIngredients: recipe,
+        inventory: pantry,
+      );
+      expect(defaultChecks.single.availability, IngredientAvailability.available);
+      expect(defaultChecks.single.isApproximateConversion, isTrue);
+      expect(defaultChecks.single.deductedInPantryUnit, closeTo(0.51, 0.05));
+
+      final customChecks = IngredientMatcher.evaluateRecipe(
+        recipeIngredients: recipe,
+        inventory: pantry,
+        customGramsPerUnit: {'papa blanca': 125.0}, // 8 papas por kg
+      );
+      expect(customChecks.single.deductedInPantryUnit, closeTo(0.375, 0.001));
+    });
+
+    test('ExtractRecipeUseCase.parseNutritionGoal clasifica etiquetas de dieta/músculo/ligera', () {
+      expect(
+        ExtractRecipeUseCase.parseNutritionGoal('bajar_peso'),
+        NutritionGoal.loseWeight,
+      );
+      expect(
+        ExtractRecipeUseCase.parseNutritionGoal('ganar_musculo'),
+        NutritionGoal.gainMuscle,
+      );
+      expect(
+        ExtractRecipeUseCase.parseNutritionGoal('ligera'),
+        NutritionGoal.light,
+      );
+      expect(
+        ExtractRecipeUseCase.parseNutritionGoal('normal'),
+        NutritionGoal.maintain,
+      );
     });
   });
 }

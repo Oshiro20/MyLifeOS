@@ -310,5 +310,52 @@ void main() {
       expect(secondBatch.appliances.length, 1);
       expect(secondBatch.appliances.single.name, 'Freidora de aire Oster');
     });
+
+    test('enruta compras de pollo entero hacia poultryBreakdowns en octavos', () async {
+      SharedPreferences.setMockInitialValues({});
+      final bridge = WalletPantryBridgeService();
+      final cutoffBase = DateTime.now();
+      await bridge.extractPendingAutoSyncBatch(WalletSummary(
+        version: '1.4.5',
+        month: '2026-11',
+        balance: 500,
+        income: 1000,
+        expenses: 500,
+        currency: 'PEN',
+        exportedAt: cutoffBase,
+        recentTransactions: const [],
+      ));
+
+      final after = cutoffBase.add(const Duration(minutes: 5));
+      final batch = await bridge.extractPendingAutoSyncBatch(WalletSummary(
+        version: '1.4.5',
+        month: '2026-11',
+        balance: 478,
+        income: 1000,
+        expenses: 522,
+        currency: 'PEN',
+        exportedAt: after,
+        recentTransactions: [
+          {
+            'id': 'tx-pollo-entero',
+            'name': '1 pollo entero',
+            'productName': 'Pollo entero',
+            'quantity': 1,
+            'unit': 'UND',
+            'category': 'Alimentación',
+            'amount': -22.0,
+            'date': after.toIso8601String().split('T').first,
+            'createdAt': after.toIso8601String(),
+          },
+        ],
+      ));
+
+      expect(batch.groceries, isEmpty);
+      expect(batch.poultryBreakdowns.length, 1);
+      expect(batch.poultryBreakdowns.single.isWholeChicken, isTrue);
+      expect(batch.poultryBreakdowns.single.totalPrice, 22.0);
+      final octavos = WalletPantryBridgeService.buildWholeChickenPieces(1);
+      expect(octavos.fold<int>(0, (s, p) => s + p.count), 8);
+    });
   });
 }

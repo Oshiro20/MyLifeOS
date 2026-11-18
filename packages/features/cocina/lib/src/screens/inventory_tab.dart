@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/user_food_preferences_provider.dart';
+import 'widgets/poultry_breakdown_sheet.dart';
 
 class InventoryTab extends ConsumerStatefulWidget {
   const InventoryTab({super.key});
@@ -18,6 +19,58 @@ class InventoryTab extends ConsumerStatefulWidget {
 class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+
+  Future<void> _showRescueIdeasDialog(
+    BuildContext context,
+    List<InventoryIngredient> rescueItems,
+    List<InventoryIngredient> allItems,
+  ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF00C896))),
+    );
+    try {
+      final goal = ref.read(recipesProvider).activeGoal;
+      final priorityNames = rescueItems
+          .map((i) =>
+              '${i.name} (${i.quantity} ${i.unit}${i.preparation.isNotEmpty ? ', ${i.preparation}' : ''})')
+          .toList();
+      final reply = await ref.read(geminiProvider).suggestRescueRecipesGemini(
+            priorityIngredients: priorityNames,
+            allPantryNames: allItems.map((i) => i.name).toList(),
+            goalLabel: '${goal.emoji} ${goal.label}',
+          );
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('✨ Ideas de rescate con Gemini'),
+          content: SingleChildScrollView(
+            child: Text(
+              (reply == null || reply.trim().isEmpty)
+                  ? 'No se pudieron obtener sugerencias en este momento.'
+                  : reply.trim(),
+              style: const TextStyle(fontSize: 13.5, height: 1.4),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        showError(context, 'Error al consultar Gemini: $e');
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -52,6 +105,70 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
     final List<Widget> listChildren = [];
     final walletCandidates =
         ref.watch(walletGroceryCandidatesProvider).asData?.value ?? const [];
+    final pendingPoultry = ref.watch(pendingPoultryBreakdownsProvider);
+
+    if (_searchQuery.isEmpty && pendingPoultry.isNotEmpty) {
+      final firstPoultry = pendingPoultry.first;
+      listChildren.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF9800).withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFFF9800).withValues(alpha: 0.45),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text('🍗', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${firstPoultry.itemName}${pendingPoultry.length > 1 ? ' (+${pendingPoultry.length - 1})' : ''} desde WalletAI',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Text(
+                      '¿En qué presas o octavos lo dividimos?',
+                      style: TextStyle(fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () async {
+                  final ok = await PoultryBreakdownSheet.show(
+                    context,
+                    pending: firstPoultry,
+                  );
+                  if (ok == true && context.mounted) {
+                    showSuccess(context, '🍗 Presas agregadas a tu Despensa');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9800),
+                  foregroundColor: Colors.black,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: const Size(0, 32),
+                ),
+                child: const Text('Desglosar',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (_searchQuery.isEmpty && walletCandidates.isNotEmpty) {
       listChildren.add(
@@ -86,6 +203,13 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
 
     // Stats Panel (only if not searching)
     if (_searchQuery.isEmpty) {
+      final rescueItems = state.ingredients
+          .where((i) =>
+              i.isExpiringSoon ||
+              i.preparation.toLowerCase().contains('cocido') ||
+              i.preparation.toLowerCase().contains('listo'))
+          .toList();
+
       listChildren.add(
         Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -95,19 +219,49 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFF00C896).withAlpha(40)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Column(
             children: [
-              _StatBadge('🟢 ${state.ingredients.length}', 'Total',
-                  Theme.of(context).colorScheme.onSurface),
-              _StatBadge(
-                  '🟡 $expiringCount', 'Por vencer', const Color(0xFFFFB300)),
-              _StatBadge(
-                  '🔴 $expiredCount', 'Vencidos', const Color(0xFFFF5252)),
-              _StatBadge(
-                  '📂 ${state.ingredients.map((i) => i.primaryCategory).toSet().length}',
-                  'Categorías',
-                  const Color(0xFF00F0FF)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _StatBadge('🟢 ${state.ingredients.length}', 'Total',
+                      Theme.of(context).colorScheme.onSurface),
+                  _StatBadge('🟡 $expiringCount', 'Por vencer',
+                      const Color(0xFFFFB300)),
+                  _StatBadge(
+                      '🔴 $expiredCount', 'Vencidos', const Color(0xFFFF5252)),
+                  _StatBadge(
+                      '📂 ${state.ingredients.map((i) => i.primaryCategory).toSet().length}',
+                      'Categorías',
+                      const Color(0xFF00F0FF)),
+                ],
+              ),
+              if (rescueItems.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showRescueIdeasDialog(
+                        context, rescueItems, state.ingredients),
+                    icon: const Icon(Icons.auto_awesome,
+                        size: 16, color: Color(0xFF00C896)),
+                    label: Text(
+                      '✨ ${rescueItems.length} por vencer / listos: ¿Qué preparo hoy?',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF00C896),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                          color:
+                              const Color(0xFF00C896).withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -854,6 +1008,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     'Condimentos y especias',
     'Endulzantes',
     'Frutos secos y semillas',
+    'Preparados / Listos',
     'Otros'
   ];
 
@@ -875,18 +1030,23 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
   static const List<String> _preparations = [
     '',
+    'cocido / listo',
     'abierto / en uso',
     'entero',
     'licuado',
     'molido',
     'picado',
     'fresco',
+    'remojado',
+    'congelado',
     'en pasta',
     'en polvo',
     'en granos',
     'en rodajas',
     'desmenuzado',
   ];
+
+  int? _unitsPerKg;
 
   String _formatQtyValue(double v) {
     if ((v - v.roundToDouble()).abs() < 0.01) {
@@ -951,6 +1111,13 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       try {
         _unit = MeasurementUnit.values.firstWhere((u) => u.label == i.unit);
       } catch (_) {}
+      final customMap = ref.read(ingredientEquivalencesProvider);
+      final key = IngredientMatcher.normalizeText(i.name);
+      final gPerU = customMap[key] ??
+          IngredientUnitNormalizer.defaultGramsPerUnit(i.name);
+      if (gPerU != null && gPerU > 0) {
+        _unitsPerKg = (1000.0 / gPerU).round().clamp(1, 50);
+      }
     }
   }
 
@@ -1134,6 +1301,99 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    FilterChip(
+                      label: const Text('⚡ Cocido / Listo al instante',
+                          style: TextStyle(fontSize: 11)),
+                      selected: _preparation == 'cocido / listo',
+                      selectedColor:
+                          const Color(0xFF00C896).withValues(alpha: 0.2),
+                      checkmarkColor: const Color(0xFF00C896),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _preparation = 'cocido / listo';
+                            if (_storageArea == 'Alacena') {
+                              _storageArea = 'Refrigerador';
+                            }
+                            _expiry ??=
+                                DateTime.now().add(const Duration(days: 3));
+                          } else if (_preparation == 'cocido / listo') {
+                            _preparation = '';
+                          }
+                        });
+                      },
+                    ),
+                    if (WalletPantryBridgeService.isPoultryBreakdownName(
+                        _nameCtrl.text))
+                      ActionChip(
+                        avatar:
+                            const Text('🍗', style: TextStyle(fontSize: 13)),
+                        label: const Text('Dividir en presas (8/8)',
+                            style: TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onPressed: () async {
+                          final rawQty = double.tryParse(
+                                  _qtyCtrl.text.trim().replaceAll(',', '.')) ??
+                              1.0;
+                          final navigator = Navigator.of(context);
+                          final ok = await PoultryBreakdownSheet.show(
+                            context,
+                            initialTitle: _nameCtrl.text.trim(),
+                            initialWholeChickens: rawQty,
+                          );
+                          if (ok == true && mounted) {
+                            navigator.pop();
+                          }
+                        },
+                      ),
+                  ],
+                ),
+                if (_unit == MeasurementUnit.kg ||
+                    _unit == MeasurementUnit.g) ...[
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Text(
+                          '1 kg ≈',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.65),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        for (final uCount in const [4, 5, 6, 8, 10, 12])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 5),
+                            child: ChoiceChip(
+                              label: Text('$uCount u',
+                                  style: const TextStyle(fontSize: 11)),
+                              selected: _unitsPerKg == uCount,
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              onSelected: (sel) => setState(
+                                () => _unitsPerKg = sel ? uCount : null,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 10),
@@ -1328,6 +1588,11 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     }
 
     final suggestion = IngredientDetector.detect(val);
+    final customMap = ref.read(ingredientEquivalencesProvider);
+    final normKey = IngredientMatcher.normalizeText(val);
+    final gPerU =
+        customMap[normKey] ?? IngredientUnitNormalizer.defaultGramsPerUnit(val);
+
     setState(() {
       if (suggestion.primaryCategory != null) {
         _primaryCategory =
@@ -1337,7 +1602,18 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
         _subCategoryCtrl.text = suggestion.subCategory ?? '';
       }
       if (suggestion.suggestedUnit != null) _unit = suggestion.suggestedUnit!;
-      _autoDetected = suggestion.primaryCategory != null;
+      if (suggestion.suggestedPreparation != null) {
+        _preparation = suggestion.suggestedPreparation!;
+        if (_preparation == 'cocido / listo' && _storageArea == 'Alacena') {
+          _storageArea = 'Refrigerador';
+          _expiry ??= DateTime.now().add(const Duration(days: 3));
+        }
+      }
+      if (gPerU != null && gPerU > 0) {
+        _unitsPerKg = (1000.0 / gPerU).round().clamp(1, 50);
+      }
+      _autoDetected = suggestion.primaryCategory != null ||
+          suggestion.suggestedPreparation != null;
     });
   }
 
@@ -1396,8 +1672,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
           }
 
           final id = const Uuid().v4();
-          final resolvedBase =
-              (pkgQty != null && pkgQty > 0) ? pkgQty : qty;
+          final resolvedBase = (pkgQty != null && pkgQty > 0) ? pkgQty : qty;
           basePackageQtyById[id] = resolvedBase;
           if (isOpaque) opaqueIds.add(id);
 
@@ -1503,13 +1778,13 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       final sTip = item['storageTip']?.toString();
 
       if (mounted) {
-        final resolvedBase =
-            (pkgQty != null && pkgQty > 0) ? pkgQty : qty;
-        final inferredFraction = (resolvedBase > 0 && isOpened && qty < resolvedBase)
-            ? qty / resolvedBase
-            : (fillPct != null && fillPct > 0 && fillPct < 100
-                ? fillPct / 100.0
-                : null);
+        final resolvedBase = (pkgQty != null && pkgQty > 0) ? pkgQty : qty;
+        final inferredFraction =
+            (resolvedBase > 0 && isOpened && qty < resolvedBase)
+                ? qty / resolvedBase
+                : (fillPct != null && fillPct > 0 && fillPct < 100
+                    ? fillPct / 100.0
+                    : null);
         setState(() {
           _nameCtrl.text = item['name']?.toString() ?? 'Producto';
           _qtyCtrl.text = _formatQtyValue(qty);
@@ -1573,10 +1848,18 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
 
     setState(() => _saving = true);
     try {
+      final cleanName = _nameCtrl.text.trim();
+      if ((_unit == MeasurementUnit.kg || _unit == MeasurementUnit.g) &&
+          _unitsPerKg != null &&
+          _unitsPerKg! > 0) {
+        await ref
+            .read(ingredientEquivalencesProvider.notifier)
+            .setGramsPerUnit(cleanName, 1000.0 / _unitsPerKg!);
+      }
       await widget.onAdd([
         InventoryIngredient(
           id: widget.itemToEdit?.id ?? const Uuid().v4(),
-          name: _nameCtrl.text.trim(),
+          name: cleanName,
           primaryCategory: _primaryCategory,
           subCategory: _subCategoryCtrl.text.trim().isEmpty
               ? null
@@ -1709,7 +1992,8 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                 itemCount: items.length,
                 itemBuilder: (ctx, i) {
                   final item = items[i];
-                  final base = widget.basePackageQtyById[item.id] ?? item.quantity;
+                  final base =
+                      widget.basePackageQtyById[item.id] ?? item.quantity;
                   final isOpaque = widget.opaqueIds.contains(item.id);
                   return Card(
                     color: Theme.of(context).appBarTheme.backgroundColor,
@@ -1778,7 +2062,8 @@ class _ReviewMultipleDialogState extends State<_ReviewMultipleDialog> {
                                     final parsed = double.tryParse(
                                         val.trim().replaceAll(',', '.'));
                                     if (parsed != null && parsed > 0) {
-                                      items[i] = item.copyWith(quantity: parsed);
+                                      items[i] =
+                                          item.copyWith(quantity: parsed);
                                     }
                                   },
                                 ),

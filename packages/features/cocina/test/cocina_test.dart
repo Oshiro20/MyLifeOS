@@ -132,5 +132,38 @@ void main() {
       expect(added1, 1);
       expect(container.read(recipesProvider).shoppingList.length, 1);
     });
+
+    test('deductRecipeIngredients convierte unidades de papa contra stock en kg', () async {
+      const papa = InventoryIngredient(
+        id: 'inv_papa',
+        name: 'Papa blanca',
+        primaryCategory: 'Tubérculos y raíces',
+        quantity: 1.0,
+        unit: 'kg',
+      );
+      final repo = _FakeCocinaRepo([papa]);
+      final container = ProviderContainer(
+        overrides: [cocinaRepositoryProvider.overrideWithValue(repo)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(inventoryProvider.notifier);
+      await notifier.load();
+
+      final deducted = await notifier.deductRecipeIngredients(const [
+        RecipeIngredient(
+          id: 'r_papa',
+          recipeId: 'rec1',
+          ingredientName: 'papa',
+          quantity: 3.0,
+          unit: 'unidades',
+        ),
+      ]);
+
+      expect(deducted, ['Papa blanca']);
+      // 3 papas * 170 g = 0.51 kg descontados → quedan ~0.49 kg
+      expect(container.read(inventoryProvider).ingredients.single.quantity,
+          closeTo(0.49, 0.05));
+    });
   });
 }

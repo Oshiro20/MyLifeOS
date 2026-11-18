@@ -346,6 +346,11 @@ class ExtractRecipeUseCase {
         decoded['fuente_url'] as String? ?? decoded['url_origen'] as String?;
     final fuenteLabel =
         decoded['fuente_label'] as String? ?? decoded['tipo_fuente'] as String?;
+    final rawGoal = (decoded['objetivo_nutricional'] ??
+            decoded['objetivo'] ??
+            decoded['goal'])
+        ?.toString();
+    final goal = parseNutritionGoal(rawGoal) ?? NutritionGoal.maintain;
 
     return Recipe(
       id: resolvedId,
@@ -356,6 +361,7 @@ class ExtractRecipeUseCase {
       instructions: instructions,
       ingredients: ingredients,
       tags: tags,
+      goal: goal,
       createdAt: DateTime.now(),
       utensilios: utensilios,
       ingredientesInferidos: ingredientesInferidos,
@@ -435,6 +441,46 @@ class ExtractRecipeUseCase {
         lower.contains('botan') ||
         lower.contains('pasaboc')) {
       return MealType.snack;
+    }
+    return null;
+  }
+
+  /// Parses an AI nutrition goal string to [NutritionGoal].
+  static NutritionGoal? parseNutritionGoal(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final lower = value.toLowerCase().trim();
+    if (lower.contains('adelgaz') ||
+        lower.contains('bajar') ||
+        lower.contains('loseweight') ||
+        lower.contains('deficit') ||
+        lower.contains('dieta') ||
+        lower.contains('fitness')) {
+      return NutritionGoal.loseWeight;
+    }
+    if (lower.contains('muscul') ||
+        lower.contains('gainmuscle') ||
+        lower.contains('prote') ||
+        lower.contains('volumen') ||
+        lower.contains('masa')) {
+      return NutritionGoal.gainMuscle;
+    }
+    if (lower.contains('liger') ||
+        lower.contains('suave') ||
+        lower.contains('blanda') ||
+        lower.contains('light') ||
+        lower.contains('digest')) {
+      return NutritionGoal.light;
+    }
+    if (lower.contains('otro') ||
+        lower.contains('other') ||
+        lower.contains('personal')) {
+      return NutritionGoal.other;
+    }
+    if (lower.contains('normal') ||
+        lower.contains('mantener') ||
+        lower.contains('maintain') ||
+        lower.contains('balance')) {
+      return NutritionGoal.maintain;
     }
     return null;
   }

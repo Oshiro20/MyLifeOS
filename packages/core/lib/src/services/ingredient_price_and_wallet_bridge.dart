@@ -126,10 +126,71 @@ class WalletApplianceCandidate {
   });
 }
 
+/// Compra de pollo entero / presas pendiente de desglosar en Cocina.
+class PendingPoultryBreakdown {
+  final String id;
+  final String itemName;
+  final double quantity;
+  final String unit;
+  final double? totalPrice;
+  final String currency;
+  final bool isWholeChicken;
+  final DateTime createdAt;
+
+  const PendingPoultryBreakdown({
+    required this.id,
+    required this.itemName,
+    required this.quantity,
+    required this.unit,
+    this.totalPrice,
+    this.currency = 'PEN',
+    required this.isWholeChicken,
+    required this.createdAt,
+  });
+
+  factory PendingPoultryBreakdown.fromCandidate(WalletGroceryCandidate c) =>
+      PendingPoultryBreakdown(
+        id: c.transactionKey,
+        itemName: c.itemName,
+        quantity: c.quantity,
+        unit: c.unit,
+        totalPrice: c.totalPrice,
+        currency: c.currency,
+        isWholeChicken:
+            WalletPantryBridgeService.isWholeChickenName(c.itemName),
+        createdAt: DateTime.now(),
+      );
+
+  factory PendingPoultryBreakdown.fromJson(Map<String, dynamic> json) =>
+      PendingPoultryBreakdown(
+        id: json['id'] as String? ?? '',
+        itemName: json['itemName'] as String? ?? 'Pollo',
+        quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
+        unit: json['unit'] as String? ?? 'unidades',
+        totalPrice: (json['totalPrice'] as num?)?.toDouble(),
+        currency: json['currency'] as String? ?? 'PEN',
+        isWholeChicken: json['isWholeChicken'] as bool? ?? false,
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+            DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'itemName': itemName,
+        'quantity': quantity,
+        'unit': unit,
+        'totalPrice': totalPrice,
+        'currency': currency,
+        'isWholeChicken': isWholeChicken,
+        'createdAt': createdAt.toIso8601String(),
+      };
+}
+
 /// Lote de registros NUEVOS detectados tras el punto de corte para auto-ingresar.
 class WalletAutoSyncBatch {
   final bool baselineJustInitialized;
   final List<WalletGroceryCandidate> groceries;
+  final List<PendingPoultryBreakdown> poultryBreakdowns;
   final List<WalletWardrobeCandidate> wardrobe;
   final List<WalletApplianceCandidate> appliances;
   final List<String> allProcessedKeys;
@@ -137,13 +198,17 @@ class WalletAutoSyncBatch {
   const WalletAutoSyncBatch({
     this.baselineJustInitialized = false,
     this.groceries = const [],
+    this.poultryBreakdowns = const [],
     this.wardrobe = const [],
     this.appliances = const [],
     this.allProcessedKeys = const [],
   });
 
   bool get hasAny =>
-      groceries.isNotEmpty || wardrobe.isNotEmpty || appliances.isNotEmpty;
+      groceries.isNotEmpty ||
+      poultryBreakdowns.isNotEmpty ||
+      wardrobe.isNotEmpty ||
+      appliances.isNotEmpty;
 }
 
 /// Catálogo persistente de precios unitarios históricos por ingrediente.
@@ -402,6 +467,103 @@ class WalletPantryBridgeService {
   static const _importedTxKey = 'wallet_pantry_imported_tx_ids_v1';
   static const _hideAmountsPrefKey = 'finanzas_hide_amounts_v1';
   static const _baselineCutoffKey = 'wallet_bridge_baseline_cutoff_v1';
+  static const _pendingPoultryKey = 'wallet_pending_poultry_breakdowns_v1';
+
+  static const _specificChickenCuts = [
+    'pechuga',
+    'pierna',
+    'encuentro',
+    'ala',
+    'alita',
+    'muslo',
+    'filete',
+    'molleja',
+    'higado',
+    'hígado',
+    'menudencia',
+    'carcasa',
+  ];
+
+  static bool isWholeChickenName(String rawName) {
+    final norm = IngredientMatcher.normalizeText(rawName);
+    return norm.contains('pollo entero') ||
+        norm.contains('pollo completo') ||
+        norm.contains('pollo sin trozar') ||
+        norm == 'pollo';
+  }
+
+  static bool isPoultryBreakdownName(String rawName) {
+    final norm = IngredientMatcher.normalizeText(rawName);
+    if (!norm.contains('pollo')) return false;
+    if (_specificChickenCuts.any((cut) => norm.contains(cut))) {
+      // Si dijo "presas de pollo" o "pollo trozado" no menciona un corte único específico.
+      return norm.contains('presa') || norm.contains('trozad');
+    }
+    return isWholeChickenName(norm) ||
+        norm.contains('presa') ||
+        norm.contains('trozad') ||
+        norm.contains('cuartos de pollo');
+  }
+
+  /// Presas estándar al dividir [chickenCount] pollos enteros en octavos.
+  static List<({String name, int count})> buildWholeChickenPieces(
+    int chickenCount, {
+    bool includeOffal = false,
+  }) {
+    final n = chickenCount < 1 ? 1 : chickenCount;
+    return [
+      (name: 'Pechuga de pollo', count: 2 * n),
+      (name: 'Pierna de pollo', count: 2 * n),
+      (name: 'Encuentro de pollo', count: 2 * n),
+      (name: 'Ala de pollo', count: 2 * n),
+      if (includeOffal) (name: 'Menudencia / Carcasa de pollo', count: n),
+    ];
+  }
+
+  Future<List<PendingPoultryBreakdown>> loadPendingPoultryBreakdowns() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingPoultryKey);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .whereType<Map>()
+          .map((e) => PendingPoultryBreakdown.fromJson(Map<String, dynamic>.from(e)))
+          .where((e) => e.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _savePendingPoultryBreakdowns(
+      List<PendingPoultryBreakdown> list) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _pendingPoultryKey,
+      jsonEncode(list.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  Future<void> enqueuePendingPoultryBreakdowns(
+      List<PendingPoultryBreakdown> incoming) async {
+    if (incoming.isEmpty) return;
+    final current = List<PendingPoultryBreakdown>.from(
+        await loadPendingPoultryBreakdowns());
+    final existingIds = current.map((e) => e.id).toSet();
+    for (final item in incoming) {
+      if (existingIds.add(item.id)) {
+        current.add(item);
+      }
+    }
+    await _savePendingPoultryBreakdowns(current);
+  }
+
+  Future<void> resolvePendingPoultryBreakdown(String id) async {
+    final current = await loadPendingPoultryBreakdowns();
+    final next = current.where((e) => e.id != id).toList();
+    await _savePendingPoultryBreakdowns(next);
+  }
 
   static const _foodKeywords = [
     'alimentacion',
@@ -913,6 +1075,7 @@ class WalletPantryBridgeService {
 
     final processed = await loadProcessedTxKeys();
     final groceries = <WalletGroceryCandidate>[];
+    final poultryBreakdowns = <PendingPoultryBreakdown>[];
     final wardrobe = <WalletWardrobeCandidate>[];
     final appliances = <WalletApplianceCandidate>[];
     final keys = <String>[];
@@ -941,13 +1104,20 @@ class WalletPantryBridgeService {
 
       final gList = extractCandidatesForTx(tx, currency: summary.currency);
       if (gList.isNotEmpty) {
-        groceries.addAll(gList);
+        for (final c in gList) {
+          if (isPoultryBreakdownName(c.itemName)) {
+            poultryBreakdowns.add(PendingPoultryBreakdown.fromCandidate(c));
+          } else {
+            groceries.add(c);
+          }
+        }
         keys.add(key);
       }
     }
 
     return WalletAutoSyncBatch(
       groceries: groceries,
+      poultryBreakdowns: poultryBreakdowns,
       wardrobe: wardrobe,
       appliances: appliances,
       allProcessedKeys: keys,
@@ -1003,3 +1173,96 @@ final walletGroceryCandidatesProvider =
   final bridge = ref.watch(walletGroceryBridgeProvider);
   return bridge.extractPendingGroceryCandidates(summary);
 });
+
+/// Notifier para compras de pollo pendiente de despiece en octavos/presas.
+class PendingPoultryNotifier extends Notifier<List<PendingPoultryBreakdown>> {
+  final _bridge = WalletPantryBridgeService();
+
+  @override
+  List<PendingPoultryBreakdown> build() {
+    Future.microtask(load);
+    return const [];
+  }
+
+  Future<void> load() async {
+    state = await _bridge.loadPendingPoultryBreakdowns();
+  }
+
+  Future<void> enqueue(List<PendingPoultryBreakdown> items) async {
+    if (items.isEmpty) return;
+    await _bridge.enqueuePendingPoultryBreakdowns(items);
+    await load();
+  }
+
+  Future<void> resolve(String id) async {
+    await _bridge.resolvePendingPoultryBreakdown(id);
+    await load();
+  }
+}
+
+final pendingPoultryBreakdownsProvider =
+    NotifierProvider<PendingPoultryNotifier, List<PendingPoultryBreakdown>>(
+  PendingPoultryNotifier.new,
+);
+
+/// Equivalencias personalizadas peso ↔ unidades por ingrediente (gramos por 1 unidad)
+/// persistidas en MyLifeOS (ej. 1 kg de papa = 6 unidades → 166.7 g/u).
+class IngredientEquivalenceService {
+  static const _prefKey = 'ingredient_grams_per_unit_v1';
+
+  Future<Map<String, double>> loadAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_prefKey);
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return {
+        for (final entry in decoded.entries)
+          if (entry.value is num && (entry.value as num) > 0)
+            entry.key: (entry.value as num).toDouble(),
+      };
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<void> saveGramsPerUnit(String ingredientName, double gramsPerUnit) async {
+    if (gramsPerUnit <= 0) return;
+    final key = IngredientMatcher.normalizeText(ingredientName);
+    if (key.isEmpty) return;
+    final current = Map<String, double>.from(await loadAll());
+    current[key] = gramsPerUnit;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, jsonEncode(current));
+  }
+}
+
+class IngredientEquivalenceNotifier extends Notifier<Map<String, double>> {
+  final _service = IngredientEquivalenceService();
+
+  @override
+  Map<String, double> build() {
+    Future.microtask(load);
+    return const {};
+  }
+
+  Future<void> load() async {
+    try {
+      state = await _service.loadAll();
+    } catch (_) {}
+  }
+
+  Future<void> setGramsPerUnit(String ingredientName, double gramsPerUnit) async {
+    final key = IngredientMatcher.normalizeText(ingredientName);
+    if (key.isEmpty || gramsPerUnit <= 0) return;
+    state = {...state, key: gramsPerUnit};
+    try {
+      await _service.saveGramsPerUnit(ingredientName, gramsPerUnit);
+    } catch (_) {}
+  }
+}
+
+final ingredientEquivalencesProvider =
+    NotifierProvider<IngredientEquivalenceNotifier, Map<String, double>>(
+  IngredientEquivalenceNotifier.new,
+);
