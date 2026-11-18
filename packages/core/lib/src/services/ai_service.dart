@@ -568,14 +568,15 @@ $missingList
 Lo que el usuario SÍ tiene en su despensa:
 $pantryList
 
-Para cada ingrediente faltante que SÍ esté cubierto (por otro nombre/estado) o pueda sustituirse con lo que hay en despensa:
-- "type": "direct" si es esencialmente el mismo ingrediente (ej. "Menestra lentejas baby" cocida cubre "Lentejas baby"; "Ajos molidos" cubre "Pasta de ajos"; "Pierna de pollo" cubre "Pollo en presas").
-- "type": "substitute" si es un sustituto culinario válido en cocina peruana (ej. "Tomate" picado en lugar de "Ají especial (panca)" para dar cuerpo al aderezo; "Leche" evaporada por crema).
+Para cada ingrediente faltante que SÍ esté cubierto (por otro nombre/estado) o pueda sustituirse de forma gastronómicamente coherente con lo que hay en despensa:
+- "type": "direct" si es esencialmente el mismo ingrediente en otro formato (ej. "Menestra lentejas baby" cocida cubre "Lentejas baby"; "Ajos molidos" cubre "Pasta de ajos"; "Pierna de pollo" cubre "Pollo en presas").
+- "type": "substitute" SOLO si es un reemplazo culinario realmente compatible en sabor, aroma o cuerpo en cocina peruana (ej. "Tomate" picado por "Ají especial (panca)" en aderezo; "Leche" evaporada por crema).
+- REGLA CRÍTICA: NO fuerces sustitutos culinariamente incompatibles ni repitas el mismo ingrediente de despensa como comodín para todo. Por ejemplo, NO sustituyas "Pasta de ajos" / "Ajos" por "Tomate", ni comino/pimienta/sal por vegetales. Si no hay equivalente ni sustituto válido en la despensa, OMITE ese ingrediente del JSON.
 - "pantryItem": nombre EXACTO del producto de la despensa arriba listada.
-- "useQty": número estimado a usar en la unidad de despensa.
+- "useQty": número realista en la unidad de despensa (sin exceder el stock disponible; considera usos previos si repites producto).
 - "reason": explicación breve en español (máx. 8 palabras).
 
-Devuelve ÚNICAMENTE una lista JSON (si no hay matches útiles, devuelve []):
+Devuelve ÚNICAMENTE una lista JSON (si no hay matches válidos, devuelve []):
 [{"recipeIngredient": "...", "pantryItem": "...", "type": "direct", "useQty": 1.0, "reason": "..."}]''';
 
     final raw = await _executePrompt(prompt: prompt, expectJson: true)

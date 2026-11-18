@@ -252,5 +252,84 @@ void main() {
       sessionNotifier.endSession();
       expect(container.read(cookingSessionProvider), isNull);
     });
+
+    test(
+        'buildCookConfirmationData mueve sustitutos IA a deducibles y los quita de faltantes',
+        () {
+      const pollo = InventoryIngredient(
+        id: 'inv_pollo',
+        name: 'Pierna de pollo',
+        primaryCategory: 'Carnes y Aves',
+        quantity: 6.0,
+        unit: 'unidades',
+      );
+      const tomate = InventoryIngredient(
+        id: 'inv_tomate',
+        name: 'Tomate',
+        primaryCategory: 'Verduras',
+        quantity: 3.0,
+        unit: 'unidades',
+      );
+      const pantry = [pollo, tomate];
+
+      const recipeReqs = [
+        RecipeIngredient(
+          id: 'r1',
+          recipeId: 'rec_lentejas',
+          ingredientName: 'Pollo en presas',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+        RecipeIngredient(
+          id: 'r2',
+          recipeId: 'rec_lentejas',
+          ingredientName: 'Ají especial (panca) en pasta',
+          quantity: 2.0,
+          unit: 'cucharadas',
+        ),
+        RecipeIngredient(
+          id: 'r3',
+          recipeId: 'rec_lentejas',
+          ingredientName: 'Sal',
+          quantity: 1.0,
+          unit: 'al gusto',
+        ),
+      ];
+
+      final checks = IngredientMatcher.evaluateRecipe(
+        recipeIngredients: recipeReqs,
+        inventory: pantry,
+      );
+      final ajiKey =
+          IngredientMatcher.normalizeText('Ají especial (panca) en pasta');
+
+      final confirmData = buildCookConfirmationData(
+        checks: checks,
+        adaptedSubstitutes: {
+          ajiKey: (
+            pantryId: tomate.id,
+            pantryName: tomate.name,
+            pantryUnit: tomate.unit,
+            quantity: 1.0,
+            reason: 'Cuerpo y color al aderezo',
+          ),
+        },
+        pantry: pantry,
+      );
+
+      expect(
+        confirmData.deductibleRows.map((r) => r.pantry.name).toList(),
+        ['Pierna de pollo', 'Tomate'],
+      );
+      final tomateRow = confirmData.deductibleRows.last;
+      expect(tomateRow.defaultDeduct, closeTo(1.0, 0.001));
+      expect(tomateRow.replacesNames, ['Ají especial (panca) en pasta']);
+      expect(tomateRow.willDeplete, isFalse);
+
+      expect(
+        confirmData.alertChecks.map((c) => c.requirement.ingredientName).toList(),
+        ['Sal'],
+      );
+    });
   });
 }

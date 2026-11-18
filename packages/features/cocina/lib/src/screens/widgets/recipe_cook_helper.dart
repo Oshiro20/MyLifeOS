@@ -370,6 +370,7 @@ class _RecipeIngredientCheckListState
           );
 
       final directAliases = <String, String>{};
+      final allocatedByPantryId = <String, double>{};
       var subCount = 0;
 
       for (final m in matches) {
@@ -384,15 +385,23 @@ class _RecipeIngredientCheckListState
         if (m.matchType == 'direct') {
           directAliases[reqKey] = matchedPantry.name;
         } else {
-          final qty = (m.estimatedPantryQty != null && m.estimatedPantryQty! > 0)
-              ? m.estimatedPantryQty!.clamp(0.05, matchedPantry.quantity).toDouble()
-              : (matchedPantry.quantity >= 1 ? 1.0 : matchedPantry.quantity);
+          final alreadyUsed = allocatedByPantryId[matchedPantry.id] ?? 0.0;
+          final remainingStock =
+              (matchedPantry.quantity - alreadyUsed).clamp(0.0, matchedPantry.quantity);
+          if (remainingStock <= 0.001) continue;
+
+          final desired = (m.estimatedPantryQty != null && m.estimatedPantryQty! > 0)
+              ? m.estimatedPantryQty!
+              : (remainingStock >= 1 ? 1.0 : remainingStock);
+          final qty = desired.clamp(0.05, remainingStock).toDouble();
+          allocatedByPantryId[matchedPantry.id] = alreadyUsed + qty;
+
           _aiSubstitutes[reqKey] = (
             sub: (
               pantryId: matchedPantry.id,
               pantryName: matchedPantry.name,
               pantryUnit: matchedPantry.unit,
-              quantity: qty,
+              quantity: double.parse(qty.toStringAsFixed(2)),
               reason: m.reason,
             ),
             accepted: true,
@@ -745,21 +754,68 @@ class _RecipeIngredientCheckListState
                   if (subEntry != null)
                     Padding(
                       padding: const EdgeInsets.only(left: 19, top: 4),
-                      child: FilterChip(
-                        label: Text(
-                          '🔄 Usar ${subEntry.sub.pantryName} en vez (-${formatIngredientQty(subEntry.sub.quantity)} ${subEntry.sub.pantryUnit})',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        selected: subEntry.accepted,
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onSelected: (sel) {
-                          setState(() {
-                            _aiSubstitutes[reqKey] =
-                                (sub: subEntry.sub, accepted: sel);
-                          });
-                          _emitSubstitutes();
-                        },
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: FilterChip(
+                              label: Text(
+                                '🔄 Usar ${subEntry.sub.pantryName} en vez (-${formatIngredientQty(subEntry.sub.quantity)} ${subEntry.sub.pantryUnit})',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              selected: subEntry.accepted,
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              onSelected: (sel) {
+                                setState(() {
+                                  _aiSubstitutes[reqKey] =
+                                      (sub: subEntry.sub, accepted: sel);
+                                });
+                                _emitSubstitutes();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: Icon(
+                              Icons.tune,
+                              size: 16,
+                              color: const Color(0xFF00F0FF)
+                                  .withValues(alpha: 0.85),
+                            ),
+                            tooltip: 'Cambiar sustituto o cantidad',
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            onPressed: inventory.isEmpty
+                                ? null
+                                : () async {
+                                    final picked = await pickCookingExtra(
+                                        context, inventory);
+                                    if (picked != null && mounted) {
+                                      setState(() {
+                                        _aiSubstitutes[reqKey] = (
+                                          sub: (
+                                            pantryId: picked.item.id,
+                                            pantryName: picked.item.name,
+                                            pantryUnit: picked.item.unit,
+                                            quantity: picked.qty,
+                                            reason: picked.item.id ==
+                                                    subEntry.sub.pantryId
+                                                ? subEntry.sub.reason
+                                                : 'Elegido manualmente',
+                                          ),
+                                          accepted: true,
+                                        );
+                                      });
+                                      _emitSubstitutes();
+                                    }
+                                  },
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -787,6 +843,107 @@ class _RecipeIngredientCheckListState
       ),
     );
   }
+}
+
+/// Fila consolidada en la hoja de confirmación antes de cocinar (agrupa
+/// ingredientes directos de la receta y sustitutos IA aceptados por producto).
+class CookDeductibleRow {
+  final InventoryIngredient pantry;
+  final double defaultDeduct;
+  final List<String> replacesNames;
+  final bool willDeplete;
+
+  const CookDeductibleRow({
+    required this.pantry,
+    required this.defaultDeduct,
+    this.replacesNames = const [],
+    this.willDeplete = false,
+  });
+}
+
+class CookConfirmationData {
+  final List<CookDeductibleRow> deductibleRows;
+  final List<RecipeIngredientCheck> alertChecks;
+
+  const CookConfirmationData({
+    required this.deductibleRows,
+    required this.alertChecks,
+  });
+}
+
+/// Construye los descuentos reales previstos (incluyendo sustitutos IA
+/// agrupados por producto de despensa) y filtra de faltantes los ya adaptados.
+CookConfirmationData buildCookConfirmationData({
+  required List<RecipeIngredientCheck> checks,
+  required Map<String, AdaptedSubstitute> adaptedSubstitutes,
+  required List<InventoryIngredient> pantry,
+}) {
+  final pantryById = <String, InventoryIngredient>{
+    for (final p in pantry) p.id: p,
+  };
+  final reqNameByKey = <String, String>{
+    for (final c in checks)
+      IngredientMatcher.normalizeText(c.requirement.ingredientName):
+          c.requirement.ingredientName,
+  };
+
+  final accById = <String, ({
+    InventoryIngredient pantry,
+    double totalDeduct,
+    List<String> replaces,
+  })>{};
+
+  for (final check in checks) {
+    final matched = check.pantryMatch;
+    if (!check.canDeduct || matched == null) continue;
+    final livePantry = pantryById[matched.id] ?? matched;
+    final qty = check.deductedInPantryUnit ?? 0.0;
+    final prev = accById[livePantry.id];
+    accById[livePantry.id] = (
+      pantry: livePantry,
+      totalDeduct: (prev?.totalDeduct ?? 0.0) + qty,
+      replaces: prev?.replaces ?? <String>[],
+    );
+  }
+
+  for (final entry in adaptedSubstitutes.entries) {
+    final sub = entry.value;
+    final livePantry = pantryById[sub.pantryId];
+    if (livePantry == null) continue;
+    final originalName = reqNameByKey[entry.key] ?? entry.key;
+    final prev = accById[livePantry.id];
+    final nextReplaces = [...(prev?.replaces ?? const <String>[])];
+    if (!nextReplaces.contains(originalName)) {
+      nextReplaces.add(originalName);
+    }
+    accById[livePantry.id] = (
+      pantry: livePantry,
+      totalDeduct: (prev?.totalDeduct ?? 0.0) + sub.quantity,
+      replaces: nextReplaces,
+    );
+  }
+
+  final deductibleRows = accById.values.map((acc) {
+    final clamped = acc.totalDeduct.clamp(0.0, acc.pantry.quantity).toDouble();
+    final rounded = double.parse(clamped.toStringAsFixed(2));
+    return CookDeductibleRow(
+      pantry: acc.pantry,
+      defaultDeduct: rounded,
+      replacesNames: List.unmodifiable(acc.replaces),
+      willDeplete: acc.pantry.quantity - rounded <= 0.001,
+    );
+  }).toList();
+
+  final alertChecks = checks.where((c) {
+    if (c.availability == IngredientAvailability.available) return false;
+    final k = IngredientMatcher.normalizeText(c.requirement.ingredientName);
+    return !adaptedSubstitutes.containsKey(k);
+  }).toList();
+
+  return CookConfirmationData(
+    deductibleRows: deductibleRows,
+    alertChecks: alertChecks,
+  );
 }
 
 class _CookConfirmPlan {
@@ -840,12 +997,14 @@ Future<bool> confirmAndCookRecipe({
     learnedAliases: learnedAliases,
   );
 
-  // Filtrar alertas que ya fueron adaptadas explícitamente por el usuario con sustituto IA
-  final needsConfirmation = checks.any((c) {
-    final k = IngredientMatcher.normalizeText(c.requirement.ingredientName);
-    if (adaptedSubstitutes.containsKey(k)) return false;
-    return c.availability != IngredientAvailability.available || c.willDeplete;
-  });
+  final confirmData = buildCookConfirmationData(
+    checks: checks,
+    adaptedSubstitutes: adaptedSubstitutes,
+    pantry: pantryBefore,
+  );
+
+  final needsConfirmation = confirmData.alertChecks.isNotEmpty ||
+      confirmData.deductibleRows.any((r) => r.willDeplete);
 
   var plan = const _CookConfirmPlan(
     skipPantryIds: {},
@@ -861,45 +1020,35 @@ Future<bool> confirmAndCookRecipe({
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => _CookConfirmationSheet(
         recipeName: recipe.name,
-        checks: checks,
+        confirmData: confirmData,
       ),
     );
     if (confirmed == null) return false;
     plan = confirmed;
   }
 
-  // Capturar snapshot exacto solo de ítems que se intentarán descontar (incluyendo sustitutos y extras).
+  // Capturar snapshot exacto y consolidar descuentos (directos, modificados, sustitutos y extras).
   final affectedSnapshots = <InventoryIngredient>[];
   final seenSnapshotIds = <String>{};
   final effectiveSkipIds = Set<String>.from(plan.skipPantryIds);
   final extraDeductions = <({String pantryId, double quantity})>[];
 
-  for (final check in checks) {
-    final pantry = check.pantryMatch;
-    if (check.canDeduct &&
-        pantry != null &&
-        !effectiveSkipIds.contains(pantry.id)) {
-      if (seenSnapshotIds.add(pantry.id)) {
-        final original =
-            pantryBefore.where((i) => i.id == pantry.id).firstOrNull;
-        if (original != null) affectedSnapshots.add(original);
-      }
-      final overrideQty = plan.deductedQtyOverrides[pantry.id];
-      if (overrideQty != null) {
-        effectiveSkipIds.add(pantry.id);
-        if (overrideQty > 0) {
-          extraDeductions.add((pantryId: pantry.id, quantity: overrideQty));
-        }
-      }
-    }
-  }
-  for (final sub in adaptedSubstitutes.values) {
-    if (effectiveSkipIds.contains(sub.pantryId)) continue;
-    extraDeductions.add((pantryId: sub.pantryId, quantity: sub.quantity));
-    if (seenSnapshotIds.add(sub.pantryId)) {
+  for (final row in confirmData.deductibleRows) {
+    final pantry = row.pantry;
+    if (effectiveSkipIds.contains(pantry.id)) continue;
+    if (seenSnapshotIds.add(pantry.id)) {
       final original =
-          pantryBefore.where((i) => i.id == sub.pantryId).firstOrNull;
+          pantryBefore.where((i) => i.id == pantry.id).firstOrNull;
       if (original != null) affectedSnapshots.add(original);
+    }
+    final overrideQty = plan.deductedQtyOverrides[pantry.id];
+    if (overrideQty != null || row.replacesNames.isNotEmpty) {
+      effectiveSkipIds.add(pantry.id);
+      final finalQty =
+          (overrideQty ?? row.defaultDeduct).clamp(0.0, pantry.quantity).toDouble();
+      if (finalQty > 0) {
+        extraDeductions.add((pantryId: pantry.id, quantity: finalQty));
+      }
     }
   }
   for (final ex in plan.extraItems) {
@@ -920,30 +1069,22 @@ Future<bool> confirmAndCookRecipe({
   // Preparar ítems para Lista de compras si el usuario lo activó.
   final shoppingEntries = <({String name, double quantity, String unit})>[];
   if (plan.addMissingToShoppingList) {
-    for (final c in checks) {
-      final k = IngredientMatcher.normalizeText(c.requirement.ingredientName);
-      if (adaptedSubstitutes.containsKey(k)) continue;
-      if (c.availability == IngredientAvailability.missing ||
-          c.availability == IngredientAvailability.insufficient ||
-          c.availability == IngredientAvailability.incompatibleUnit) {
-        shoppingEntries.add((
-          name: c.requirement.ingredientName,
-          quantity: c.missingInRecipeUnit ?? c.requirement.quantity,
-          unit: c.requirement.unit,
-        ));
-      }
+    for (final c in confirmData.alertChecks) {
+      shoppingEntries.add((
+        name: c.requirement.ingredientName,
+        quantity: c.missingInRecipeUnit ?? c.requirement.quantity,
+        unit: c.requirement.unit,
+      ));
     }
   }
   if (plan.addDepletedToShoppingList) {
-    for (final c in checks) {
-      final pantry = c.pantryMatch;
-      if (pantry != null &&
-          c.willDeplete &&
-          !plan.skipPantryIds.contains(pantry.id)) {
+    for (final row in confirmData.deductibleRows) {
+      if (row.willDeplete && !plan.skipPantryIds.contains(row.pantry.id)) {
         shoppingEntries.add((
-          name: pantry.name,
-          quantity: c.deductedInPantryUnit ?? c.requirement.quantity,
-          unit: pantry.unit,
+          name: row.pantry.name,
+          quantity:
+              plan.deductedQtyOverrides[row.pantry.id] ?? row.defaultDeduct,
+          unit: row.pantry.unit,
         ));
       }
     }
@@ -1032,11 +1173,11 @@ Future<bool> confirmAndCookRecipe({
 
 class _CookConfirmationSheet extends ConsumerStatefulWidget {
   final String recipeName;
-  final List<RecipeIngredientCheck> checks;
+  final CookConfirmationData confirmData;
 
   const _CookConfirmationSheet({
     required this.recipeName,
-    required this.checks,
+    required this.confirmData,
   });
 
   @override
@@ -1053,18 +1194,16 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
   bool _loadingSubstitutes = false;
   String? _aiSubstitutesText;
 
-  late final List<RecipeIngredientCheck> _deductibleChecks;
-  late final List<RecipeIngredientCheck> _alertChecks;
+  List<CookDeductibleRow> get _deductibleRows =>
+      widget.confirmData.deductibleRows;
+  List<RecipeIngredientCheck> get _alertChecks =>
+      widget.confirmData.alertChecks;
   late final bool _hasDepleting;
 
   @override
   void initState() {
     super.initState();
-    _deductibleChecks = widget.checks.where((c) => c.canDeduct).toList();
-    _alertChecks = widget.checks
-        .where((c) => c.availability != IngredientAvailability.available)
-        .toList();
-    _hasDepleting = _deductibleChecks.any((c) => c.willDeplete);
+    _hasDepleting = _deductibleRows.any((r) => r.willDeplete);
     _addMissingToShoppingList = _alertChecks.isNotEmpty;
   }
 
@@ -1108,7 +1247,7 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
           ),
           const SizedBox(height: 4),
           Text(
-            _deductibleChecks.isEmpty
+            _deductibleRows.isEmpty
                 ? 'No hay coincidencias automáticas para descontar, pero igual puedes cocinar esta receta.'
                 : 'Revisa qué se descontará de tu despensa y qué te falta.',
             style: theme.textTheme.bodySmall?.copyWith(
@@ -1121,7 +1260,7 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_deductibleChecks.isNotEmpty) ...[
+                  if (_deductibleRows.isNotEmpty) ...[
                     Text(
                       'SE DESCONTARÁ DE TU DESPENSA',
                       style: TextStyle(
@@ -1133,12 +1272,11 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                       ),
                     ),
                     const SizedBox(height: 6),
-                    ..._deductibleChecks.map((c) {
-                      final pantry = c.pantryMatch!;
+                    ..._deductibleRows.map((row) {
+                      final pantry = row.pantry;
                       final checked = !_skipPantryIds.contains(pantry.id);
-                      final defaultDeduct = c.deductedInPantryUnit!;
                       final activeDeduct =
-                          _deductedOverrides[pantry.id] ?? defaultDeduct;
+                          _deductedOverrides[pantry.id] ?? row.defaultDeduct;
                       final remaining = (pantry.quantity - activeDeduct)
                           .clamp(0.0, pantry.quantity);
                       final willDepleteNow = remaining <= 0.001;
@@ -1152,6 +1290,9 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                       final remText = willDepleteNow
                           ? 'quedará en 0'
                           : 'quedarán ${formatIngredientQty(remaining)} ${pantry.unit}';
+                      final replaceNote = row.replacesNames.isEmpty
+                          ? null
+                          : 'Reemplaza: ${row.replacesNames.join(", ")}';
                       return CheckboxListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
@@ -1215,15 +1356,29 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                             ],
                           ],
                         ),
-                        subtitle: Text(
-                          '-${formatIngredientQty(activeDeduct)} ${pantry.unit} ($remText)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: willDepleteNow
-                                ? Colors.amber
-                                : theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                          ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '-${formatIngredientQty(activeDeduct)} ${pantry.unit} ($remText)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: willDepleteNow
+                                    ? Colors.amber
+                                    : theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
+                              ),
+                            ),
+                            if (replaceNote != null)
+                              Text(
+                                '🔄 $replaceNote',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF00F0FF),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
                         ),
                         onChanged: (val) {
                           setState(() {
@@ -1505,7 +1660,7 @@ class _CookConfirmationSheetState extends ConsumerState<_CookConfirmationSheet> 
                   ),
                   icon: const Icon(Icons.whatshot, color: Colors.black),
                   label: Text(
-                    _deductibleChecks.isEmpty
+                    _deductibleRows.isEmpty
                         ? 'Cocinar igual'
                         : '¡Cocinar ahora!',
                     style: const TextStyle(fontWeight: FontWeight.bold),
