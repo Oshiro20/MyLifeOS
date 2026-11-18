@@ -436,6 +436,73 @@ void main() {
         NutritionGoal.maintain,
       );
     });
+
+    test('empareja Menestra lentejas baby cocida (1 u) con Lentejas baby (250 g), Pasta de ajos con Ajos molidos y Entrepierna con Encuentro', () {
+      const pantry = [
+        InventoryIngredient(
+          id: 'p_lentejas',
+          name: 'Menestra lentejas baby',
+          primaryCategory: 'Legumbres',
+          preparation: 'cocido / listo',
+          quantity: 1.0,
+          unit: 'unidades',
+        ),
+        InventoryIngredient(
+          id: 'p_ajos',
+          name: 'Ajos molidos',
+          primaryCategory: 'Condimentos y especias',
+          quantity: 300.0,
+          unit: 'ml',
+        ),
+        InventoryIngredient(
+          id: 'p_pollo',
+          name: 'Entrepierna de pollo',
+          primaryCategory: 'Proteínas animales',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+      ];
+      const recipe = [
+        RecipeIngredient(
+          id: 'r1',
+          recipeId: 'rec1',
+          ingredientName: 'Lentejas baby',
+          quantity: 250.0,
+          unit: 'gramos',
+        ),
+        RecipeIngredient(
+          id: 'r2',
+          recipeId: 'rec1',
+          ingredientName: 'Pasta de ajos',
+          quantity: 3.0,
+          unit: 'cucharadas',
+        ),
+        RecipeIngredient(
+          id: 'r3',
+          recipeId: 'rec1',
+          ingredientName: 'Encuentro de pollo',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+      ];
+
+      final checks = IngredientMatcher.evaluateRecipe(
+        recipeIngredients: recipe,
+        inventory: pantry,
+      );
+
+      expect(checks[0].availability, IngredientAvailability.available);
+      expect(checks[0].pantryMatch?.id, 'p_lentejas');
+      expect(checks[0].deductedInPantryUnit, closeTo(1.0, 0.001));
+
+      expect(checks[1].availability, IngredientAvailability.available);
+      expect(checks[1].pantryMatch?.id, 'p_ajos');
+      expect(checks[1].deductedInPantryUnit, closeTo(45.0, 0.001));
+
+      expect(checks[2].availability, IngredientAvailability.available);
+      expect(checks[2].pantryMatch?.id, 'p_pollo');
+      expect(checks[2].deductedInPantryUnit, closeTo(2.0, 0.001));
+    });
   });
 }
 

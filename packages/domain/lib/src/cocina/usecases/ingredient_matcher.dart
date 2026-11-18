@@ -110,10 +110,29 @@ class IngredientMatcher {
     'sobres',
     'caja',
     'cajas',
+    'menestra',
+    'menestras',
+    'presa',
+    'presas',
+    'cuarto',
+    'cuartos',
+    'mitad',
+    'mitades',
+    'bolsita',
+    'bolsitas',
+    'taper',
+    'tapper',
+    'tupper',
+    'porcion',
+    'porciones',
   };
 
   static const _synonymGroups = <List<String>>[
     ['sillao', 'salsa de soya', 'salsa de soja', 'soya'],
+    ['pasta de ajos', 'pasta de ajo', 'ajo molido', 'ajos molidos', 'ajo', 'ajos'],
+    ['entrepierna', 'entrepierna de pollo', 'encuentro', 'encuentro de pollo', 'muslo', 'muslo de pollo'],
+    ['presa de pecho', 'presa de pecho de pollo', 'pechuga de pollo', 'pechuga', 'pecho'],
+    ['aji especial', 'aji panca', 'panca'],
     ['palta', 'aguacate'],
     ['choclo', 'maiz'],
     ['camote', 'batata'],
@@ -225,24 +244,31 @@ class IngredientMatcher {
       }
     }
 
-    // Aliases / sinónimos culinarios exactos (ej. "sillao" <-> "salsa de soya").
+    // Aliases / sinónimos culinarios exactos (ej. "sillao" <-> "salsa de soya",
+    // "pasta de ajos" <-> "ajos molidos", "entrepierna" <-> "encuentro").
     for (final group in _synonymGroups) {
       final hasR = group.any((alias) =>
           rNorm == alias ||
+          rNorm.contains(alias) ||
           (rTokens.length == 1 && tokensMatch(rTokens.first, alias)));
       final hasP = group.any((alias) =>
           pNorm == alias ||
+          pNorm.contains(alias) ||
           (pTokens.length == 1 && tokensMatch(pTokens.first, alias)));
       if (hasR && hasP) return 720;
     }
 
-    // Prefijo de corte o parte ("dientes de ajo" -> "ajo", "pechuga de pollo" -> "pollo").
-    final rCore = (rTokens.length >= 2 && _partMeasurePrefixes.contains(rTokens.first))
-        ? rTokens.sublist(1)
-        : rTokens;
-    final pCore = (pTokens.length >= 2 && _partMeasurePrefixes.contains(pTokens.first))
-        ? pTokens.sublist(1)
-        : pTokens;
+    // Prefijo de corte/categoría ("dientes de ajo" -> "ajo", "menestra lentejas baby" -> "lentejas baby").
+    List<String> stripPrefixes(List<String> tokens) {
+      var cur = tokens;
+      while (cur.length >= 2 && _partMeasurePrefixes.contains(cur.first)) {
+        cur = cur.sublist(1);
+      }
+      return cur;
+    }
+
+    final rCore = stripPrefixes(rTokens);
+    final pCore = stripPrefixes(pTokens);
 
     if (rCore.isNotEmpty &&
         pCore.isNotEmpty &&
@@ -260,6 +286,7 @@ class IngredientMatcher {
     List<InventoryIngredient> inventory,
     String recipeIngredientName, {
     String? preferredUnit,
+    Map<String, String>? learnedAliases,
   }) {
     InventoryIngredient? best;
     var bestScore = 0;
@@ -267,16 +294,26 @@ class IngredientMatcher {
 
     final targetUnit =
         preferredUnit != null ? MeasurementUnit.fromString(preferredUnit) : null;
+    final normRecipeName = normalizeText(recipeIngredientName);
+    final learnedPantryTarget = learnedAliases?[normRecipeName];
 
     for (final item in inventory) {
-      final score = _scoreCandidate(recipeIngredientName, item.name);
+      var score = 0;
+      if (learnedPantryTarget != null &&
+          normalizeText(item.name) == normalizeText(learnedPantryTarget)) {
+        score = 950;
+      } else {
+        score = _scoreCandidate(recipeIngredientName, item.name);
+      }
       if (score <= 0) continue;
 
       final isConvertible = targetUnit != null &&
-          IngredientUnitNormalizer.convert(
+          IngredientUnitNormalizer.convertForIngredient(
                 1,
                 targetUnit,
                 MeasurementUnit.fromString(item.unit),
+                item.name,
+                pantryPreparation: item.preparation,
               ) !=
               null;
 
@@ -321,6 +358,7 @@ class IngredientMatcher {
     required List<RecipeIngredient> recipeIngredients,
     required List<InventoryIngredient> inventory,
     Map<String, double>? customGramsPerUnit,
+    Map<String, String>? learnedAliases,
   }) {
     final checks = <RecipeIngredientCheck>[];
     // Copia local de cantidades restantes por si la receta repite el mismo ingrediente.
@@ -333,6 +371,7 @@ class IngredientMatcher {
         inventory,
         req.ingredientName,
         preferredUnit: req.unit,
+        learnedAliases: learnedAliases,
       );
 
       if (match == null) {
@@ -362,6 +401,7 @@ class IngredientMatcher {
         invUnit,
         req.ingredientName,
         gramsPerUnitOverride: customGrams,
+        pantryPreparation: match.preparation,
       ) ??
           IngredientUnitNormalizer.convertForIngredient(
             req.quantity,
@@ -369,6 +409,7 @@ class IngredientMatcher {
             invUnit,
             match.name,
             gramsPerUnitOverride: customGrams,
+            pantryPreparation: match.preparation,
           );
 
       if (deductedConv == null) {
@@ -387,6 +428,7 @@ class IngredientMatcher {
         reqUnit,
         req.ingredientName,
         gramsPerUnitOverride: customGrams,
+        pantryPreparation: match.preparation,
       ) ??
           IngredientUnitNormalizer.convertForIngredient(
             currentQty,
@@ -394,6 +436,7 @@ class IngredientMatcher {
             reqUnit,
             match.name,
             gramsPerUnitOverride: customGrams,
+            pantryPreparation: match.preparation,
           );
       final availableInRecipeUnit = availableConv?.value;
 

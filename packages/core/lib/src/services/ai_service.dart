@@ -532,6 +532,96 @@ Propón 2 ideas EXPRESS (5-15 min) para aprovecharlos HOY sin desperdiciar comid
         .timeout(const Duration(seconds: 25));
   }
 
+  /// Valida con IA qué ingredientes faltantes de [recipeName] están cubiertos
+  /// por variantes en [pantryItems] (`direct`) o pueden sustituirse (`substitute`).
+  Future<
+      List<
+          ({
+            String recipeIngredient,
+            String pantryItemName,
+            String matchType,
+            double? estimatedPantryQty,
+            String reason,
+          })>> validatePantryAgainstRecipeGemini({
+    required String recipeName,
+    required List<({String name, double quantity, String unit})>
+        missingIngredients,
+    required List<({String name, double quantity, String unit, String preparation})>
+        pantryItems,
+  }) async {
+    if (missingIngredients.isEmpty || pantryItems.isEmpty) return const [];
+
+    final missingList = missingIngredients
+        .map((m) => '- "${m.name}" (${m.quantity} ${m.unit})')
+        .join('\n');
+    final pantryList = pantryItems
+        .take(50)
+        .map((p) =>
+            '- "${p.name}" (${p.quantity} ${p.unit}${p.preparation.isNotEmpty ? ', estado: ${p.preparation}' : ''})')
+        .join('\n');
+
+    final prompt = '''
+Eres un chef práctico peruano. Analiza la receta "$recipeName".
+Ingredientes de la receta marcados como faltantes:
+$missingList
+
+Lo que el usuario SÍ tiene en su despensa:
+$pantryList
+
+Para cada ingrediente faltante que SÍ esté cubierto (por otro nombre/estado) o pueda sustituirse con lo que hay en despensa:
+- "type": "direct" si es esencialmente el mismo ingrediente (ej. "Menestra lentejas baby" cocida cubre "Lentejas baby"; "Ajos molidos" cubre "Pasta de ajos"; "Pierna de pollo" cubre "Pollo en presas").
+- "type": "substitute" si es un sustituto culinario válido en cocina peruana (ej. "Tomate" picado en lugar de "Ají especial (panca)" para dar cuerpo al aderezo; "Leche" evaporada por crema).
+- "pantryItem": nombre EXACTO del producto de la despensa arriba listada.
+- "useQty": número estimado a usar en la unidad de despensa.
+- "reason": explicación breve en español (máx. 8 palabras).
+
+Devuelve ÚNICAMENTE una lista JSON (si no hay matches útiles, devuelve []):
+[{"recipeIngredient": "...", "pantryItem": "...", "type": "direct", "useQty": 1.0, "reason": "..."}]''';
+
+    final raw = await _executePrompt(prompt: prompt, expectJson: true)
+        .timeout(const Duration(seconds: 28));
+    if (raw == null || raw.isEmpty) return const [];
+
+    try {
+      final start = raw.indexOf('[');
+      final end = raw.lastIndexOf(']');
+      if (start == -1 || end <= start) return const [];
+      final decoded = jsonDecode(raw.substring(start, end + 1));
+      if (decoded is! List) return const [];
+      final out = <({
+        String recipeIngredient,
+        String pantryItemName,
+        String matchType,
+        double? estimatedPantryQty,
+        String reason,
+      })>[];
+      for (final item in decoded) {
+        if (item is! Map) continue;
+        final map = Map<String, dynamic>.from(item);
+        final rIng = map['recipeIngredient']?.toString().trim() ?? '';
+        final pItem = map['pantryItem']?.toString().trim() ?? '';
+        final mType =
+            (map['type']?.toString().toLowerCase().trim() == 'substitute')
+                ? 'substitute'
+                : 'direct';
+        final qty = (map['useQty'] as num?)?.toDouble();
+        final reason = map['reason']?.toString().trim() ?? '';
+        if (rIng.isNotEmpty && pItem.isNotEmpty) {
+          out.add((
+            recipeIngredient: rIng,
+            pantryItemName: pItem,
+            matchType: mType,
+            estimatedPantryQty: qty,
+            reason: reason,
+          ));
+        }
+      }
+      return out;
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Retorna un mapa `recipeId -> etiqueta de MealType` (ej. 'Seco', 'Sopa', 'Postre').
   Future<Map<String, String>> categorizeRecipesWithGemini(
     List<

@@ -471,7 +471,9 @@ class WalletPantryBridgeService {
 
   static const _specificChickenCuts = [
     'pechuga',
+    'pecho',
     'pierna',
+    'entrepierna',
     'encuentro',
     'ala',
     'alita',
@@ -505,16 +507,22 @@ class WalletPantryBridgeService {
         norm.contains('cuartos de pollo');
   }
 
-  /// Presas estándar al dividir [chickenCount] pollos enteros en octavos.
+  /// Presas estándar al dividir [chickenCount] pollos enteros:
+  /// - [breastInFour] == false → octavos (2 pechugas, 2 piernas, 2 entrepiernas, 2 alas).
+  /// - [breastInFour] == true → 10 presas (4 presas de pecho, 2 piernas, 2 entrepiernas, 2 alas).
   static List<({String name, int count})> buildWholeChickenPieces(
     int chickenCount, {
+    bool breastInFour = false,
     bool includeOffal = false,
   }) {
     final n = chickenCount < 1 ? 1 : chickenCount;
     return [
-      (name: 'Pechuga de pollo', count: 2 * n),
+      if (breastInFour)
+        (name: 'Presa de pecho de pollo', count: 4 * n)
+      else
+        (name: 'Pechuga de pollo', count: 2 * n),
       (name: 'Pierna de pollo', count: 2 * n),
-      (name: 'Encuentro de pollo', count: 2 * n),
+      (name: 'Entrepierna de pollo', count: 2 * n),
       (name: 'Ala de pollo', count: 2 * n),
       if (includeOffal) (name: 'Menudencia / Carcasa de pollo', count: n),
     ];
@@ -1265,4 +1273,75 @@ class IngredientEquivalenceNotifier extends Notifier<Map<String, double>> {
 final ingredientEquivalencesProvider =
     NotifierProvider<IngredientEquivalenceNotifier, Map<String, double>>(
   IngredientEquivalenceNotifier.new,
+);
+
+/// Alias aprendidos persistentes (ingrediente de receta -> ingrediente real en despensa),
+/// validados por Gemini AI o por el usuario para no repetir consultas a IA.
+class IngredientAliasService {
+  static const _prefKey = 'learned_ingredient_aliases_v1';
+
+  Future<Map<String, String>> loadAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_prefKey);
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return {
+        for (final entry in decoded.entries)
+          if (entry.value != null && entry.value.toString().trim().isNotEmpty)
+            entry.key: entry.value.toString().trim(),
+      };
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<void> saveAliases(Map<String, String> updates) async {
+    if (updates.isEmpty) return;
+    final current = Map<String, String>.from(await loadAll());
+    updates.forEach((k, v) {
+      final nk = IngredientMatcher.normalizeText(k);
+      if (nk.isNotEmpty && v.trim().isNotEmpty) {
+        current[nk] = v.trim();
+      }
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, jsonEncode(current));
+  }
+}
+
+class LearnedIngredientAliasesNotifier extends Notifier<Map<String, String>> {
+  final _service = IngredientAliasService();
+
+  @override
+  Map<String, String> build() {
+    Future.microtask(load);
+    return const {};
+  }
+
+  Future<void> load() async {
+    try {
+      state = await _service.loadAll();
+    } catch (_) {}
+  }
+
+  Future<void> learnAll(Map<String, String> newAliases) async {
+    if (newAliases.isEmpty) return;
+    final next = Map<String, String>.from(state);
+    newAliases.forEach((k, v) {
+      final nk = IngredientMatcher.normalizeText(k);
+      if (nk.isNotEmpty && v.trim().isNotEmpty) {
+        next[nk] = v.trim();
+      }
+    });
+    state = next;
+    try {
+      await _service.saveAliases(newAliases);
+    } catch (_) {}
+  }
+}
+
+final learnedIngredientAliasesProvider =
+    NotifierProvider<LearnedIngredientAliasesNotifier, Map<String, String>>(
+  LearnedIngredientAliasesNotifier.new,
 );

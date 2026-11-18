@@ -51,14 +51,16 @@ class PoultryBreakdownSheet extends ConsumerStatefulWidget {
 class _PoultryBreakdownSheetState extends ConsumerState<PoultryBreakdownSheet> {
   late bool _wholeChickenMode;
   late int _wholeCount;
+  bool _breastInFour = false;
   bool _includeOffal = false;
   String _storageArea = 'Congelador';
   bool _saving = false;
 
   final Map<String, int> _customPieces = {
-    'Pechuga de pollo': 2,
     'Pierna de pollo': 2,
-    'Encuentro de pollo': 2,
+    'Entrepierna de pollo': 2,
+    'Pechuga de pollo': 2,
+    'Presa de pecho de pollo': 0,
     'Ala de pollo': 2,
     'Filete de pollo': 0,
     'Menudencia / Carcasa de pollo': 0,
@@ -80,6 +82,7 @@ class _PoultryBreakdownSheetState extends ConsumerState<PoultryBreakdownSheet> {
   void _applyWholePreset() {
     final preset = WalletPantryBridgeService.buildWholeChickenPieces(
       _wholeCount,
+      breastInFour: _breastInFour,
       includeOffal: _includeOffal,
     );
     _customPieces.updateAll((_, __) => 0);
@@ -214,6 +217,18 @@ class _PoultryBreakdownSheetState extends ConsumerState<PoultryBreakdownSheet> {
                       : null,
                 ),
               ],
+            ),
+            SwitchListTile.adaptive(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Cortar pecho en 4 presas (10 presas)',
+                  style: TextStyle(fontSize: 13)),
+              value: _breastInFour,
+              activeTrackColor: const Color(0xFF00C896),
+              onChanged: (v) => setState(() {
+                _breastInFour = v;
+                _applyWholePreset();
+              }),
             ),
             SwitchListTile.adaptive(
               dense: true,

@@ -31,43 +31,183 @@ List<RecipeIngredient> scaleRecipeIngredients(
       .toList();
 }
 
-/// Lista de ingredientes con semáforo de disponibilidad real frente a la despensa
-/// y botón rápido para mandar faltantes a la Lista de compras.
-class RecipeIngredientCheckList extends ConsumerWidget {
+typedef AdaptedSubstitute = ({
+  String pantryId,
+  String pantryName,
+  String pantryUnit,
+  double quantity,
+  String reason,
+});
+
+/// Lista de ingredientes con semáforo de disponibilidad real frente a la despensa,
+/// validación/adaptación bajo demanda con Gemini y botón rápido para Lista de compras.
+class RecipeIngredientCheckList extends ConsumerStatefulWidget {
   final List<RecipeIngredient> scaledIngredients;
   final bool isScaled;
+  final String recipeName;
+  final ValueChanged<Map<String, AdaptedSubstitute>>? onSubstitutesChanged;
 
   const RecipeIngredientCheckList({
     required this.scaledIngredients,
     this.isScaled = false,
+    this.recipeName = '',
+    this.onSubstitutesChanged,
     super.key,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecipeIngredientCheckList> createState() =>
+      _RecipeIngredientCheckListState();
+}
+
+class _RecipeIngredientCheckListState
+    extends ConsumerState<RecipeIngredientCheckList> {
+  bool _validatingAI = false;
+  final Map<String, ({AdaptedSubstitute sub, bool accepted})> _aiSubstitutes = {};
+
+  void _emitSubstitutes() {
+    final cb = widget.onSubstitutesChanged;
+    if (cb == null) return;
+    cb({
+      for (final entry in _aiSubstitutes.entries)
+        if (entry.value.accepted) entry.key: entry.value.sub,
+    });
+  }
+
+  Future<void> _validateWithGemini(
+    List<RecipeIngredientCheck> checks,
+    List<InventoryIngredient> inventory,
+  ) async {
+    if (_validatingAI || inventory.isEmpty) return;
+    final missingChecks = checks
+        .where((c) =>
+            c.availability == IngredientAvailability.missing ||
+            c.availability == IngredientAvailability.incompatibleUnit)
+        .toList();
+    if (missingChecks.isEmpty) return;
+
+    setState(() => _validatingAI = true);
+    try {
+      final matches = await ref
+          .read(geminiProvider)
+          .validatePantryAgainstRecipeGemini(
+            recipeName: widget.recipeName.isNotEmpty
+                ? widget.recipeName
+                : 'Receta actual',
+            missingIngredients: missingChecks
+                .map((c) => (
+                      name: c.requirement.ingredientName,
+                      quantity: c.requirement.quantity,
+                      unit: c.requirement.unit,
+                    ))
+                .toList(),
+            pantryItems: inventory
+                .map((i) => (
+                      name: i.name,
+                      quantity: i.quantity,
+                      unit: i.unit,
+                      preparation: i.preparation,
+                    ))
+                .toList(),
+          );
+
+      final directAliases = <String, String>{};
+      var subCount = 0;
+
+      for (final m in matches) {
+        final matchedPantry = inventory
+            .where((i) =>
+                IngredientMatcher.normalizeText(i.name) ==
+                IngredientMatcher.normalizeText(m.pantryItemName))
+            .firstOrNull;
+        if (matchedPantry == null) continue;
+
+        final reqKey = IngredientMatcher.normalizeText(m.recipeIngredient);
+        if (m.matchType == 'direct') {
+          directAliases[reqKey] = matchedPantry.name;
+        } else {
+          final qty = (m.estimatedPantryQty != null && m.estimatedPantryQty! > 0)
+              ? m.estimatedPantryQty!.clamp(0.05, matchedPantry.quantity).toDouble()
+              : (matchedPantry.quantity >= 1 ? 1.0 : matchedPantry.quantity);
+          _aiSubstitutes[reqKey] = (
+            sub: (
+              pantryId: matchedPantry.id,
+              pantryName: matchedPantry.name,
+              pantryUnit: matchedPantry.unit,
+              quantity: qty,
+              reason: m.reason,
+            ),
+            accepted: true,
+          );
+          subCount++;
+        }
+      }
+
+      if (directAliases.isNotEmpty) {
+        await ref
+            .read(learnedIngredientAliasesProvider.notifier)
+            .learnAll(directAliases);
+      }
+
+      if (mounted) {
+        setState(() {});
+        _emitSubstitutes();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              (directAliases.isEmpty && subCount == 0)
+                  ? 'IA revisó tu despensa: no halló equivalentes extra.'
+                  : '✨ IA: ${directAliases.length} emparejado(s) · $subCount sustituto(s) adaptado(s)',
+            ),
+            backgroundColor: const Color(0xFF00C896),
+            duration: const Duration(milliseconds: 2400),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al validar con IA: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _validatingAI = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final inventory =
         ref.watch(inventoryProvider.select((s) => s.ingredients));
     final shoppingList =
         ref.watch(recipesProvider.select((s) => s.shoppingList));
     final equivalences = ref.watch(ingredientEquivalencesProvider);
+    final learnedAliases = ref.watch(learnedIngredientAliasesProvider);
     final pendingShoppingKeys = shoppingList
         .where((i) => !i.bought)
         .map((i) => IngredientMatcher.normalizeText(i.name))
         .toSet();
 
     final checks = IngredientMatcher.evaluateRecipe(
-      recipeIngredients: scaledIngredients,
+      recipeIngredients: widget.scaledIngredients,
       inventory: inventory,
       customGramsPerUnit: equivalences,
+      learnedAliases: learnedAliases,
     );
 
     final theme = Theme.of(context);
-    final availableCount = checks
-        .where((c) => c.availability == IngredientAvailability.available)
-        .length;
-    final missingCount = checks
-        .where((c) => c.availability != IngredientAvailability.available)
-        .length;
+    final availableCount = checks.where((c) {
+      if (c.availability == IngredientAvailability.available) return true;
+      final k = IngredientMatcher.normalizeText(c.requirement.ingredientName);
+      return _aiSubstitutes[k]?.accepted == true;
+    }).length;
+    final missingCount = checks.length - availableCount;
+    final hasUnmatched = checks.any((c) =>
+        c.availability == IngredientAvailability.missing ||
+        c.availability == IngredientAvailability.incompatibleUnit);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +217,8 @@ class RecipeIngredientCheckList extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Wrap(
               spacing: 6,
-              runSpacing: 4,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _summaryChip(
                   color: const Color(0xFF00C896),
@@ -88,17 +229,67 @@ class RecipeIngredientCheckList extends ConsumerWidget {
                     color: Colors.amber,
                     text: '$missingCount por revisar',
                   ),
+                if (hasUnmatched && inventory.isNotEmpty)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: _validatingAI
+                        ? null
+                        : () => _validateWithGemini(checks, inventory),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00F0FF).withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              const Color(0xFF00F0FF).withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_validatingAI)
+                            const SizedBox(
+                              width: 11,
+                              height: 11,
+                              child: CircularProgressIndicator(strokeWidth: 1.5),
+                            )
+                          else
+                            const Icon(Icons.auto_awesome,
+                                size: 12, color: Color(0xFF00F0FF)),
+                          const SizedBox(width: 4),
+                          Text(
+                            _validatingAI ? 'Validando...' : 'Validar con IA',
+                            style: const TextStyle(
+                              color: Color(0xFF00F0FF),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
         ...checks.map((check) {
           final req = check.requirement;
+          final reqKey = IngredientMatcher.normalizeText(req.ingredientName);
+          final subEntry = _aiSubstitutes[reqKey];
+          final usingSub = subEntry != null && subEntry.accepted;
+
           final (dotColor, subtitleText) = switch (check.availability) {
             IngredientAvailability.available => (
                 const Color(0xFF00C896),
                 () {
                   final match = check.pantryMatch;
                   if (match == null) return null;
+                  if (IngredientUnitNormalizer.isCookedLegume(
+                      match.name, match.preparation)) {
+                    return 'Cubierto por ${match.name} (${match.preparation}) · ahorras hervor/remojo';
+                  }
                   final diffName = IngredientMatcher.normalizeText(match.name) !=
                       IngredientMatcher.normalizeText(req.ingredientName);
                   if (check.isApproximateConversion &&
@@ -113,113 +304,150 @@ class RecipeIngredientCheckList extends ConsumerWidget {
               ),
             IngredientAvailability.insufficient => (
                 Colors.amber,
-                'Tienes ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit} (te falta)',
+                'Tienes ${formatIngredientQty(check.availableInRecipeUnit ?? check.pantryMatch!.quantity)} de ${formatIngredientQty(req.quantity)} ${req.unit} (se usarán tus ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit})',
               ),
-            IngredientAvailability.incompatibleUnit => (
-                Colors.orange,
-                'En despensa: ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit} (otra unidad)',
-              ),
-            IngredientAvailability.missing => (
-                Colors.redAccent,
-                'No en despensa',
-              ),
+            IngredientAvailability.incompatibleUnit => usingSub
+                ? (
+                    const Color(0xFF00F0FF),
+                    'Adaptado con ${subEntry.sub.pantryName} (${subEntry.sub.reason})',
+                  )
+                : (
+                    Colors.orange,
+                    'En despensa: ${formatIngredientQty(check.pantryMatch!.quantity)} ${check.pantryMatch!.unit} (otra unidad)',
+                  ),
+            IngredientAvailability.missing => usingSub
+                ? (
+                    const Color(0xFF00F0FF),
+                    'Adaptado con ${subEntry.sub.pantryName} (${subEntry.sub.reason})',
+                  )
+                : (
+                    Colors.redAccent,
+                    'No en despensa',
+                  ),
           };
 
-          final reqKey = IngredientMatcher.normalizeText(req.ingredientName);
           final alreadyInList = pendingShoppingKeys.contains(reqKey);
-          final showShoppingAction =
-              check.availability == IngredientAvailability.missing ||
-                  check.availability == IngredientAvailability.insufficient;
+          final showShoppingAction = !usingSub &&
+              (check.availability == IngredientAvailability.missing ||
+                  check.availability == IngredientAvailability.insufficient);
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.fiber_manual_record, size: 9, color: dotColor),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        req.ingredientName,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (subtitleText != null)
-                        Text(
-                          subtitleText,
-                          style: TextStyle(
-                            color: dotColor.withValues(alpha: 0.9),
-                            fontSize: 11,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.fiber_manual_record, size: 9, color: dotColor),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            req.ingredientName,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${formatIngredientQty(req.quantity)} ${req.unit}',
-                  style: TextStyle(
-                    color: isScaled
-                        ? const Color(0xFFFF9800)
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.55),
-                    fontSize: 12,
-                    fontWeight: isScaled ? FontWeight.w700 : FontWeight.w400,
-                  ),
-                ),
-                if (showShoppingAction) ...[
-                  const SizedBox(width: 6),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(6),
-                    onTap: alreadyInList
-                        ? null
-                        : () async {
-                            final qtyToAdd =
-                                check.missingInRecipeUnit ?? req.quantity;
-                            await ref
-                                .read(recipesProvider.notifier)
-                                .addMissingToShoppingList([
-                              (
-                                name: req.ingredientName,
-                                quantity: qtyToAdd,
-                                unit: req.unit,
-                              )
-                            ]);
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    '🛒 ${req.ingredientName} agregado a Lista de compras'),
-                                duration: const Duration(milliseconds: 1600),
+                          if (subtitleText != null)
+                            Text(
+                              subtitleText,
+                              style: TextStyle(
+                                color: dotColor.withValues(alpha: 0.9),
+                                fontSize: 11,
                               ),
-                            );
-                          },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: (alreadyInList
-                                ? const Color(0xFF00C896)
-                                : Colors.amber)
-                            .withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        alreadyInList
-                            ? Icons.check
-                            : Icons.add_shopping_cart,
-                        size: 14,
-                        color: alreadyInList
-                            ? const Color(0xFF00C896)
-                            : Colors.amber,
+                            ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${formatIngredientQty(req.quantity)} ${req.unit}',
+                      style: TextStyle(
+                        color: widget.isScaled
+                            ? const Color(0xFFFF9800)
+                            : theme.colorScheme.onSurface
+                                .withValues(alpha: 0.55),
+                        fontSize: 12,
+                        fontWeight:
+                            widget.isScaled ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                    if (showShoppingAction) ...[
+                      const SizedBox(width: 6),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(6),
+                        onTap: alreadyInList
+                            ? null
+                            : () async {
+                                final qtyToAdd =
+                                    check.missingInRecipeUnit ?? req.quantity;
+                                await ref
+                                    .read(recipesProvider.notifier)
+                                    .addMissingToShoppingList([
+                                  (
+                                    name: req.ingredientName,
+                                    quantity: qtyToAdd,
+                                    unit: req.unit,
+                                  )
+                                ]);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        '🛒 ${req.ingredientName} agregado a Lista de compras'),
+                                    duration:
+                                        const Duration(milliseconds: 1600),
+                                  ),
+                                );
+                              },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (alreadyInList
+                                    ? const Color(0xFF00C896)
+                                    : Colors.amber)
+                                .withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            alreadyInList
+                                ? Icons.check
+                                : Icons.add_shopping_cart,
+                            size: 14,
+                            color: alreadyInList
+                                ? const Color(0xFF00C896)
+                                : Colors.amber,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (subEntry != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 19, top: 4),
+                    child: FilterChip(
+                      label: Text(
+                        '🔄 Usar ${subEntry.sub.pantryName} en vez (-${formatIngredientQty(subEntry.sub.quantity)} ${subEntry.sub.pantryUnit})',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      selected: subEntry.accepted,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onSelected: (sel) {
+                        setState(() {
+                          _aiSubstitutes[reqKey] =
+                              (sub: subEntry.sub, accepted: sel);
+                        });
+                        _emitSubstitutes();
+                      },
+                    ),
                   ),
-                ],
               ],
             ),
           );
@@ -268,6 +496,7 @@ Future<bool> confirmAndCookRecipe({
   required Recipe recipe,
   int? scaledServings,
   bool popSheetOnSuccess = false,
+  Map<String, AdaptedSubstitute> adaptedSubstitutes = const {},
 }) async {
   final container = ProviderScope.containerOf(context);
   final inventoryNotifier = container.read(inventoryProvider.notifier);
@@ -279,17 +508,21 @@ Future<bool> confirmAndCookRecipe({
   final pantryBefore =
       List<InventoryIngredient>.from(container.read(inventoryProvider).ingredients);
   final equivalences = container.read(ingredientEquivalencesProvider);
+  final learnedAliases = container.read(learnedIngredientAliasesProvider);
 
   final checks = IngredientMatcher.evaluateRecipe(
     recipeIngredients: scaledIngredients,
     inventory: pantryBefore,
     customGramsPerUnit: equivalences,
+    learnedAliases: learnedAliases,
   );
 
-  final needsConfirmation = checks.any(
-    (c) =>
-        c.availability != IngredientAvailability.available || c.willDeplete,
-  );
+  // Filtrar alertas que ya fueron adaptadas explícitamente por el usuario con sustituto IA
+  final needsConfirmation = checks.any((c) {
+    final k = IngredientMatcher.normalizeText(c.requirement.ingredientName);
+    if (adaptedSubstitutes.containsKey(k)) return false;
+    return c.availability != IngredientAvailability.available || c.willDeplete;
+  });
 
   var plan = const _CookConfirmPlan(
     skipPantryIds: {},
@@ -312,7 +545,7 @@ Future<bool> confirmAndCookRecipe({
     plan = confirmed;
   }
 
-  // Capturar snapshot exacto solo de ítems que se intentarán descontar.
+  // Capturar snapshot exacto solo de ítems que se intentarán descontar (incluyendo sustitutos adaptados).
   final affectedSnapshots = <InventoryIngredient>[];
   final seenSnapshotIds = <String>{};
   for (final check in checks) {
@@ -326,16 +559,29 @@ Future<bool> confirmAndCookRecipe({
       if (original != null) affectedSnapshots.add(original);
     }
   }
+  final extraDeductions = <({String pantryId, double quantity})>[];
+  for (final sub in adaptedSubstitutes.values) {
+    if (plan.skipPantryIds.contains(sub.pantryId)) continue;
+    extraDeductions.add((pantryId: sub.pantryId, quantity: sub.quantity));
+    if (seenSnapshotIds.add(sub.pantryId)) {
+      final original =
+          pantryBefore.where((i) => i.id == sub.pantryId).firstOrNull;
+      if (original != null) affectedSnapshots.add(original);
+    }
+  }
 
   final deducted = await inventoryNotifier.deductRecipeIngredients(
     scaledIngredients,
     skipPantryIds: plan.skipPantryIds,
+    extraDeductions: extraDeductions,
   );
 
   // Preparar ítems para Lista de compras si el usuario lo activó.
   final shoppingEntries = <({String name, double quantity, String unit})>[];
   if (plan.addMissingToShoppingList) {
     for (final c in checks) {
+      final k = IngredientMatcher.normalizeText(c.requirement.ingredientName);
+      if (adaptedSubstitutes.containsKey(k)) continue;
       if (c.availability == IngredientAvailability.missing ||
           c.availability == IngredientAvailability.insufficient ||
           c.availability == IngredientAvailability.incompatibleUnit) {

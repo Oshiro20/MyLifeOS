@@ -356,6 +356,11 @@ void main() {
       expect(batch.poultryBreakdowns.single.totalPrice, 22.0);
       final octavos = WalletPantryBridgeService.buildWholeChickenPieces(1);
       expect(octavos.fold<int>(0, (s, p) => s + p.count), 8);
+      expect(octavos.any((p) => p.name == 'Entrepierna de pollo' && p.count == 2), isTrue);
+
+      final diezPresas = WalletPantryBridgeService.buildWholeChickenPieces(1, breastInFour: true);
+      expect(diezPresas.fold<int>(0, (s, p) => s + p.count), 10);
+      expect(diezPresas.any((p) => p.name == 'Presa de pecho de pollo' && p.count == 4), isTrue);
     });
   });
 }

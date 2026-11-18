@@ -43,6 +43,7 @@ class _RecipeDetailContent extends ConsumerStatefulWidget {
 class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
   int _scaledServings = 1;
   MealType? _tipoComida;
+  Map<String, AdaptedSubstitute> _adaptedSubstitutes = const {};
 
   int get _baseServings => widget.recipe.servings > 0 ? widget.recipe.servings : 1;
 
@@ -271,6 +272,8 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
             scaledIngredients:
                 scaleRecipeIngredients(widget.recipe, _scaledServings),
             isScaled: isScaled,
+            recipeName: widget.recipe.name,
+            onSubstitutesChanged: (subs) => _adaptedSubstitutes = subs,
           ),
         ],
         // Instructions
@@ -403,6 +406,7 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
       recipe: widget.recipe,
       scaledServings: _scaledServings,
       popSheetOnSuccess: true,
+      adaptedSubstitutes: _adaptedSubstitutes,
     );
   }
 }

@@ -179,6 +179,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
               invUnit,
               recipeIng.ingredientName,
               gramsPerUnitOverride: override,
+              pantryPreparation: pantryItem.preparation,
             ) ??
             IngredientUnitNormalizer.convertForIngredient(
               recipeIng.quantity,
@@ -186,6 +187,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
               invUnit,
               pantryItem.name,
               gramsPerUnitOverride: override,
+              pantryPreparation: pantryItem.preparation,
             ))
         ?.value;
   }
@@ -195,33 +197,20 @@ class InventoryNotifier extends Notifier<InventoryState> {
   Future<List<String>> deductRecipeIngredients(
     List<RecipeIngredient> recipeIngredients, {
     Set<String> skipPantryIds = const {},
+    List<({String pantryId, double quantity})> extraDeductions = const [],
   }) async {
     if (!_hasLoaded) {
       await load();
     }
     final equivalences = ref.read(ingredientEquivalencesProvider);
+    final aliases = ref.read(learnedIngredientAliasesProvider);
     final deducted = <String>[];
     final updatedIngredients =
         List<InventoryIngredient>.from(state.ingredients);
 
-    for (final recipeIng in recipeIngredients) {
-      final match = IngredientMatcher.findBestMatch(
-        updatedIngredients,
-        recipeIng.ingredientName,
-        preferredUnit: recipeIng.unit,
-      );
-      if (match == null || skipPantryIds.contains(match.id)) continue;
-
-      final matchIndex =
-          updatedIngredients.indexWhere((item) => item.id == match.id);
-      if (matchIndex == -1) continue;
-
+    Future<void> applyDeductionByIndex(int matchIndex, double amount) async {
       final pantryItem = updatedIngredients[matchIndex];
-      final converted =
-          _convertQtyForDeduction(recipeIng, pantryItem, equivalences);
-      if (converted == null) continue;
-      final newQty = pantryItem.quantity - converted;
-
+      final newQty = pantryItem.quantity - amount;
       if (newQty <= 0.0001) {
         updatedIngredients.removeAt(matchIndex);
         deducted.add(pantryItem.name);
@@ -232,6 +221,36 @@ class InventoryNotifier extends Notifier<InventoryState> {
         deducted.add(pantryItem.name);
         await _repo.updateIngredient(updated);
       }
+    }
+
+    for (final recipeIng in recipeIngredients) {
+      final match = IngredientMatcher.findBestMatch(
+        updatedIngredients,
+        recipeIng.ingredientName,
+        preferredUnit: recipeIng.unit,
+        learnedAliases: aliases,
+      );
+      if (match == null || skipPantryIds.contains(match.id)) continue;
+
+      final matchIndex =
+          updatedIngredients.indexWhere((item) => item.id == match.id);
+      if (matchIndex == -1) continue;
+
+      final pantryItem = updatedIngredients[matchIndex];
+      final converted =
+          _convertQtyForDeduction(recipeIng, pantryItem, equivalences);
+      if (converted == null || converted <= 0) continue;
+      await applyDeductionByIndex(matchIndex, converted);
+    }
+
+    for (final extra in extraDeductions) {
+      if (extra.quantity <= 0 || skipPantryIds.contains(extra.pantryId)) {
+        continue;
+      }
+      final idx =
+          updatedIngredients.indexWhere((i) => i.id == extra.pantryId);
+      if (idx == -1) continue;
+      await applyDeductionByIndex(idx, extra.quantity);
     }
 
     if (deducted.isNotEmpty) {
@@ -261,6 +280,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
   /// Revert a deduction (undo last cook action)
   Future<void> revertDeduction(List<RecipeIngredient> recipeIngredients) async {
     final equivalences = ref.read(ingredientEquivalencesProvider);
+    final aliases = ref.read(learnedIngredientAliasesProvider);
     final revertedIngredients =
         List<InventoryIngredient>.from(state.ingredients);
 
@@ -269,6 +289,7 @@ class InventoryNotifier extends Notifier<InventoryState> {
         revertedIngredients,
         recipeIng.ingredientName,
         preferredUnit: recipeIng.unit,
+        learnedAliases: aliases,
       );
       final matchIndex = match == null
           ? -1

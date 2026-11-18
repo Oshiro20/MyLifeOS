@@ -714,6 +714,7 @@ class _RecipeDetailSheet extends StatefulWidget {
 
 class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
   int _scaledServings = 1; // Current scaled servings (default 1 person)
+  Map<String, AdaptedSubstitute> _adaptedSubstitutes = const {};
 
   int get _baseServings =>
       widget.recipe.servings > 0 ? widget.recipe.servings : 1;
@@ -877,6 +878,8 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
               scaledIngredients:
                   scaleRecipeIngredients(widget.recipe, _scaledServings),
               isScaled: isScaled,
+              recipeName: widget.recipe.name,
+              onSubstitutesChanged: (subs) => _adaptedSubstitutes = subs,
             ),
           ],
           if (widget.recipe.instructions.isNotEmpty) ...[
@@ -1009,6 +1012,7 @@ class _RecipeDetailSheetState extends State<_RecipeDetailSheet> {
       recipe: recipe,
       scaledServings: scaledServings,
       popSheetOnSuccess: true,
+      adaptedSubstitutes: _adaptedSubstitutes,
     );
   }
 

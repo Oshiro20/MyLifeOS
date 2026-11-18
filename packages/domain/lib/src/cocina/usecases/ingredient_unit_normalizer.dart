@@ -55,9 +55,13 @@ class IngredientUnitNormalizer {
     'huevo': 60.0,
     'ajo': 5.0,
     'pechuga': 250.0,
+    'pecho': 150.0,
+    'presa de pecho': 130.0,
     'pierna': 150.0,
+    'entrepierna': 140.0,
     'encuentro': 140.0,
     'ala': 85.0,
+    'filete': 150.0,
     'presa': 150.0,
     'pollo': 1800.0,
   };
@@ -66,6 +70,10 @@ class IngredientUnitNormalizer {
   static const List<String> _densityOneToOneKeywords = [
     'ajo molido',
     'ajos molidos',
+    'pasta de ajo',
+    'pasta de ajos',
+    'aji especial',
+    'aji panca',
     'sillao',
     'soya',
     'leche',
@@ -78,6 +86,19 @@ class IngredientUnitNormalizer {
     'crema',
     'aceite',
     'miel',
+  ];
+
+  static const List<String> _cookedLegumeKeywords = [
+    'menestra',
+    'lenteja',
+    'frejol',
+    'frijol',
+    'pallar',
+    'garbanzo',
+    'arveja',
+    'alverja',
+    'habas',
+    'tarwi',
   ];
 
   static String _normKey(String raw) {
@@ -110,34 +131,57 @@ class IngredientUnitNormalizer {
     return null;
   }
 
-  /// Convierte teniendo en cuenta equivalencias peso ↔ unidades (ej. 1 kg papa ↔ ~6 u)
-  /// y densidad 1:1 para pastas/líquidos conocidos cuando es necesario.
+  /// Devuelve verdadero si el ingrediente es una menestra cocida / lista en bolsa o porción.
+  static bool isCookedLegume(String ingredientName, String preparation) {
+    final prep = _normKey(preparation);
+    if (!prep.contains('cocid') && !prep.contains('listo')) return false;
+    final norm = _normKey(ingredientName);
+    return _cookedLegumeKeywords.any(norm.contains);
+  }
+
+  static bool _isPackOrDiscrete(MeasurementUnit u) =>
+      _isDiscrete(u) ||
+      u == MeasurementUnit.bolsa ||
+      u == MeasurementUnit.paquete;
+
+  /// Convierte teniendo en cuenta equivalencias peso ↔ unidades (ej. 1 kg papa ↔ ~6 u),
+  /// bolsita de menestra cocida (1 u/bolsa ≈ 250 g en crudo) y densidad 1:1 para pastas/líquidos.
   static ({double value, bool isApproximate})? convertForIngredient(
     double fromQuantity,
     MeasurementUnit fromUnit,
     MeasurementUnit toUnit,
     String ingredientName, {
     double? gramsPerUnitOverride,
+    String pantryPreparation = '',
   }) {
     final exact = convert(fromQuantity, fromUnit, toUnit);
     if (exact != null) {
       return (value: exact, isApproximate: false);
     }
 
-    final gPerUnit = (gramsPerUnitOverride != null && gramsPerUnitOverride > 0)
+    // Caso menestra cocida en bolsa/unidad (1 bolsita ≈ 250 g en receta cruda)
+    final cookedLegume = isCookedLegume(ingredientName, pantryPreparation);
+    final effectiveGramsPerUnit = (gramsPerUnitOverride != null && gramsPerUnitOverride > 0)
         ? gramsPerUnitOverride
-        : defaultGramsPerUnit(ingredientName);
+        : (cookedLegume ? 250.0 : defaultGramsPerUnit(ingredientName));
 
-    // Masa <-> Unidades / Docenas
-    if (gPerUnit != null) {
-      if (_isMass(fromUnit) && _isDiscrete(toUnit)) {
+    // Masa <-> Unidades / Docenas / Bolsa / Paquete
+    if (effectiveGramsPerUnit != null) {
+      final packFrom =
+          cookedLegume ? _isPackOrDiscrete(fromUnit) : _isDiscrete(fromUnit);
+      final packTo =
+          cookedLegume ? _isPackOrDiscrete(toUnit) : _isDiscrete(toUnit);
+
+      if (_isMass(fromUnit) && packTo) {
         final grams = _toGrams(fromQuantity, fromUnit);
-        final units = grams / gPerUnit;
-        return (value: _fromUnits(units, toUnit), isApproximate: true);
+        final units = grams / effectiveGramsPerUnit;
+        final val = _isDiscrete(toUnit) ? _fromUnits(units, toUnit) : units;
+        return (value: val, isApproximate: true);
       }
-      if (_isDiscrete(fromUnit) && _isMass(toUnit)) {
-        final units = _toUnits(fromQuantity, fromUnit);
-        final grams = units * gPerUnit;
+      if (packFrom && _isMass(toUnit)) {
+        final units =
+            _isDiscrete(fromUnit) ? _toUnits(fromQuantity, fromUnit) : fromQuantity;
+        final grams = units * effectiveGramsPerUnit;
         return (value: _fromGrams(grams, toUnit), isApproximate: true);
       }
     }
