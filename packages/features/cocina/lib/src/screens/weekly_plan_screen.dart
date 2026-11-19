@@ -6,6 +6,7 @@ import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
 import '../utils/cooking_history_service.dart';
+import 'widgets/prepared_meals_card.dart';
 import 'widgets/recipe_detail_sheet.dart';
 
 class WeeklyPlanScreen extends ConsumerStatefulWidget {
@@ -93,6 +94,9 @@ class _WeeklyPlanScreenState extends ConsumerState<WeeklyPlanScreen> {
                       );
                       return Column(
                         children: [
+                          const PreparedMealsTrayCard(
+                            margin: EdgeInsets.only(bottom: 10),
+                          ),
                           _CookingHistoryBanner(),
                           if (missing.isNotEmpty)
                             _WeeklyBudgetBanner(

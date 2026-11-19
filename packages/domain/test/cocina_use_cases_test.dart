@@ -503,6 +503,38 @@ void main() {
       expect(checks[2].pantryMatch?.id, 'p_pollo');
       expect(checks[2].deductedInPantryUnit, closeTo(2.0, 0.001));
     });
+
+    test('ignora porciones guardadas y extras listos antiguos para no confundir recetas', () {
+      const pantry = [
+        InventoryIngredient(
+          id: 'p_leftover_main',
+          name: 'Pollo frito con lentejas (preparado)',
+          primaryCategory: 'Preparados / Listos',
+          subCategory: 'Porción guardada',
+          preparation: 'cocido / listo',
+          quantity: 2.0,
+          unit: 'unidades',
+        ),
+        InventoryIngredient(
+          id: 'p_leftover_extra',
+          name: 'Huevos (cocido)',
+          primaryCategory: 'Preparados / Listos',
+          subCategory: 'Extra listo',
+          preparation: 'cocido / listo',
+          quantity: 3.0,
+          unit: 'unidades',
+        ),
+      ];
+
+      expect(
+        IngredientMatcher.findBestMatch(pantry, 'Huevos'),
+        isNull,
+      );
+      expect(
+        IngredientMatcher.findBestMatch(pantry, 'Lentejas'),
+        isNull,
+      );
+    });
   });
 }
 

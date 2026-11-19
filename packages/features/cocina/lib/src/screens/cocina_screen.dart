@@ -10,6 +10,7 @@ import 'shopping_tab.dart';
 import 'weekly_plan_screen.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/cooking_session_provider.dart';
+import '../providers/prepared_meals_provider.dart';
 import 'widgets/cooking_session_banner.dart';
 
 class CocinaScreen extends ConsumerStatefulWidget {
@@ -38,10 +39,16 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
     super.dispose();
   }
 
+  bool _migratingLegacy = false;
+
   List<Widget> _buildTabs(WidgetRef ref) {
     final invState = ref.watch(inventoryProvider);
+    final preparedCount = ref.watch(preparedMealsProvider).length;
     final expiringCount = invState.ingredients
-        .where((i) => i.isExpired || i.isExpiringSoon)
+        .where((i) =>
+            i.subCategory != 'Porción guardada' &&
+            i.subCategory != 'Extra listo' &&
+            (i.isExpired || i.isExpiringSoon))
         .length;
 
     return [
@@ -58,8 +65,18 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
       ),
       const Tab(
           icon: Icon(Icons.menu_book_outlined, size: 20), text: 'Recetas'),
-      const Tab(
-          icon: Icon(Icons.lightbulb_outline, size: 20), text: 'Sugeridas'),
+      Tab(
+        icon: preparedCount > 0
+            ? Badge(
+                label: Text('$preparedCount',
+                    style: const TextStyle(fontSize: 10)),
+                backgroundColor: const Color(0xFF00C896),
+                textColor: Colors.black,
+                child: const Icon(Icons.lightbulb_outline, size: 20),
+              )
+            : const Icon(Icons.lightbulb_outline, size: 20),
+        text: 'Sugeridas',
+      ),
       const Tab(icon: Icon(Icons.cookie, size: 20), text: 'Antojos'),
       const Tab(
           icon: Icon(Icons.shopping_cart_outlined, size: 20), text: 'Lista'),
@@ -73,6 +90,28 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen>
       if (next != _tab.index && next >= 0 && next < _tab.length && mounted) {
         _tab.animateTo(next);
       }
+    });
+    ref.listen<InventoryState>(inventoryProvider, (_, next) {
+      if (_migratingLegacy) return;
+      final hasLegacy = next.ingredients.any(
+        (i) =>
+            i.subCategory == 'Porción guardada' ||
+            i.subCategory == 'Extra listo',
+      );
+      if (!hasLegacy) return;
+      _migratingLegacy = true;
+      Future.microtask(() async {
+        try {
+          await ref
+              .read(preparedMealsProvider.notifier)
+              .migrateLegacyFromPantry(
+                next.ingredients,
+                ref.read(inventoryProvider.notifier).delete,
+              );
+        } finally {
+          _migratingLegacy = false;
+        }
+      });
     });
     final showFabs = _tab.index == 1;
 

@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cocina/cocina.dart';
 import 'package:cocina/src/providers/cooking_session_provider.dart';
+import 'package:cocina/src/providers/prepared_meals_provider.dart';
 import 'package:cocina/src/screens/widgets/recipe_cook_helper.dart';
 import 'package:domain/domain.dart';
 
@@ -330,6 +332,71 @@ void main() {
         confirmData.alertChecks.map((c) => c.requirement.ingredientName).toList(),
         ['Sal'],
       );
+    });
+
+    test(
+        'PreparedMealsNotifier guarda sobras, descuenta porciones y extras y migra registros antiguos de Despensa',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      const legacyMain = InventoryIngredient(
+        id: 'leg_main',
+        name: 'Pollo frito con lentejas (preparado)',
+        primaryCategory: 'Preparados / Listos',
+        subCategory: 'Porción guardada',
+        preparation: 'cocido / listo',
+        quantity: 2.0,
+        unit: 'unidades',
+      );
+      const legacyExtra = InventoryIngredient(
+        id: 'leg_extra',
+        name: 'Huevos (cocido)',
+        primaryCategory: 'Preparados / Listos',
+        subCategory: 'Extra listo',
+        preparation: 'cocido / listo',
+        quantity: 3.0,
+        unit: 'unidades',
+      );
+
+      final repo = _FakeCocinaRepo([legacyMain, legacyExtra]);
+      final container = ProviderContainer(
+        overrides: [cocinaRepositoryProvider.overrideWithValue(repo)],
+      );
+      addTearDown(container.dispose);
+
+      final invNotifier = container.read(inventoryProvider.notifier);
+      await invNotifier.load();
+
+      final mealsNotifier = container.read(preparedMealsProvider.notifier);
+      final migrated = await mealsNotifier.migrateLegacyFromPantry(
+        container.read(inventoryProvider).ingredients,
+        invNotifier.delete,
+      );
+
+      expect(migrated, 2);
+      expect(container.read(inventoryProvider).ingredients, isEmpty);
+
+      final list1 = container.read(preparedMealsProvider);
+      expect(list1.length, 1);
+      expect(list1.single.recipeName, 'Pollo frito con lentejas');
+      expect(list1.single.remainingServings, closeTo(2.0, 0.001));
+      expect(list1.single.extras.single.name, 'Huevos');
+      expect(list1.single.extras.single.remainingQty, closeTo(3.0, 0.001));
+
+      await mealsNotifier.consumeServings(
+        list1.single.id,
+        servings: 1.0,
+        extraQuantities: {'Huevos': 2.0},
+      );
+      final list2 = container.read(preparedMealsProvider);
+      expect(list2.single.remainingServings, closeTo(1.0, 0.001));
+      expect(list2.single.extras.single.remainingQty, closeTo(1.0, 0.001));
+
+      await mealsNotifier.consumeServings(
+        list1.single.id,
+        servings: 1.0,
+        extraQuantities: {'Huevos': 1.0},
+      );
+      expect(container.read(preparedMealsProvider), isEmpty);
     });
   });
 }

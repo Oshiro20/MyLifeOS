@@ -5,6 +5,7 @@ import 'package:domain/domain.dart';
 import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
 import '../providers/cooking_session_provider.dart';
+import 'widgets/prepared_meals_card.dart';
 import 'widgets/recipe_cook_helper.dart';
 import 'widgets/recipe_detail_sheet.dart';
 
@@ -198,27 +199,35 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
     if (aiState == WhatCanICookState.initial) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.restaurant_menu,
-                size: 64, color: onSurface.withValues(alpha: 0.2)),
-            const SizedBox(height: 16),
-            Text(
-              'Arma tu menú arriba y toca "Menús IA"',
-              style: TextStyle(
-                  color: onSurface.withValues(alpha: 0.55), fontSize: 14),
+      return CustomScrollView(
+        slivers: [
+          const SliverToBoxAdapter(child: PreparedMealsTrayCard()),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.restaurant_menu,
+                      size: 64, color: onSurface.withValues(alpha: 0.2)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Arma tu menú arriba y toca "Menús IA"',
+                    style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.55), fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'El Chef IA sugerirá menús completos\nbasados en tu despensa',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.4), fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'El Chef IA sugerirá menús completos\nbasados en tu despensa',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: onSurface.withValues(alpha: 0.4), fontSize: 12),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -324,6 +333,7 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       return ListView(
         padding: const EdgeInsets.only(bottom: 80),
         children: [
+          const PreparedMealsTrayCard(),
           if (aiNotifier.statusNotice != null)
             Container(
               margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),

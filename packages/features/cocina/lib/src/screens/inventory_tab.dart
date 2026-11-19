@@ -6,6 +6,7 @@ import 'package:data/data.dart';
 import 'package:uuid/uuid.dart';
 import 'package:core/core.dart';
 import '../providers/cocina_providers.dart';
+import '../providers/prepared_meals_provider.dart';
 import '../providers/user_food_preferences_provider.dart';
 import 'widgets/poultry_breakdown_sheet.dart';
 
@@ -89,23 +90,74 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
           child: CircularProgressIndicator(color: Color(0xFF00C896)));
     }
 
+    final rawPantry = state.ingredients
+        .where((i) =>
+            i.subCategory != 'Porción guardada' &&
+            i.subCategory != 'Extra listo')
+        .toList();
+
     // Filter ingredients by search query
     final filteredIngredients = _searchQuery.isEmpty
-        ? state.ingredients
-        : state.ingredients
+        ? rawPantry
+        : rawPantry
             .where((i) =>
                 i.name.toLowerCase().contains(_searchQuery.toLowerCase()))
             .toList();
 
     // Stats calculations
-    final expiringCount =
-        state.ingredients.where((i) => i.isExpiringSoon).length;
-    final expiredCount = state.ingredients.where((i) => i.isExpired).length;
+    final expiringCount = rawPantry.where((i) => i.isExpiringSoon).length;
+    final expiredCount = rawPantry.where((i) => i.isExpired).length;
 
     final List<Widget> listChildren = [];
+    final preparedMeals = ref.watch(preparedMealsProvider);
     final walletCandidates =
         ref.watch(walletGroceryCandidatesProvider).asData?.value ?? const [];
     final pendingPoultry = ref.watch(pendingPoultryBreakdownsProvider);
+
+    if (_searchQuery.isEmpty && preparedMeals.isNotEmpty) {
+      listChildren.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00C896).withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF00C896).withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text('🥡', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '${preparedMeals.length} comida(s) lista(s) guardada(s) en refri',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => ref.read(cocinaTabProvider.notifier).setTab(2),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF00C896),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Ver / Servir →',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (_searchQuery.isEmpty && pendingPoultry.isNotEmpty) {
       final firstPoultry = pendingPoultry.first;

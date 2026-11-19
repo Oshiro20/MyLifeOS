@@ -298,6 +298,10 @@ class IngredientMatcher {
     final learnedPantryTarget = learnedAliases?[normRecipeName];
 
     for (final item in inventory) {
+      if (item.subCategory == 'Porción guardada' ||
+          item.subCategory == 'Extra listo') {
+        continue;
+      }
       var score = 0;
       if (learnedPantryTarget != null &&
           normalizeText(item.name) == normalizeText(learnedPantryTarget)) {

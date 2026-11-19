@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../providers/cocina_providers.dart';
 import '../../providers/cooking_session_provider.dart';
+import '../../providers/prepared_meals_provider.dart';
 import 'recipe_cook_helper.dart';
 
 /// Banner global de sesión activa visible en todas las pestañas de Cocina:
@@ -465,7 +466,7 @@ class _FinishCookingSheetState extends ConsumerState<_FinishCookingSheet> {
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
             ),
             subtitle: const Text(
-              'Se guardará en Despensa → Preparados / Listos (Refrigerador)',
+              'Se guardará en 🥡 Comidas Listas (sin mezclarse con Despensa cruda)',
               style: TextStyle(fontSize: 11),
             ),
             value: _saveLeftover,
@@ -579,55 +580,49 @@ class _FinishCookingSheetState extends ConsumerState<_FinishCookingSheet> {
     setState(() => _saving = true);
     try {
       final session = widget.session;
+      double? savedServings;
       if (_saveLeftover) {
-        final invNotifier = ref.read(inventoryProvider.notifier);
-        final expiry = DateTime.now().add(const Duration(days: 3));
+        final now = DateTime.now();
+        final expiry = now.add(const Duration(days: 3));
         const uuid = Uuid();
 
         final servingsRemaining = (session.scaledServings * _leftoverFraction)
             .clamp(0.25, session.scaledServings.toDouble());
-        await invNotifier.add(
-          InventoryIngredient(
-            id: uuid.v4(),
-            name: '${session.recipeName} (preparado)',
-            primaryCategory: 'Preparados / Listos',
-            subCategory: 'Porción guardada',
-            preparation: 'cocido / listo',
-            quantity: double.parse(servingsRemaining.toStringAsFixed(2)),
-            unit: 'unidades',
-            expirationDate: expiry,
-            storageArea: 'Refrigerador',
-          ),
-        );
+        savedServings = double.parse(servingsRemaining.toStringAsFixed(2));
+        final leftoverExtras = [
+          for (final extra in session.extras)
+            if ((_extraLeftoverQty[extra.name] ?? 0) > 0)
+              PreparedMealExtra(
+                name: extra.name,
+                remainingQty: _extraLeftoverQty[extra.name]!,
+                unit: extra.unit,
+              ),
+        ];
 
-        for (final extra in session.extras) {
-          final rem = _extraLeftoverQty[extra.name] ?? 0;
-          if (rem <= 0) continue;
-          await invNotifier.add(
-            InventoryIngredient(
-              id: uuid.v4(),
-              name: '${extra.name} (cocido)',
-              primaryCategory: 'Preparados / Listos',
-              subCategory: 'Extra listo',
-              preparation: 'cocido / listo',
-              quantity: rem,
-              unit: extra.unit,
-              expirationDate: expiry,
-              storageArea: 'Refrigerador',
-            ),
-          );
-        }
+        await ref.read(preparedMealsProvider.notifier).addMeal(
+              PreparedMeal(
+                id: uuid.v4(),
+                recipeName: session.recipeName,
+                recipeId: session.recipeId,
+                remainingServings: savedServings,
+                extras: leftoverExtras,
+                savedAt: now,
+                expiresAt: expiry,
+                storageArea: 'Refrigerador',
+              ),
+            );
       }
 
       ref.read(cookingSessionProvider.notifier).endSession();
       if (!mounted) return;
       Navigator.of(context).pop();
-      if (_saveLeftover) {
+      if (_saveLeftover && savedServings != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-                '🥡 Porciones guardadas en Despensa → Preparados / Listos (Refrigerador)'),
-            backgroundColor: Color(0xFF00C896),
+              '🥡 ${formatIngredientQty(savedServings)} porc. de "${session.recipeName}" guardadas en Comidas Listas (Sugeridas / Plan)',
+            ),
+            backgroundColor: const Color(0xFF00C896),
           ),
         );
       }
