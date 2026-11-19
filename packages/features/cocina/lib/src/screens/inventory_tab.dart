@@ -26,50 +26,28 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
     List<InventoryIngredient> rescueItems,
     List<InventoryIngredient> allItems,
   ) async {
-    showDialog(
+    final goal = ref.read(recipesProvider).activeGoal;
+    final priorityNames = rescueItems
+        .map((i) =>
+            '${i.name} (${i.quantity} ${i.unit}${i.preparation.isNotEmpty ? ', ${i.preparation}' : ''})')
+        .toList();
+    final allNames = allItems.map((i) => i.name).toList();
+
+    final goToSuggestions = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF00C896))),
+      useRootNavigator: true,
+      builder: (dialogCtx) => _RescueIdeasDialog(
+        rescueLabels: rescueItems.map((i) => i.name).toList(),
+        loadIdeas: () => ref.read(geminiProvider).suggestRescueRecipesGemini(
+              priorityIngredients: priorityNames,
+              allPantryNames: allNames,
+              goalLabel: '${goal.emoji} ${goal.label}',
+            ),
+      ),
     );
-    try {
-      final goal = ref.read(recipesProvider).activeGoal;
-      final priorityNames = rescueItems
-          .map((i) =>
-              '${i.name} (${i.quantity} ${i.unit}${i.preparation.isNotEmpty ? ', ${i.preparation}' : ''})')
-          .toList();
-      final reply = await ref.read(geminiProvider).suggestRescueRecipesGemini(
-            priorityIngredients: priorityNames,
-            allPantryNames: allItems.map((i) => i.name).toList(),
-            goalLabel: '${goal.emoji} ${goal.label}',
-          );
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('✨ Ideas de rescate con Gemini'),
-          content: SingleChildScrollView(
-            child: Text(
-              (reply == null || reply.trim().isEmpty)
-                  ? 'No se pudieron obtener sugerencias en este momento.'
-                  : reply.trim(),
-              style: const TextStyle(fontSize: 13.5, height: 1.4),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Entendido'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        showError(context, 'Error al consultar Gemini: $e');
-      }
+
+    if (goToSuggestions == true && mounted) {
+      ref.read(cocinaTabProvider.notifier).setTab(2);
     }
   }
 
@@ -255,7 +233,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
 
     // Stats Panel (only if not searching)
     if (_searchQuery.isEmpty) {
-      final rescueItems = state.ingredients
+      final rescueItems = rawPantry
           .where((i) =>
               i.isExpiringSoon ||
               i.preparation.toLowerCase().contains('cocido') ||
@@ -276,14 +254,14 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _StatBadge('🟢 ${state.ingredients.length}', 'Total',
+                  _StatBadge('🟢 ${rawPantry.length}', 'Total',
                       Theme.of(context).colorScheme.onSurface),
                   _StatBadge('🟡 $expiringCount', 'Por vencer',
                       const Color(0xFFFFB300)),
                   _StatBadge(
                       '🔴 $expiredCount', 'Vencidos', const Color(0xFFFF5252)),
                   _StatBadge(
-                      '📂 ${state.ingredients.map((i) => i.primaryCategory).toSet().length}',
+                      '📂 ${rawPantry.map((i) => i.primaryCategory).toSet().length}',
                       'Categorías',
                       const Color(0xFF00F0FF)),
                 ],
@@ -293,8 +271,8 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _showRescueIdeasDialog(
-                        context, rescueItems, state.ingredients),
+                    onPressed: () =>
+                        _showRescueIdeasDialog(context, rescueItems, rawPantry),
                     icon: const Icon(Icons.auto_awesome,
                         size: 16, color: Color(0xFF00C896)),
                     label: Text(
@@ -750,16 +728,18 @@ class _IngredientTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final expiryColor = _expiryColor(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: ingredient.isExpiringSoon
-            ? Border.all(color: expiryColor.withAlpha(100), width: 1)
-            : null,
-      ),
-      child: ListTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: ingredient.isExpiringSoon
+              ? BorderSide(color: expiryColor.withAlpha(100), width: 1)
+              : BorderSide.none,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
         onTap: onEdit,
         leading: Text(_getEmojiFor(ingredient.name, ingredient.primaryCategory),
             style: const TextStyle(fontSize: 28)),
@@ -825,6 +805,7 @@ class _IngredientTile extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -2383,6 +2364,184 @@ class _WalletGroceryImportBanner extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Diálogo autocontenido de ideas de rescate con Gemini: gestiona su propia carga,
+/// reintento y cierre sin hacer pops desfasados sobre el Navigator de la pestaña.
+class _RescueIdeasDialog extends StatefulWidget {
+  final List<String> rescueLabels;
+  final Future<String?> Function() loadIdeas;
+
+  const _RescueIdeasDialog({
+    required this.rescueLabels,
+    required this.loadIdeas,
+  });
+
+  @override
+  State<_RescueIdeasDialog> createState() => _RescueIdeasDialogState();
+}
+
+class _RescueIdeasDialogState extends State<_RescueIdeasDialog> {
+  bool _loading = true;
+  String? _reply;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final res = await widget.loadIdeas();
+      if (!mounted) return;
+      setState(() {
+        _reply = (res != null && res.trim().isNotEmpty) ? res.trim() : null;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.auto_awesome, color: Color(0xFF00C896), size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Ideas de rescate con Gemini',
+              style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.55,
+          minWidth: 280,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final label in widget.rescueLabels.take(6))
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB300).withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFFFFB300),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (_loading)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Color(0xFF00C896),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          'Buscando 2 recetas express (5-15 min) con estos productos...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: onSurface.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_error != null)
+                Text(
+                  'No se pudo consultar Gemini en este momento.\nDetalle: $_error',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.redAccent,
+                    height: 1.4,
+                  ),
+                )
+              else if (_reply != null)
+                Text(
+                  _reply!,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.45,
+                    color: onSurface,
+                  ),
+                )
+              else
+                Text(
+                  'No hubo respuesta de Gemini (verifica tu conexión a internet) o prueba armando tu menú en "Sugeridas".',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: onSurface.withValues(alpha: 0.75),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        if (!_loading && (_error != null || _reply == null))
+          TextButton.icon(
+            onPressed: _fetch,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Reintentar'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(
+            'Ir a Sugeridas',
+            style: TextStyle(color: Color(0xFF00C896)),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cerrar'),
+        ),
+      ],
     );
   }
 }

@@ -1,11 +1,34 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:core/core.dart';
 import 'package:cocina/cocina.dart';
 import 'package:cocina/src/providers/cooking_session_provider.dart';
 import 'package:cocina/src/providers/prepared_meals_provider.dart';
+import 'package:cocina/src/screens/inventory_tab.dart';
 import 'package:cocina/src/screens/widgets/recipe_cook_helper.dart';
 import 'package:domain/domain.dart';
+
+class _FakeGeminiRescueService extends GeminiService {
+  _FakeGeminiRescueService()
+      : super(
+          connectivity: ConnectivityService(),
+          cache: OfflineCacheService(),
+          apiKey: '',
+        );
+
+  @override
+  Future<String?> suggestRescueRecipesGemini({
+    required List<String> priorityIngredients,
+    required List<String> allPantryNames,
+    required String goalLabel,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    return '1. Tacu tacu express (10 min)\nUsa tu Menestra lentejas baby.';
+  }
+}
 
 class _FakeCocinaRepo implements ICocinaRepository {
   final List<InventoryIngredient> items;
@@ -397,6 +420,65 @@ void main() {
         extraQuantities: {'Huevos': 1.0},
       );
       expect(container.read(preparedMealsProvider), isEmpty);
+    });
+
+    testWidgets(
+        'InventoryTab botón "¿Qué preparo hoy?" abre ideas con Gemini dentro de StatefulShellRoute sin pantalla negra',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      const menestra = InventoryIngredient(
+        id: 'inv_menestra',
+        name: 'Menestra lentejas baby',
+        primaryCategory: 'Legumbres',
+        preparation: 'cocido / listo',
+        quantity: 1.0,
+        unit: 'unidades',
+      );
+      final repo = _FakeCocinaRepo([menestra]);
+      final router = GoRouter(
+        initialLocation: '/cocina',
+        routes: [
+          StatefulShellRoute.indexedStack(
+            builder: (_, __, shell) => Scaffold(body: shell),
+            branches: [
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/cocina',
+                    builder: (_, __) => const InventoryTab(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            cocinaRepositoryProvider.overrideWithValue(repo),
+            geminiProvider.overrideWithValue(_FakeGeminiRescueService()),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rescueBtn = find.textContaining('¿Qué preparo hoy?');
+      expect(rescueBtn, findsOneWidget);
+      await tester.tap(rescueBtn);
+      await tester.pump();
+      expect(find.text('Ideas de rescate con Gemini'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Tacu tacu express'), findsOneWidget);
+
+      await tester.tap(find.text('Cerrar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ideas de rescate con Gemini'), findsNothing);
+      expect(find.textContaining('¿Qué preparo hoy?'), findsOneWidget);
     });
   });
 }
