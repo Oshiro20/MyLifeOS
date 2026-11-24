@@ -271,15 +271,39 @@ class ExtractRecipeUseCase {
         ? rawCal.round()
         : (rawCal is String ? int.tryParse(rawCal) : null);
 
-    // Parsear información nutricional
+    // Parsear información nutricional (macros + vitaminas/minerales destacados)
     NutritionInfo? nutrition;
-    if (decoded['nutricion'] is Map) {
-      final nutriData = Map<String, dynamic>.from(decoded['nutricion'] as Map);
+    final rawNutri = decoded['nutricion'] ?? decoded['nutrition'];
+    if (rawNutri is Map) {
+      final nutriData = Map<String, dynamic>.from(rawNutri);
+      double parseMacro(dynamic v) {
+        if (v is num) return v.toDouble();
+        if (v is String) {
+          final cleaned = v.replaceAll(RegExp(r'[^0-9.,]'), '').replaceAll(',', '.');
+          return double.tryParse(cleaned) ?? 0;
+        }
+        return 0;
+      }
+
+      final rawMicro = nutriData['vitaminas_minerales'] ??
+          nutriData['micronutrientes'] ??
+          decoded['vitaminas_minerales'] ??
+          decoded['micronutrientes'];
+      final micro = rawMicro is List
+          ? rawMicro
+              .map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .take(6)
+              .toList()
+          : const <String>[];
+
       nutrition = NutritionInfo(
-        proteinasG: (nutriData['proteinas_g'] as num?)?.toDouble() ?? 0,
-        carbohidratosG: (nutriData['carbohidratos_g'] as num?)?.toDouble() ?? 0,
-        grasasG: (nutriData['grasas_g'] as num?)?.toDouble() ?? 0,
-        fibraG: (nutriData['fibra_g'] as num?)?.toDouble() ?? 0,
+        proteinasG: parseMacro(nutriData['proteinas_g'] ?? nutriData['proteinasG']),
+        carbohidratosG: parseMacro(
+            nutriData['carbohidratos_g'] ?? nutriData['carbohidratosG']),
+        grasasG: parseMacro(nutriData['grasas_g'] ?? nutriData['grasasG']),
+        fibraG: parseMacro(nutriData['fibra_g'] ?? nutriData['fibraG']),
+        micronutrientes: micro,
       );
     }
 

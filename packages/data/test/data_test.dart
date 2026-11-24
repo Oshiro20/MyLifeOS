@@ -85,5 +85,31 @@ void main() {
       expect(legacy.cookingMethod, CookingMethod.fried);
       expect(legacy.mealSlot, MealSlot.lunch);
     });
+
+    test('CocinaRepository codifica y decodifica calorías, macros y vitaminas en tagsCsv', () {
+      final recipe = Recipe(
+        id: 'r-nutri',
+        name: 'Ceviche de pescado',
+        tags: const ['peruano', 'fresco'],
+        caloriasAproximadas: 340,
+        nutrition: const NutritionInfo(
+          proteinasG: 32,
+          carbohidratosG: 24,
+          grasasG: 8,
+          fibraG: 3,
+          micronutrientes: ['Vitamina C', 'Omega 3', 'Potasio'],
+        ),
+        createdAt: DateTime(2026),
+      );
+      final encoded = CocinaRepository.encodeRecipeTagsWithNutrition(recipe);
+      final decoded = CocinaRepository.decodeRecipeTagsWithNutrition(encoded);
+      expect(decoded.tags, ['peruano', 'fresco']);
+      expect(decoded.calories, 340);
+      expect(decoded.nutrition?.proteinasG, 32);
+      expect(decoded.nutrition?.carbohidratosG, 24);
+      expect(decoded.nutrition?.grasasG, 8);
+      expect(decoded.nutrition?.fibraG, 3);
+      expect(decoded.nutrition?.micronutrientes, ['Vitamina C', 'Omega 3', 'Potasio']);
+    });
   });
 }

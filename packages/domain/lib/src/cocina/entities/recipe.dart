@@ -343,35 +343,47 @@ class RecipeIngredient extends Equatable {
   }
 }
 
-/// Información nutricional de la receta
+/// Información nutricional de la receta (por porción)
 class NutritionInfo extends Equatable {
   final double proteinasG;
   final double carbohidratosG;
   final double grasasG;
   final double fibraG;
+  final List<String> micronutrientes;
 
   const NutritionInfo({
     this.proteinasG = 0,
     this.carbohidratosG = 0,
     this.grasasG = 0,
     this.fibraG = 0,
+    this.micronutrientes = const [],
   });
+
+  bool get hasAnyData =>
+      proteinasG > 0 ||
+      carbohidratosG > 0 ||
+      grasasG > 0 ||
+      fibraG > 0 ||
+      micronutrientes.isNotEmpty;
 
   NutritionInfo copyWith({
     double? proteinasG,
     double? carbohidratosG,
     double? grasasG,
     double? fibraG,
+    List<String>? micronutrientes,
   }) =>
       NutritionInfo(
         proteinasG: proteinasG ?? this.proteinasG,
         carbohidratosG: carbohidratosG ?? this.carbohidratosG,
         grasasG: grasasG ?? this.grasasG,
         fibraG: fibraG ?? this.fibraG,
+        micronutrientes: micronutrientes ?? this.micronutrientes,
       );
 
   @override
-  List<Object?> get props => [proteinasG, carbohidratosG, grasasG, fibraG];
+  List<Object?> get props =>
+      [proteinasG, carbohidratosG, grasasG, fibraG, micronutrientes];
 
   Map<String, dynamic> toJson() {
     return {
@@ -379,15 +391,32 @@ class NutritionInfo extends Equatable {
       'carbohidratosG': carbohidratosG,
       'grasasG': grasasG,
       'fibraG': fibraG,
+      if (micronutrientes.isNotEmpty) 'micronutrientes': micronutrientes,
     };
   }
 
   factory NutritionInfo.fromJson(Map<String, dynamic> json) {
+    final rawMicro = json['micronutrientes'] ?? json['vitaminas_minerales'];
+    final micro = rawMicro is List
+        ? rawMicro
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : const <String>[];
     return NutritionInfo(
-      proteinasG: (json['proteinasG'] as num?)?.toDouble() ?? 0,
-      carbohidratosG: (json['carbohidratosG'] as num?)?.toDouble() ?? 0,
-      grasasG: (json['grasasG'] as num?)?.toDouble() ?? 0,
-      fibraG: (json['fibraG'] as num?)?.toDouble() ?? 0,
+      proteinasG: (json['proteinasG'] as num?)?.toDouble() ??
+          (json['proteinas_g'] as num?)?.toDouble() ??
+          0,
+      carbohidratosG: (json['carbohidratosG'] as num?)?.toDouble() ??
+          (json['carbohidratos_g'] as num?)?.toDouble() ??
+          0,
+      grasasG: (json['grasasG'] as num?)?.toDouble() ??
+          (json['grasas_g'] as num?)?.toDouble() ??
+          0,
+      fibraG: (json['fibraG'] as num?)?.toDouble() ??
+          (json['fibra_g'] as num?)?.toDouble() ??
+          0,
+      micronutrientes: micro,
     );
   }
 }

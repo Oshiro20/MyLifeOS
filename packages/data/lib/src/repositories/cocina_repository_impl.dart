@@ -26,43 +26,125 @@ class CocinaRepository implements ICocinaRepository {
         storageArea: e.storageArea,
       );
 
-  Recipe _toRecipe(RecipeEntry r, List<RecipeIngredientEntry> ings) => Recipe(
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        durationMinutes: r.durationMinutes,
-        servings: r.servings,
-        instructions: _decodeStringList(r.instructionsJson),
-        ingredients: ings
-            .map((i) => RecipeIngredient(
-                  id: i.id,
-                  recipeId: i.recipeId,
-                  ingredientName: i.ingredientName,
-                  quantity: i.quantity,
-                  unit: i.unit,
-                ))
-            .toList(),
-        tags: r.tagsCsv.isEmpty ? [] : r.tagsCsv.split(','),
-        imageAssetId: r.imageAssetId,
-        goal: NutritionGoal
-            .values[r.goalIndex.clamp(0, NutritionGoal.values.length - 1)],
-        isFavorite: r.isFavorite,
-        createdAt: r.createdAt,
-        rating: r.rating > 0 ? r.rating : null,
-        cuisineStyle: r.region.isNotEmpty ? r.region : null,
-        fuenteUrl: r.sourceUrl,
-        fuenteLabel: r.sourceIndex == 0
-            ? 'Local'
-            : r.sourceIndex == 1
-                ? 'TheMealDB'
-                : 'Chef IA',
-        tipoComida: r.mealType != null && r.mealType!.isNotEmpty
-            ? MealType.values.firstWhere(
-                (m) => m.name == r.mealType,
-                orElse: () => MealType.otro,
-              )
-            : null,
-      );
+  static const _nutriTagPrefix = '__nutri__:';
+
+  /// Codifica tags visibles + calorías/macros/vitaminas en `tagsCsv` de forma retrocompatible.
+  static String encodeRecipeTagsWithNutrition(Recipe recipe) {
+    final cleanTags = recipe.tags
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty && !t.startsWith(_nutriTagPrefix))
+        .toList();
+    final hasCal = (recipe.caloriasAproximadas ?? 0) > 0;
+    final hasNutri = recipe.nutrition?.hasAnyData ?? false;
+    if (hasCal || hasNutri) {
+      final n = recipe.nutrition;
+      final micro = (n?.micronutrientes ?? const <String>[])
+          .map((m) => m.replaceAll(RegExp(r'[,;|]'), ' ').trim())
+          .where((m) => m.isNotEmpty)
+          .take(6)
+          .join(';');
+      final token =
+          '$_nutriTagPrefix${recipe.caloriasAproximadas ?? 0}|'
+          '${(n?.proteinasG ?? 0).toStringAsFixed(1)}|'
+          '${(n?.carbohidratosG ?? 0).toStringAsFixed(1)}|'
+          '${(n?.grasasG ?? 0).toStringAsFixed(1)}|'
+          '${(n?.fibraG ?? 0).toStringAsFixed(1)}|'
+          '$micro';
+      cleanTags.add(token);
+    }
+    return cleanTags.join(',');
+  }
+
+  /// Extrae tags visibles, calorías y NutritionInfo desde `tagsCsv`.
+  static ({List<String> tags, int? calories, NutritionInfo? nutrition})
+      decodeRecipeTagsWithNutrition(String tagsCsv) {
+    if (tagsCsv.trim().isEmpty) {
+      return (tags: const [], calories: null, nutrition: null);
+    }
+    final rawParts = tagsCsv.split(',');
+    final visibleTags = <String>[];
+    int? calories;
+    NutritionInfo? nutrition;
+
+    for (final raw in rawParts) {
+      final t = raw.trim();
+      if (t.isEmpty) continue;
+      if (t.startsWith(_nutriTagPrefix)) {
+        final payload = t.substring(_nutriTagPrefix.length);
+        final fields = payload.split('|');
+        if (fields.length >= 5) {
+          final cal = int.tryParse(fields[0]) ?? 0;
+          final prot = double.tryParse(fields[1]) ?? 0;
+          final carbs = double.tryParse(fields[2]) ?? 0;
+          final fat = double.tryParse(fields[3]) ?? 0;
+          final fiber = double.tryParse(fields[4]) ?? 0;
+          final micro = fields.length >= 6 && fields[5].trim().isNotEmpty
+              ? fields[5]
+                  .split(';')
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList()
+              : const <String>[];
+          if (cal > 0) calories = cal;
+          final info = NutritionInfo(
+            proteinasG: prot,
+            carbohidratosG: carbs,
+            grasasG: fat,
+            fibraG: fiber,
+            micronutrientes: micro,
+          );
+          if (info.hasAnyData) nutrition = info;
+        }
+      } else {
+        visibleTags.add(t);
+      }
+    }
+
+    return (tags: visibleTags, calories: calories, nutrition: nutrition);
+  }
+
+  Recipe _toRecipe(RecipeEntry r, List<RecipeIngredientEntry> ings) {
+    final decoded = decodeRecipeTagsWithNutrition(r.tagsCsv);
+    return Recipe(
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      durationMinutes: r.durationMinutes,
+      servings: r.servings,
+      instructions: _decodeStringList(r.instructionsJson),
+      ingredients: ings
+          .map((i) => RecipeIngredient(
+                id: i.id,
+                recipeId: i.recipeId,
+                ingredientName: i.ingredientName,
+                quantity: i.quantity,
+                unit: i.unit,
+              ))
+          .toList(),
+      tags: decoded.tags,
+      caloriasAproximadas: decoded.calories,
+      nutrition: decoded.nutrition,
+      imageAssetId: r.imageAssetId,
+      goal: NutritionGoal
+          .values[r.goalIndex.clamp(0, NutritionGoal.values.length - 1)],
+      isFavorite: r.isFavorite,
+      createdAt: r.createdAt,
+      rating: r.rating > 0 ? r.rating : null,
+      cuisineStyle: r.region.isNotEmpty ? r.region : null,
+      fuenteUrl: r.sourceUrl,
+      fuenteLabel: r.sourceIndex == 0
+          ? 'Local'
+          : r.sourceIndex == 1
+              ? 'TheMealDB'
+              : 'Chef IA',
+      tipoComida: r.mealType != null && r.mealType!.isNotEmpty
+          ? MealType.values.firstWhere(
+              (m) => m.name == r.mealType,
+              orElse: () => MealType.otro,
+            )
+          : null,
+    );
+  }
 
   List<String> _decodeStringList(String raw) {
     try {
@@ -181,7 +263,7 @@ class CocinaRepository implements ICocinaRepository {
             durationMinutes: Value(recipe.durationMinutes),
             servings: Value(recipe.servings),
             instructionsJson: Value(jsonEncode(recipe.instructions)),
-            tagsCsv: Value(recipe.tags.join(',')),
+            tagsCsv: Value(encodeRecipeTagsWithNutrition(recipe)),
             imageAssetId: Value(recipe.imageAssetId),
             goalIndex: Value(recipe.goal.index),
             isFavorite: Value(recipe.isFavorite),
@@ -253,7 +335,7 @@ class CocinaRepository implements ICocinaRepository {
         durationMinutes: Value(recipe.durationMinutes),
         servings: Value(recipe.servings),
         instructionsJson: Value(jsonEncode(recipe.instructions)),
-        tagsCsv: Value(recipe.tags.join(',')),
+        tagsCsv: Value(encodeRecipeTagsWithNutrition(recipe)),
         imageAssetId: Value(recipe.imageAssetId),
         goalIndex: Value(recipe.goal.index),
         isFavorite: Value(recipe.isFavorite),

@@ -301,8 +301,8 @@ PASO 6 - CLASIFICACIÓN
 • Cocina: según estilo (Peruana, Italiana, Asiática, Mexicana, Internacional, etc.)
 • Tags: 3-5 tags relevantes
 
-PASO 7 - ESTIMA CALORÍAS
-• Calcula calorías aproximadas por porción según ingredientes
+PASO 7 - ESTIMA PERFIL NUTRICIONAL POR PORCIÓN
+• Calcula calorías aproximadas, proteínas (g), carbohidratos (g), grasas (g), fibra (g) y 3-5 vitaminas/minerales clave que aportan los ingredientes (ej. "Vitamina C", "Hierro", "Potasio", "Calcio", "Vitamina A") según los ingredientes y método de cocción.
 
 -----------------------------------------------------
 
@@ -335,7 +335,14 @@ PASO 7 - ESTIMA CALORÍAS
     }
   ],
   "utensilios": ["sartén", "cuchara de madera"],
-  "calorias_aproximadas": 350,
+  "calorias_aproximadas": 420,
+  "nutricion": {
+    "proteinas_g": 26.0,
+    "carbohidratos_g": 48.0,
+    "grasas_g": 12.0,
+    "fibra_g": 5.0,
+    "vitaminas_minerales": ["Vitamina A", "Vitamina C", "Hierro", "Potasio"]
+  },
   "objetivo_nutricional": "normal | bajar_peso | ganar_musculo | ligera | personalizado",
   "tags": ["fácil", "rápido", "peruano"],
   "video_context": "resumido",
@@ -682,7 +689,14 @@ Analiza las IMÁGENES proporcionadas:
     {"numero": 1, "descripcion": "Paso detallado"}
   ],
   "utensilios": ["olla", "cuchara"],
-  "calorias_aproximadas": 350,
+  "calorias_aproximadas": 420,
+  "nutricion": {
+    "proteinas_g": 26.0,
+    "carbohidratos_g": 48.0,
+    "grasas_g": 12.0,
+    "fibra_g": 5.0,
+    "vitaminas_minerales": ["Vitamina A", "Vitamina C", "Hierro", "Potasio"]
+  },
   "objetivo_nutricional": "normal | bajar_peso | ganar_musculo | ligera | personalizado",
   "tags": ["fácil", "peruano"],
   "observaciones": "Texto extraído de imagen.",

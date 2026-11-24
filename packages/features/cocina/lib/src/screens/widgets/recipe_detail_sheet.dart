@@ -262,6 +262,12 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
             },
           ),
         ]),
+        // Perfil nutricional aproximado por porción
+        if ((liveRecipe.caloriasAproximadas ?? 0) > 0 ||
+            (liveRecipe.nutrition?.hasAnyData ?? false)) ...[
+          const SizedBox(height: 12),
+          _buildNutritionCard(context, liveRecipe),
+        ],
         // Ingredients
         if (widget.recipe.ingredients.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -427,6 +433,90 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
         ),
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  Widget _buildNutritionCard(BuildContext context, Recipe recipe) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final n = recipe.nutrition;
+    final kcal = recipe.caloriasAproximadas ??
+        (n != null
+            ? (n.proteinasG * 4 + n.carbohidratosG * 4 + n.grasasG * 9).round()
+            : 0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF00C896).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF00C896).withValues(alpha: 0.28),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '📊 Nutrición aproximada (por porción)',
+            style: TextStyle(
+              color: onSurface,
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (kcal > 0) _nutriBadge('🔥 $kcal kcal', const Color(0xFFFF9800)),
+              if ((n?.proteinasG ?? 0) > 0)
+                _nutriBadge(
+                    '🥩 ${n!.proteinasG.round()}g prot', const Color(0xFF00C896)),
+              if ((n?.carbohidratosG ?? 0) > 0)
+                _nutriBadge(
+                    '🍚 ${n!.carbohidratosG.round()}g carb', const Color(0xFF00F0FF)),
+              if ((n?.grasasG ?? 0) > 0)
+                _nutriBadge(
+                    '🥑 ${n!.grasasG.round()}g gras', const Color(0xFFFFB74D)),
+              if ((n?.fibraG ?? 0) > 0)
+                _nutriBadge(
+                    '🌿 ${n!.fibraG.round()}g fibra', const Color(0xFF66BB6A)),
+            ],
+          ),
+          if (n != null && n.micronutrientes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '✨ Vitaminas y minerales clave: ${n.micronutrientes.join(' · ')}',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: onSurface.withValues(alpha: 0.72),
+                height: 1.3,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _nutriBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 

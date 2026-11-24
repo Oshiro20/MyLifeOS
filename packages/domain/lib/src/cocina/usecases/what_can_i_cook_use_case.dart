@@ -453,6 +453,12 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
         ? rawCal.round()
         : (rawCal is String ? int.tryParse(rawCal) : null);
 
+    NutritionInfo? nutrition;
+    final rawNutri = recipeData['nutricion'] ?? recipeData['nutrition'];
+    if (rawNutri is Map) {
+      nutrition = NutritionInfo.fromJson(Map<String, dynamic>.from(rawNutri));
+    }
+
     final tipoComidaStr = recipeData['tipo_comida']?.toString();
     final mealType = tipoComidaStr != null
         ? ExtractRecipeUseCase.parseMealType(tipoComidaStr)
@@ -471,6 +477,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
       utensilios: utensilios,
       ingredientesInferidos: ingredientesInferidos,
       caloriasAproximadas: caloriasAproximadas,
+      nutrition: nutrition,
       tipoComida: mealType,
       goal: goal,
     );
@@ -830,7 +837,8 @@ FORMATO JSON EXACTO:
           "ingredientes_inferidos": ["sal", "aceite"],
           "pasos": [{"numero": 1, "descripcion": "Paso conciso"}],
           "utensilios": ["olla"],
-          "calorias_aproximadas": 350,
+          "calorias_aproximadas": 420,
+          "nutricion": {"proteinas_g": 28, "carbohidratos_g": 45, "grasas_g": 12, "fibra_g": 6, "vitaminas_minerales": ["Vitamina C", "Hierro", "Potasio"]},
           "tags": ["peruana"]
         }
       ]

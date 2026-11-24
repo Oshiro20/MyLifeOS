@@ -327,6 +327,40 @@ void main() {
       expect(recs.first.recipe.id, 'r1');
       expect(recs.first.nutritionFitBadge, isNotNull);
     });
+
+    test('ExtractRecipeUseCase parsea macros y vitaminas/minerales clave', () {
+      final useCase = ExtractRecipeUseCase(_DummyExtractor());
+      const rawJson = '''
+      {
+        "nombre_receta": "Bowl de quinua con pollo",
+        "porciones": 2,
+        "ingredientes": [
+          {"nombre": "Quinua", "cantidad": 1, "unidad": "tazas"},
+          {"nombre": "Pechuga de pollo", "cantidad": 300, "unidad": "gramos"}
+        ],
+        "pasos": [
+          {"numero": 1, "descripcion": "Lavar quinua"},
+          {"numero": 2, "descripcion": "Cocinar quinua"},
+          {"numero": 3, "descripcion": "Saltear pollo y servir"}
+        ],
+        "calorias_aproximadas": 460,
+        "nutricion": {
+          "proteinas_g": 36,
+          "carbohidratos_g": 48,
+          "grasas_g": 11,
+          "fibra_g": 7,
+          "vitaminas_minerales": ["Hierro", "Magnesio", "Vitamina B6"]
+        }
+      }
+      ''';
+      final recipe = useCase.parseFromJson(rawJson);
+      expect(recipe.caloriasAproximadas, 460);
+      expect(recipe.nutrition?.proteinasG, 36);
+      expect(recipe.nutrition?.carbohidratosG, 48);
+      expect(recipe.nutrition?.grasasG, 11);
+      expect(recipe.nutrition?.fibraG, 7);
+      expect(recipe.nutrition?.micronutrientes, ['Hierro', 'Magnesio', 'Vitamina B6']);
+    });
   });
 
   group('AiJsonParser', () {
@@ -350,4 +384,9 @@ void main() {
       expect(AiJsonParser.decodeList('texto sin lista'), isNull);
     });
   });
+}
+
+class _DummyExtractor implements IAIRecipeExtractor {
+  @override
+  Future<String?> extractRecipeJson({String? textContext, String? mediaPath}) async => null;
 }
