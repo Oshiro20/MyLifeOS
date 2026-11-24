@@ -101,11 +101,12 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
     required bool budgetSaverMode,
     required NutritionGoal nutritionGoal,
     required List<InventoryIngredient> ingredients,
+    String bodySignature = '',
   }) {
     final compNames = components.map((c) => c.name).toList()..sort();
     final ingNames = ingredients.map((i) => i.name.toLowerCase()).toList()
       ..sort();
-    return '${meal.name}|${compNames.join(',')}|$menuCount|${cuisinePreference ?? ''}|$budgetSaverMode|${nutritionGoal.name}|${ingNames.join(',')}';
+    return '${meal.name}|${compNames.join(',')}|$menuCount|${cuisinePreference ?? ''}|$budgetSaverMode|${nutritionGoal.name}|$bodySignature|${ingNames.join(',')}';
   }
 
   static int _countMissingIngredients(
@@ -210,6 +211,16 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         );
       }
 
+      final bodyProfile = ref.read(bodyProfileProvider);
+      DailyMacroBudget? dailyBudget;
+      try {
+        dailyBudget = await ref.read(dailyMacroBudgetProvider.future);
+      } catch (_) {}
+      final bodyNutritionContext = dailyBudget?.toChefPromptContext(bodyProfile);
+      final bodySig = dailyBudget == null
+          ? ''
+          : '${dailyBudget.targets.effectiveGoal.name}_${(dailyBudget.remainingCalories / 250).round()}';
+
       final signature = _buildCacheSignature(
         meal: meal,
         components: menuComponents,
@@ -218,6 +229,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         budgetSaverMode: budgetSaverMode,
         nutritionGoal: goal,
         ingredients: inventoryState.ingredients,
+        bodySignature: bodySig,
       );
 
       final cached = forceRefresh
@@ -253,6 +265,7 @@ class WhatCanICookNotifier extends Notifier<WhatCanICookState> {
         userPreferences: chefPrefs,
         budgetSaverMode: budgetSaverMode,
         nutritionGoal: goal,
+        bodyNutritionContext: bodyNutritionContext,
       );
 
       debugPrint('✅ Generated ${generated.length} recipes');

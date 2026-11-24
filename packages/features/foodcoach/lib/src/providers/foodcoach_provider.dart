@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 
 // ── Estado ────────────────────────────────────────────────────────────────────
@@ -33,8 +34,9 @@ class FoodCoachState {
     String? error,
   }) =>
       FoodCoachState(
-        currentEvaluation:
-            clearEvaluation ? null : (currentEvaluation ?? this.currentEvaluation),
+        currentEvaluation: clearEvaluation
+            ? null
+            : (currentEvaluation ?? this.currentEvaluation),
         history: history ?? this.history,
         weeklyStats: weeklyStats ?? this.weeklyStats,
         currentIngredients: currentIngredients ?? this.currentIngredients,
@@ -118,6 +120,7 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
         isEvaluating: false,
         currentIngredients: [],
       );
+      ref.read(todayMacrosRefreshTickProvider.notifier).bump();
     } catch (e) {
       state = state.copyWith(isEvaluating: false, error: e.toString());
     }
@@ -129,6 +132,7 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
       final history = await _repo.getHistory();
       final stats = await _repo.getWeeklyStats();
       state = state.copyWith(history: history, weeklyStats: stats, error: null);
+      ref.read(todayMacrosRefreshTickProvider.notifier).bump();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -193,7 +197,8 @@ class DailyWaterNotifier extends Notifier<int> {
 }
 
 /// Meta nutricional activa sincronizada desde Cocina (`cocina_active_nutrition_goal_v1`).
-final foodCoachNutritionGoalProvider = FutureProvider<NutritionGoal>((ref) async {
+final foodCoachNutritionGoalProvider =
+    FutureProvider<NutritionGoal>((ref) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString('cocina_active_nutrition_goal_v1');

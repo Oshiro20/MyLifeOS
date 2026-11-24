@@ -3,6 +3,7 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/foodcoach_provider.dart';
+import 'widgets/body_profile_sheet.dart';
 
 class StatsTab extends ConsumerStatefulWidget {
   const StatsTab({super.key});
@@ -16,21 +17,11 @@ class _StatsTabState extends ConsumerState<StatsTab> {
   bool _loadingReview = false;
   String? _aiWeeklyReview;
 
-  ({int kcalTarget, double proteinTarget}) _targetsForGoal(NutritionGoal goal) {
-    return switch (goal) {
-      NutritionGoal.gainMuscle => (kcalTarget: 2450, proteinTarget: 130.0),
-      NutritionGoal.loseWeight => (kcalTarget: 1750, proteinTarget: 110.0),
-      NutritionGoal.light => (kcalTarget: 1850, proteinTarget: 85.0),
-      NutritionGoal.maintain ||
-      NutritionGoal.other =>
-        (kcalTarget: 2100, proteinTarget: 95.0),
-    };
-  }
-
   Future<void> _requestWeeklyAiReview(
     WeeklyStats stats,
     ConsumptionAnalytics analytics,
-    NutritionGoal goal,
+    BodyCompositionProfile bodyProfile,
+    DailyNutritionTargets targets,
   ) async {
     setState(() => _loadingReview = true);
     try {
@@ -39,7 +30,27 @@ class _StatsTabState extends ConsumerState<StatsTab> {
         ..writeln(
             '- Score promedio: ${(stats.averageHealthScore * 100).round()}/100 (Saludables: ${stats.healthyCount}, Balanceadas: ${stats.balancedCount}, Chatarra: ${stats.junkCount})')
         ..writeln(
-            '- Promedio diario estimado: ~${stats.avgDailyCalories} kcal, ${stats.avgDailyProtein}g proteína')
+            '- Promedio diario real: ~${stats.avgDailyCalories} kcal, ${stats.avgDailyProtein}g proteína')
+        ..writeln(
+            '- Meta diaria personalizada (${targets.effectiveGoal.label}): ${targets.caloriesKcal} kcal, ${targets.proteinGrams.round()}g proteína, ${targets.carbsGrams.round()}g carbos, ${targets.fatGrams.round()}g grasas (TDEE ~${targets.tdeeKcal} kcal)');
+
+      if (bodyProfile.hasCoreMetrics) {
+        ctx.writeln(
+            '- Perfil corporal: ${bodyProfile.weightKg!.toStringAsFixed(1)} kg, ${bodyProfile.heightCm!.round()} cm, ${bodyProfile.sex.label}, actividad ${bodyProfile.activityLevel.shortLabel}');
+      }
+      if (targets.estimatedBodyFatPercent != null) {
+        ctx.writeln(
+            '- Grasa corporal estimada: ~${targets.estimatedBodyFatPercent!.toStringAsFixed(1)}% (${targets.bodyFatSource.label})${targets.leanMassKg != null ? ', masa magra ~${targets.leanMassKg} kg' : ''}');
+      }
+      if (bodyProfile.history.length >= 2) {
+        final first = bodyProfile.history.first;
+        final last = bodyProfile.history.last;
+        final wDelta = last.weightKg - first.weightKg;
+        ctx.writeln(
+            '- Evolución registrada (${bodyProfile.history.length} check-ins): peso ${wDelta >= 0 ? '+' : ''}${wDelta.toStringAsFixed(1)} kg (${first.weightKg.toStringAsFixed(1)} -> ${last.weightKg.toStringAsFixed(1)} kg)');
+      }
+
+      ctx
         ..writeln(
             '- Platos más repetidos: ${analytics.topMeals.map((e) => '${e.name} (${e.count}x)').join(', ')}')
         ..writeln(
@@ -52,7 +63,8 @@ class _StatsTabState extends ConsumerState<StatsTab> {
 
       final reply = await ref.read(geminiProvider).reviewWeeklyNutritionGemini(
             summaryContext: ctx.toString(),
-            goalLabel: '${goal.emoji} ${goal.label}',
+            goalLabel:
+                '${targets.effectiveGoal.emoji} ${targets.effectiveGoal.label}',
           );
       if (mounted) {
         setState(() {
@@ -75,9 +87,13 @@ class _StatsTabState extends ConsumerState<StatsTab> {
     final state = ref.watch(foodCoachProvider);
     final stats = state.weeklyStats;
     final waterGlasses = ref.watch(dailyWaterProvider);
+    final bodyProfile = ref.watch(bodyProfileProvider);
     final activeGoal = ref.watch(foodCoachNutritionGoalProvider).asData?.value ??
         NutritionGoal.maintain;
-    final targets = _targetsForGoal(activeGoal);
+    final targets = BodyNutritionCalculator.calculateTargets(
+      bodyProfile,
+      fallbackGoal: activeGoal,
+    );
     final analytics = _analyticsUseCase(state.history, lastDays: 30);
 
     final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -129,9 +145,18 @@ class _StatsTabState extends ConsumerState<StatsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Hidratación diaria (siempre disponible) ──────────────────────
+          // ── Perfil Corporal y Meta Real (compartido con Armario y Cocina) ─
+          _BodyCompositionCard(
+            profile: bodyProfile,
+            targets: targets,
+            onEdit: () => showBodyProfileSheet(context),
+          ),
+          const SizedBox(height: 14),
+
+          // ── Hidratación diaria (personalizada por peso) ──────────────────
           _WaterTrackerCard(
             glasses: waterGlasses,
+            goalGlasses: targets.waterGlasses,
             onDecrement: () =>
                 ref.read(dailyWaterProvider.notifier).decrement(),
             onIncrement: () =>
@@ -166,12 +191,11 @@ class _StatsTabState extends ConsumerState<StatsTab> {
               ),
             )
           else ...[
-            // ── Macros de HOY vs Meta ───────────────────────────────────────
+            // ── Macros de HOY vs Meta Personalizada ─────────────────────────
             _DailyMacrosCard(
               stats: stats,
-              goal: activeGoal,
-              kcalTarget: targets.kcalTarget,
-              proteinTarget: targets.proteinTarget,
+              targets: targets,
+              onConfigureProfile: () => showBodyProfileSheet(context),
             ),
             const SizedBox(height: 16),
 
@@ -346,7 +370,12 @@ class _StatsTabState extends ConsumerState<StatsTab> {
               child: OutlinedButton.icon(
                 onPressed: _loadingReview
                     ? null
-                    : () => _requestWeeklyAiReview(stats, analytics, activeGoal),
+                    : () => _requestWeeklyAiReview(
+                          stats,
+                          analytics,
+                          bodyProfile,
+                          targets,
+                        ),
                 icon: _loadingReview
                     ? const SizedBox(
                         width: 15,
@@ -408,20 +437,197 @@ class _StatsTabState extends ConsumerState<StatsTab> {
   }
 }
 
+class _BodyCompositionCard extends StatelessWidget {
+  final BodyCompositionProfile profile;
+  final DailyNutritionTargets targets;
+  final VoidCallback onEdit;
+
+  const _BodyCompositionCard({
+    required this.profile,
+    required this.targets,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final bf = targets.estimatedBodyFatPercent;
+    final hasHistory = profile.history.length >= 2;
+    double? weightDelta;
+    if (hasHistory) {
+      weightDelta =
+          profile.history.last.weightKg - profile.history.first.weightKg;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF00C896).withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🧬', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.hasCoreMetrics
+                          ? 'Tu Perfil Corporal (${targets.effectiveGoal.emoji} ${targets.effectiveGoal.label})'
+                          : 'Configura tu Perfil Corporal',
+                      style: TextStyle(
+                        color: onSurface,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    Text(
+                      targets.summaryNote,
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.58),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: onEdit,
+                icon: Icon(
+                  profile.hasCoreMetrics ? Icons.tune : Icons.add_circle_outline,
+                  size: 16,
+                  color: const Color(0xFF00C896),
+                ),
+                label: Text(
+                  profile.hasCoreMetrics ? 'Editar' : 'Configurar',
+                  style: const TextStyle(
+                    color: Color(0xFF00C896),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          if (profile.hasCoreMetrics) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _metricPill(
+                  context,
+                  '⚖️ ${profile.weightKg!.toStringAsFixed(1)} kg',
+                  const Color(0xFF00F0FF),
+                ),
+                if (bf != null)
+                  _metricPill(
+                    context,
+                    '📐 ~${bf.toStringAsFixed(1)}% grasa (${targets.bodyFatSource.shortBadge})',
+                    const Color(0xFFFFB74D),
+                  ),
+                if (targets.leanMassKg != null)
+                  _metricPill(
+                    context,
+                    '💪 Magra ${targets.leanMassKg} kg',
+                    const Color(0xFF00C896),
+                  ),
+                if (targets.bmi != null)
+                  _metricPill(
+                    context,
+                    'IMC ${targets.bmi}',
+                    onSurface.withValues(alpha: 0.72),
+                  ),
+              ],
+            ),
+            if (bf != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Categoría aprox.: ${BodyNutritionCalculator.bodyFatCategory(bf, profile.sex)}'
+                '${targets.bodyFatSource == BodyFatSource.visualEstimate ? ' · Afínalo con cinta (US Navy) tocando Editar' : ''}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: onSurface.withValues(alpha: 0.62),
+                ),
+              ),
+            ],
+            if (weightDelta != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                '📈 Evolución (${profile.history.length} check-ins): ${weightDelta >= 0 ? '+' : ''}${weightDelta.toStringAsFixed(1)} kg desde tu primer registro',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF00C896),
+                ),
+              ),
+            ],
+          ] else ...[
+            const SizedBox(height: 8),
+            Text(
+              'Ingresa tu estatura, peso y medidas (o usa el Escáner Físico de Armario) para calcular tu % de grasa, TDEE y guiar automáticamente a FoodCoach y Cocina.',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: onSurface.withValues(alpha: 0.65),
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _metricPill(BuildContext context, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _WaterTrackerCard extends StatelessWidget {
   final int glasses;
+  final int goalGlasses;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
 
   const _WaterTrackerCard({
     required this.glasses,
+    this.goalGlasses = 8,
     required this.onDecrement,
     required this.onIncrement,
   });
 
   @override
   Widget build(BuildContext context) {
-    const goal = 8;
+    final goal = goalGlasses.clamp(6, 16);
     final progress = (glasses / goal).clamp(0.0, 1.0);
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
@@ -452,7 +658,7 @@ class _WaterTrackerCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$glasses / $goal vasos (${(glasses * 0.25).toStringAsFixed(2)} L)',
+                      '$glasses / $goal vasos (${(glasses * 0.25).toStringAsFixed(2)} L · meta ${(goal * 0.25).toStringAsFixed(2)} L)',
                       style: TextStyle(
                         color: onSurface.withValues(alpha: 0.6),
                         fontSize: 11.5,
@@ -493,22 +699,29 @@ class _WaterTrackerCard extends StatelessWidget {
 
 class _DailyMacrosCard extends StatelessWidget {
   final WeeklyStats stats;
-  final NutritionGoal goal;
-  final int kcalTarget;
-  final double proteinTarget;
+  final DailyNutritionTargets targets;
+  final VoidCallback onConfigureProfile;
 
   const _DailyMacrosCard({
     required this.stats,
-    required this.goal,
-    required this.kcalTarget,
-    required this.proteinTarget,
+    required this.targets,
+    required this.onConfigureProfile,
   });
 
   @override
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final kcalRatio = (stats.todayCalories / kcalTarget).clamp(0.0, 1.0);
-    final protRatio = (stats.todayProtein / proteinTarget).clamp(0.0, 1.0);
+    final kcalRatio =
+        (stats.todayCalories / targets.caloriesKcal).clamp(0.0, 1.0);
+    final protRatio =
+        (stats.todayProtein / targets.proteinGrams).clamp(0.0, 1.0);
+    final budget = DailyMacroBudget(
+      targets: targets,
+      consumedCalories: stats.todayCalories,
+      consumedProtein: stats.todayProtein,
+      consumedCarbs: stats.todayCarbs,
+      consumedFat: stats.todayFat,
+    );
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -528,7 +741,7 @@ class _DailyMacrosCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Macros de hoy (${goal.emoji} ${goal.label})',
+                  'Macros de hoy (${targets.effectiveGoal.emoji} ${targets.effectiveGoal.label})',
                   style: TextStyle(
                     color: onSurface,
                     fontWeight: FontWeight.w700,
@@ -549,7 +762,7 @@ class _DailyMacrosCard extends StatelessWidget {
           const SizedBox(height: 10),
           _ProgressBarRow(
             label: '🔥 Calorías',
-            valueText: '${stats.todayCalories} / $kcalTarget kcal',
+            valueText: '${stats.todayCalories} / ${targets.caloriesKcal} kcal',
             progress: kcalRatio,
             color: const Color(0xFFFF9800),
           ),
@@ -557,16 +770,57 @@ class _DailyMacrosCard extends StatelessWidget {
           _ProgressBarRow(
             label: '💪 Proteína',
             valueText:
-                '${stats.todayProtein.toStringAsFixed(0)} / ${proteinTarget.toStringAsFixed(0)} g',
+                '${stats.todayProtein.toStringAsFixed(0)} / ${targets.proteinGrams.toStringAsFixed(0)} g',
             progress: protRatio,
             color: const Color(0xFF00C896),
           ),
           const SizedBox(height: 8),
           Text(
-            'Carbos: ${stats.todayCarbs}g  ·  Grasas: ${stats.todayFat}g  ·  Fibra: ${stats.todayFiber}g',
+            'Carbos: ${stats.todayCarbs.round()}/${targets.carbsGrams.round()}g  ·  Grasas: ${stats.todayFat.round()}/${targets.fatGrams.round()}g  ·  Fibra: ${stats.todayFiber.round()}/${targets.fiberGrams.round()}g',
             style: TextStyle(
               fontSize: 11.5,
               color: onSurface.withValues(alpha: 0.65),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: (budget.isOverCalories
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFF00C896))
+                  .withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '🎯 ${budget.shortGuidance}',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: budget.isOverCalories
+                          ? const Color(0xFFFFB74D)
+                          : const Color(0xFF00C896),
+                    ),
+                  ),
+                ),
+                if (!targets.isPersonalized)
+                  TextButton(
+                    onPressed: onConfigureProfile,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Personalizar',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF00C896)),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

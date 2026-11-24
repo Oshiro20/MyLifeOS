@@ -153,6 +153,8 @@ Future<void> main() async {
                 ref.read(cocinaRepositoryProvider).getAllIngredients),
             recipesFeedProvider.overrideWith(
                 (ref) => ref.read(cocinaRepositoryProvider).getAllRecipes),
+            todayMealStatsFeedProvider.overrideWith(
+                (ref) => ref.read(foodCoachRepositoryProvider).getWeeklyStats),
             // Register cocina providers
             inventoryProvider.overrideWith(InventoryNotifier.new),
             recipesProvider.overrideWith(RecipesNotifier.new),

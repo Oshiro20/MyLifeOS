@@ -20,17 +20,21 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
   final _weightController = TextEditingController();
   File? _imageFile;
   bool _isAnalyzing = false;
+  bool _estimateBodyFatForFoodCoach = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    // Pre-poblar campos si ya existen
+    // Pre-poblar campos desde Armario o el Perfil Corporal compartido
     final profile = ref.read(armarioProvider).userProfile;
-    if (profile != null) {
-      _heightController.text = profile.height ?? '';
-      _weightController.text = profile.weight ?? '';
-    }
+    final bodyProfile = ref.read(bodyProfileProvider);
+    _heightController.text = profile?.height ??
+        (bodyProfile.heightCm != null ? bodyProfile.heightCm!.round().toString() : '');
+    _weightController.text = profile?.weight ??
+        (bodyProfile.weightKg != null
+            ? bodyProfile.weightKg!.toStringAsFixed(1)
+            : '');
   }
 
   @override
@@ -79,8 +83,18 @@ class _PhysicalScannerScreenState extends ConsumerState<PhysicalScannerScreen> {
 
     try {
       final aiService = ref.read(geminiProvider);
+      final bodyFatPromptBlock = _estimateBodyFatForFoodCoach
+          ? '''
+- body_fat_min: estimación visual orientativa MÍNIMA de % grasa corporal (número entero entre 8 y 45, basado en estatura, peso y complexión visible con ropa; es solo referencia orientativa)
+- body_fat_max: estimación visual orientativa MÁXIMA de % grasa corporal (número entero, típicamente 3 a 5 puntos arriba de body_fat_min)
+- body_build_note: frase breve (máx 12 palabras) describiendo complexión general observada para guiar nutrición'''
+          : '';
+      final exampleJson = _estimateBodyFatForFoodCoach
+          ? '{"skin_tone": "medio", "colorimetry": "otoño", "body_shape": "rectángulo", "hair_type": "lacio", "body_fat_min": 17, "body_fat_max": 21, "body_build_note": "Complexión media equilibrada"}'
+          : '{"skin_tone": "medio", "colorimetry": "otoño", "body_shape": "rectángulo", "hair_type": "lacio"}';
+
       final prompt = '''
-Analiza la fotografía adjunta de la persona junto con sus medidas para construir su perfil de asesoría de imagen.
+Analiza la fotografía adjunta de la persona junto con sus medidas para construir su perfil de asesoría de imagen${_estimateBodyFatForFoodCoach ? ' y referencia general de complexión física' : ''}.
 Estatura: ${_heightController.text} cm
 Peso: ${_weightController.text} kg
 
@@ -89,9 +103,10 @@ Devuelve ÚNICAMENTE un objeto JSON válido con estas claves exactas:
 - colorimetry: estación de colorimetría recomendada ("primavera", "verano", "otoño", "invierno")
 - body_shape: forma corporal estimada ("rectángulo", "triángulo", "reloj de arena", "triángulo invertido", "atlético")
 - hair_type: tipo de cabello observado ("lacio", "ondulado", "rizado")
+$bodyFatPromptBlock
 
 Formato JSON:
-{"skin_tone": "medio", "colorimetry": "otoño", "body_shape": "rectángulo", "hair_type": "lacio"}
+$exampleJson
 ''';
       final jsonResponse = await aiService.generateJsonText(
         prompt: prompt,
@@ -107,7 +122,7 @@ Formato JSON:
 
       final data = json.decode(cleanJson) as Map<String, dynamic>;
 
-      // Actualizar perfil
+      // Actualizar perfil en Armario
       final currentProfile = ref.read(armarioProvider).userProfile;
       final newProfile = UserPhysicalProfile(
         id: currentProfile?.id ?? '',
@@ -115,18 +130,49 @@ Formato JSON:
         colorimetry: data['colorimetry']?.toString(),
         bodyShape: data['body_shape']?.toString(),
         hairType: data['hair_type']?.toString(),
-        height: _heightController.text,
-        weight: _weightController.text,
+        height: _heightController.text.trim(),
+        weight: _weightController.text.trim(),
         consentGranted: true,
         updatedAt: DateTime.now(),
       );
 
       await ref.read(armarioProvider.notifier).saveProfile(newProfile);
 
+      // Sincronizar con Perfil Corporal compartido (FoodCoach y Cocina)
+      final heightCm = double.tryParse(
+          _heightController.text.trim().replaceAll(',', '.'));
+      final weightKg = double.tryParse(
+          _weightController.text.trim().replaceAll(',', '.'));
+      double? bfMin;
+      double? bfMax;
+      String? buildNote;
+      if (_estimateBodyFatForFoodCoach) {
+        final rawMin = (data['body_fat_min'] as num?)?.toDouble() ??
+            double.tryParse(data['body_fat_min']?.toString() ?? '');
+        final rawMax = (data['body_fat_max'] as num?)?.toDouble() ??
+            double.tryParse(data['body_fat_max']?.toString() ?? '');
+        if (rawMin != null && rawMax != null && rawMin >= 5 && rawMax <= 55) {
+          bfMin = rawMin <= rawMax ? rawMin : rawMax;
+          bfMax = rawMax >= rawMin ? rawMax : rawMin;
+        }
+        buildNote = data['body_build_note']?.toString().trim();
+        if (buildNote != null && buildNote.isEmpty) buildNote = null;
+      }
+
+      await ref.read(bodyProfileProvider.notifier).syncFromPhysicalScanner(
+            heightCm: heightCm,
+            weightKg: weightKg,
+            visualBodyFatMin: bfMin,
+            visualBodyFatMax: bfMax,
+            visualBuildNote: buildNote,
+          );
+
       if (!mounted) return;
+      final syncedMsg = (bfMin != null && bfMax != null)
+          ? '¡Perfil guardado! Rango visual aprox. ${bfMin.round()}-${bfMax.round()}% grasa sincronizado con FoodCoach.'
+          : '¡Perfil físico analizado y sincronizado con FoodCoach!';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('¡Perfil físico analizado y guardado con éxito!')),
+        SnackBar(content: Text(syncedMsg)),
       );
       Navigator.of(context).pop();
     } catch (e) {
@@ -184,7 +230,7 @@ Formato JSON:
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             GestureDetector(
               onTap: () => _showPickerOptions(context),
               child: AspectRatio(
@@ -233,7 +279,37 @@ Formato JSON:
               const SizedBox(height: 16),
               Text(_error!, style: const TextStyle(color: Colors.redAccent)),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF00C896).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF00C896).withValues(alpha: 0.3),
+                ),
+              ),
+              child: SwitchListTile(
+                value: _estimateBodyFatForFoodCoach,
+                onChanged: (v) =>
+                    setState(() => _estimateBodyFatForFoodCoach = v),
+                activeThumbColor: const Color(0xFF00C896),
+                title: const Text(
+                  'Estimar rango orientativo de % grasa para FoodCoach',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  'Referencia visual aproximada (±5% con ropa). Puedes afinarla con medidas US Navy en FoodCoach.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.65),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _isAnalyzing ? null : _analyze,
               style: ElevatedButton.styleFrom(

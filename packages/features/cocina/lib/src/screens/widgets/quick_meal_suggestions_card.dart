@@ -49,6 +49,7 @@ class _QuickMealSuggestionsCardState
     final learnedAliases = ref.watch(learnedIngredientAliasesProvider);
     final recentCooked =
         ref.watch(recentCookedNamesProvider).asData?.value ?? const <String>[];
+    final dailyBudget = ref.watch(dailyMacroBudgetProvider).asData?.value;
 
     final activeGoal = recipesState.activeGoal;
     final recommendations = _useCase(
@@ -56,6 +57,7 @@ class _QuickMealSuggestionsCardState
       recipes: recipesState.recipes,
       inventory: invState.ingredients,
       activeGoal: activeGoal,
+      remainingMacros: dailyBudget,
       recentlyCookedNames: recentCooked.toSet(),
       customGramsPerUnit: equivalences,
       learnedAliases: learnedAliases,
@@ -149,6 +151,36 @@ class _QuickMealSuggestionsCardState
                 ),
             ],
           ),
+          if (dailyBudget != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: (dailyBudget.isOverCalories
+                        ? const Color(0xFFFFB74D)
+                        : const Color(0xFF00C896))
+                    .withValues(alpha: 0.11),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: (dailyBudget.isOverCalories
+                          ? const Color(0xFFFFB74D)
+                          : const Color(0xFF00C896))
+                      .withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                '🎯 ${dailyBudget.shortGuidance}',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: dailyBudget.isOverCalories
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFF00C896),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           // Selector rápido Desayuno / Almuerzo / Cena
           Row(
@@ -435,6 +467,19 @@ class _QuickMealRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (rec.nutritionFitBadge != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      rec.nutritionFitBadge!,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF00C896),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),
