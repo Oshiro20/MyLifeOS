@@ -192,6 +192,141 @@ void main() {
       expect(CookingMethod.inferFromText('Pollo a la plancha'), CookingMethod.grilled);
       expect(CookingMethod.inferFromText('Huevo sancochado'), CookingMethod.boiled);
     });
+
+    test('BodyNutritionCalculator calcula US Navy, prioridad de fuentes y metas reales', () {
+      final navyMale = BodyNutritionCalculator.calculateUsNavyBodyFat(
+        sex: BiologicalSex.male,
+        heightCm: 175,
+        neckCm: 38,
+        waistCm: 84,
+      );
+      expect(navyMale, isNotNull);
+      expect(navyMale!, inInclusiveRange(12.0, 22.0));
+
+      final navyFemale = BodyNutritionCalculator.calculateUsNavyBodyFat(
+        sex: BiologicalSex.female,
+        heightCm: 164,
+        neckCm: 33,
+        waistCm: 72,
+        hipCm: 96,
+      );
+      expect(navyFemale, isNotNull);
+      expect(navyFemale!, inInclusiveRange(18.0, 32.0));
+
+      const visualOnly = BodyCompositionProfile(
+        heightCm: 175,
+        weightKg: 74,
+        age: 28,
+        sex: BiologicalSex.male,
+        activityLevel: ActivityLevel.moderate,
+        goalMode: BodyGoalMode.recomposition,
+        visualBodyFatMin: 17,
+        visualBodyFatMax: 21,
+      );
+      final targetsVisual = BodyNutritionCalculator.calculateTargets(visualOnly);
+      expect(targetsVisual.isPersonalized, isTrue);
+      expect(targetsVisual.bodyFatSource, BodyFatSource.visualEstimate);
+      expect(targetsVisual.estimatedBodyFatPercent, 19.0);
+      expect(targetsVisual.caloriesKcal, inInclusiveRange(2100, 2800));
+      expect(targetsVisual.proteinGrams, greaterThanOrEqualTo(120));
+
+      final withNavy = visualOnly.copyWith(neckCm: 38, waistCm: 84);
+      final targetsNavy = BodyNutritionCalculator.calculateTargets(withNavy);
+      expect(targetsNavy.bodyFatSource, BodyFatSource.usNavy);
+      expect(targetsNavy.leanMassKg, isNotNull);
+
+      final withManual = withNavy.copyWith(manualBodyFatPercent: 15.5);
+      final targetsManual = BodyNutritionCalculator.calculateTargets(withManual);
+      expect(targetsManual.bodyFatSource, BodyFatSource.manual);
+      expect(targetsManual.estimatedBodyFatPercent, 15.5);
+
+      final budget = DailyMacroBudget(
+        targets: targetsManual,
+        consumedCalories: 1600,
+        consumedProtein: 90,
+        consumedCarbs: 180,
+        consumedFat: 45,
+      );
+      expect(budget.remainingCalories, targetsManual.caloriesKcal - 1600);
+      expect(budget.toChefPromptContext(withManual), contains('PERFIL CORPORAL'));
+    });
+
+    test('QuickMealSuggestionsUseCase prioriza recetas acordes al saldo restante del día', () {
+      const useCase = QuickMealSuggestionsUseCase();
+      const inv = [
+        InventoryIngredient(
+          id: '1',
+          name: 'Pechuga de pollo',
+          primaryCategory: 'Proteínas Animales',
+          quantity: 500,
+          unit: 'gramos',
+        ),
+      ];
+      final lightHighProt = Recipe(
+        id: 'r1',
+        name: 'Pechuga de pollo a la plancha',
+        durationMinutes: 15,
+        ingredients: const [
+          RecipeIngredient(
+            id: 'ri1',
+            recipeId: 'r1',
+            ingredientName: 'Pechuga de pollo',
+            quantity: 200,
+            unit: 'gramos',
+          ),
+        ],
+        caloriasAproximadas: 320,
+        nutrition: const NutritionInfo(proteinasG: 42),
+        tipoComida: MealType.seco,
+        createdAt: DateTime(2026),
+      );
+      final heavyFried = Recipe(
+        id: 'r2',
+        name: 'Pollo frito con papas fritas',
+        durationMinutes: 25,
+        ingredients: const [
+          RecipeIngredient(
+            id: 'ri2',
+            recipeId: 'r2',
+            ingredientName: 'Pechuga de pollo',
+            quantity: 200,
+            unit: 'gramos',
+          ),
+        ],
+        caloriasAproximadas: 820,
+        nutrition: const NutritionInfo(proteinasG: 28),
+        tipoComida: MealType.seco,
+        createdAt: DateTime(2026),
+      );
+      const targets = DailyNutritionTargets(
+        caloriesKcal: 2000,
+        proteinGrams: 140,
+        carbsGrams: 200,
+        fatGrams: 60,
+        fiberGrams: 28,
+        waterLiters: 2.5,
+        bmrKcal: 1650,
+        tdeeKcal: 2200,
+        isPersonalized: true,
+        effectiveGoal: BodyGoalMode.fatLoss,
+      );
+      const budget = DailyMacroBudget(
+        targets: targets,
+        consumedCalories: 1650,
+        consumedProtein: 95,
+        consumedCarbs: 170,
+        consumedFat: 52,
+      );
+
+      final recs = useCase(
+        period: QuickMealPeriod.dinner,
+        recipes: [heavyFried, lightHighProt],
+        inventory: inv,
+        remainingMacros: budget,
+      );
+      expect(recs.first.recipe.id, 'r1');
+      expect(recs.first.nutritionFitBadge, isNotNull);
+    });
   });
 
   group('AiJsonParser', () {

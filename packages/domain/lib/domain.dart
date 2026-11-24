@@ -24,6 +24,7 @@ export 'src/armario/entities/wardrobe_garment.dart';
 export 'src/armario/repositories/i_armario_repository.dart';
 
 // FoodCoach
+export 'src/foodcoach/entities/body_composition_profile.dart';
 export 'src/foodcoach/entities/meal_evaluation.dart';
 export 'src/foodcoach/repositories/i_foodcoach_repository.dart';
 export 'src/foodcoach/usecases/consumption_analytics_use_case.dart';

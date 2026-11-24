@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:domain/domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -393,6 +394,59 @@ void main() {
       );
       expect(dinnerCopy.title, contains('lista en refri'));
       expect(dinnerCopy.body, contains('Pollo frito con lentejas'));
+    });
+  });
+
+  group('BodyProfileNotifier', () {
+    test('persiste perfil, sincroniza meta con Cocina y fusiona datos del Escáner sin perder medidas', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(bodyProfileProvider.notifier);
+      await notifier.saveProfile(
+        const BodyCompositionProfile(
+          heightCm: 175,
+          weightKg: 76,
+          age: 28,
+          sex: BiologicalSex.male,
+          activityLevel: ActivityLevel.moderate,
+          goalMode: BodyGoalMode.fatLoss,
+          neckCm: 38,
+          waistCm: 86,
+        ),
+        recordCheckIn: true,
+      );
+
+      final saved = container.read(bodyProfileProvider);
+      expect(saved.hasCoreMetrics, isTrue);
+      expect(saved.history.length, 1);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getString(BodyProfileNotifier.cocinaGoalKey),
+        NutritionGoal.loseWeight.name,
+      );
+
+      // Escáner de Armario actualiza peso y rango visual sin borrar neckCm/waistCm/age
+      await notifier.syncFromPhysicalScanner(
+        heightCm: 175,
+        weightKg: 75.2,
+        visualBodyFatMin: 17,
+        visualBodyFatMax: 21,
+        visualBuildNote: 'Complexión media',
+      );
+
+      final merged = container.read(bodyProfileProvider);
+      expect(merged.weightKg, 75.2);
+      expect(merged.neckCm, 38);
+      expect(merged.waistCm, 86);
+      expect(merged.age, 28);
+      expect(merged.visualBodyFatMin, 17);
+      expect(merged.visualBodyFatMax, 21);
+      // Mismo día deduplica el check-in
+      expect(merged.history.length, 1);
+      expect(merged.history.single.weightKg, 75.2);
     });
   });
 }

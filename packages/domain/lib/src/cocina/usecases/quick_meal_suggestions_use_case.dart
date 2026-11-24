@@ -1,5 +1,6 @@
 import '../entities/inventory_ingredient.dart';
 import '../entities/recipe.dart';
+import '../../foodcoach/entities/body_composition_profile.dart';
 import 'ingredient_matcher.dart';
 
 /// Periodos principales del día para la lista rápida de comidas.
@@ -49,6 +50,7 @@ class QuickMealRecommendation {
   final bool matchesGoal;
   final bool matchesPeriod;
   final double score;
+  final String? nutritionFitBadge;
 
   const QuickMealRecommendation({
     required this.recipe,
@@ -59,6 +61,7 @@ class QuickMealRecommendation {
     this.matchesGoal = false,
     this.matchesPeriod = false,
     required this.score,
+    this.nutritionFitBadge,
   });
 
   int get availabilityPercent => (availabilityRatio * 100).round().clamp(0, 100);
@@ -135,6 +138,7 @@ class QuickMealSuggestionsUseCase {
     required List<Recipe> recipes,
     required List<InventoryIngredient> inventory,
     NutritionGoal activeGoal = NutritionGoal.maintain,
+    DailyMacroBudget? remainingMacros,
     Set<String> recentlyCookedNames = const {},
     Map<String, double>? customGramsPerUnit,
     Map<String, String>? learnedAliases,
@@ -204,6 +208,66 @@ class QuickMealSuggestionsUseCase {
         score += 6.0;
       }
 
+      // Ajuste según saldo real restante del día (FoodCoach + Perfil Corporal)
+      String? fitBadge;
+      if (remainingMacros != null) {
+        final kcal = recipe.caloriasAproximadas;
+        final prot = recipe.nutrition?.proteinasG;
+        final remKcal = remainingMacros.remainingCalories;
+        final remProt = remainingMacros.remainingProtein;
+        final normText = IngredientMatcher.normalizeText(
+          '${recipe.name} ${recipe.ingredients.map((i) => i.ingredientName).join(' ')}',
+        );
+        final looksHighProtein = (prot != null && prot >= 24) ||
+            _containsAny(normText, const [
+              'pollo',
+              'pechuga',
+              'pavo',
+              'pescado',
+              'atun',
+              'salmon',
+              'huevo',
+              'lentej',
+              'quinua',
+              'carne',
+              'res',
+            ]);
+        final looksFried = _containsAny(normText, const [
+          'frito',
+          'frita',
+          'chicharron',
+          'milanesa',
+          'apanado',
+          'bistec a lo pobre',
+        ]);
+
+        if (remainingMacros.isOverCalories || remKcal <= 450) {
+          if (kcal != null && kcal <= 450) {
+            score += 12.0;
+            fitBadge = '✅ Ligero (~$kcal kcal)';
+          } else if (kcal != null && kcal >= 650) {
+            score -= 14.0;
+            final suggestedPortion =
+                ((remKcal.clamp(250, 500)) / kcal).clamp(0.5, 0.8);
+            fitBadge =
+                '📏 Sugerido: ${suggestedPortion.toStringAsFixed(1)} porc.';
+          }
+          if (looksFried) score -= 10.0;
+        } else if (kcal != null && kcal <= remKcal + 80) {
+          score += 8.0;
+          fitBadge = '✅ Encaja hoy (~$kcal kcal)';
+        }
+
+        if (remProt >= 30 && looksHighProtein) {
+          score += 11.0;
+          if (prot != null && prot > 0) {
+            fitBadge = '⚡ ~${prot.round()}g prot · ideal para tu meta';
+          } else {
+            fitBadge ??= '⚡ Alta en proteína para tu meta';
+          }
+        }
+      }
+
       scored.add(
         QuickMealRecommendation(
           recipe: recipe,
@@ -214,6 +278,7 @@ class QuickMealSuggestionsUseCase {
           matchesGoal: matchesGoal,
           matchesPeriod: isPeriodMatch,
           score: score,
+          nutritionFitBadge: fitBadge,
         ),
       );
     }

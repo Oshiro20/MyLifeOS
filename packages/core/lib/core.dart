@@ -26,6 +26,7 @@ export 'src/services/connectivity_service.dart';
 export 'src/services/ai_chat_service.dart';
 export 'src/services/ai_finance_service.dart';
 export 'src/services/cross_module_bridge.dart';
+export 'src/services/body_profile_service.dart';
 export 'src/services/ingredient_price_and_wallet_bridge.dart';
 export 'src/services/secure_storage_service.dart';
 export 'src/services/weather_service.dart';

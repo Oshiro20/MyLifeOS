@@ -609,6 +609,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     ChefPreferences? userPreferences,
     bool budgetSaverMode = false,
     NutritionGoal nutritionGoal = NutritionGoal.maintain,
+    String? bodyNutritionContext,
   }) async {
     if (inventory.isEmpty) {
       throw Exception(
@@ -646,6 +647,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
           userPreferences: userPreferences,
           budgetSaverMode: budgetSaverMode,
           nutritionGoal: nutritionGoal,
+          bodyNutritionContext: bodyNutritionContext,
         );
       } catch (_) {
         if (results.isNotEmpty) break;
@@ -700,6 +702,7 @@ ${userPrefsContext.isNotEmpty ? userPrefsContext : ''}
     ChefPreferences? userPreferences,
     bool budgetSaverMode = false,
     NutritionGoal nutritionGoal = NutritionGoal.maintain,
+    String? bodyNutritionContext,
   }) async {
     final inventoryDescription = inventory.map((item) {
       return '- ${item.name}: ${item.quantity} ${item.unit}${item.preparation.isNotEmpty ? ' (${item.preparation})' : ''}';
@@ -783,6 +786,10 @@ ${recentlyUsedRecipeNames.take(12).map((e) => '- $e').join('\n')}
         : '';
 
     final goalContext = _buildGoalContext(nutritionGoal);
+    final bodyContextBlock =
+        (bodyNutritionContext != null && bodyNutritionContext.trim().isNotEmpty)
+            ? '${bodyNutritionContext.trim()}\n'
+            : '';
     final userPrefsContext = _buildUserPrefsContext(userPreferences);
     final endMenuNumber = startMenuNumber + batchMenuCount - 1;
 
@@ -795,7 +802,7 @@ INGREDIENTES DISPONIBLES EN DESPENSA:
 $inventoryDescription
 
 $goalContext
-$readyCookedNote$dinnerNote$budgetNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
+$bodyContextBlock$readyCookedNote$dinnerNote$budgetNote$cuisineContext$dislikedWarning$recentlyUsedWarning$userPrefsContext
 REGLAS:
 - Recetas peruanas reales priorizando los ingredientes disponibles, SIN repetir platos.
 - Cada plato DEBE tener mínimo 2 ingredientes reales y 3 pasos concisos.
