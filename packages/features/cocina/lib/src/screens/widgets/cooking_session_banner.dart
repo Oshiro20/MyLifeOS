@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:core/core.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../providers/cocina_providers.dart';
 import '../../providers/cooking_session_provider.dart';
@@ -409,6 +411,7 @@ class _FinishCookingSheetState extends ConsumerState<_FinishCookingSheet> {
   bool _saveLeftover = false;
   double _leftoverFraction = 0.5;
   final Map<String, double> _extraLeftoverQty = {};
+  bool _sendToFoodCoach = false;
   bool _saving = false;
 
   @override
@@ -546,7 +549,23 @@ class _FinishCookingSheetState extends ConsumerState<_FinishCookingSheet> {
               }),
             ],
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              '📊 Evaluar esta comida en FoodCoach',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              'Pre-carga este plato y sus extras en FoodCoach para registrar tu alimentación',
+              style: TextStyle(fontSize: 11),
+            ),
+            value: _sendToFoodCoach,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: (v) => setState(() => _sendToFoodCoach = v),
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -613,10 +632,32 @@ class _FinishCookingSheetState extends ConsumerState<_FinishCookingSheet> {
             );
       }
 
+      if (_sendToFoodCoach) {
+        final extrasConsumed = <String>[];
+        for (final extra in session.extras) {
+          final leftover = _saveLeftover ? (_extraLeftoverQty[extra.name] ?? 0.0) : 0.0;
+          final eaten = (extra.quantity - leftover).clamp(0.0, extra.quantity);
+          if (eaten > 0.001) {
+            extrasConsumed.add(
+              '${formatIngredientQty(eaten)} ${extra.unit} ${extra.name}',
+            );
+          }
+        }
+        ref.read(pendingMealEvaluationProvider.notifier).queue(
+              recipeName: session.recipeName,
+              ingredients: [
+                session.recipeName,
+                ...extrasConsumed,
+              ],
+            );
+      }
+
       ref.read(cookingSessionProvider.notifier).endSession();
       if (!mounted) return;
       Navigator.of(context).pop();
-      if (_saveLeftover && savedServings != null) {
+      if (_sendToFoodCoach) {
+        GoRouter.maybeOf(context)?.go('/foodcoach');
+      } else if (_saveLeftover && savedServings != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

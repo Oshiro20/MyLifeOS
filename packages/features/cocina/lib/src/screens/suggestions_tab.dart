@@ -6,6 +6,7 @@ import '../providers/cocina_providers.dart';
 import '../providers/what_can_i_cook_provider.dart';
 import '../providers/cooking_session_provider.dart';
 import 'widgets/prepared_meals_card.dart';
+import 'widgets/quick_meal_suggestions_card.dart';
 import 'widgets/recipe_cook_helper.dart';
 import 'widgets/recipe_detail_sheet.dart';
 
@@ -202,6 +203,35 @@ class _SuggestionsTabState extends ConsumerState<SuggestionsTab> {
       return CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(child: PreparedMealsTrayCard()),
+          SliverToBoxAdapter(
+            child: QuickMealSuggestionsCard(
+              onAskAI: (period) {
+                final mapped = switch (period) {
+                  QuickMealPeriod.breakfast => MealPeriod.desayuno,
+                  QuickMealPeriod.lunch => MealPeriod.almuerzo,
+                  QuickMealPeriod.dinner => MealPeriod.cena,
+                };
+                setState(() {
+                  _selectedMealPeriod = mapped;
+                  _isMenuCreatorExpanded = false;
+                });
+                ref.read(menuConfigProvider.notifier).update(
+                      mealPeriod: mapped,
+                      components: _selectedComponents.toList(),
+                      menuCount: _menuCount,
+                      budgetSaverMode: _budgetSaverMode,
+                    );
+                aiNotifier.generateSuggestions(
+                  mealPeriod: mapped,
+                  components: _selectedComponents.toList(),
+                  menuCount: _menuCount,
+                  budgetSaverMode: _budgetSaverMode,
+                  nutritionGoal: ref.read(recipesProvider).activeGoal,
+                  forceRefresh: true,
+                );
+              },
+            ),
+          ),
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(

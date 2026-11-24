@@ -174,13 +174,21 @@ class _PreparedMealTile extends ConsumerWidget {
   }
 
   Future<void> _openServeSheet(BuildContext context, PreparedMeal meal) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ServePreparedMealSheet(meal: meal),
-    );
+    await showServePreparedMealSheet(context, meal);
   }
+}
+
+/// Abre el sheet para servir porciones de un plato guardado (y enviarlo a FoodCoach).
+Future<void> showServePreparedMealSheet(
+  BuildContext context,
+  PreparedMeal meal,
+) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _ServePreparedMealSheet(meal: meal),
+  );
 }
 
 class _ServePreparedMealSheet extends ConsumerStatefulWidget {

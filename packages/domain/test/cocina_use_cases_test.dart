@@ -536,6 +536,121 @@ void main() {
       );
     });
   });
+
+  group('QuickMealSuggestionsUseCase', () {
+    test('ordena sugerencias por periodo, disponibilidad y rescate de ingredientes por vencer', () {
+      const useCase = QuickMealSuggestionsUseCase();
+      final soon = DateTime.now().add(const Duration(days: 1));
+      final pantry = [
+        InventoryIngredient(
+          id: 'p1',
+          name: 'Avena',
+          primaryCategory: 'Cereales',
+          quantity: 500,
+          unit: 'g',
+        ),
+        InventoryIngredient(
+          id: 'p2',
+          name: 'Plátano',
+          primaryCategory: 'Frutas',
+          quantity: 3,
+          unit: 'unidades',
+          expirationDate: soon,
+        ),
+        InventoryIngredient(
+          id: 'p3',
+          name: 'Pollo',
+          primaryCategory: 'Proteínas',
+          quantity: 4,
+          unit: 'unidades',
+        ),
+        InventoryIngredient(
+          id: 'p4',
+          name: 'Arroz',
+          primaryCategory: 'Cereales',
+          quantity: 1,
+          unit: 'kg',
+        ),
+      ];
+
+      final breakfastRecipe = Recipe(
+        id: 'rec_b',
+        name: 'Avena con plátano',
+        description: 'Desayuno rápido',
+        durationMinutes: 10,
+        servings: 1,
+        instructions: const ['Cocinar avena', 'Agregar plátano'],
+        ingredients: const [
+          RecipeIngredient(
+            id: 'i1',
+            recipeId: 'rec_b',
+            ingredientName: 'Avena',
+            quantity: 60,
+            unit: 'g',
+          ),
+          RecipeIngredient(
+            id: 'i2',
+            recipeId: 'rec_b',
+            ingredientName: 'Plátano',
+            quantity: 1,
+            unit: 'unidades',
+          ),
+        ],
+        goal: NutritionGoal.gainMuscle,
+        tipoComida: MealType.desayuno,
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      final lunchRecipe = Recipe(
+        id: 'rec_l',
+        name: 'Arroz con pollo',
+        description: 'Clásico peruano',
+        durationMinutes: 40,
+        servings: 2,
+        instructions: const ['Aderezar', 'Cocinar arroz con pollo'],
+        ingredients: const [
+          RecipeIngredient(
+            id: 'i3',
+            recipeId: 'rec_l',
+            ingredientName: 'Pollo',
+            quantity: 2,
+            unit: 'unidades',
+          ),
+          RecipeIngredient(
+            id: 'i4',
+            recipeId: 'rec_l',
+            ingredientName: 'Arroz',
+            quantity: 250,
+            unit: 'g',
+          ),
+        ],
+        goal: NutritionGoal.maintain,
+        tipoComida: MealType.seco,
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      final breakfastResults = useCase(
+        period: QuickMealPeriod.breakfast,
+        recipes: [lunchRecipe, breakfastRecipe],
+        inventory: pantry,
+        activeGoal: NutritionGoal.gainMuscle,
+      );
+      expect(breakfastResults.first.recipe.id, 'rec_b');
+      expect(breakfastResults.first.availabilityPercent, 100);
+      expect(breakfastResults.first.rescuedExpiringNames, contains('Plátano'));
+      expect(breakfastResults.first.matchesGoal, isTrue);
+
+      final lunchResults = useCase(
+        period: QuickMealPeriod.lunch,
+        recipes: [breakfastRecipe, lunchRecipe],
+        inventory: pantry,
+      );
+      expect(lunchResults.first.recipe.id, 'rec_l');
+      expect(QuickMealPeriod.forHour(8), QuickMealPeriod.breakfast);
+      expect(QuickMealPeriod.forHour(13), QuickMealPeriod.lunch);
+      expect(QuickMealPeriod.forHour(19), QuickMealPeriod.dinner);
+    });
+  });
 }
 
 class _FakeWeeklyMenuRepo implements ICocinaRepository {
