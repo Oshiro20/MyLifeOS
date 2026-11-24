@@ -363,4 +363,36 @@ void main() {
       expect(diezPresas.any((p) => p.name == 'Presa de pecho de pollo' && p.count == 4), isTrue);
     });
   });
+
+  group('AppNotificationsService & NotificationSettings', () {
+    test('serializa preferencias de horarios y construye mensajes contextuales', () {
+      const settings = NotificationSettings(
+        mealsEnabled: true,
+        breakfastTime: DailyNotificationTime(7, 15),
+        lunchTime: DailyNotificationTime(12, 0),
+        dinnerTime: DailyNotificationTime(19, 0),
+        expiryAlertsEnabled: false,
+      );
+      final roundTrip = NotificationSettings.fromJson(settings.toJson());
+      expect(roundTrip.breakfastTime.format24h(), '07:15');
+      expect(roundTrip.lunchTime.format24h(), '12:00');
+      expect(roundTrip.dinnerTime.format24h(), '19:00');
+      expect(roundTrip.expiryAlertsEnabled, isFalse);
+
+      final loc = AppNotificationsService.resolveLocationForOffset(
+        const Duration(hours: -5),
+      );
+      expect(loc.name, 'America/Lima');
+
+      final dinnerCopy = AppNotificationsService.buildMealCopy(
+        mealSlot: 2,
+        ctx: const SmartNotificationContext(
+          preparedMealsCount: 1,
+          firstPreparedMealName: 'Pollo frito con lentejas',
+        ),
+      );
+      expect(dinnerCopy.title, contains('lista en refri'));
+      expect(dinnerCopy.body, contains('Pollo frito con lentejas'));
+    });
+  });
 }

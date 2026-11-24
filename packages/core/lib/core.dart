@@ -14,6 +14,7 @@ export 'src/services/wallet_summary_reader.dart';
 export 'src/services/wallet_cloud_service.dart';
 export 'src/services/wallet_update_notifier.dart';
 export 'src/services/mylifeos_update_notifier.dart';
+export 'src/services/app_notifications_service.dart';
 export 'src/usecases/hybrid_suggestion_use_case.dart';
 export 'src/services/local_recipe_database_service.dart';
 export 'src/services/recipe_duplicate_checker.dart';

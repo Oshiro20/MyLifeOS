@@ -76,6 +76,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _AppearanceSection(ref: ref, isDark: isDark),
           const SizedBox(height: 16),
 
+          // ── Notificaciones y Recordatorios ────────────────────────────────
+          _NotificationsSection(isDark: isDark),
+          const SizedBox(height: 16),
+
           // ── Backup & Datos ────────────────────────────────────────────────
           _BackupSection(backup: backup, ref: ref, isDark: isDark),
           const SizedBox(height: 16),
@@ -361,6 +365,232 @@ class _AppearanceSection extends ConsumerWidget {
             isDark: isDark,
             onTap: () =>
                 ref.read(themeModeProvider.notifier).setTheme(ThemeMode.dark),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotificationsSection extends ConsumerWidget {
+  final bool isDark;
+
+  const _NotificationsSection({required this.isDark});
+
+  Future<void> _pickTime(
+    BuildContext context,
+    DailyNotificationTime current,
+    Future<void> Function(DailyNotificationTime next) onPicked,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: current.hour, minute: current.minute),
+    );
+    if (picked == null) return;
+    await onPicked(DailyNotificationTime(picked.hour, picked.minute));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(notificationSettingsProvider);
+    final notifier = ref.read(notificationSettingsProvider.notifier);
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final muted = isDark ? Colors.white60 : const Color(0xFF4A7A65);
+
+    return _SectionCard(
+      isDark: isDark,
+      icon: Icons.notifications_active_outlined,
+      title: 'Notificaciones y Recordatorios',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Comidas diarias (Desayuno / Almuerzo / Cena)',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Recordatorios con tu plan, sobras en refri o sugerencias rápidas',
+              style: TextStyle(color: muted, fontSize: 11.5),
+            ),
+            value: settings.mealsEnabled,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: (v) =>
+                notifier.update(settings.copyWith(mealsEnabled: v)),
+          ),
+          if (settings.mealsEnabled)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  ActionChip(
+                    avatar: const Text('🌅', style: TextStyle(fontSize: 13)),
+                    label: Text(
+                      'Desayuno ${settings.breakfastTime.format24h()}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onPressed: () => _pickTime(
+                      context,
+                      settings.breakfastTime,
+                      (t) => notifier.update(settings.copyWith(breakfastTime: t)),
+                    ),
+                  ),
+                  ActionChip(
+                    avatar: const Text('🍛', style: TextStyle(fontSize: 13)),
+                    label: Text(
+                      'Almuerzo ${settings.lunchTime.format24h()}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onPressed: () => _pickTime(
+                      context,
+                      settings.lunchTime,
+                      (t) => notifier.update(settings.copyWith(lunchTime: t)),
+                    ),
+                  ),
+                  ActionChip(
+                    avatar: const Text('🌙', style: TextStyle(fontSize: 13)),
+                    label: Text(
+                      'Cena ${settings.dinnerTime.format24h()}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onPressed: () => _pickTime(
+                      context,
+                      settings.dinnerTime,
+                      (t) => notifier.update(settings.copyWith(dinnerTime: t)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Alertas de caducidad (Despensa y refri)',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Aviso diario a las ${settings.expiryAlertTime.format24h()} si algo vence pronto',
+              style: TextStyle(color: muted, fontSize: 11.5),
+            ),
+            value: settings.expiryAlertsEnabled,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: (v) =>
+                notifier.update(settings.copyWith(expiryAlertsEnabled: v)),
+          ),
+          if (settings.expiryAlertsEnabled)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => _pickTime(
+                  context,
+                  settings.expiryAlertTime,
+                  (t) => notifier.update(settings.copyWith(expiryAlertTime: t)),
+                ),
+                icon: const Icon(Icons.schedule,
+                    size: 15, color: Color(0xFF00C896)),
+                label: Text(
+                  'Cambiar hora (${settings.expiryAlertTime.format24h()})',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF00C896),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+              ),
+            ),
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Temporizador de cocción',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Notificación real cuando termina el tiempo de una receta activa',
+              style: TextStyle(color: muted, fontSize: 11.5),
+            ),
+            value: settings.cookingTimerEnabled,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: (v) =>
+                notifier.update(settings.copyWith(cookingTimerEnabled: v)),
+          ),
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Recordatorio de lavado (Armario)',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Aviso a las ${settings.laundryTime.format24h()} si tienes prendas por lavar',
+              style: TextStyle(color: muted, fontSize: 11.5),
+            ),
+            value: settings.laundryReminderEnabled,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: (v) =>
+                notifier.update(settings.copyWith(laundryReminderEnabled: v)),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final ok = await ref
+                    .read(appNotificationsServiceProvider)
+                    .sendTestNotification();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? '🔔 Notificación de prueba enviada al dispositivo'
+                          : '⚠️ Activa el permiso de notificaciones para MyLifeOS en Android',
+                    ),
+                    backgroundColor:
+                        ok ? const Color(0xFF00C896) : Colors.orange,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.notifications_outlined,
+                  size: 16, color: Color(0xFF00C896)),
+              label: const Text(
+                'Enviar notificación de prueba',
+                style: TextStyle(
+                  color: Color(0xFF00C896),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF00C896)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1181,7 +1411,8 @@ Future<void> _clearCache(BuildContext context) async {
     // Directorio temporal (incluye APKs descargados, miniaturas de video y capturas temporales)
     final tempDir = await getTemporaryDirectory();
     if (await tempDir.exists()) {
-      await for (final entity in tempDir.list(recursive: true, followLinks: false)) {
+      await for (final entity
+          in tempDir.list(recursive: true, followLinks: false)) {
         if (entity is File) {
           totalSize += await entity.length();
           await entity.delete();
@@ -1194,7 +1425,8 @@ Future<void> _clearCache(BuildContext context) async {
     final docDir = await getApplicationDocumentsDirectory();
     final compressedDir = Directory('${docDir.path}/compressed');
     if (await compressedDir.exists()) {
-      await for (final entity in compressedDir.list(recursive: true, followLinks: false)) {
+      await for (final entity
+          in compressedDir.list(recursive: true, followLinks: false)) {
         if (entity is File) {
           totalSize += await entity.length();
           await entity.delete();

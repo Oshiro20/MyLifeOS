@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Ingrediente extra añadido durante una sesión de cocina en curso.
@@ -121,6 +122,17 @@ class CookingSessionNotifier extends Notifier<CookingSession?> {
     _autoEndTimer = Timer(Duration(minutes: autoEndMinutes), () {
       endSession();
     });
+
+    if (estimatedDurationMinutes != null &&
+        estimatedDurationMinutes > 0 &&
+        ref.read(notificationSettingsProvider).cookingTimerEnabled) {
+      unawaited(
+        ref.read(appNotificationsServiceProvider).scheduleCookingTimer(
+              recipeName: recipeName,
+              minutes: estimatedDurationMinutes,
+            ),
+      );
+    }
   }
 
   void updateScaledServings(int servings) {
@@ -157,6 +169,7 @@ class CookingSessionNotifier extends Notifier<CookingSession?> {
     _autoEndTimer?.cancel();
     _autoEndTimer = null;
     state = null;
+    unawaited(ref.read(appNotificationsServiceProvider).cancelCookingTimer());
   }
 
   bool get isActive => state != null;

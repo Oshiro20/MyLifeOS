@@ -18,6 +18,8 @@ import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 
 final _notifications = FlutterLocalNotificationsPlugin();
+final _appNotifications = AppNotificationsService(_notifications);
+void Function(int tab)? _onSelectCocinaTab;
 
 // ── Router ───────────────────────────────────────────────────────────────────
 final _router = GoRouter(
@@ -107,7 +109,8 @@ Future<void> main() async {
   // Capturar errores de Zone (errores asíncronos no manejados)
   runZonedGuarded(
     () async {
-      // Inicializar notificaciones locales con handler de navegación
+      // Inicializar zonas horarias y notificaciones locales con handler de navegación
+      AppNotificationsService.ensureTimeZonesInitialized();
       await _notifications.initialize(
         const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -118,11 +121,17 @@ Future<void> main() async {
             _router.go('/finanzas');
           } else if (payload == 'update_mylifeos') {
             _router.go('/home');
+          } else if (payload.startsWith('/cocina')) {
+            final uri = Uri.tryParse(payload);
+            final tab = int.tryParse(uri?.queryParameters['tab'] ?? '');
+            if (tab != null) _onSelectCocinaTab?.call(tab);
+            _router.go('/cocina');
           } else if (payload.startsWith('/')) {
             _router.go(payload);
           }
         },
       );
+      unawaited(_appNotifications.requestPermissions());
 
       // Inicializar backup automático
       await AutoBackupService.initialize();
@@ -135,6 +144,7 @@ Future<void> main() async {
       runApp(
         ProviderScope(
           overrides: [
+            appNotificationsServiceProvider.overrideWithValue(_appNotifications),
             cocinaRepositoryProvider.overrideWithValue(CocinaRepository(_db)),
             armarioRepositoryProvider.overrideWithValue(ArmarioRepository(_db)),
             foodCoachRepositoryProvider.overrideWith(
@@ -192,12 +202,17 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
   StreamSubscription? _intentDataStreamSubscription;
+  Timer? _notifSyncDebounce;
   bool _runningWalletAutoSync = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _onSelectCocinaTab = (tab) {
+      if (mounted) ref.read(cocinaTabProvider.notifier).setTab(tab);
+    };
+    _scheduleNotificationsSync();
 
     // Listen to media sharing incoming links while the app is in memory
     _intentDataStreamSubscription = ReceiveSharingIntent.instance
@@ -218,6 +233,73 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
       ref.invalidate(walletSummaryProvider);
+      _scheduleNotificationsSync();
+    }
+  }
+
+  void _scheduleNotificationsSync() {
+    _notifSyncDebounce?.cancel();
+    _notifSyncDebounce = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      unawaited(_syncSmartNotifications());
+    });
+  }
+
+  Future<void> _syncSmartNotifications() async {
+    try {
+      final settings = ref.read(notificationSettingsProvider);
+      final rawPantry = ref
+          .read(inventoryProvider)
+          .ingredients
+          .where((i) =>
+              i.subCategory != 'Porción guardada' &&
+              i.subCategory != 'Extra listo')
+          .toList();
+      final expiringItems =
+          rawPantry.where((i) => i.isExpiringSoon || i.isExpired).toList();
+      final preparedMeals = ref.read(preparedMealsProvider);
+      final dirtyCount =
+          ref.read(armarioProvider).garments.where((g) => !g.isClean).length;
+      final recipes = ref.read(recipesProvider).recipes;
+      final weeklyState = ref.read(weeklyMenuProvider);
+
+      String? todayBreakfast;
+      String? todayLunch;
+      String? todayDinner;
+      if (weeklyState is WeeklyMenuLoaded) {
+        final today = DateTime.now().weekday;
+        String? nameFor(int mealType) {
+          final entry = weeklyState.entries
+              .where((e) => e.dayOfWeek == today && e.mealType == mealType)
+              .firstOrNull;
+          if (entry == null) return null;
+          return recipes
+              .where((r) => r.id == entry.recipeId)
+              .firstOrNull
+              ?.name;
+        }
+
+        todayBreakfast = nameFor(0);
+        todayLunch = nameFor(1);
+        todayDinner = nameFor(2);
+      }
+
+      await ref.read(appNotificationsServiceProvider).syncScheduledNotifications(
+            settings: settings,
+            context: SmartNotificationContext(
+              expiringPantryCount: expiringItems.length,
+              expiringPantryNames: expiringItems.map((e) => e.name).toList(),
+              preparedMealsCount: preparedMeals.length,
+              firstPreparedMealName: preparedMeals.firstOrNull?.recipeName,
+              dirtyGarmentsCount: dirtyCount,
+              todayBreakfastName: todayBreakfast,
+              todayLunchName: todayLunch,
+              todayDinnerName: todayDinner,
+            ),
+          );
+    } catch (e) {
+      developer.log('Smart notifications sync error: $e',
+          name: 'MyLifeOS.Notifications');
     }
   }
 
@@ -337,6 +419,8 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
 
   @override
   void dispose() {
+    _notifSyncDebounce?.cancel();
+    _onSelectCocinaTab = null;
     WidgetsBinding.instance.removeObserver(this);
     _intentDataStreamSubscription?.cancel();
     super.dispose();
@@ -350,6 +434,16 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
         unawaited(_autoSyncWalletPurchases(summary));
       }
     });
+    ref.listen<NotificationSettings>(
+        notificationSettingsProvider, (_, __) => _scheduleNotificationsSync());
+    ref.listen<InventoryState>(
+        inventoryProvider, (_, __) => _scheduleNotificationsSync());
+    ref.listen<List<PreparedMeal>>(
+        preparedMealsProvider, (_, __) => _scheduleNotificationsSync());
+    ref.listen<ArmarioState>(
+        armarioProvider, (_, __) => _scheduleNotificationsSync());
+    ref.listen<WeeklyMenuState>(
+        weeklyMenuProvider, (_, __) => _scheduleNotificationsSync());
     final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'MyLifeOS',
