@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:domain/domain.dart';
 
 // ── Estado ────────────────────────────────────────────────────────────────────
@@ -85,7 +86,15 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
 
   void clearIngredients() => state = state.copyWith(currentIngredients: []);
 
-  Future<void> evaluate({String? photoPath}) async {
+  Future<void> evaluate({
+    String? photoPath,
+    String? mealName,
+    MealSlot? mealSlot,
+    CookingMethod? cookingMethod,
+    double servings = 1.0,
+    String? recipeContext,
+    MealMacros? recipeBaseMacros,
+  }) async {
     final hasPhoto = photoPath != null && photoPath.isNotEmpty;
     if (state.currentIngredients.isEmpty && !hasPhoto) return;
     state = state.copyWith(isEvaluating: true, error: null);
@@ -93,6 +102,12 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
       final eval = await _repo.evaluateMeal(
         ingredients: state.currentIngredients,
         photoPath: photoPath,
+        mealName: mealName,
+        mealSlot: mealSlot,
+        cookingMethod: cookingMethod,
+        servings: servings,
+        recipeContext: recipeContext,
+        recipeBaseMacros: recipeBaseMacros,
       );
       final history = await _repo.getHistory();
       final stats = await _repo.getWeeklyStats();
@@ -123,6 +138,74 @@ class FoodCoachNotifier extends Notifier<FoodCoachState> {
   void clearError() => state = state.copyWith(error: null);
 }
 
+/// Contador diario de vasos de agua (persistido por fecha en SharedPreferences).
+class DailyWaterNotifier extends Notifier<int> {
+  bool _loaded = false;
+  Future<void>? _loadFuture;
+
+  static String _todayKey() {
+    final now = DateTime.now();
+    return 'foodcoach_water_${now.year}_${now.month}_${now.day}';
+  }
+
+  @override
+  int build() {
+    _loaded = false;
+    _loadFuture = null;
+    Future.microtask(load);
+    return 0;
+  }
+
+  Future<void> load() => _loadFuture ??= _readFromPrefs();
+
+  Future<void> _readFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_todayKey()) ?? 0;
+      if (!_loaded) {
+        _loaded = true;
+        state = saved;
+      }
+    } catch (_) {
+      _loaded = true;
+    }
+  }
+
+  Future<void> setGlasses(int next) async {
+    if (!_loaded) await load();
+    final clamped = next.clamp(0, 20);
+    state = clamped;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_todayKey(), clamped);
+    } catch (_) {}
+  }
+
+  Future<void> increment() async {
+    if (!_loaded) await load();
+    await setGlasses(state + 1);
+  }
+
+  Future<void> decrement() async {
+    if (!_loaded) await load();
+    await setGlasses(state - 1);
+  }
+}
+
+/// Meta nutricional activa sincronizada desde Cocina (`cocina_active_nutrition_goal_v1`).
+final foodCoachNutritionGoalProvider = FutureProvider<NutritionGoal>((ref) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('cocina_active_nutrition_goal_v1');
+    if (saved != null) {
+      for (final g in NutritionGoal.values) {
+        if (g.name == saved) return g;
+      }
+    }
+  } catch (_) {}
+  return NutritionGoal.maintain;
+});
+
 // ── Providers ─────────────────────────────────────────────────────────────────
 final foodCoachRepositoryProvider = Provider<IFoodCoachRepository>((ref) {
   throw UnimplementedError(
@@ -131,3 +214,6 @@ final foodCoachRepositoryProvider = Provider<IFoodCoachRepository>((ref) {
 
 final foodCoachProvider =
     NotifierProvider<FoodCoachNotifier, FoodCoachState>(FoodCoachNotifier.new);
+
+final dailyWaterProvider =
+    NotifierProvider<DailyWaterNotifier, int>(DailyWaterNotifier.new);

@@ -4,11 +4,18 @@ import 'package:domain/domain.dart';
 import 'package:core/core.dart';
 import '../providers/foodcoach_provider.dart';
 
-class HistoryTab extends ConsumerWidget with AppFeedback {
+class HistoryTab extends ConsumerStatefulWidget with AppFeedback {
   const HistoryTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HistoryTab> createState() => _HistoryTabState();
+}
+
+class _HistoryTabState extends ConsumerState<HistoryTab> {
+  FoodClassification? _filter;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(foodCoachProvider);
     final history = state.history;
     final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -92,55 +99,104 @@ class HistoryTab extends ConsumerWidget with AppFeedback {
       );
     }
 
+    final visible = _filter == null
+        ? history
+        : history.where((l) => l.classification == _filter).toList();
+
     return RefreshIndicator(
       onRefresh: () async {
         await ref.read(foodCoachProvider.notifier).load();
       },
       color: const Color(0xFF00C896),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: history.length,
-        itemBuilder: (ctx, i) {
-          final log = history[i];
-          return _HistoryTile(
-            log: log,
-            onDelete: () => _confirmDelete(context, ref, log),
-          );
-        },
+      child: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: Row(
+              children: [
+                ChoiceChip(
+                  label: Text('Todos (${history.length})',
+                      style: const TextStyle(fontSize: 11.5)),
+                  selected: _filter == null,
+                  visualDensity: VisualDensity.compact,
+                  onSelected: (_) => setState(() => _filter = null),
+                ),
+                const SizedBox(width: 6),
+                for (final c in FoodClassification.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text('${_emojiFor(c)} ${_label(c)}',
+                          style: const TextStyle(fontSize: 11.5)),
+                      selected: _filter == c,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) => setState(() => _filter = c),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: visible.isEmpty
+                ? Center(
+                    child: Text(
+                      'Sin registros en esta categoría.',
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.5),
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: visible.length,
+                    itemBuilder: (ctx, i) {
+                      final log = visible[i];
+                      return _HistoryTile(
+                        log: log,
+                        onDelete: () => _confirmDelete(context, log),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, MealLog log) async {
-    final confirmed = await showConfirmDelete(context,
-        itemName: _dateLabel(log.timestamp),
-        subtitle:
-            '${_label(log.classification)} · ${(log.healthScore * 100).round()}pts');
+  Future<void> _confirmDelete(BuildContext context, MealLog log) async {
+    final confirmed = await widget.showConfirmDelete(
+      context,
+      itemName: log.mealName ?? _dateLabel(log.timestamp),
+      subtitle:
+          '${_label(log.classification)} · ${(log.healthScore * 100).round()}pts',
+    );
     if (!confirmed) return;
     await ref.read(foodCoachProvider.notifier).deleteFromHistory(log.id);
     if (!context.mounted) return;
     final err = ref.read(foodCoachProvider).error;
     if (err != null) {
-      showError(context, err);
+      widget.showError(context, err);
     } else {
-      showSuccess(context, 'Registro eliminado.');
+      widget.showSuccess(context, 'Registro eliminado.');
     }
   }
 
   String _dateLabel(DateTime d) =>
       '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
-  String _label(FoodClassification c) {
-    switch (c) {
-      case FoodClassification.healthy:
-        return 'Saludable';
-      case FoodClassification.balanced:
-        return 'Balanceado';
-      case FoodClassification.junk:
-        return 'No recomendable';
-    }
-  }
+  String _emojiFor(FoodClassification c) => switch (c) {
+        FoodClassification.healthy => '💚',
+        FoodClassification.balanced => '💛',
+        FoodClassification.junk => '🔴',
+      };
+
+  String _label(FoodClassification c) => switch (c) {
+        FoodClassification.healthy => 'Saludable',
+        FoodClassification.balanced => 'Balanceado',
+        FoodClassification.junk => 'Chatarra',
+      };
 }
 
 class _HistoryTile extends StatelessWidget {
@@ -148,34 +204,35 @@ class _HistoryTile extends StatelessWidget {
   final VoidCallback onDelete;
   const _HistoryTile({required this.log, required this.onDelete});
 
-  Color get _color {
-    switch (log.classification) {
-      case FoodClassification.healthy:
-        return const Color(0xFF4CAF50);
-      case FoodClassification.balanced:
-        return const Color(0xFFFFB74D);
-      case FoodClassification.junk:
-        return const Color(0xFFFF5252);
-    }
-  }
+  Color get _color => switch (log.classification) {
+        FoodClassification.healthy => const Color(0xFF4CAF50),
+        FoodClassification.balanced => const Color(0xFFFFB74D),
+        FoodClassification.junk => const Color(0xFFFF5252),
+      };
 
-  String get _emoji {
-    switch (log.classification) {
-      case FoodClassification.healthy:
-        return '💚';
-      case FoodClassification.balanced:
-        return '💛';
-      case FoodClassification.junk:
-        return '🔴';
-    }
-  }
+  String get _emoji => switch (log.classification) {
+        FoodClassification.healthy => '💚',
+        FoodClassification.balanced => '💛',
+        FoodClassification.junk => '🔴',
+      };
 
   @override
   Widget build(BuildContext context) {
     final score = (log.healthScore * 100).round();
     final d = log.timestamp;
     final dateStr =
-        '${d.day}/${d.month}/${d.year}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+        '${d.day}/${d.month} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final title = (log.mealName != null && log.mealName!.isNotEmpty)
+        ? log.mealName!
+        : '${log.mealSlot.emoji} ${log.mealSlot.label}';
+    final metaParts = <String>[
+      '${log.mealSlot.emoji} ${log.mealSlot.label}',
+      if (log.cookingMethod != null)
+        '${log.cookingMethod!.emoji} ${log.cookingMethod!.label}',
+      dateStr,
+    ];
+    final macros = log.macros;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
@@ -186,41 +243,69 @@ class _HistoryTile extends StatelessWidget {
         border: Border(left: BorderSide(color: _color, width: 3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_emoji, style: const TextStyle(fontSize: 28)),
+          Text(_emoji, style: const TextStyle(fontSize: 26)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(dateStr,
-                    style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.8),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                Text(log.feedback,
-                    maxLines: 2,
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: onSurface,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  metaParts.join(' · '),
+                  style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.55),
+                    fontSize: 11,
+                  ),
+                ),
+                if (macros != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    '🔥 ${macros.caloriesKcal} kcal · P ${macros.proteinGrams}g · C ${macros.carbsGrams}g · G ${macros.fatGrams}g',
+                    style: const TextStyle(
+                      color: Color(0xFF00C896),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (log.detectedIngredients.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    log.detectedIngredients.take(5).join(', '),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5),
-                        fontSize: 11)),
+                      color: onSurface.withValues(alpha: 0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  log.feedback,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: onSurface.withValues(alpha: 0.55),
+                    fontSize: 11,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                // mini barra de salud
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: log.healthScore,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
+                    backgroundColor: onSurface.withValues(alpha: 0.1),
                     valueColor: AlwaysStoppedAnimation<Color>(_color),
                     minHeight: 5,
                   ),
@@ -233,11 +318,7 @@ class _HistoryTile extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.delete_outline,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.35),
-                size: 20),
+                color: onSurface.withValues(alpha: 0.35), size: 20),
             onPressed: onDelete,
           ),
         ],

@@ -1,5 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:domain/domain.dart';
+import 'package:foodcoach/foodcoach.dart';
 
 void main() {
   group('MealEvaluation entity', () {
@@ -34,6 +37,19 @@ void main() {
         detectedIngredients: const [],
       );
       expect(log.detectedIngredients, isEmpty);
+    });
+
+    test('DailyWaterNotifier incrementa, decrementa y persiste vasos de agua', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(dailyWaterProvider.notifier);
+      await notifier.increment();
+      await notifier.increment();
+      expect(container.read(dailyWaterProvider), 2);
+      await notifier.decrement();
+      expect(container.read(dailyWaterProvider), 1);
     });
   });
 }

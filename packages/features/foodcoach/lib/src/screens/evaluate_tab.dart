@@ -15,13 +15,20 @@ class EvaluateTab extends ConsumerStatefulWidget with AppFeedback {
 
 class _EvaluateTabState extends ConsumerState<EvaluateTab> {
   final _ingredientCtrl = TextEditingController();
+  final _mealNameCtrl = TextEditingController();
   String? _photoPath;
   String? _loadedRecipeName;
+  MealSlot _mealSlot = MealSlot.forHour(DateTime.now().hour);
+  CookingMethod? _cookingMethod;
+  double _servings = 1.0;
+  String? _recipeContext;
+  MealMacros? _recipeBaseMacros;
   bool _consumingPending = false;
 
   @override
   void dispose() {
     _ingredientCtrl.dispose();
+    _mealNameCtrl.dispose();
     super.dispose();
   }
 
@@ -39,11 +46,116 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
           notifier.addIngredient(ing.trim());
         }
       }
+      _mealNameCtrl.text = pending.recipeName;
       setState(() {
         _photoPath = null;
         _loadedRecipeName = pending.recipeName;
+        _cookingMethod = pending.cookingMethod ??
+            CookingMethod.inferFromText(pending.recipeName);
+        _servings = pending.servings;
+        _recipeContext = pending.recipeContext;
+        _recipeBaseMacros = pending.baseMacros;
+        _mealSlot = MealSlot.forHour(DateTime.now().hour);
       });
       ref.read(pendingMealEvaluationProvider.notifier).clear();
+    });
+  }
+
+  Future<void> _pickRecipeFromCocina() async {
+    final recipes = await ref.read(recipesFeedProvider)();
+    if (!mounted) return;
+    if (recipes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tienes recetas guardadas en Cocina todavía.'),
+        ),
+      );
+      return;
+    }
+
+    final chosen = await showModalBottomSheet<Recipe>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        builder: (_, ctrl) => Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                '📖 Elegir receta de tu Cocina',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: ctrl,
+                itemCount: recipes.length,
+                itemBuilder: (_, i) {
+                  final r = recipes[i];
+                  return ListTile(
+                    leading: const Icon(Icons.restaurant_menu,
+                        color: Color(0xFF00C896)),
+                    title: Text(r.name),
+                    subtitle: Text(
+                      '${r.ingredients.length} ingredientes · ${r.durationMinutes} min'
+                      '${r.caloriasAproximadas != null ? ' · ~${r.caloriasAproximadas} kcal' : ''}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onTap: () => Navigator.of(ctx).pop(r),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+
+    final notifier = ref.read(foodCoachProvider.notifier);
+    notifier.clearIngredients();
+    for (final ing in chosen.ingredients) {
+      if (ing.ingredientName.trim().isNotEmpty) {
+        notifier.addIngredient(ing.ingredientName.trim());
+      }
+    }
+    final baseServings = chosen.servings > 0 ? chosen.servings : 1;
+    final perServing = chosen.ingredients
+        .map((i) =>
+            '${i.ingredientName} (${(i.quantity / baseServings).toStringAsFixed(1)} ${i.unit})')
+        .join(', ');
+    final stepsPreview = chosen.instructions.take(4).join(' ');
+    MealMacros? baseMacros;
+    if (chosen.nutrition != null || (chosen.caloriasAproximadas ?? 0) > 0) {
+      final n = chosen.nutrition;
+      baseMacros = MealMacros(
+        caloriesKcal: chosen.caloriasAproximadas ??
+            ((n != null)
+                ? (n.proteinasG * 4 + n.carbohidratosG * 4 + n.grasasG * 9)
+                    .round()
+                : 0),
+        proteinGrams: n?.proteinasG ?? 0,
+        carbsGrams: n?.carbohidratosG ?? 0,
+        fatGrams: n?.grasasG ?? 0,
+        fiberGrams: n?.fibraG ?? 0,
+      );
+    }
+    _mealNameCtrl.text = chosen.name;
+    setState(() {
+      _loadedRecipeName = chosen.name;
+      _cookingMethod =
+          CookingMethod.inferFromText('${chosen.name} $stepsPreview');
+      _recipeContext =
+          'Por 1 porción: $perServing.\nPreparación: $stepsPreview';
+      _recipeBaseMacros = baseMacros;
+      _servings = 1.0;
     });
   }
 
@@ -106,6 +218,148 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
             ),
           ),
           const SizedBox(height: 20),
+
+          // Nombre del plato + elegir receta de Cocina
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _mealNameCtrl,
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Nombre del plato (opcional)',
+                    hintText: 'Ej. Pollo frito con lentejas',
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _pickRecipeFromCocina,
+                icon: const Icon(Icons.menu_book_outlined,
+                    size: 16, color: Color(0xFF00C896)),
+                label: const Text(
+                  'Receta',
+                  style: TextStyle(color: Color(0xFF00C896), fontSize: 12),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF00C896)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Horario de comida
+          Text('Horario de comida',
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: MealSlot.values.map((slot) {
+              final selected = _mealSlot == slot;
+              return ChoiceChip(
+                label: Text('${slot.emoji} ${slot.label}',
+                    style: const TextStyle(fontSize: 11.5)),
+                selected: selected,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => setState(() => _mealSlot = slot),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+
+          // Método de cocción + Porciones
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Método de cocción',
+                  style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Porciones:',
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.6))),
+                  const SizedBox(width: 4),
+                  for (final s in const [0.5, 1.0, 1.5, 2.0])
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => setState(() => _servings = s),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (_servings - s).abs() < 0.01
+                                ? const Color(0xFF00C896)
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            s == s.roundToDouble() ? '${s.toInt()}x' : '${s}x',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: (_servings - s).abs() < 0.01
+                                  ? Colors.black
+                                  : Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: CookingMethod.values.map((m) {
+              final selected = _cookingMethod == m;
+              return ChoiceChip(
+                label: Text('${m.emoji} ${m.label}',
+                    style: const TextStyle(fontSize: 11)),
+                selected: selected,
+                visualDensity: VisualDensity.compact,
+                onSelected: (sel) =>
+                    setState(() => _cookingMethod = sel ? m : null),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
 
           // Foto opcional
           Text('Foto (opcional)',
@@ -359,12 +613,27 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
                   ? null
                   : () async {
                       final selectedPhoto = _photoPath;
-                      await ref
-                          .read(foodCoachProvider.notifier)
-                          .evaluate(photoPath: selectedPhoto);
+                      await ref.read(foodCoachProvider.notifier).evaluate(
+                            photoPath: selectedPhoto,
+                            mealName: _mealNameCtrl.text.trim(),
+                            mealSlot: _mealSlot,
+                            cookingMethod: _cookingMethod,
+                            servings: _servings,
+                            recipeContext: _recipeContext,
+                            recipeBaseMacros: _recipeBaseMacros,
+                          );
                       if (mounted &&
-                          ref.read(foodCoachProvider).currentEvaluation != null) {
-                        setState(() => _photoPath = null);
+                          ref.read(foodCoachProvider).currentEvaluation !=
+                              null) {
+                        _mealNameCtrl.clear();
+                        setState(() {
+                          _photoPath = null;
+                          _loadedRecipeName = null;
+                          _recipeContext = null;
+                          _recipeBaseMacros = null;
+                          _cookingMethod = null;
+                          _servings = 1.0;
+                        });
                       }
                     },
               icon: state.isEvaluating
@@ -529,10 +798,46 @@ class _ResultView extends StatelessWidget {
                             .onSurface
                             .withValues(alpha: 0.54),
                         fontSize: 12)),
+                if (evaluation.mealName != null ||
+                    evaluation.cookingMethod != null) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      if (evaluation.mealName != null)
+                        Chip(
+                          label: Text(evaluation.mealName!,
+                              style: const TextStyle(fontSize: 11)),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      Chip(
+                        label: Text(
+                            '${evaluation.mealSlot.emoji} ${evaluation.mealSlot.label}',
+                            style: const TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      if (evaluation.cookingMethod != null)
+                        Chip(
+                          label: Text(
+                              '${evaluation.cookingMethod!.emoji} ${evaluation.cookingMethod!.label}',
+                              style: const TextStyle(fontSize: 11)),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // Macros estimados (kcal / P / C / G / Fibra)
+          if (evaluation.macros != null) ...[
+            _MacrosSummaryCard(macros: evaluation.macros!),
+            const SizedBox(height: 14),
+          ],
 
           // Feedback
           _InfoCard(
@@ -597,6 +902,92 @@ class _ResultView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MacrosSummaryCard extends StatelessWidget {
+  final MealMacros macros;
+  const _MacrosSummaryCard({required this.macros});
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF00C896).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_fire_department_rounded,
+                  color: Color(0xFFFF9800), size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'Estimación nutricional (~${macros.caloriesKcal} kcal)',
+                style: TextStyle(
+                  color: onSurface,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _MacroPill('Proteína', '${macros.proteinGrams}g',
+                  const Color(0xFF00C896)),
+              _MacroPill('Carbos', '${macros.carbsGrams}g',
+                  const Color(0xFFFF9800)),
+              _MacroPill('Grasas', '${macros.fatGrams}g',
+                  const Color(0xFFFFB74D)),
+              _MacroPill('Fibra', '${macros.fiberGrams}g',
+                  const Color(0xFF00F0FF)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MacroPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _MacroPill(this.label, this.value, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
+        ),
+      ],
     );
   }
 }
