@@ -143,6 +143,55 @@ void main() {
             FoodClassification.balanced,
           ]));
     });
+
+    test('ConsumptionAnalyticsUseCase agrupa platos, frutas, verduras y alertas de balance', () {
+      const useCase = ConsumptionAnalyticsUseCase();
+      final now = DateTime.now();
+      final logs = [
+        MealLog(
+          id: '1',
+          timestamp: now.subtract(const Duration(days: 1)),
+          classification: FoodClassification.healthy,
+          healthScore: 0.85,
+          feedback: 'Ok',
+          mealName: 'Pollo frito con lentejas',
+          cookingMethod: CookingMethod.fried,
+          detectedIngredients: const ['pollo', 'lentejas', 'tomate', 'cebolla'],
+        ),
+        MealLog(
+          id: '2',
+          timestamp: now.subtract(const Duration(hours: 10)),
+          classification: FoodClassification.balanced,
+          healthScore: 0.65,
+          feedback: 'Ok',
+          mealName: 'Pollo frito con lentejas',
+          cookingMethod: CookingMethod.fried,
+          detectedIngredients: const ['pollo', 'lentejas', 'tomate'],
+        ),
+        MealLog(
+          id: '3',
+          timestamp: now.subtract(const Duration(hours: 3)),
+          classification: FoodClassification.healthy,
+          healthScore: 0.9,
+          feedback: 'Ok',
+          mealName: 'Avena con plátano',
+          cookingMethod: CookingMethod.boiled,
+          detectedIngredients: const ['avena', 'plátano', 'fresas'],
+        ),
+      ];
+
+      final analytics = useCase(logs, lastDays: 30);
+      expect(analytics.topMeals.first.name, 'Pollo frito con lentejas');
+      expect(analytics.topMeals.first.count, 2);
+      expect(analytics.topFruits.map((f) => f.name), containsAll(['Plátano', 'Fresa']));
+      expect(analytics.topVegetables.first.name, 'Tomate');
+      expect(analytics.topVegetables.first.count, 2);
+      expect(analytics.topProteins.first.name, 'Pollo');
+      expect(analytics.friedMealsCount, 2);
+      expect(analytics.balanceAlerts.any((a) => a.contains('fritas')), isTrue);
+      expect(CookingMethod.inferFromText('Pollo a la plancha'), CookingMethod.grilled);
+      expect(CookingMethod.inferFromText('Huevo sancochado'), CookingMethod.boiled);
+    });
   });
 
   group('AiJsonParser', () {

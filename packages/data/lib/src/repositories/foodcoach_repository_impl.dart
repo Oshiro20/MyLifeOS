@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
 import 'package:domain/domain.dart';
@@ -83,14 +84,26 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
   FoodCoachRepository(this._db, [this._ai]);
 
-  // ── Clasificación offline ────────────────────────────────────────────────────
+  // ── Clasificación IA + fallback offline con macros ───────────────────────────
   @override
   Future<MealEvaluation> evaluateMeal({
     required List<String> ingredients,
     String? photoPath,
+    String? mealName,
+    MealSlot? mealSlot,
+    CookingMethod? cookingMethod,
+    double servings = 1.0,
+    String? recipeContext,
+    MealMacros? recipeBaseMacros,
   }) async {
     final lowerIngredients =
-        ingredients.map((i) => i.trim().toLowerCase()).toList();
+        ingredients.map((i) => i.trim().toLowerCase()).where((i) => i.isNotEmpty).toList();
+    final effectiveSlot = mealSlot ?? MealSlot.forHour(DateTime.now().hour);
+    var effectiveMethod = cookingMethod ??
+        CookingMethod.inferFromText(
+          '${mealName ?? ''} ${lowerIngredients.join(' ')} ${recipeContext ?? ''}',
+        );
+    final effectiveServings = servings.clamp(0.25, 10.0).toDouble();
 
     // ── INFERENCIA CON IA ──────────────────────────────────────────────────────
     bool aiSuccess = false;
@@ -100,6 +113,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
     List<String> neg = [];
     String feedback = '';
     String rec = '';
+    MealMacros? macros;
 
     if (_ai != null) {
       try {
@@ -109,6 +123,11 @@ class FoodCoachRepository implements IFoodCoachRepository {
         final jsonStr = await _ai.evaluateMealStructured(
           description: description,
           photoPath: photoPath,
+          mealName: mealName,
+          mealSlotLabel: effectiveSlot.label,
+          cookingMethodLabel: effectiveMethod?.label,
+          servings: effectiveServings,
+          recipeContext: recipeContext,
         );
         if (jsonStr != null) {
           final decoded = AiJsonParser.decodeMap(jsonStr);
@@ -127,6 +146,10 @@ class FoodCoachRepository implements IFoodCoachRepository {
             neg = List<String>.from(decoded['negativeFactors'] ?? []);
             feedback = decoded['feedback'] as String? ?? '';
             rec = decoded['recommendation'] as String? ?? '';
+            macros = MealMacros.fromJson(decoded);
+            effectiveMethod ??= CookingMethod.fromName(
+              decoded['detectedCookingMethod']?.toString(),
+            );
             aiSuccess = true;
           }
         }
@@ -156,6 +179,19 @@ class FoodCoachRepository implements IFoodCoachRepository {
         }
       }
 
+      if (effectiveMethod == CookingMethod.fried) {
+        totalScore -= 2;
+        scoredCount++;
+        if (!neg.contains('preparación frita')) {
+          neg.add('preparación frita');
+        }
+      } else if (effectiveMethod == CookingMethod.boiled ||
+          effectiveMethod == CookingMethod.grilled ||
+          effectiveMethod == CookingMethod.raw) {
+        totalScore += 1;
+        scoredCount++;
+      }
+
       final maxPossible = scoredCount * 3;
       final minPossible = scoredCount * -3;
       final range = maxPossible - minPossible;
@@ -182,6 +218,13 @@ class FoodCoachRepository implements IFoodCoachRepository {
       _tipIndex++;
     }
 
+    macros ??= estimateMacrosOffline(
+      ingredients: lowerIngredients,
+      cookingMethod: effectiveMethod,
+      servings: effectiveServings,
+      recipeBaseMacros: recipeBaseMacros,
+    );
+
     final evaluation = MealEvaluation(
       id: _uuid.v4(),
       timestamp: DateTime.now(),
@@ -193,10 +236,185 @@ class FoodCoachRepository implements IFoodCoachRepository {
       negativeFactors: neg,
       feedback: feedback,
       recommendation: rec,
+      mealName: (mealName != null && mealName.trim().isNotEmpty)
+          ? mealName.trim()
+          : null,
+      mealSlot: effectiveSlot,
+      cookingMethod: effectiveMethod,
+      servings: effectiveServings,
+      macros: macros,
     );
 
     await saveToHistory(evaluation);
     return evaluation;
+  }
+
+  /// Estima macros aproximados en modo offline usando macros base de receta
+  /// o aportes por grupo alimenticio + ajuste del método de cocción.
+  static MealMacros estimateMacrosOffline({
+    required List<String> ingredients,
+    CookingMethod? cookingMethod,
+    double servings = 1.0,
+    MealMacros? recipeBaseMacros,
+  }) {
+    if (recipeBaseMacros != null && recipeBaseMacros.caloriesKcal > 0) {
+      return recipeBaseMacros.scale(servings);
+    }
+
+    var kcal = 0.0;
+    var protein = 0.0;
+    var carbs = 0.0;
+    var fat = 0.0;
+    var fiber = 0.0;
+
+    for (final raw in ingredients) {
+      final hit = ConsumptionAnalyticsUseCase.classifyFoodItem(raw);
+      if (hit == null) {
+        kcal += 55;
+        carbs += 8;
+        protein += 2;
+        fat += 1.5;
+        continue;
+      }
+      switch (hit.group) {
+        case FoodGroup.protein:
+          kcal += 165;
+          protein += 24;
+          fat += 6;
+        case FoodGroup.carbLegume:
+          kcal += 170;
+          carbs += 32;
+          protein += 6;
+          fat += 1.5;
+          fiber += 4;
+        case FoodGroup.vegetable:
+          kcal += 35;
+          carbs += 6;
+          protein += 1.5;
+          fiber += 2.5;
+        case FoodGroup.fruit:
+          kcal += 80;
+          carbs += 19;
+          protein += 1;
+          fiber += 3;
+        case FoodGroup.dairy:
+          kcal += 110;
+          protein += 7;
+          carbs += 9;
+          fat += 4.5;
+        case FoodGroup.healthyFat:
+          kcal += 140;
+          fat += 13;
+          protein += 2;
+          carbs += 4;
+          fiber += 3;
+        case FoodGroup.processed:
+          kcal += 240;
+          carbs += 26;
+          protein += 6;
+          fat += 12;
+      }
+    }
+
+    if (kcal == 0) {
+      kcal = 350;
+      protein = 18;
+      carbs = 40;
+      fat = 12;
+      fiber = 4;
+    }
+
+    // Ajuste calórico/grasa según método de cocción
+    switch (cookingMethod) {
+      case CookingMethod.fried:
+        kcal += 130;
+        fat += 14;
+      case CookingMethod.stewed:
+        kcal += 45;
+        fat += 4.5;
+      case CookingMethod.baked:
+        kcal += 20;
+        fat += 2;
+      case CookingMethod.grilled:
+      case CookingMethod.boiled:
+      case CookingMethod.raw:
+      case null:
+        break;
+    }
+
+    return MealMacros(
+      caloriesKcal: (kcal * servings).round().clamp(30, 3500),
+      proteinGrams:
+          double.parse((protein * servings).toStringAsFixed(1)),
+      carbsGrams: double.parse((carbs * servings).toStringAsFixed(1)),
+      fatGrams: double.parse((fat * servings).toStringAsFixed(1)),
+      fiberGrams: double.parse((fiber * servings).toStringAsFixed(1)),
+    );
+  }
+
+  /// Codifica la metadata enriquecida en `detectedIngredientsCsv` manteniendo
+  /// compatibilidad total con filas antiguas en formato CSV plano.
+  static String encodeMealMetadata(MealEvaluation eval) {
+    return jsonEncode({
+      'v': 2,
+      if (eval.mealName != null) 'mealName': eval.mealName,
+      'mealSlot': eval.mealSlot.name,
+      if (eval.cookingMethod != null) 'cookingMethod': eval.cookingMethod!.name,
+      'servings': eval.servings,
+      'ingredients': eval.detectedIngredients,
+      if (eval.macros != null) 'macros': eval.macros!.toJson(),
+    });
+  }
+
+  static ({
+    String? mealName,
+    MealSlot mealSlot,
+    CookingMethod? cookingMethod,
+    double servings,
+    List<String> ingredients,
+    MealMacros? macros,
+  }) decodeMealMetadata(String raw, DateTime fallbackTime) {
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map) {
+          final map = Map<String, dynamic>.from(decoded);
+          return (
+            mealName: map['mealName']?.toString(),
+            mealSlot: MealSlot.fromName(map['mealSlot']?.toString()),
+            cookingMethod:
+                CookingMethod.fromName(map['cookingMethod']?.toString()),
+            servings: (map['servings'] as num?)?.toDouble() ?? 1.0,
+            ingredients: (map['ingredients'] as List?)
+                    ?.map((e) => e.toString())
+                    .where((e) => e.trim().isNotEmpty)
+                    .toList() ??
+                const [],
+            macros: MealMacros.fromJson(
+              map['macros'] is Map
+                  ? Map<String, dynamic>.from(map['macros'] as Map)
+                  : null,
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+    final legacyList = trimmed.isEmpty
+        ? const <String>[]
+        : trimmed
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+    return (
+      mealName: null,
+      mealSlot: MealSlot.forHour(fallbackTime.hour),
+      cookingMethod: CookingMethod.inferFromText(legacyList.join(' ')),
+      servings: 1.0,
+      ingredients: legacyList,
+      macros: null,
+    );
   }
 
   /// Puntúa un ingrediente en modo offline usando coincidencia por palabra
@@ -232,22 +450,29 @@ class FoodCoachRepository implements IFoodCoachRepository {
 
   // ── Historial ────────────────────────────────────────────────────────────────
   @override
-  Future<List<MealLog>> getHistory({int limit = 50}) async {
+  Future<List<MealLog>> getHistory({int limit = 100}) async {
     final q = _db.select(_db.mealLogs)
       ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
       ..limit(limit);
     final rows = await q.get();
-    return rows
-        .map((r) => MealLog(
-              id: r.id,
-              timestamp: r.timestamp,
-              photoPath: r.photoPath.isEmpty ? null : r.photoPath,
-              classification:
-                  FoodClassification.values[r.classificationIndex.clamp(0, 2)],
-              healthScore: r.healthScore.clamp(0.0, 1.0),
-              feedback: r.feedback,
-            ))
-        .toList();
+    return rows.map((r) {
+      final meta = decodeMealMetadata(r.detectedIngredientsCsv, r.timestamp);
+      return MealLog(
+        id: r.id,
+        timestamp: r.timestamp,
+        photoPath: r.photoPath.isEmpty ? null : r.photoPath,
+        classification:
+            FoodClassification.values[r.classificationIndex.clamp(0, 2)],
+        healthScore: r.healthScore.clamp(0.0, 1.0),
+        feedback: r.feedback,
+        mealName: meta.mealName,
+        mealSlot: meta.mealSlot,
+        cookingMethod: meta.cookingMethod,
+        servings: meta.servings,
+        detectedIngredients: meta.ingredients,
+        macros: meta.macros,
+      );
+    }).toList();
   }
 
   @override
@@ -259,7 +484,7 @@ class FoodCoachRepository implements IFoodCoachRepository {
           classificationIndex: Value(eval.classification.index),
           healthScore: Value(eval.healthScore.clamp(0.0, 1.0)),
           feedback: Value(eval.feedback),
-          detectedIngredientsCsv: Value(eval.detectedIngredients.join(',')),
+          detectedIngredientsCsv: Value(encodeMealMetadata(eval)),
         ));
   }
 
@@ -275,7 +500,8 @@ class FoodCoachRepository implements IFoodCoachRepository {
   // ── Estadísticas semanales ────────────────────────────────────────────────
   @override
   Future<WeeklyStats> getWeeklyStats() async {
-    final since = DateTime.now().subtract(const Duration(days: 7));
+    final now = DateTime.now();
+    final since = now.subtract(const Duration(days: 7));
     final q = _db.select(_db.mealLogs)
       ..where((t) => t.timestamp.isBiggerThanValue(since));
     final rows = await q.get();
@@ -290,8 +516,13 @@ class FoodCoachRepository implements IFoodCoachRepository {
       );
     }
 
-    int healthy = 0, balanced = 0, junk = 0;
+    int healthy = 0, balanced = 0, junk = 0, fried = 0;
     double totalScore = 0;
+    int todayKcal = 0;
+    double todayP = 0, todayC = 0, todayF = 0, todayFib = 0;
+    int weekKcal = 0;
+    double weekP = 0;
+    final activeDays = <String>{};
 
     for (final r in rows) {
       final c = FoodClassification.values[r.classificationIndex.clamp(0, 2)];
@@ -304,14 +535,48 @@ class FoodCoachRepository implements IFoodCoachRepository {
         case FoodClassification.junk:
           junk++;
       }
+
+      final meta = decodeMealMetadata(r.detectedIngredientsCsv, r.timestamp);
+      if (meta.cookingMethod == CookingMethod.fried) fried++;
+
+      final dayKey =
+          '${r.timestamp.year}-${r.timestamp.month}-${r.timestamp.day}';
+      final isToday = r.timestamp.year == now.year &&
+          r.timestamp.month == now.month &&
+          r.timestamp.day == now.day;
+
+      final macros = meta.macros;
+      if (macros != null) {
+        activeDays.add(dayKey);
+        weekKcal += macros.caloriesKcal;
+        weekP += macros.proteinGrams;
+        if (isToday) {
+          todayKcal += macros.caloriesKcal;
+          todayP += macros.proteinGrams;
+          todayC += macros.carbsGrams;
+          todayF += macros.fatGrams;
+          todayFib += macros.fiberGrams;
+        }
+      }
     }
 
+    final daysCount = activeDays.isEmpty ? 1 : activeDays.length;
     return WeeklyStats(
       averageHealthScore: totalScore / rows.length,
       healthyCount: healthy,
       balancedCount: balanced,
       junkCount: junk,
       totalMeals: rows.length,
+      todayCalories: todayKcal,
+      todayProtein: double.parse(todayP.toStringAsFixed(1)),
+      todayCarbs: double.parse(todayC.toStringAsFixed(1)),
+      todayFat: double.parse(todayF.toStringAsFixed(1)),
+      todayFiber: double.parse(todayFib.toStringAsFixed(1)),
+      avgDailyCalories: activeDays.isEmpty ? 0 : (weekKcal / daysCount).round(),
+      avgDailyProtein: activeDays.isEmpty
+          ? 0
+          : double.parse((weekP / daysCount).toStringAsFixed(1)),
+      friedCount: fried,
     );
   }
 }

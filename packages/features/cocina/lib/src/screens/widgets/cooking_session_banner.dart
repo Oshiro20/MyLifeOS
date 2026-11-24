@@ -643,12 +643,34 @@ class _FinishCookingSheetState extends ConsumerState<_FinishCookingSheet> {
             );
           }
         }
+        final matchedRecipe = session.recipeId == null
+            ? null
+            : ref
+                .read(recipesProvider)
+                .recipes
+                .where((r) => r.id == session.recipeId)
+                .firstOrNull;
+        final stepsPreview =
+            matchedRecipe?.instructions.take(4).join(' ') ?? '';
+        final method = CookingMethod.inferFromText(
+          '${session.recipeName} $stepsPreview',
+        );
+        final recipeIngredients = matchedRecipe?.ingredients
+                .map((i) => i.ingredientName.trim())
+                .where((n) => n.isNotEmpty)
+                .toList() ??
+            [session.recipeName];
         ref.read(pendingMealEvaluationProvider.notifier).queue(
               recipeName: session.recipeName,
               ingredients: [
-                session.recipeName,
+                ...recipeIngredients,
                 ...extrasConsumed,
               ],
+              cookingMethod: method,
+              recipeContext: stepsPreview.isEmpty
+                  ? null
+                  : 'Preparación: $stepsPreview',
+              servings: 1.0,
             );
       }
 

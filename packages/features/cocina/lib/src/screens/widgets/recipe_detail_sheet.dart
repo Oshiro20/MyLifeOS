@@ -365,13 +365,48 @@ class _RecipeDetailContentState extends ConsumerState<_RecipeDetailContent> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                final ingredients = widget.recipe.ingredients
+                final baseServings =
+                    liveRecipe.servings > 0 ? liveRecipe.servings : 1;
+                final perServingIngredients = liveRecipe.ingredients
+                    .map((i) {
+                      final q = i.quantity / baseServings;
+                      return '${i.ingredientName} (${formatIngredientQty(q)} ${i.unit})';
+                    })
+                    .join(', ');
+                final stepsPreview = liveRecipe.instructions.take(4).join(' ');
+                final method = CookingMethod.inferFromText(
+                  '${liveRecipe.name} $stepsPreview',
+                );
+                MealMacros? baseMacros;
+                if (liveRecipe.nutrition != null ||
+                    (liveRecipe.caloriasAproximadas ?? 0) > 0) {
+                  final n = liveRecipe.nutrition;
+                  baseMacros = MealMacros(
+                    caloriesKcal: liveRecipe.caloriasAproximadas ??
+                        ((n != null)
+                            ? (n.proteinasG * 4 +
+                                    n.carbohidratosG * 4 +
+                                    n.grasasG * 9)
+                                .round()
+                            : 0),
+                    proteinGrams: n?.proteinasG ?? 0,
+                    carbsGrams: n?.carbohidratosG ?? 0,
+                    fatGrams: n?.grasasG ?? 0,
+                    fiberGrams: n?.fibraG ?? 0,
+                  );
+                }
+                final ingredients = liveRecipe.ingredients
                     .map((i) => i.ingredientName.trim())
                     .where((n) => n.isNotEmpty)
                     .toList();
                 ref.read(pendingMealEvaluationProvider.notifier).queue(
-                      recipeName: widget.recipe.name,
+                      recipeName: liveRecipe.name,
                       ingredients: ingredients,
+                      recipeContext:
+                          'Por 1 porción: $perServingIngredients.\nPreparación: $stepsPreview',
+                      cookingMethod: method,
+                      servings: 1.0,
+                      baseMacros: baseMacros,
                     );
                 Navigator.of(context).pop();
                 context.go('/foodcoach');

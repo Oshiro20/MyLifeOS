@@ -8,10 +8,18 @@ import 'ingredient_price_and_wallet_bridge.dart';
 class PendingMealEvaluation {
   final String recipeName;
   final List<String> ingredients;
+  final String? recipeContext;
+  final CookingMethod? cookingMethod;
+  final double servings;
+  final MealMacros? baseMacros;
 
   const PendingMealEvaluation({
     required this.recipeName,
     required this.ingredients,
+    this.recipeContext,
+    this.cookingMethod,
+    this.servings = 1.0,
+    this.baseMacros,
   });
 }
 
@@ -19,10 +27,21 @@ class PendingMealEvaluationNotifier extends Notifier<PendingMealEvaluation?> {
   @override
   PendingMealEvaluation? build() => null;
 
-  void queue({required String recipeName, required List<String> ingredients}) {
+  void queue({
+    required String recipeName,
+    required List<String> ingredients,
+    String? recipeContext,
+    CookingMethod? cookingMethod,
+    double servings = 1.0,
+    MealMacros? baseMacros,
+  }) {
     state = PendingMealEvaluation(
       recipeName: recipeName,
       ingredients: ingredients,
+      recipeContext: recipeContext,
+      cookingMethod: cookingMethod,
+      servings: servings,
+      baseMacros: baseMacros,
     );
   }
 

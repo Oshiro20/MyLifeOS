@@ -906,22 +906,48 @@ Mantén la respuesta en 3 líneas máximo en Markdown.
     return call();
   }
 
-  /// Evalúa una comida con respuesta JSON estricta compatible con MealEvaluation.
+  /// Evalúa una comida con respuesta JSON estricta compatible con MealEvaluation
+  /// incluyendo macros estimados (kcal, proteína, carbos, grasas, fibra) según
+  /// el método de cocción y contexto real de receta/porciones.
   Future<String?> evaluateMealStructured({
     String? photoPath,
     required String description,
+    String? mealName,
+    String? mealSlotLabel,
+    String? cookingMethodLabel,
+    double servings = 1.0,
+    String? recipeContext,
   }) async {
     final mediaPaths = (photoPath != null && photoPath.isNotEmpty)
         ? [photoPath]
         : const <String>[];
+    final extraLines = <String>[
+      if (mealName != null && mealName.trim().isNotEmpty)
+        'Nombre del plato: "${mealName.trim()}"',
+      if (mealSlotLabel != null && mealSlotLabel.isNotEmpty)
+        'Horario: $mealSlotLabel',
+      if (cookingMethodLabel != null && cookingMethodLabel.isNotEmpty)
+        'Método de cocción: $cookingMethodLabel (AJUSTA calorías y grasas según esto: ej. frito suma aceite absorbido, sancochado/plancha no).',
+      'Porciones servidas: $servings',
+      if (recipeContext != null && recipeContext.trim().isNotEmpty)
+        'Contexto de la receta (cantidades/preparación):\n${recipeContext.trim()}',
+    ].join('\n');
+
     final prompt = '''
-Eres un nutricionista experto y empático. Evalúa esta comida:
-"$description"
+Eres un nutricionista peruano experto y práctico. Evalúa nutricionalmente esta comida:
+Ingredientes/Descripción: "$description"
+$extraLines
 
 Responde ÚNICAMENTE con un objeto JSON válido con estas claves exactas:
 {
   "classification": "healthy",
   "healthScore": 0.85,
+  "caloriesKcal": 520,
+  "proteinGrams": 36.0,
+  "carbsGrams": 48.0,
+  "fatGrams": 16.0,
+  "fiberGrams": 7.5,
+  "detectedCookingMethod": "stewed",
   "positiveFactors": ["Alta proteína", "Buena fibra"],
   "negativeFactors": [],
   "feedback": "Resumen claro y breve en español de máximo 2 oraciones.",
@@ -930,7 +956,9 @@ Responde ÚNICAMENTE con un objeto JSON válido con estas claves exactas:
 
 Reglas:
 - "classification" DEBE ser exactamente uno de: "healthy", "balanced", "junk".
-- "healthScore" DEBE ser un número decimal entre 0.0 y 1.0 (ej: 0.85 para healthy, 0.55 para balanced, 0.25 para junk).
+- "healthScore" DEBE ser decimal entre 0.0 y 1.0 (ej: 0.85 healthy, 0.55 balanced, 0.25 junk).
+- Estima "caloriesKcal", "proteinGrams", "carbsGrams", "fatGrams" y "fiberGrams" realistas para la porción consumida ($servings) tomando en cuenta el método de cocción.
+- "detectedCookingMethod" debe ser uno de: "raw", "boiled", "grilled", "stewed", "baked", "fried".
 - Sin markdown ni texto fuera del JSON.
 ''';
     return _executePrompt(
@@ -938,6 +966,24 @@ Reglas:
       mediaPaths: mediaPaths,
       expectJson: true,
     );
+  }
+
+  /// Genera una revisión semanal del nutricionista IA basada en consumo real.
+  Future<String?> reviewWeeklyNutritionGemini({
+    required String summaryContext,
+    required String goalLabel,
+  }) async {
+    final prompt = '''
+Eres un nutricionista deportivo y clínico peruano. Meta del usuario: $goalLabel.
+Datos reales de su alimentación reciente:
+$summaryContext
+
+Dame un análisis breve y directo en español con:
+1. Un diagnóstico corto (2 líneas) de su patrón actual.
+2. Exactamente 3 ajustes prácticos para mejorar la próxima semana (incluyendo qué frutas/verduras o preparaciones sumar a sus compras).
+Sé concreto y evita rodeos.''';
+    return _executePrompt(prompt: prompt, expectJson: false)
+        .timeout(const Duration(seconds: 25));
   }
 
   /// Sugiere el Outfit del Día (OOTD) en JSON estructurado usando IDs reales.
