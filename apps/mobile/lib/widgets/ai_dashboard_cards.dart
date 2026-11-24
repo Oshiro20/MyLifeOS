@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:core/core.dart';
 import 'package:armario/armario.dart';
+import 'package:cocina/cocina.dart';
+import 'package:foodcoach/foodcoach.dart';
 
 /// Un card premium que muestra un insight diario generado por IA.
 class InsightDelDiaCard extends ConsumerWidget {
@@ -413,6 +416,224 @@ class _LoadingShimmer extends StatelessWidget {
           ),
         ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1200.ms),
       ],
+    );
+  }
+}
+
+/// Tarjeta consolidada de Resumen Semanal (Cocina, FoodCoach, Finanzas y Armario).
+class WeeklySummaryCard extends ConsumerWidget {
+  const WeeklySummaryCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentCooked =
+        ref.watch(recentCookedNamesProvider).asData?.value ?? const <String>[];
+    final preparedCount = ref.watch(preparedMealsProvider).length;
+    final foodCoach = ref.watch(foodCoachProvider);
+    final wallet = ref.watch(walletSummaryProvider).asData?.value;
+    final garments = ref.watch(armarioProvider).garments;
+
+    final weeklyStats = foodCoach.weeklyStats;
+    final scorePct = weeklyStats == null || weeklyStats.totalMeals == 0
+        ? null
+        : (weeklyStats.averageHealthScore * 100).round();
+
+    double? foodSpent;
+    if (wallet != null) {
+      for (final cat in wallet.byCategory) {
+        final lower = cat.name.toLowerCase();
+        if (lower.contains('aliment') ||
+            lower.contains('comida') ||
+            lower.contains('supermerc') ||
+            lower.contains('mercado') ||
+            lower.contains('despensa')) {
+          foodSpent = (foodSpent ?? 0.0) + cat.amount;
+        }
+      }
+    }
+    final currency = wallet?.currency == 'PEN' ? 'S/' : (wallet?.currency ?? 'S/');
+    final dirtyCount = garments.where((g) => !g.isClean).length;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white12
+              : const Color(0xFF00A37A).withValues(alpha: 0.16),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.insights_rounded,
+                  color: Color(0xFF00C896), size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Resumen de tu semana',
+                style: TextStyle(
+                  color: onSurface,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Últimos 7 días',
+                style: TextStyle(
+                  color: onSurface.withValues(alpha: 0.45),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _WeeklyMetricTile(
+                  emoji: '🍳',
+                  label: 'Cocinado',
+                  value: '${recentCooked.length} platos',
+                  sub: preparedCount > 0
+                      ? '$preparedCount listo(s) en refri'
+                      : 'En casa',
+                  accent: const Color(0xFFFF9800),
+                  onTap: () => context.go('/cocina'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _WeeklyMetricTile(
+                  emoji: '🥗',
+                  label: 'FoodCoach',
+                  value: scorePct != null ? '$scorePct% salud' : 'Sin registros',
+                  sub: weeklyStats != null && weeklyStats.totalMeals > 0
+                      ? '${weeklyStats.totalMeals} comida(s)'
+                      : 'Evalúa tu plato',
+                  accent: const Color(0xFF00C896),
+                  onTap: () => context.go('/foodcoach'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _WeeklyMetricTile(
+                  emoji: '💸',
+                  label: foodSpent != null ? 'Comida (mes)' : 'Finanzas',
+                  value: foodSpent != null
+                      ? '$currency ${foodSpent.toStringAsFixed(0)}'
+                      : (wallet != null
+                          ? '$currency ${wallet.balance.toStringAsFixed(0)}'
+                          : 'Conectar'),
+                  sub: foodSpent != null ? 'Desde WalletAI' : 'Balance mensual',
+                  accent: const Color(0xFF00F0FF),
+                  onTap: () => context.go('/finanzas'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _WeeklyMetricTile(
+                  emoji: '👕',
+                  label: 'Armario',
+                  value: '${garments.length - dirtyCount} limpias',
+                  sub: dirtyCount > 0 ? '$dirtyCount por lavar' : 'Todo limpio',
+                  accent: const Color(0xFF29B6F6),
+                  onTap: () => context.go('/armario'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeeklyMetricTile extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final String value;
+  final String sub;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _WeeklyMetricTile({
+    required this.emoji,
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: accent.withValues(alpha: 0.22)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 14)),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: onSurface.withValues(alpha: 0.65),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              sub,
+              style: TextStyle(
+                fontSize: 10.5,
+                color: onSurface.withValues(alpha: 0.52),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

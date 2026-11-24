@@ -69,7 +69,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
     final mutedColor = isDark ? Colors.white70 : const Color(0xFF35594A);
-    final inv = ref.read(inventoryProvider).ingredients;
+    final inv = ref
+        .read(inventoryProvider)
+        .ingredients
+        .where((i) =>
+            i.subCategory != 'Porción guardada' &&
+            i.subCategory != 'Extra listo')
+        .toList();
+    final preparedMeals = ref.read(preparedMealsProvider);
     final garments = ref.read(armarioProvider).garments;
 
     final now = DateTime.now();
@@ -80,20 +87,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .length;
     final dirty = garments.where((g) => !g.isClean).length;
 
-    final alerts = <({IconData icon, Color color, String text, String? route})>[
+    final alerts = <({
+      IconData icon,
+      Color color,
+      String text,
+      String? route,
+      int? cocinaTab,
+    })>[
       if (_newVersion != null)
         (
           icon: Icons.system_update,
           color: const Color(0xFF00C896),
           text: 'Nueva actualización $_newVersion disponible.',
           route: null,
+          cocinaTab: null,
+        ),
+      if (preparedMeals.isNotEmpty)
+        (
+          icon: Icons.takeout_dining_outlined,
+          color: const Color(0xFF00C896),
+          text:
+              '${preparedMeals.length} comida(s) lista(s) en refrigerador (${preparedMeals.first.recipeName}).',
+          route: '/cocina',
+          cocinaTab: 2,
         ),
       if (expiring > 0)
         (
           icon: Icons.warning_amber_rounded,
           color: const Color(0xFFF59E0B),
-          text: '$expiring ingrediente(s) por vencer o vencidos en Cocina.',
+          text: '$expiring ingrediente(s) por vencer o vencidos en Despensa.',
           route: '/cocina',
+          cocinaTab: 0,
         ),
       if (dirty > 0)
         (
@@ -101,6 +125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: const Color(0xFF29B6F6),
           text: '$dirty prenda(s) pendientes por lavar en Armario.',
           route: '/armario',
+          cocinaTab: null,
         ),
     ];
 
@@ -111,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text('🔔 Notificaciones', style: TextStyle(color: textColor)),
         content: alerts.isEmpty
             ? Text(
-                'Todo está al día. Las alertas de actualizaciones, despensa y armario aparecerán aquí.',
+                'Todo está al día. Las alertas de comidas, despensa y armario aparecerán aquí.',
                 style: TextStyle(color: mutedColor),
               )
             : Column(
@@ -126,12 +151,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ? null
                               : () {
                                   Navigator.pop(ctx);
+                                  if (a.cocinaTab != null) {
+                                    ref
+                                        .read(cocinaTabProvider.notifier)
+                                        .setTab(a.cocinaTab!);
+                                  }
                                   context.go(a.route!);
                                 },
                         ))
                     .toList(),
               ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go('/settings');
+            },
+            child: const Text('Configurar alertas',
+                style: TextStyle(color: Color(0xFF00F0FF))),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cerrar',
@@ -234,10 +272,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           delegate: MyLifeOSSearchDelegate(ref),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined),
-                        tooltip: 'Notificaciones',
-                        onPressed: () => _showNotificationsDialog(context),
+                      Builder(
+                        builder: (context) {
+                          final rawInv = ref
+                              .watch(inventoryProvider)
+                              .ingredients
+                              .where((i) =>
+                                  i.subCategory != 'Porción guardada' &&
+                                  i.subCategory != 'Extra listo');
+                          final hasExpiring = rawInv
+                              .any((i) => i.isExpiringSoon || i.isExpired);
+                          final hasPrepared =
+                              ref.watch(preparedMealsProvider).isNotEmpty;
+                          final hasDirty = ref
+                              .watch(armarioProvider)
+                              .garments
+                              .any((g) => !g.isClean);
+                          final badgeCount = (_newVersion != null ? 1 : 0) +
+                              (hasExpiring ? 1 : 0) +
+                              (hasPrepared ? 1 : 0) +
+                              (hasDirty ? 1 : 0);
+                          return IconButton(
+                            icon: badgeCount > 0
+                                ? Badge(
+                                    label: Text('$badgeCount',
+                                        style: const TextStyle(fontSize: 10)),
+                                    backgroundColor: const Color(0xFFFF9800),
+                                    child:
+                                        const Icon(Icons.notifications_outlined),
+                                  )
+                                : const Icon(Icons.notifications_outlined),
+                            tooltip: 'Notificaciones',
+                            onPressed: () => _showNotificationsDialog(context),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -259,11 +327,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // ── Score de bienestar ──────────────────────────────────────
                   _WellbeingCard(isDark: isDark, primary: primary),
+                  const SizedBox(height: 16),
+
+                  // ── Resumen Semanal Integrado ───────────────────────────────
+                  const WeeklySummaryCard(),
                   const SizedBox(height: 20),
 
                   // ── Outfit del Día AI ───────────────────────────────────────
                   const OutfitAIPreviewCard(),
                   const SizedBox(height: 12),
+
+                  // ── Sugerencias rápidas de comidas (Desayuno / Almuerzo / Cena)
+                  QuickMealSuggestionsCard(
+                    compact: true,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    onAskAI: (_) {
+                      ref.read(cocinaTabProvider.notifier).setTab(2);
+                      context.go('/cocina');
+                    },
+                  ),
+                  const SizedBox(height: 14),
 
                   // ── Acceso rápido ───────────────────────────────────────────
                   const Text('Módulos',

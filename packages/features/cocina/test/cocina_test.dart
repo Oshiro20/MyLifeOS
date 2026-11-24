@@ -6,8 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:core/core.dart';
 import 'package:cocina/cocina.dart';
 import 'package:cocina/src/providers/cooking_session_provider.dart';
-import 'package:cocina/src/providers/prepared_meals_provider.dart';
 import 'package:cocina/src/screens/inventory_tab.dart';
+import 'package:cocina/src/screens/shopping_tab.dart';
 import 'package:cocina/src/screens/widgets/recipe_cook_helper.dart';
 import 'package:domain/domain.dart';
 
@@ -479,6 +479,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Ideas de rescate con Gemini'), findsNothing);
       expect(find.textContaining('¿Qué preparo hoy?'), findsOneWidget);
+    });
+
+    test('classifyShoppingAisle clasifica pasillos de supermercado con respaldo de IngredientDetector', () {
+      expect(classifyShoppingAisle('Lentejas baby'), contains('Granos'));
+      expect(classifyShoppingAisle('Palta fuerte'), contains('Verduras'));
+      expect(classifyShoppingAisle('Pechuga de pollo'), contains('Proteínas'));
+      expect(classifyShoppingAisle('Yogurt griego'), contains('Lácteos'));
+      expect(classifyShoppingAisle('Sillao'), contains('Salsas'));
     });
   });
 }

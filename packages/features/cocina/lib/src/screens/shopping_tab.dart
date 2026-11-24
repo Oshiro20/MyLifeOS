@@ -2,15 +2,120 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
+import 'package:data/data.dart';
 import 'package:domain/domain.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/cocina_providers.dart';
 
-class ShoppingTab extends ConsumerWidget {
+/// Clasifica un ítem de la lista de compras por pasillo de supermercado,
+/// apoyándose en `IngredientDetector` para evitar ítems huérfanos en "Otros".
+String classifyShoppingAisle(String name) {
+  final lower = IngredientMatcher.normalizeText(name);
+  const keywordAisles = {
+    'pollo': '🥩 Proteínas y Carnes',
+    'carne': '🥩 Proteínas y Carnes',
+    'res': '🥩 Proteínas y Carnes',
+    'cerdo': '🥩 Proteínas y Carnes',
+    'pescado': '🥩 Proteínas y Carnes',
+    'atun': '🥩 Proteínas y Carnes',
+    'huevo': '🥩 Proteínas y Carnes',
+    'jamon': '🥩 Proteínas y Carnes',
+    'pavo': '🥩 Proteínas y Carnes',
+    'leche': '🧀 Lácteos',
+    'queso': '🧀 Lácteos',
+    'crema': '🧀 Lácteos',
+    'yogur': '🧀 Lácteos',
+    'mantequilla': '🧀 Lácteos',
+    'cebolla': '🥬 Verduras y Frutas',
+    'ajo': '🥬 Verduras y Frutas',
+    'tomate': '🥬 Verduras y Frutas',
+    'papa': '🥬 Verduras y Frutas',
+    'camote': '🥬 Verduras y Frutas',
+    'yuca': '🥬 Verduras y Frutas',
+    'zanahoria': '🥬 Verduras y Frutas',
+    'limon': '🥬 Verduras y Frutas',
+    'palta': '🥬 Verduras y Frutas',
+    'platano': '🥬 Verduras y Frutas',
+    'manzana': '🥬 Verduras y Frutas',
+    'fresa': '🥬 Verduras y Frutas',
+    'espinaca': '🥬 Verduras y Frutas',
+    'lechuga': '🥬 Verduras y Frutas',
+    'pimiento': '🥬 Verduras y Frutas',
+    'brocoli': '🥬 Verduras y Frutas',
+    'perejil': '🥬 Verduras y Frutas',
+    'culantro': '🥬 Verduras y Frutas',
+    'cilantro': '🥬 Verduras y Frutas',
+    'arroz': '🌾 Granos, Menestras y Pan',
+    'avena': '🌾 Granos, Menestras y Pan',
+    'lenteja': '🌾 Granos, Menestras y Pan',
+    'menestra': '🌾 Granos, Menestras y Pan',
+    'frijol': '🌾 Granos, Menestras y Pan',
+    'frejol': '🌾 Granos, Menestras y Pan',
+    'garbanzo': '🌾 Granos, Menestras y Pan',
+    'quinua': '🌾 Granos, Menestras y Pan',
+    'harina': '🌾 Granos, Menestras y Pan',
+    'fideo': '🌾 Granos, Menestras y Pan',
+    'tallarin': '🌾 Granos, Menestras y Pan',
+    'pasta': '🌾 Granos, Menestras y Pan',
+    'pan': '🌾 Granos, Menestras y Pan',
+    'azucar': '🌾 Granos, Menestras y Pan',
+    'aceite': '🧂 Condimentos y Aceites',
+    'sal': '🧂 Condimentos y Aceites',
+    'pimienta': '🧂 Condimentos y Aceites',
+    'comino': '🧂 Condimentos y Aceites',
+    'oregano': '🧂 Condimentos y Aceites',
+    'aji': '🧂 Condimentos y Aceites',
+    'ketchup': '🥫 Salsas y Envasados',
+    'mayonesa': '🥫 Salsas y Envasados',
+    'mostaza': '🥫 Salsas y Envasados',
+    'soya': '🥫 Salsas y Envasados',
+    'sillao': '🥫 Salsas y Envasados',
+    'vinagre': '🥫 Salsas y Envasados',
+    'agua': '🥤 Bebidas',
+    'jugo': '🥤 Bebidas',
+    'gaseosa': '🥤 Bebidas',
+    'refresco': '🥤 Bebidas',
+  };
+
+  for (final entry in keywordAisles.entries) {
+    if (lower.contains(entry.key)) return entry.value;
+  }
+
+  final detected = IngredientDetector.detect(name).primaryCategory ?? '';
+  if (detected.contains('Proteín') || detected.contains('Carne')) {
+    return '🥩 Proteínas y Carnes';
+  }
+  if (detected.contains('Lácteo')) return '🧀 Lácteos';
+  if (detected.contains('Verdura') ||
+      detected.contains('Fruta') ||
+      detected.contains('Tubérculo')) {
+    return '🥬 Verduras y Frutas';
+  }
+  if (detected.contains('Cereal') ||
+      detected.contains('Legumbre') ||
+      detected.contains('Harina')) {
+    return '🌾 Granos, Menestras y Pan';
+  }
+  if (detected.contains('Condimento') || detected.contains('Aceite')) {
+    return '🧂 Condimentos y Aceites';
+  }
+  if (detected.contains('Salsa')) return '🥫 Salsas y Envasados';
+  return '🛒 Otros';
+}
+
+class ShoppingTab extends ConsumerStatefulWidget {
   const ShoppingTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ShoppingTab> createState() => _ShoppingTabState();
+}
+
+class _ShoppingTabState extends ConsumerState<ShoppingTab> {
+  bool _supermarketMode = false;
+  String? _selectedAisle;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(recipesProvider);
     final items = state.shoppingList;
     final notifier = ref.read(recipesProvider.notifier);
@@ -18,6 +123,7 @@ class ShoppingTab extends ConsumerWidget {
     final walletSummary = ref.watch(walletSummaryProvider).asData?.value;
 
     final pendingItems = items.where((i) => !i.bought).toList();
+    final boughtItems = items.where((i) => i.bought).toList();
     final budgetEstimate = IngredientPriceService.estimateList(
       catalog: catalogState.catalog,
       items: pendingItems.map(
@@ -39,8 +145,17 @@ class ShoppingTab extends ConsumerWidget {
       }
     }
 
-    // Group items by category
+    // Group pending items by supermarket aisle
     final grouped = _groupByCategory(items);
+    final aisles = grouped.keys.toList();
+    final activeAisle =
+        (_selectedAisle != null && grouped.containsKey(_selectedAisle))
+            ? _selectedAisle
+            : null;
+    final visibleGroups = activeAisle == null
+        ? grouped.entries
+        : grouped.entries.where((e) => e.key == activeAisle);
+    final progress = items.isEmpty ? 0.0 : boughtItems.length / items.length;
 
     return Stack(
       children: [
@@ -83,15 +198,150 @@ class ShoppingTab extends ConsumerWidget {
                   // Summary card
                   _SummaryCard(
                     total: items.length,
-                    bought: items.where((i) => i.bought).length,
+                    bought: boughtItems.length,
                     estimate: budgetEstimate,
                     monthlyFoodSpent: monthlyFoodSpent,
                     onShare: () => _shareList(context, items),
                     onClearAll: () => _confirmClearAll(context, ref),
                   ),
+                  const SizedBox(height: 10),
+                  // Barra de Modo Supermercado + progreso en carrito
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _supermarketMode
+                          ? const Color(0xFF00C896).withValues(alpha: 0.12)
+                          : Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _supermarketMode
+                            ? const Color(0xFF00C896).withValues(alpha: 0.45)
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('🛒', style: TextStyle(fontSize: 18)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Modo Supermercado',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${boughtItems.length}/${items.length} en carrito · ${pendingItems.length} por recoger',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: _supermarketMode,
+                              activeTrackColor: const Color(0xFF00C896),
+                              onChanged: (v) => setState(() {
+                                _supermarketMode = v;
+                                if (!v) _selectedAisle = null;
+                              }),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 6,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.1),
+                            valueColor: const AlwaysStoppedAnimation(
+                              Color(0xFF00C896),
+                            ),
+                          ),
+                        ),
+                        if (_supermarketMode && aisles.length > 1) ...[
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: ChoiceChip(
+                                    label: const Text('Todos',
+                                        style: TextStyle(fontSize: 11.5)),
+                                    selected: activeAisle == null,
+                                    visualDensity: VisualDensity.compact,
+                                    onSelected: (_) =>
+                                        setState(() => _selectedAisle = null),
+                                  ),
+                                ),
+                                for (final aisle in aisles)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        '$aisle (${grouped[aisle]!.length})',
+                                        style: const TextStyle(fontSize: 11.5),
+                                      ),
+                                      selected: activeAisle == aisle,
+                                      visualDensity: VisualDensity.compact,
+                                      onSelected: (_) => setState(
+                                          () => _selectedAisle = aisle),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (boughtItems.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: () => _bulkAddToPantry(context, ref),
+                              icon: const Icon(Icons.kitchen, size: 17),
+                              label: Text(
+                                '✅ Pasar ${boughtItems.length} comprado(s) a Despensa',
+                                style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF00C896),
+                                foregroundColor: Colors.black,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 9),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  // Grouped items by category
-                  ...grouped.entries.map((entry) {
+                  // Grouped items by aisle
+                  ...visibleGroups.map((entry) {
                     final category = entry.key;
                     final categoryItems = entry.value;
                     return _CategorySection(
@@ -224,83 +474,11 @@ class ShoppingTab extends ConsumerWidget {
 
   Map<String, List<ShoppingItem>> _groupByCategory(List<ShoppingItem> items) {
     final grouped = <String, List<ShoppingItem>>{};
-
-    // Category mapping
-    const categoryMap = {
-      // Proteínas
-      'pollo': '🥩 Proteínas y Carnes',
-      'carne': '🥩 Proteínas y Carnes',
-      'res': '🥩 Proteínas y Carnes',
-      'cerdo': '🥩 Proteínas y Carnes',
-      'pescado': '🥩 Proteínas y Carnes',
-      'atún': '🥩 Proteínas y Carnes',
-      'huevo': '🥩 Proteínas y Carnes',
-      // Lácteos
-      'leche': '🧀 Lácteos',
-      'queso': '🧀 Lácteos',
-      'crema': '🧀 Lácteos',
-      'yogur': '🧀 Lácteos',
-      'yogurt': '🧀 Lácteos',
-      'mantequilla': '🧀 Lácteos',
-      // Verduras y frutas
-      'cebolla': '🥬 Verduras y Frutas',
-      'ajo': '🥬 Verduras y Frutas',
-      'tomate': '🥬 Verduras y Frutas',
-      'papa': '🥬 Verduras y Frutas',
-      'zanahoria': '🥬 Verduras y Frutas',
-      'limón': '🥬 Verduras y Frutas',
-      'limon': '🥬 Verduras y Frutas',
-      'perejil': '🥬 Verduras y Frutas',
-      'culantro': '🥬 Verduras y Frutas',
-      'cilantro': '🥬 Verduras y Frutas',
-      // Granos y harinas
-      'arroz': '🌾 Granos y Harinas',
-      'harina': '🌾 Granos y Harinas',
-      'fideo': '🌾 Granos y Harinas',
-      'tallarín': '🌾 Granos y Harinas',
-      'tallarin': '🌾 Granos y Harinas',
-      'pasta': '🌾 Granos y Harinas',
-      'spaghetti': '🌾 Granos y Harinas',
-      'azúcar': '🌾 Granos y Harinas',
-      'azucar': '🌾 Granos y Harinas',
-      // Condimentos y aceites
-      'aceite': '🧂 Condimentos y Aceites',
-      'sal': '🧂 Condimentos y Aceites',
-      'pimienta': '🧂 Condimentos y Aceites',
-      'comino': '🧂 Condimentos y Aceites',
-      'ají': '🧂 Condimentos y Aceites',
-      'aji': '🧂 Condimentos y Aceites',
-      // Salsas y envasados
-      'ketchup': '🥫 Salsas y Envasados',
-      'mayonesa': '🥫 Salsas y Envasados',
-      'mostaza': '🥫 Salsas y Envasados',
-      'soya': '🥫 Salsas y Envasados',
-      'vinagre': '🥫 Salsas y Envasados',
-      // Bebidas
-      'agua': '🥤 Bebidas',
-      'jugo': '🥤 Bebidas',
-      'gaseosa': '🥤 Bebidas',
-      'refresco': '🥤 Bebidas',
-    };
-
     for (final item in items) {
-      if (item.bought) continue; // Skip bought items
-
-      String category = '🛒 Otros';
-      final lower = item.name.toLowerCase();
-      for (final entry in categoryMap.entries) {
-        if (lower.contains(entry.key)) {
-          category = entry.value;
-          break;
-        }
-      }
-
-      if (!grouped.containsKey(category)) {
-        grouped[category] = [];
-      }
-      grouped[category]!.add(item);
+      if (item.bought) continue;
+      final aisle = classifyShoppingAisle(item.name);
+      grouped.putIfAbsent(aisle, () => []).add(item);
     }
-
     return grouped;
   }
 
@@ -459,12 +637,19 @@ class ShoppingTab extends ConsumerWidget {
     final pantryNotifier = ref.read(inventoryProvider.notifier);
 
     try {
+      final detected = IngredientDetector.detect(item.name);
+      final isReady = detected.suggestedPreparation == 'cocido / listo';
       await pantryNotifier.add(InventoryIngredient(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: item.name,
-        primaryCategory: _guessCategory(item.name),
+        primaryCategory: detected.primaryCategory ?? _guessCategory(item.name),
+        subCategory: detected.subCategory,
+        preparation: detected.suggestedPreparation ?? '',
         quantity: item.quantity,
         unit: item.unit,
+        storageArea: isReady ? 'Refrigerador' : null,
+        expirationDate:
+            isReady ? DateTime.now().add(const Duration(days: 3)) : null,
       ));
 
       // Remove from shopping list
