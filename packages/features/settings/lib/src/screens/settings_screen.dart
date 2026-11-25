@@ -386,6 +386,7 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection>
     with WidgetsBindingObserver {
   bool _notificationsGranted = true;
   bool _exactAlarmsGranted = true;
+  bool _batteryUnrestricted = false;
 
   @override
   void initState() {
@@ -411,10 +412,12 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection>
     final service = ref.read(appNotificationsServiceProvider);
     final notif = await service.areNotificationsEnabled();
     final exact = await service.canScheduleExactAlarms();
+    final battery = await service.isIgnoringBatteryOptimizations();
     if (!mounted) return;
     setState(() {
       _notificationsGranted = notif;
       _exactAlarmsGranted = exact;
+      _batteryUnrestricted = battery;
     });
   }
 
@@ -541,8 +544,45 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection>
                   ],
                 ),
                 const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      _batteryUnrestricted
+                          ? Icons.battery_charging_full
+                          : Icons.battery_alert,
+                      size: 17,
+                      color: _batteryUnrestricted
+                          ? const Color(0xFF00C896)
+                          : Colors.orange,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _batteryUnrestricted
+                            ? 'Segundo plano sin restricciones activo'
+                            : 'Segundo plano restringido por batería',
+                        style: TextStyle(color: muted, fontSize: 11.5),
+                      ),
+                    ),
+                    if (!_batteryUnrestricted)
+                      TextButton(
+                        onPressed: () async {
+                          await ref
+                              .read(appNotificationsServiceProvider)
+                              .requestIgnoreBatteryOptimizations();
+                          await _refreshPermissions();
+                        },
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('Activar',
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  'Tip: deja MyLifeOS en Batería → Sin restricciones en Android para recibir alertas con la app cerrada.',
+                  'En Xiaomi/Honor/Oppo, toca "Ajustes Android" y activa Inicio automático para que el sistema no mate las alarmas al cerrar recientes.',
                   style: TextStyle(color: muted, fontSize: 11),
                 ),
               ],
@@ -700,46 +740,66 @@ class _NotificationsSectionState extends ConsumerState<_NotificationsSection>
                 notifier.update(settings.copyWith(laundryReminderEnabled: v)),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                final ok = await ref
-                    .read(appNotificationsServiceProvider)
-                    .scheduleTestNotificationIn(
-                      delay: const Duration(seconds: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final ok = await ref
+                        .read(appNotificationsServiceProvider)
+                        .scheduleTestNotificationIn(
+                          delay: const Duration(seconds: 10),
+                        );
+                    await _refreshPermissions();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          ok
+                              ? '⏱️ Prueba programada en 10s. Sal con Home o bloquea la pantalla para comprobar.'
+                              : '⚠️ Activa el permiso de notificaciones para MyLifeOS en Android',
+                        ),
+                        backgroundColor:
+                            ok ? const Color(0xFF00C896) : Colors.orange,
+                        duration: const Duration(seconds: 5),
+                      ),
                     );
-                await _refreshPermissions();
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      ok
-                          ? '⏱️ Prueba programada en 10s. Cierra MyLifeOS ahora para comprobar que llega en segundo plano.'
-                          : '⚠️ Activa el permiso de notificaciones para MyLifeOS en Android',
+                  },
+                  icon: const Icon(Icons.timer_outlined,
+                      size: 16, color: Color(0xFF00C896)),
+                  label: const Text(
+                    'Probar en 10s',
+                    style: TextStyle(
+                      color: Color(0xFF00C896),
+                      fontWeight: FontWeight.w600,
                     ),
-                    backgroundColor:
-                        ok ? const Color(0xFF00C896) : Colors.orange,
-                    duration: const Duration(seconds: 5),
                   ),
-                );
-              },
-              icon: const Icon(Icons.timer_outlined,
-                  size: 16, color: Color(0xFF00C896)),
-              label: const Text(
-                'Probar notificación en 10s (cierra la app)',
-                style: TextStyle(
-                  color: Color(0xFF00C896),
-                  fontWeight: FontWeight.w600,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF00C896)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF00C896)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => ref
+                    .read(appNotificationsServiceProvider)
+                    .openAppSettings(),
+                icon: Icon(Icons.settings_outlined, size: 16, color: muted),
+                label: Text(
+                  'Ajustes',
+                  style: TextStyle(color: muted, fontSize: 12.5),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: muted.withValues(alpha: 0.4)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
           const SizedBox(height: 8),
           SizedBox(

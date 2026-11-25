@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -285,6 +286,41 @@ class AppNotificationsService {
     } catch (_) {
       return false;
     }
+  }
+
+  static const MethodChannel _bgChannel = MethodChannel(
+    'mylifeos/background_permissions',
+  );
+
+  /// Verifica si Android ignora optimizaciones de batería (segundo plano sin restricciones).
+  Future<bool> isIgnoringBatteryOptimizations() async {
+    try {
+      final res = await _bgChannel.invokeMethod<bool>(
+        'isIgnoringBatteryOptimizations',
+      );
+      return res ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Abre el diálogo oficial de Android para permitir ejecución en segundo plano sin restricciones.
+  Future<bool> requestIgnoreBatteryOptimizations() async {
+    try {
+      final res = await _bgChannel.invokeMethod<bool>(
+        'requestIgnoreBatteryOptimizations',
+      );
+      return res ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Abre los ajustes de la app en Android (útil para activar Inicio automático en Xiaomi/Honor/Oppo).
+  Future<void> openAppSettings() async {
+    try {
+      await _bgChannel.invokeMethod('openAppSettings');
+    } catch (_) {}
   }
 
   /// Solicita permiso de alarmas exactas en Android 12+.
