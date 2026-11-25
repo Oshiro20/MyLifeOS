@@ -328,10 +328,17 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
   /// Inserta o fusiona ingredientes (por nombre y unidad compatible) en despensa.
   Future<int> _upsertToPantry(
-    Iterable<({String name, double quantity, String unit})> entries, {
+    Iterable<
+        ({
+          String name,
+          double quantity,
+          String unit,
+          String? suggestedCategory,
+          String? suggestedSubCategory,
+        })> entries, {
     String? storageAreaOverride,
-    String? preparationOverride,
     DateTime? expirationDateOverride,
+    String? preparationOverride,
   }) async {
     if (!_hasLoaded) {
       await load();
@@ -346,7 +353,6 @@ class InventoryNotifier extends Notifier<InventoryState> {
             IngredientPriceService.normalizeKey(ing.name) ==
             IngredientPriceService.normalizeKey(cleanName),
       );
-
       if (existingIndex != -1) {
         final existing = state.ingredients[existingIndex];
         final converted = IngredientUnitNormalizer.convert(
@@ -371,11 +377,19 @@ class InventoryNotifier extends Notifier<InventoryState> {
       }
 
       final detected = IngredientDetector.detect(cleanName);
+      final chosenCategory =
+          (entry.suggestedCategory != null && entry.suggestedCategory!.isNotEmpty)
+              ? entry.suggestedCategory!
+              : (detected.primaryCategory ?? 'Otros');
+      final chosenSub = (entry.suggestedSubCategory != null &&
+              entry.suggestedSubCategory!.isNotEmpty)
+          ? entry.suggestedSubCategory!
+          : (detected.subCategory ?? '');
       final newIng = InventoryIngredient(
         id: _cocinaUuid.v4(),
         name: cleanName,
-        primaryCategory: detected.primaryCategory ?? 'Otros',
-        subCategory: detected.subCategory ?? '',
+        primaryCategory: chosenCategory,
+        subCategory: chosenSub,
         preparation: preparationOverride ?? detected.suggestedPreparation ?? '',
         quantity: entry.quantity,
         unit: entry.unit,
@@ -397,7 +411,15 @@ class InventoryNotifier extends Notifier<InventoryState> {
     DateTime? expirationDate,
   }) =>
       _upsertToPantry(
-        entries,
+        entries.map(
+          (e) => (
+            name: e.name,
+            quantity: e.quantity,
+            unit: e.unit,
+            suggestedCategory: null,
+            suggestedSubCategory: null,
+          ),
+        ),
         storageAreaOverride: storageArea,
         expirationDateOverride: expirationDate,
       );
@@ -407,7 +429,13 @@ class InventoryNotifier extends Notifier<InventoryState> {
     if (boughtItems.isEmpty) return;
     await _upsertToPantry(
       boughtItems.map(
-        (item) => (name: item.name, quantity: item.quantity, unit: item.unit),
+        (item) => (
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          suggestedCategory: null,
+          suggestedSubCategory: null,
+        ),
       ),
     );
   }
@@ -420,7 +448,13 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
     final added = await _upsertToPantry(
       candidates.map(
-        (c) => (name: c.itemName, quantity: c.quantity, unit: c.unit),
+        (c) => (
+          name: c.itemName,
+          quantity: c.quantity,
+          unit: c.unit,
+          suggestedCategory: c.suggestedCategory,
+          suggestedSubCategory: c.suggestedSubCategory,
+        ),
       ),
     );
 
@@ -450,6 +484,49 @@ class InventoryNotifier extends Notifier<InventoryState> {
 
     ref.read(walletPendingGroceryRefreshProvider.notifier).bump();
     return added;
+  }
+
+  /// Elimina de Despensa los artículos no comestibles / comidas servidas que se
+  /// colaron antes (ej. pasaje, bolsa, desodorante, condón, almuerzo) y reclasifica
+  /// insumos mal categorizados (ej. Ensalada en Aves -> Verduras, galletas/helados -> Snacks y dulces).
+  Future<({int removedCount, int recategorizedCount})>
+      cleanupMisclassifiedAndNoiseItems() async {
+    int removed = 0;
+    int recategorized = 0;
+    final current = List<InventoryIngredient>.from(state.ingredients);
+
+    for (final ing in current) {
+      if (ing.subCategory == 'Porción guardada' ||
+          ing.subCategory == 'Extra listo') {
+        continue;
+      }
+
+      if (WalletPantryBridgeService.isNonPantryNoiseName(ing.name)) {
+        await _repo.deleteIngredient(ing.id);
+        removed++;
+        continue;
+      }
+
+      final detected = IngredientDetector.detect(ing.name);
+      final needsFix = detected.primaryCategory != null &&
+          detected.primaryCategory != ing.primaryCategory &&
+          (ing.primaryCategory == 'Otros' ||
+              (IngredientDetector.matchesWholeWord(ing.name, 'ensalada') &&
+                  ing.primaryCategory == 'Proteínas animales'));
+      if (needsFix) {
+        final updated = ing.copyWith(
+          primaryCategory: detected.primaryCategory!,
+          subCategory: detected.subCategory ?? ing.subCategory,
+        );
+        await _repo.updateIngredient(updated);
+        recategorized++;
+      }
+    }
+
+    if (removed > 0 || recategorized > 0) {
+      await load();
+    }
+    return (removedCount: removed, recategorizedCount: recategorized);
   }
 
   void clearError() => state = state.copyWith(error: null);

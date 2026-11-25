@@ -17,6 +17,32 @@ class IngredientSuggestion {
 
 /// Motor offline de detección de ingredientes basado en diccionarios.
 class IngredientDetector {
+  static String _normalize(String raw) => raw
+      .trim()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u')
+      .replaceAll('ü', 'u');
+
+  /// Coincidencia por palabra completa (permite plurales simples s/es), evitando
+  /// falsos positivos como "ensALAda" -> "ala", "PASaje" -> "pasa", "enSALada" -> "sal".
+  static bool matchesWholeWord(String rawText, String keyword) {
+    final text = _normalize(rawText);
+    final k = _normalize(keyword);
+    if (text.isEmpty || k.isEmpty) return false;
+    final pattern = RegExp(
+      '(^|[^a-z0-9ñ])${RegExp.escape(k)}(?:s|es)?(?=\$|[^a-z0-9ñ])',
+    );
+    return pattern.hasMatch(text);
+  }
+
+  static final List<MapEntry<String, (String, String, MeasurementUnit)>>
+      _sortedEntries = _ingredients.entries.toList()
+        ..sort((a, b) => b.key.length.compareTo(a.key.length));
+
   /// Detecta categoría, unidad sugerida y preparación (ej. "cocido / listo") a partir del nombre.
   static IngredientSuggestion detect(String name) {
     final lower = name.trim().toLowerCase();
@@ -32,9 +58,9 @@ class IngredientDetector {
       preparation = 'cocido / listo';
     }
 
-    // Buscar en diccionario exacto primero
-    for (final entry in _ingredients.entries) {
-      if (lower.contains(entry.key)) {
+    // Buscar en diccionario por palabra completa (frases más largas primero)
+    for (final entry in _sortedEntries) {
+      if (matchesWholeWord(lower, entry.key)) {
         primary = entry.value.$1;
         sub = entry.value.$2;
         unit = entry.value.$3;
@@ -59,7 +85,7 @@ class IngredientDetector {
 
   static String? _guessCategory(String lower) {
     // Reglas generales
-    if (lower.endsWith('a') && _fruitSuffix.any((s) => lower.contains(s))) {
+    if (_fruitSuffix.any((s) => matchesWholeWord(lower, s))) {
       return 'Frutas';
     }
     return null;
@@ -98,6 +124,7 @@ class IngredientDetector {
     'papa': ('Tubérculos y raíces', 'Tubérculos andinos', MeasurementUnit.kg),
     'zanahoria': ('Verduras', 'Verduras de raíz', MeasurementUnit.unidades),
     'lechuga': ('Verduras', 'Verduras de hoja', MeasurementUnit.unidades),
+    'ensalada': ('Verduras', 'Ensaladas y mezclas', MeasurementUnit.unidades),
     'brócoli': ('Verduras', 'Verduras de flor', MeasurementUnit.unidades),
     'brocoli': ('Verduras', 'Verduras de flor', MeasurementUnit.unidades),
     'espinaca': ('Verduras', 'Verduras de hoja', MeasurementUnit.g),
@@ -192,15 +219,42 @@ class IngredientDetector {
     'manteca': ('Aceites y grasas', 'Sólidas', MeasurementUnit.g),
     'margarina': ('Aceites y grasas', 'Sólidas', MeasurementUnit.g),
 
+    // ── Snacks y dulces (para seguimiento nutricional en FoodCoach) ──
+    'galleta': ('Snacks y dulces', 'Galletas', MeasurementUnit.paquete),
+    'chocolate': ('Snacks y dulces', 'Chocolates', MeasurementUnit.unidades),
+    'helado': ('Snacks y dulces', 'Helados', MeasurementUnit.unidades),
+    'barrita': ('Snacks y dulces', 'Snacks', MeasurementUnit.unidades),
+    'cereal': ('Snacks y dulces', 'Cereales', MeasurementUnit.paquete),
+    'wafer': ('Snacks y dulces', 'Galletas', MeasurementUnit.paquete),
+    'brownie': ('Snacks y dulces', 'Postres', MeasurementUnit.unidades),
+    'queque': ('Snacks y dulces', 'Postres', MeasurementUnit.unidades),
+    'turron': ('Snacks y dulces', 'Dulces', MeasurementUnit.unidades),
+    'caramelo': ('Snacks y dulces', 'Dulces', MeasurementUnit.paquete),
+    'gomita': ('Snacks y dulces', 'Dulces', MeasurementUnit.paquete),
+    'piqueo': ('Snacks y dulces', 'Snacks salados', MeasurementUnit.paquete),
+    'chifle': ('Snacks y dulces', 'Snacks salados', MeasurementUnit.paquete),
+    'canchita': ('Snacks y dulces', 'Snacks salados', MeasurementUnit.paquete),
+    'papas fritas': (
+      'Snacks y dulces',
+      'Snacks salados',
+      MeasurementUnit.paquete
+    ),
+    'mani': ('Snacks y dulces', 'Frutos secos', MeasurementUnit.paquete),
+    'almendra': ('Snacks y dulces', 'Frutos secos', MeasurementUnit.g),
+    'nuez': ('Snacks y dulces', 'Frutos secos', MeasurementUnit.g),
+    'pasas': ('Frutas', 'Frutos secos', MeasurementUnit.g),
+
     // ── Bebidas ──
     'agua': ('Otros', 'Bebidas', MeasurementUnit.litro),
     'jugo': ('Otros', 'Bebidas', MeasurementUnit.litro),
+    'manzanilla': ('Otros', 'Infusiones', MeasurementUnit.sobre),
     'cerveza': ('Otros', 'Bebidas alcohólicas', MeasurementUnit.lata),
     'vino': ('Otros', 'Bebidas alcohólicas', MeasurementUnit.botella),
     'gaseosa': ('Otros', 'Bebidas carbonatadas', MeasurementUnit.botella),
-    'café': ('Otros', 'Infusiones', MeasurementUnit.g),
-    'cafe': ('Otros', 'Infusiones', MeasurementUnit.g),
-    'té': ('Otros', 'Infusiones', MeasurementUnit.caja),
+    'café': ('Otros', 'Infusiones', MeasurementUnit.sobre),
+    'cafe': ('Otros', 'Infusiones', MeasurementUnit.sobre),
+    'té': ('Otros', 'Infusiones', MeasurementUnit.sobre),
+    'te': ('Otros', 'Infusiones', MeasurementUnit.sobre),
 
     // ── Enlatados ──
     'conserva': ('Otros', 'Conservas', MeasurementUnit.lata),

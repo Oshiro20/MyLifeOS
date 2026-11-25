@@ -395,10 +395,29 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
     _runningWalletAutoSync = true;
     try {
       final bridge = ref.read(walletGroceryBridgeProvider);
-      final batch = await bridge.extractPendingAutoSyncBatch(summary);
-      if (batch.baselineJustInitialized || !batch.hasAny) return;
+      final gemini = ref.read(geminiProvider);
+      final batch = await bridge.extractPendingAutoSyncBatch(
+        summary,
+        aiClassifier: gemini.classifyWalletTransactionsJson,
+      );
+      if (batch.baselineJustInitialized) return;
+      if (!batch.hasAny) {
+        for (final key in batch.allProcessedKeys) {
+          await bridge.markTxProcessed(key);
+        }
+        return;
+      }
 
       final addedLabels = <String>[];
+
+      if (batch.outsideMeals.isNotEmpty) {
+        await ref
+            .read(pendingOutsideMealsProvider.notifier)
+            .enqueue(batch.outsideMeals);
+        addedLabels.add(
+          '🍽️ FoodCoach: ${batch.outsideMeals.first.mealName}',
+        );
+      }
 
       if (batch.poultryBreakdowns.isNotEmpty) {
         await ref

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:domain/domain.dart';
 import 'package:data/data.dart';
@@ -229,6 +230,75 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
           },
         ),
       );
+    }
+
+    // Banner de limpieza rápida si quedaron ítems no comestibles o mal clasificados de versiones previas
+    if (_searchQuery.isEmpty) {
+      final dirtyOrMisclassified = rawPantry.where((i) {
+        if (WalletPantryBridgeService.isNonPantryNoiseName(i.name)) {
+          return true;
+        }
+        final det = IngredientDetector.detect(i.name);
+        return det.primaryCategory != null &&
+            det.primaryCategory != i.primaryCategory &&
+            (i.primaryCategory == 'Otros' ||
+                (IngredientDetector.matchesWholeWord(i.name, 'ensalada') &&
+                    i.primaryCategory == 'Proteínas animales'));
+      }).toList();
+
+      if (dirtyOrMisclassified.isNotEmpty) {
+        listChildren.add(
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF5252).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFF5252).withValues(alpha: 0.38),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Text('🧹', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Detectamos ${dirtyOrMisclassified.length} ítem(s) ajenos a cocina o mal clasificados en Despensa.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final res = await ref
+                        .read(inventoryProvider.notifier)
+                        .cleanupMisclassifiedAndNoiseItems();
+                    if (!context.mounted) return;
+                    showSuccess(
+                      context,
+                      'Despensa ordenada: ${res.removedCount} quitado(s), ${res.recategorizedCount} reclasificado(s).',
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF8A80),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Limpiar',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     }
 
     // Stats Panel (only if not searching)
@@ -489,6 +559,26 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
       listChildren.addAll(itemsInCat.map((i) => _IngredientTile(
           ingredient: i,
           onEdit: () => _showEditDialog(context, ref, i),
+          onConsumeInFoodCoach: () async {
+            final nextQty = i.quantity - 1;
+            if (nextQty <= 0.01) {
+              await ref.read(inventoryProvider.notifier).delete(i.id);
+            } else {
+              await ref
+                  .read(inventoryProvider.notifier)
+                  .update(i.copyWith(quantity: nextQty));
+            }
+            ref.read(pendingMealEvaluationProvider.notifier).queue(
+                  recipeName: i.name,
+                  ingredients: ['${i.name} (1 ${i.unit})'],
+                  servings: 1.0,
+                  recipeContext:
+                      'Consumido directo desde Despensa (${i.primaryCategory})',
+                );
+            if (context.mounted) {
+              context.go('/foodcoach');
+            }
+          },
           onQuickLevel: (factor) async {
             if (factor <= 0) {
               await ref.read(inventoryProvider.notifier).delete(i.id);
@@ -688,15 +778,18 @@ class _IngredientTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final Future<void> Function(double factor)? onQuickLevel;
+  final Future<void> Function()? onConsumeInFoodCoach;
   const _IngredientTile({
     required this.ingredient,
     required this.onDelete,
     required this.onEdit,
     this.onQuickLevel,
+    this.onConsumeInFoodCoach,
   });
 
   static String _getCategoryIcon(String primaryCategory) {
     final lower = primaryCategory.toLowerCase();
+    if (lower.contains('snack') || lower.contains('dulce')) return '🍪';
     if (lower.contains('proteína') || lower.contains('carne')) return '🥩';
     if (lower.contains('lácteo')) return '🥛';
     if (lower.contains('fruta')) return '🍎';
@@ -740,273 +833,196 @@ class _IngredientTile extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
-        onTap: onEdit,
-        leading: Text(_getEmojiFor(ingredient.name, ingredient.primaryCategory),
-            style: const TextStyle(fontSize: 28)),
-        title: Text(ingredient.displayName,
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          '${ingredient.subCategory != null ? "${ingredient.subCategory} • " : ""}${ingredient.quantity} ${ingredient.unit}'
-          '${ingredient.expirationDate != null ? " · cad. ${_fmt(ingredient.expirationDate!)}" : ""}',
-          style: TextStyle(color: expiryColor, fontSize: 12),
-        ),
-        trailing: PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.55),
-              size: 20),
-          tooltip: 'Ajustar o eliminar',
-          onSelected: (value) async {
-            if (value == 'edit') {
-              onEdit();
-            } else if (value == 'delete') {
-              onDelete();
-            } else if (value == 'use_25') {
-              await onQuickLevel?.call(0.75);
-            } else if (value == 'use_50') {
-              await onQuickLevel?.call(0.5);
-            } else if (value == 'low_10') {
-              await onQuickLevel?.call(0.1);
-            } else if (value == 'empty') {
-              await onQuickLevel?.call(0.0);
-            }
-          },
-          itemBuilder: (ctx) => const [
-            PopupMenuItem(
-              value: 'use_25',
-              child: Text('🥄 Usé un poco (-25%)'),
-            ),
-            PopupMenuItem(
-              value: 'use_50',
-              child: Text('➗ Queda la mitad (50%)'),
-            ),
-            PopupMenuItem(
-              value: 'low_10',
-              child: Text('⚠️ Queda poco (10%)'),
-            ),
-            PopupMenuItem(
-              value: 'empty',
-              child: Text('✅ Se acabó (quitar)'),
-            ),
-            PopupMenuDivider(),
-            PopupMenuItem(
-              value: 'edit',
-              child: Text('✏️ Editar / ver detalle'),
-            ),
-            PopupMenuItem(
-              value: 'delete',
-              child: Text('🗑️ Eliminar',
-                  style: TextStyle(color: Color(0xFFFF5252))),
-            ),
-          ],
+          onTap: onEdit,
+          leading: Text(
+              _getEmojiFor(ingredient.name, ingredient.primaryCategory),
+              style: const TextStyle(fontSize: 28)),
+          title: Text(ingredient.displayName,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w600)),
+          subtitle: Text(
+            '${ingredient.subCategory != null ? "${ingredient.subCategory} • " : ""}${ingredient.quantity} ${ingredient.unit}'
+            '${ingredient.expirationDate != null ? " · cad. ${_fmt(ingredient.expirationDate!)}" : ""}',
+            style: TextStyle(color: expiryColor, fontSize: 12),
+          ),
+          trailing: PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.55),
+                size: 20),
+            tooltip: 'Ajustar o eliminar',
+            onSelected: (value) async {
+              if (value == 'consume_fc') {
+                await onConsumeInFoodCoach?.call();
+              } else if (value == 'edit') {
+                onEdit();
+              } else if (value == 'delete') {
+                onDelete();
+              } else if (value == 'use_25') {
+                await onQuickLevel?.call(0.75);
+              } else if (value == 'use_50') {
+                await onQuickLevel?.call(0.5);
+              } else if (value == 'low_10') {
+                await onQuickLevel?.call(0.1);
+              } else if (value == 'empty') {
+                await onQuickLevel?.call(0.0);
+              }
+            },
+            itemBuilder: (ctx) => const [
+              PopupMenuItem(
+                value: 'consume_fc',
+                child: Text('🍽️ Consumí 1 (evaluar en FoodCoach)'),
+              ),
+              PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'use_25',
+                child: Text('🥄 Usé un poco (-25%)'),
+              ),
+              PopupMenuItem(
+                value: 'use_50',
+                child: Text('➗ Queda la mitad (50%)'),
+              ),
+              PopupMenuItem(
+                value: 'low_10',
+                child: Text('⚠️ Queda poco (10%)'),
+              ),
+              PopupMenuItem(
+                value: 'empty',
+                child: Text('✅ Se acabó (quitar)'),
+              ),
+              PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'edit',
+                child: Text('✏️ Editar / ver detalle'),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Text('🗑️ Eliminar',
+                    style: TextStyle(color: Color(0xFFFF5252))),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
   String _getEmojiFor(String name, String primaryCategory) {
-    final lowerName = name.toLowerCase();
+    bool has(String word) => IngredientDetector.matchesWholeWord(name, word);
+
+    // Ensaladas y snacks/dulces primero para evitar colisiones
+    if (has('ensalada')) return '🥗';
+    if (has('helado')) return '🍦';
+    if (has('galleta') || has('wafer')) return '🍪';
+    if (has('chocolate') || has('cacao') || has('brownie')) return '🍫';
+    if (has('barrita') || has('cereal') || has('avena')) return '🥣';
+    if (has('caramelo') || has('gomita') || has('turron')) return '🍬';
 
     // Frutas y Verduras comunes
-    if (lowerName.contains('tomate')) return '🍅';
-    if (lowerName.contains('limón') || lowerName.contains('limon')) return '🍋';
-    if (lowerName.contains('cebolla')) return '🧅';
-    if (lowerName.contains('ajo')) return '🧄';
-    if (lowerName.contains('zanahoria')) return '🥕';
-    if (lowerName.contains('papa') ||
-        lowerName.contains('patata') ||
-        lowerName.contains('olluco') ||
-        lowerName.contains('olluquito')) {
+    if (has('tomate')) return '🍅';
+    if (has('limon')) return '🍋';
+    if (has('cebolla')) return '🧅';
+    if (has('ajo')) return '🧄';
+    if (has('zanahoria')) return '🥕';
+    if (has('papa') || has('patata') || has('olluco') || has('olluquito')) {
       return '🥔';
     }
-    if (lowerName.contains('palta') || lowerName.contains('aguacate')) {
-      return '🥑';
-    }
-    if (lowerName.contains('platano') ||
-        lowerName.contains('plátano') ||
-        lowerName.contains('banana')) {
-      return '🍌';
-    }
-    if (lowerName.contains('manzana')) return '🍎';
-    if (lowerName.contains('naranja')) return '🍊';
-    if (lowerName.contains('fresa') || lowerName.contains('frutilla')) {
-      return '🍓';
-    }
-    if (lowerName.contains('uva') ||
-        lowerName.contains('pasa') ||
-        lowerName.contains('pasas')) {
-      return '🍇';
-    }
-    if (lowerName.contains('sandia') || lowerName.contains('sandía')) {
-      return '🍉';
-    }
-    if (lowerName.contains('champiñon') || lowerName.contains('hongo')) {
-      return '🍄';
-    }
-    if (lowerName.contains('lechuga') || lowerName.contains('espinaca')) {
-      return '🥬';
-    }
-    if (lowerName.contains('maiz') ||
-        lowerName.contains('choclo') ||
-        lowerName.contains('maíz')) {
-      return '🌽';
-    }
-    if (lowerName.contains('pepino')) return '🥒';
-    if (lowerName.contains('berenjena')) return '🍆';
-    if (lowerName.contains('pimiento') || lowerName.contains('morrón')) {
-      return '🫑';
-    }
-    if (lowerName.contains('brócoli') || lowerName.contains('brocoli')) {
-      return '🥦';
-    }
-    if (lowerName.contains('kiwi')) return '🥝';
-    if (lowerName.contains('coco')) return '🥥';
-    if (lowerName.contains('piña')) return '🍍';
-    if (lowerName.contains('durazno') || lowerName.contains('melocoton')) {
-      return '🍑';
-    }
-    if (lowerName.contains('cereza')) return '🍒';
+    if (has('palta') || has('aguacate')) return '🥑';
+    if (has('platano') || has('banana')) return '🍌';
+    if (has('manzana')) return '🍎';
+    if (has('naranja') || has('mandarina')) return '🍊';
+    if (has('fresa') || has('frutilla')) return '🍓';
+    if (has('uva') || has('pasas')) return '🍇';
+    if (has('sandia')) return '🍉';
+    if (has('champinon') || has('champiñon') || has('hongo')) return '🍄';
+    if (has('lechuga') || has('espinaca')) return '🥬';
+    if (has('maiz') || has('choclo')) return '🌽';
+    if (has('pepino')) return '🥒';
+    if (has('berenjena')) return '🍆';
+    if (has('pimiento') || has('morron')) return '🫑';
+    if (has('brocoli')) return '🥦';
+    if (has('kiwi')) return '🥝';
+    if (has('coco')) return '🥥';
+    if (has('pina') || has('piña')) return '🍍';
+    if (has('durazno') || has('melocoton')) return '🍑';
+    if (has('cereza')) return '🍒';
 
     // Proteínas
-    if (lowerName.contains('pollo')) return '🍗';
-    if (lowerName.contains('carne') ||
-        lowerName.contains('bisteck') ||
-        lowerName.contains('res') ||
-        lowerName.contains('chancho') ||
-        lowerName.contains('cerdo')) {
+    if (has('pollo') || has('pechuga') || has('pierna') || has('ala')) {
+      return '🍗';
+    }
+    if (has('carne') ||
+        has('bisteck') ||
+        has('res') ||
+        has('chancho') ||
+        has('cerdo')) {
       return '🥩';
     }
-    if (lowerName.contains('pescado') ||
-        lowerName.contains('atún') ||
-        lowerName.contains('atun')) {
-      return '🐟';
-    }
-    if (lowerName.contains('camaron') ||
-        lowerName.contains('camarón') ||
-        lowerName.contains('langostino')) {
-      return '🦐';
-    }
-    if (lowerName.contains('huevo')) return '🥚';
-    if (lowerName.contains('tocino') || lowerName.contains('panceta')) {
-      return '🥓';
-    }
-    if (lowerName.contains('salchicha') ||
-        lowerName.contains('hot dog') ||
-        lowerName.contains('chorizo')) {
-      return '🌭';
-    }
-    if (lowerName.contains('marisco') ||
-        lowerName.contains('cangrejo') ||
-        lowerName.contains('pulpo') ||
-        lowerName.contains('calamar')) {
+    if (has('pescado') || has('atun')) return '🐟';
+    if (has('camaron') || has('langostino')) return '🦐';
+    if (has('huevo')) return '🥚';
+    if (has('tocino') || has('panceta')) return '🥓';
+    if (has('salchicha') || has('hot dog') || has('chorizo')) return '🌭';
+    if (has('marisco') || has('cangrejo') || has('pulpo') || has('calamar')) {
       return '🦑';
     }
 
     // Lácteos
-    if (lowerName.contains('leche')) return '🥛';
-    if (lowerName.contains('queso')) return '🧀';
-    if (lowerName.contains('mantequilla') || lowerName.contains('margarina')) {
-      return '🧈';
-    }
-    if (lowerName.contains('yogurt')) return '🥣';
+    if (has('leche')) return '🥛';
+    if (has('queso')) return '🧀';
+    if (has('mantequilla') || has('margarina')) return '🧈';
+    if (has('yogurt') || has('yogur')) return '🥣';
 
     // Granos, Masas y Cereales
-    if (lowerName.contains('arroz')) return '🍚';
-    if (lowerName.contains('pan')) return '🍞';
-    if (lowerName.contains('fideo') ||
-        lowerName.contains('pasta') ||
-        lowerName.contains('espagueti') ||
-        lowerName.contains('tallarin')) {
+    if (has('arroz')) return '🍚';
+    if (has('pan')) return '🍞';
+    if (has('fideo') || has('pasta') || has('espagueti') || has('tallarin')) {
       return '🍝';
     }
-    if (lowerName.contains('pizza')) return '🍕';
-    if (lowerName.contains('harina')) return '🌾';
-    if (lowerName.contains('avena')) return '🥣';
-    if (lowerName.contains('lenteja') ||
-        lowerName.contains('frijol') ||
-        lowerName.contains('pallar') ||
-        lowerName.contains('garbanzo')) {
+    if (has('pizza')) return '🍕';
+    if (has('harina')) return '🌾';
+    if (has('lenteja') ||
+        has('frijol') ||
+        has('frejol') ||
+        has('pallar') ||
+        has('garbanzo')) {
       return '🫘';
     }
 
     // Condimentos, Aceites, Salsas y Repostería
-    if (lowerName.contains('aceite')) return '🫒';
-    if (lowerName.contains('sal')) return '🧂';
-    if (lowerName.contains('azucar') ||
-        lowerName.contains('azúcar') ||
-        lowerName.contains('endulzante') ||
-        lowerName.contains('stevia')) {
-      return '🧊';
-    }
-    if (lowerName.contains('pimienta') || lowerName.contains('comino')) {
-      return '🧂';
-    }
-    if (lowerName.contains('ají') ||
-        lowerName.contains('aji') ||
-        lowerName.contains('chile') ||
-        lowerName.contains('rocoto')) {
-      return '🌶️';
-    }
-    if (lowerName.contains('laurel') ||
-        lowerName.contains('oregano') ||
-        lowerName.contains('orégano') ||
-        lowerName.contains('perejil') ||
-        lowerName.contains('cilantro') ||
-        lowerName.contains('albahaca') ||
-        lowerName.contains('romero')) {
+    if (has('aceite')) return '🫒';
+    if (has('sal') || has('pimienta') || has('comino')) return '🧂';
+    if (has('azucar') || has('endulzante') || has('stevia')) return '🧊';
+    if (has('aji') || has('chile') || has('rocoto')) return '🌶️';
+    if (has('laurel') ||
+        has('oregano') ||
+        has('perejil') ||
+        has('cilantro') ||
+        has('culantro') ||
+        has('albahaca') ||
+        has('romero')) {
       return '🌿';
     }
-    if (lowerName.contains('miel') ||
-        lowerName.contains('mermelada') ||
-        lowerName.contains('jalea') ||
-        lowerName.contains('compota')) {
+    if (has('miel') || has('mermelada') || has('jalea') || has('compota')) {
       return '🍯';
     }
-    if (lowerName.contains('sillao') ||
-        lowerName.contains('salsa de soya') ||
-        lowerName.contains('vinagre')) {
-      return '🧉';
-    }
-    if (lowerName.contains('vainilla')) return '🌸'; // Esencia de vainilla
-    if (lowerName.contains('canela')) return '🟤';
-    if (lowerName.contains('ketchup') ||
-        lowerName.contains('mayonesa') ||
-        lowerName.contains('mostaza')) {
-      return '🥫';
-    }
-    if (lowerName.contains('chocolate') || lowerName.contains('cacao')) {
-      return '🍫';
-    }
-    if (lowerName.contains('galleta')) return '🍪';
-    if (lowerName.contains('mani') ||
-        lowerName.contains('maní') ||
-        lowerName.contains('almendra') ||
-        lowerName.contains('nuez')) {
-      return '🥜';
-    }
+    if (has('sillao') || has('soya') || has('vinagre')) return '🧉';
+    if (has('vainilla')) return '🌸';
+    if (has('canela')) return '🟤';
+    if (has('ketchup') || has('mayonesa') || has('mostaza')) return '🥫';
+    if (has('mani') || has('almendra') || has('nuez')) return '🥜';
 
     // Bebidas
-    if (lowerName.contains('agua')) return '💧';
-    if (lowerName.contains('vino')) return '🍷';
-    if (lowerName.contains('cerveza')) return '🍺';
-    if (lowerName.contains('cafe') || lowerName.contains('café')) return '☕';
-    if (lowerName.contains('te') ||
-        lowerName.contains('té') ||
-        lowerName.contains('infusión') ||
-        lowerName.contains('manzanilla')) {
-      return '🍵';
-    }
-    if (lowerName.contains('jugo') || lowerName.contains('zumo')) return '🧃';
-    if (lowerName.contains('gaseosa') ||
-        lowerName.contains('soda') ||
-        lowerName.contains('coca cola')) {
-      return '🥤';
-    }
+    if (has('agua')) return '💧';
+    if (has('vino')) return '🍷';
+    if (has('cerveza')) return '🍺';
+    if (has('cafe')) return '☕';
+    if (has('te') || has('infusion') || has('manzanilla')) return '🍵';
+    if (has('jugo') || has('zumo')) return '🧃';
+    if (has('gaseosa') || has('soda') || has('coca cola')) return '🥤';
 
     // Default fallback to category
     return _getCategoryIcon(primaryCategory);

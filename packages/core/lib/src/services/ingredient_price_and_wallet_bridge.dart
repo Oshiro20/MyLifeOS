@@ -74,6 +74,8 @@ class WalletGroceryCandidate {
   final double? totalPrice;
   final String currency;
   final String? date;
+  final String? suggestedCategory;
+  final String? suggestedSubCategory;
 
   const WalletGroceryCandidate({
     required this.transactionKey,
@@ -84,6 +86,8 @@ class WalletGroceryCandidate {
     this.totalPrice,
     this.currency = 'PEN',
     this.date,
+    this.suggestedCategory,
+    this.suggestedSubCategory,
   });
 
   double? get unitPrice =>
@@ -186,6 +190,46 @@ class PendingPoultryBreakdown {
       };
 }
 
+/// Comida consumida fuera detectada en WalletAI (Restaurante, Almuerzo, Menú, Delivery)
+/// para sugerir registro en 1 toque en FoodCoach sin ensuciar la Despensa.
+class PendingOutsideMeal {
+  final String id;
+  final String mealName;
+  final double? price;
+  final String currency;
+  final String? date;
+  final DateTime createdAt;
+
+  const PendingOutsideMeal({
+    required this.id,
+    required this.mealName,
+    this.price,
+    this.currency = 'PEN',
+    this.date,
+    required this.createdAt,
+  });
+
+  factory PendingOutsideMeal.fromJson(Map<String, dynamic> json) =>
+      PendingOutsideMeal(
+        id: json['id']?.toString() ?? '',
+        mealName: json['mealName']?.toString() ?? 'Comida fuera',
+        price: (json['price'] as num?)?.toDouble(),
+        currency: json['currency']?.toString() ?? 'PEN',
+        date: json['date']?.toString(),
+        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+            DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'mealName': mealName,
+        'price': price,
+        'currency': currency,
+        'date': date,
+        'createdAt': createdAt.toIso8601String(),
+      };
+}
+
 /// Lote de registros NUEVOS detectados tras el punto de corte para auto-ingresar.
 class WalletAutoSyncBatch {
   final bool baselineJustInitialized;
@@ -193,6 +237,7 @@ class WalletAutoSyncBatch {
   final List<PendingPoultryBreakdown> poultryBreakdowns;
   final List<WalletWardrobeCandidate> wardrobe;
   final List<WalletApplianceCandidate> appliances;
+  final List<PendingOutsideMeal> outsideMeals;
   final List<String> allProcessedKeys;
 
   const WalletAutoSyncBatch({
@@ -201,6 +246,7 @@ class WalletAutoSyncBatch {
     this.poultryBreakdowns = const [],
     this.wardrobe = const [],
     this.appliances = const [],
+    this.outsideMeals = const [],
     this.allProcessedKeys = const [],
   });
 
@@ -208,7 +254,8 @@ class WalletAutoSyncBatch {
       groceries.isNotEmpty ||
       poultryBreakdowns.isNotEmpty ||
       wardrobe.isNotEmpty ||
-      appliances.isNotEmpty;
+      appliances.isNotEmpty ||
+      outsideMeals.isNotEmpty;
 }
 
 /// Catálogo persistente de precios unitarios históricos por ingrediente.
@@ -468,6 +515,7 @@ class WalletPantryBridgeService {
   static const _hideAmountsPrefKey = 'finanzas_hide_amounts_v1';
   static const _baselineCutoffKey = 'wallet_bridge_baseline_cutoff_v1';
   static const _pendingPoultryKey = 'wallet_pending_poultry_breakdowns_v1';
+  static const _pendingOutsideMealsKey = 'wallet_pending_outside_meals_v1';
 
   static const _specificChickenCuts = [
     'pechuga',
@@ -573,6 +621,237 @@ class WalletPantryBridgeService {
     await _savePendingPoultryBreakdowns(next);
   }
 
+  Future<List<PendingOutsideMeal>> loadPendingOutsideMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingOutsideMealsKey);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .whereType<Map>()
+          .map((e) => PendingOutsideMeal.fromJson(Map<String, dynamic>.from(e)))
+          .where((e) => e.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _savePendingOutsideMeals(List<PendingOutsideMeal> list) async {
+    final prefs = await SharedPreferences.getInstance();
+    final trimmed = list.length > 15 ? list.sublist(list.length - 15) : list;
+    await prefs.setString(
+      _pendingOutsideMealsKey,
+      jsonEncode(trimmed.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  Future<void> enqueuePendingOutsideMeals(
+      List<PendingOutsideMeal> incoming) async {
+    if (incoming.isEmpty) return;
+    final current =
+        List<PendingOutsideMeal>.from(await loadPendingOutsideMeals());
+    final existingIds = current.map((e) => e.id).toSet();
+    for (final item in incoming) {
+      if (existingIds.add(item.id)) {
+        current.add(item);
+      }
+    }
+    await _savePendingOutsideMeals(current);
+  }
+
+  Future<void> dismissPendingOutsideMeal(String id) async {
+    final current = await loadPendingOutsideMeals();
+    final next = current.where((e) => e.id != id).toList();
+    await _savePendingOutsideMeals(next);
+  }
+
+  static bool _matchesWord(String rawText, String keyword) {
+    final text = IngredientMatcher.normalizeText(rawText);
+    final k = IngredientMatcher.normalizeText(keyword);
+    if (text.isEmpty || k.isEmpty) return false;
+    final pattern = RegExp(
+      '(^|[^a-z0-9ñ])${RegExp.escape(k)}(?:s|es)?(?=\$|[^a-z0-9ñ])',
+    );
+    return pattern.hasMatch(text);
+  }
+
+  static const _hardBlockedCategories = [
+    'transporte',
+    'movilidad',
+    'pasaje',
+    'combustible',
+    'servicios',
+    'vivienda',
+    'alquiler',
+    'educacion',
+    'educación',
+    'entretenimiento',
+    'higiene',
+    'cuidado personal',
+    'limpieza',
+    'farmacia',
+    'salud',
+    'mascotas',
+    'regalos',
+    'impuestos',
+    'transferencia',
+    'ahorro',
+    'deuda',
+    'suscripciones',
+    'tecnologia',
+    'tecnología',
+  ];
+
+  static const _nonPantryNoiseKeywords = [
+    'pasaje',
+    'colectivo',
+    'metropolitano',
+    'combi',
+    'bus',
+    'taxi',
+    'uber',
+    'indrive',
+    'didi',
+    'peaje',
+    'gasolina',
+    'combustible',
+    'estacionamiento',
+    'bolsa',
+    'bolsa grande',
+    'bolsa plastica',
+    'bolsa reutilizable',
+    'condon',
+    'condón',
+    'preservativo',
+    'desodorante',
+    'shampoo',
+    'champu',
+    'champú',
+    'acondicionador',
+    'jabon',
+    'jabón',
+    'pasta dental',
+    'cepillo dental',
+    'enjuague bucal',
+    'papel higienico',
+    'papel higiénico',
+    'servilleta',
+    'toalla',
+    'pañal',
+    'panal',
+    'detergente',
+    'suavizante',
+    'lejia',
+    'lejía',
+    'lavavajilla',
+    'limpiador',
+    'esponja',
+    'escoba',
+    'trapeador',
+    'ambientador',
+    'insecticida',
+    'bloqueador',
+    'perfume',
+    'colonia',
+    'crema facial',
+    'rasuradora',
+    'gillette',
+    'medicamento',
+    'pastilla',
+    'jarabe',
+    'paracetamol',
+    'ibuprofeno',
+    'vitamina',
+    'alcohol medicinal',
+    'curita',
+    'recarga',
+    'internet',
+    'luz',
+    'alquiler',
+    'matricula',
+    'mensualidad',
+    'cuaderno',
+    'lapicero',
+    'fotocopia',
+    'impresion',
+    'construccion',
+    'ferreteria',
+  ];
+
+  static const _outsideMealSubcategoryKeywords = [
+    'restaurante',
+    'restaurant',
+    'comida fuera',
+    'delivery',
+    'comida rapida',
+    'comida rápida',
+    'fast food',
+    'cafeteria',
+    'cafetería',
+    'polleria',
+    'pollería',
+    'chifa',
+    'cevicheria',
+    'cevichería',
+    'bar',
+    'pub',
+  ];
+
+  static const _outsideMealNameKeywords = [
+    'almuerzo',
+    'desayuno',
+    'cena',
+    'menu',
+    'menú',
+    'menu del dia',
+    'menú del día',
+    'ensalada de frutas',
+    'ensalada cesar',
+    'ensalada césar',
+    'pollo a la brasa',
+    'ceviche',
+    'chifa',
+    'chaufa',
+    'lomo saltado',
+    'salchipapa',
+    'broaster',
+    'hamburguesa',
+    'pizza',
+    'kfc',
+    'mcdonald',
+    'bembos',
+    'popeyes',
+    'starbucks',
+    'rappi',
+    'pedidosya',
+    'uber eats',
+    'restaurante',
+    'restaurant',
+    'delivery',
+  ];
+
+  /// Retorna `true` si el texto corresponde claramente a un artículo NO comestible
+  /// o a una comida ya servida fuera (nunca debe entrar ni permanecer en Despensa).
+  static bool isNonPantryNoiseName(String rawName) {
+    final trimmed = rawName.trim();
+    if (trimmed.isEmpty) return true;
+    if (_nonPantryNoiseKeywords.any((k) => _matchesWord(trimmed, k))) {
+      return true;
+    }
+    if (_outsideMealNameKeywords.any((k) => _matchesWord(trimmed, k))) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Retorna `true` si corresponde a una comida servida/consumida fuera de casa.
+  static bool isOutsideMealName(String rawName) {
+    final trimmed = rawName.trim();
+    if (trimmed.isEmpty) return false;
+    return _outsideMealNameKeywords.any((k) => _matchesWord(trimmed, k));
+  }
+
   static const _foodKeywords = [
     'alimentacion',
     'alimentación',
@@ -582,14 +861,17 @@ class WalletPantryBridgeService {
     'viveres',
     'víveres',
     'abarrotes',
+    'bodega',
     'fruta',
     'verdura',
     'carniceria',
     'carnicería',
-    'polleria',
     'panaderia',
     'panadería',
-    'compras',
+    'snack',
+    'snacks',
+    'dulces',
+    'golosinas',
   ];
 
   static const _wardrobeKeywords = [
@@ -598,6 +880,7 @@ class WalletPantryBridgeService {
     'vestuario',
     'zapato',
     'zapatilla',
+    'sneaker',
     'prenda',
     'moda',
     'camisa',
@@ -606,18 +889,34 @@ class WalletPantryBridgeService {
     'pantalon',
     'pantalón',
     'jean',
+    'jogger',
+    'buzo',
     'polera',
     'hoodie',
     'casaca',
     'chaqueta',
+    'abrigo',
+    'chaleco',
     'vestido',
+    'blusa',
     'falda',
     'short',
     'chompa',
     'sueter',
     'suéter',
     'bota',
+    'botin',
     'sandalia',
+    'mocasin',
+    'media',
+    'calcetin',
+    'boxer',
+    'pijama',
+    'gorra',
+    'correa',
+    'cinturon',
+    'mochila',
+    'cartera',
   ];
 
   static const _applianceKeywords = [
@@ -699,24 +998,51 @@ class WalletPantryBridgeService {
     'cena en',
   ];
 
-  /// Clasifica una transacción en `'cocina'`, `'armario'`, `'salud'` o `null` (irrelevante/privada).
+  /// Clasifica una transacción en `'cocina'`, `'comida_fuera'`, `'armario'`, `'salud'` o `null` (irrelevante/privada).
+  /// Respeta estrictamente la categoría, subcategoría y lista de exclusión (nunca asume que cualquier `items` es cocina).
   static String? classifyRelevantModule(Map<String, dynamic> tx) {
-    final category = (tx['category'] ?? '').toString().toLowerCase();
-    final name = (tx['name'] ?? tx['description'] ?? tx['productName'] ?? '')
-        .toString()
-        .toLowerCase();
-    final combined = '$category $name';
+    final category = (tx['category'] ?? '').toString().toLowerCase().trim();
+    final subcategory =
+        (tx['subcategory'] ?? '').toString().toLowerCase().trim();
+    final productName = (tx['productName'] ?? '').toString().trim();
+    final name =
+        (productName.isNotEmpty ? productName : (tx['name'] ?? tx['description'] ?? ''))
+            .toString()
+            .trim();
+    final lowerName = name.toLowerCase();
+    final combined = '$category $subcategory $lowerName';
 
-    if (tx['items'] is List && (tx['items'] as List).isNotEmpty) {
+    // 1. Prendas / calzado tienen prioridad si coincide por palabra completa
+    if (_wardrobeKeywords.any((k) => _matchesWord(combined, k))) {
+      return 'armario';
+    }
+
+    // 2. Bloquear explícitamente artículos no comestibles (pasaje, bolsa, condón, desodorante, higiene, etc.)
+    if (_nonPantryNoiseKeywords.any((k) => _matchesWord(lowerName, k))) {
+      return null;
+    }
+
+    // 3. Bloquear categorías ajenas a Despensa/Armario (Transporte, Servicios, Vivienda, Educación, Higiene, etc.)
+    if (category.isNotEmpty &&
+        _hardBlockedCategories.any((k) => _matchesWord(category, k))) {
+      if (_healthKeywords.any((k) => _matchesWord(category, k))) return 'salud';
+      return null;
+    }
+
+    // 4. Comidas servidas fuera de casa (Restaurante, Delivery, Almuerzo, Menú, Ensalada de frutas) -> FoodCoach, NO Despensa
+    if (_outsideMealSubcategoryKeywords.any((k) => _matchesWord(subcategory, k)) ||
+        _outsideMealNameKeywords.any((k) => _matchesWord(lowerName, k)) ||
+        _restaurantNoiseKeywords.any((k) => _matchesWord(lowerName, k))) {
+      return 'comida_fuera';
+    }
+
+    // 5. Alimentación / Supermercado / Mercado / Snacks -> Despensa
+    if (_foodKeywords.any((k) => _matchesWord(category, k)) ||
+        _foodKeywords.any((k) => _matchesWord(subcategory, k))) {
       return 'cocina';
     }
-    if ((tx['productName'] ?? '').toString().trim().isNotEmpty &&
-        _foodKeywords.any(category.contains)) {
-      return 'cocina';
-    }
-    if (_wardrobeKeywords.any(combined.contains)) return 'armario';
-    if (_foodKeywords.any(combined.contains)) return 'cocina';
-    if (_healthKeywords.any(combined.contains)) return 'salud';
+
+    if (_healthKeywords.any((k) => _matchesWord(combined, k))) return 'salud';
     return null;
   }
 
@@ -871,7 +1197,9 @@ class WalletPantryBridgeService {
         final itemPrice = (map['totalPrice'] as num?)?.toDouble() ??
             (map['price'] as num?)?.toDouble();
 
-        if (itemName.isNotEmpty && qty > 0) {
+        if (itemName.isNotEmpty &&
+            qty > 0 &&
+            !isNonPantryNoiseName(itemName)) {
           list.add(WalletGroceryCandidate(
             transactionKey: key,
             rawDescription: desc,
@@ -889,7 +1217,9 @@ class WalletPantryBridgeService {
     }
 
     final productName = tx['productName']?.toString().trim();
-    if (productName != null && productName.isNotEmpty) {
+    if (productName != null &&
+        productName.isNotEmpty &&
+        !isNonPantryNoiseName(productName)) {
       final qty = (tx['quantity'] as num?)?.toDouble() ?? 1.0;
       final unit = MeasurementUnit.fromString(
         (tx['unit'] ?? 'unidades').toString(),
@@ -926,7 +1256,8 @@ class WalletPantryBridgeService {
 
     // Si es compra de alimentos con nombre de producto directo sin dígitos (ej. "Plátano Seda")
     final lowerDesc = desc.trim().toLowerCase();
-    final isNoise = _restaurantNoiseKeywords.any(lowerDesc.contains);
+    final isNoise = _restaurantNoiseKeywords.any((k) => _matchesWord(lowerDesc, k)) ||
+        isNonPantryNoiseName(desc);
     final isGenericStore =
         _genericStoreNames.any((g) => lowerDesc == g || lowerDesc.startsWith('$g '));
     if (desc.trim().length >= 2 && !isNoise && !isGenericStore) {
@@ -1072,9 +1403,12 @@ class WalletPantryBridgeService {
   }
 
   /// Extrae únicamente las compras NUEVAS posteriores al punto de corte para auto-ingreso.
+  /// Usa enfoque híbrido: filtro determinista rápido + clasificador IA en lote opcional
+  /// (con respaldo determinista seguro cuando no hay internet o la IA no responde).
   Future<WalletAutoSyncBatch> extractPendingAutoSyncBatch(
-    WalletSummary? summary,
-  ) async {
+    WalletSummary? summary, {
+    Future<String?> Function(String prompt)? aiClassifier,
+  }) async {
     if (summary == null) return const WalletAutoSyncBatch();
     final baseline = await ensureBaselineInitialized(summary);
     if (baseline.initializedNow) {
@@ -1086,13 +1420,147 @@ class WalletPantryBridgeService {
     final poultryBreakdowns = <PendingPoultryBreakdown>[];
     final wardrobe = <WalletWardrobeCandidate>[];
     final appliances = <WalletApplianceCandidate>[];
+    final outsideMeals = <PendingOutsideMeal>[];
     final keys = <String>[];
 
+    // Seleccionar solo gastos NUEVOS posteriores al punto de corte
+    final newExpenses = <({String key, Map<String, dynamic> tx})>[];
     for (final tx in summary.recentTransactions) {
       final key = txStableKey(tx);
       if (processed.contains(key)) continue;
       if (!_isNewSinceCutoff(tx, baseline.cutoff)) continue;
+      final type = (tx['type'] ?? '').toString().toLowerCase();
+      final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+      if (type == 'income' || type == 'transfer' || amount > 0) {
+        keys.add(key);
+        continue;
+      }
 
+      // Descartar al instante categorías/nombres 100% ajenos (ahorra tokens y latencia)
+      final cat = (tx['category'] ?? '').toString().toLowerCase();
+      final rawName =
+          (tx['productName'] ?? tx['name'] ?? tx['description'] ?? '')
+              .toString()
+              .trim();
+      final isHardBlockedCat = cat.isNotEmpty &&
+          _hardBlockedCategories.any((k) => _matchesWord(cat, k)) &&
+          !_wardrobeKeywords.any((k) => _matchesWord(rawName, k));
+      if (isHardBlockedCat ||
+          _nonPantryNoiseKeywords.any((k) => _matchesWord(rawName, k))) {
+        keys.add(key);
+        continue;
+      }
+
+      newExpenses.add((key: key, tx: tx));
+    }
+
+    if (newExpenses.isEmpty) {
+      return WalletAutoSyncBatch(allProcessedKeys: keys);
+    }
+
+    // Capa 2: clasificación inteligente en lote con IA (1 sola llamada para todo el lote nuevo)
+    Map<String, Map<String, dynamic>> aiDecisions = const {};
+    if (aiClassifier != null) {
+      aiDecisions = await _classifyBatchWithAi(
+        newExpenses,
+        aiClassifier: aiClassifier,
+      );
+    }
+
+    for (final entry in newExpenses) {
+      final key = entry.key;
+      final tx = entry.tx;
+      final decision = aiDecisions[key];
+      final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+      final absPrice = amount != 0 ? amount.abs() : null;
+      final date = tx['date']?.toString();
+      final rawName =
+          (tx['productName'] ?? tx['name'] ?? tx['description'] ?? '')
+              .toString()
+              .trim();
+      final qty = (tx['quantity'] as num?)?.toDouble() ?? 1.0;
+      final unit = MeasurementUnit.fromString(
+        (tx['unit'] ?? 'unidades').toString(),
+      ).label;
+
+      if (decision != null) {
+        final dest = (decision['destino'] ?? '').toString().toLowerCase().trim();
+        final cleanName = (decision['nombre']?.toString().trim().isNotEmpty == true)
+            ? _capitalize(decision['nombre'].toString().trim())
+            : _capitalize(rawName);
+
+        if (dest == 'ignorar') {
+          keys.add(key);
+          continue;
+        }
+        if (dest == 'comida_fuera') {
+          if (cleanName.length >= 2) {
+            outsideMeals.add(PendingOutsideMeal(
+              id: key,
+              mealName: cleanName,
+              price: absPrice,
+              currency: summary.currency,
+              date: date,
+              createdAt: DateTime.now(),
+            ));
+          }
+          keys.add(key);
+          continue;
+        }
+        if (dest == 'armario') {
+          final garmentTypeHint =
+              (decision['tipo_prenda'] ?? cleanName).toString().toLowerCase();
+          wardrobe.add(WalletWardrobeCandidate(
+            transactionKey: key,
+            itemName: cleanName,
+            price: absPrice,
+            currency: summary.currency,
+            garmentTypeIndex: _inferGarmentTypeIndex('$garmentTypeHint $cleanName'),
+            date: date,
+          ));
+          keys.add(key);
+          continue;
+        }
+        if (dest == 'utensilio') {
+          appliances.add(WalletApplianceCandidate(
+            transactionKey: key,
+            name: cleanName,
+            type: decision['tipo_utensilio']?.toString().trim().isNotEmpty == true
+                ? decision['tipo_utensilio'].toString().trim()
+                : 'Utensilio',
+            date: date,
+          ));
+          keys.add(key);
+          continue;
+        }
+        if (dest == 'despensa') {
+          // Guardrail final de seguridad: nunca meter ruido no-alimento aunque la IA se equivoque
+          if (!isNonPantryNoiseName(cleanName) && cleanName.length >= 2) {
+            final cand = WalletGroceryCandidate(
+              transactionKey: key,
+              rawDescription: rawName,
+              itemName: cleanName,
+              quantity: qty > 0 ? qty : 1.0,
+              unit: unit,
+              totalPrice: absPrice,
+              currency: summary.currency,
+              date: date,
+              suggestedCategory: decision['categoria_despensa']?.toString().trim(),
+              suggestedSubCategory:
+                  decision['subcategoria_despensa']?.toString().trim(),
+            );
+            if (isPoultryBreakdownName(cand.itemName)) {
+              poultryBreakdowns.add(PendingPoultryBreakdown.fromCandidate(cand));
+            } else {
+              groceries.add(cand);
+            }
+          }
+          keys.add(key);
+          continue;
+        }
+      }
+
+      // Fallback determinista offline / si la IA no clasificó este ítem
       final appliance = extractApplianceCandidateForTx(tx);
       if (appliance != null) {
         appliances.add(appliance);
@@ -1110,6 +1578,21 @@ class WalletPantryBridgeService {
         continue;
       }
 
+      if (classifyRelevantModule(tx) == 'comida_fuera') {
+        if (rawName.length >= 2) {
+          outsideMeals.add(PendingOutsideMeal(
+            id: key,
+            mealName: _capitalize(rawName),
+            price: absPrice,
+            currency: summary.currency,
+            date: date,
+            createdAt: DateTime.now(),
+          ));
+        }
+        keys.add(key);
+        continue;
+      }
+
       final gList = extractCandidatesForTx(tx, currency: summary.currency);
       if (gList.isNotEmpty) {
         for (final c in gList) {
@@ -1120,6 +1603,8 @@ class WalletPantryBridgeService {
           }
         }
         keys.add(key);
+      } else {
+        keys.add(key);
       }
     }
 
@@ -1128,8 +1613,78 @@ class WalletPantryBridgeService {
       poultryBreakdowns: poultryBreakdowns,
       wardrobe: wardrobe,
       appliances: appliances,
+      outsideMeals: outsideMeals,
       allProcessedKeys: keys,
     );
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _classifyBatchWithAi(
+    List<({String key, Map<String, dynamic> tx})> items, {
+    required Future<String?> Function(String prompt) aiClassifier,
+  }) async {
+    try {
+      final compactList = items.take(15).map((e) {
+        final tx = e.tx;
+        return {
+          'id': e.key,
+          'producto': tx['productName'] ?? tx['name'] ?? tx['description'] ?? '',
+          'descripcion': tx['name'] ?? tx['description'] ?? '',
+          'categoria': tx['category'] ?? '',
+          'subcategoria': tx['subcategory'] ?? '',
+          'cantidad': tx['quantity'] ?? 1,
+          'unidad': tx['unit'] ?? 'unidades',
+          'monto': ((tx['amount'] as num?)?.abs() ?? 0).toStringAsFixed(2),
+        };
+      }).toList();
+
+      final prompt = '''
+Eres el enrutador inteligente de compras de MyLifeOS (Perú).
+Clasifica cada transacción en su módulo exacto:
+- "despensa": ingredientes crudos, alimentos de supermercado/mercado Y TAMBIÉN snacks/dulces empaquetados (galletas, chocolates, helados, barritas, cereales, café, bebidas) para control nutricional.
+- "armario": cualquier ropa, calzado, zapatillas, prendas, buzos, medias, ropa interior o accesorios personales.
+- "utensilio": utensilios o electrodomésticos de cocina (sartén, olla, licuadora, freidora, etc.).
+- "comida_fuera": comidas/platos ya servidos o comprados para comer afuera (almuerzo, menú, cena, desayuno en restaurante, ensalada de frutas, chifa, ceviche, pollo a la brasa, pizza, delivery). NUNCA los mandes a "despensa".
+- "ignorar": bolsas de supermercado (ej. "Bolsa grande Plaza Vea"), aseo/higiene (desodorante, shampoo, jabón, papel higiénico), farmacia/condones, limpieza, transporte/pasajes, servicios, papelería o gastos generales.
+
+Categorías válidas para "categoria_despensa":
+["Proteínas animales", "Lácteos", "Verduras", "Frutas", "Tubérculos y raíces", "Legumbres", "Cereales y granos", "Harinas y derivados", "Aceites y grasas", "Condimentos y especias", "Salsas", "Endulzantes", "Snacks y dulces", "Otros"]
+
+Tipos válidos para "tipo_prenda":
+["polo", "camisa", "camiseta", "pantalon", "jean", "zapatilla", "zapato", "bota", "sandalia", "casaca", "chompa", "polera", "short", "vestido", "falda", "accesorio", "otro"]
+
+Transacciones:
+${jsonEncode(compactList)}
+
+Responde SOLO JSON válido con esta forma exacta (sin markdown):
+{"items": [{"id": "...", "destino": "despensa|armario|utensilio|comida_fuera|ignorar", "nombre": "Nombre limpio", "categoria_despensa": null, "subcategoria_despensa": null, "tipo_prenda": null}]}
+''';
+
+      final raw = await aiClassifier(prompt);
+      if (raw == null || raw.trim().isEmpty) return const {};
+
+      final cleaned = raw
+          .replaceAll(RegExp(r'```json\s*', caseSensitive: false), '')
+          .replaceAll('```', '')
+          .trim();
+      final start = cleaned.indexOf('{');
+      final end = cleaned.lastIndexOf('}');
+      if (start == -1 || end <= start) return const {};
+      final decoded = jsonDecode(cleaned.substring(start, end + 1));
+      if (decoded is! Map || decoded['items'] is! List) return const {};
+
+      final map = <String, Map<String, dynamic>>{};
+      for (final row in decoded['items'] as List) {
+        if (row is Map) {
+          final id = row['id']?.toString();
+          if (id != null && id.isNotEmpty) {
+            map[id] = Map<String, dynamic>.from(row);
+          }
+        }
+      }
+      return map;
+    } catch (_) {
+      return const {};
+    }
   }
 
   /// Extrae ítems comprados en WalletAI que pueden ingresar a Despensa (manual / banner).
@@ -1211,6 +1766,37 @@ class PendingPoultryNotifier extends Notifier<List<PendingPoultryBreakdown>> {
 final pendingPoultryBreakdownsProvider =
     NotifierProvider<PendingPoultryNotifier, List<PendingPoultryBreakdown>>(
   PendingPoultryNotifier.new,
+);
+
+/// Notifier para comidas consumidas fuera detectadas en WalletAI (sugeridas en FoodCoach).
+class PendingOutsideMealsNotifier extends Notifier<List<PendingOutsideMeal>> {
+  final _bridge = WalletPantryBridgeService();
+
+  @override
+  List<PendingOutsideMeal> build() {
+    Future.microtask(load);
+    return const [];
+  }
+
+  Future<void> load() async {
+    state = await _bridge.loadPendingOutsideMeals();
+  }
+
+  Future<void> enqueue(List<PendingOutsideMeal> items) async {
+    if (items.isEmpty) return;
+    await _bridge.enqueuePendingOutsideMeals(items);
+    await load();
+  }
+
+  Future<void> dismiss(String id) async {
+    await _bridge.dismissPendingOutsideMeal(id);
+    await load();
+  }
+}
+
+final pendingOutsideMealsProvider =
+    NotifierProvider<PendingOutsideMealsNotifier, List<PendingOutsideMeal>>(
+  PendingOutsideMealsNotifier.new,
 );
 
 /// Equivalencias personalizadas peso ↔ unidades por ingrediente (gramos por 1 unidad)

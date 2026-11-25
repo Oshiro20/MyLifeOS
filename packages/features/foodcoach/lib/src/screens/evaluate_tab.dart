@@ -217,7 +217,96 @@ class _EvaluateTabState extends ConsumerState<EvaluateTab> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // Comidas fuera detectadas en WalletAI (1 toque para evaluar macros sin ensuciar Despensa)
+          Consumer(
+            builder: (ctx, cRef, _) {
+              final outsideMeals = cRef.watch(pendingOutsideMealsProvider);
+              if (outsideMeals.isEmpty) return const SizedBox.shrink();
+              final first = outsideMeals.first;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9800).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('🍽️', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            outsideMeals.length == 1
+                                ? '¿Comiste esto hoy? (desde WalletAI)'
+                                : '${outsideMeals.length} comidas fuera desde WalletAI',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFFFB74D),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => cRef
+                              .read(pendingOutsideMealsProvider.notifier)
+                              .dismiss(first.id),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${first.mealName}${first.price != null ? ' · S/ ${first.price!.toStringAsFixed(2)}' : ''}',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        onPressed: () async {
+                          final notifier = cRef.read(foodCoachProvider.notifier);
+                          notifier.clearResult();
+                          notifier.clearIngredients();
+                          notifier.addIngredient(first.mealName);
+                          _mealNameCtrl.text = first.mealName;
+                          setState(() {
+                            _photoPath = null;
+                            _loadedRecipeName = first.mealName;
+                            _cookingMethod =
+                                CookingMethod.inferFromText(first.mealName);
+                            _servings = 1.0;
+                            _recipeContext =
+                                'Comida consumida fuera de casa registrada en WalletAI';
+                            _recipeBaseMacros = null;
+                            _mealSlot = MealSlot.forHour(DateTime.now().hour);
+                          });
+                          await cRef
+                              .read(pendingOutsideMealsProvider.notifier)
+                              .dismiss(first.id);
+                        },
+                        icon: const Icon(Icons.bolt, size: 16),
+                        label: const Text('Cargar para evaluar calorías y macros'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
 
           // Nombre del plato + elegir receta de Cocina
           Row(

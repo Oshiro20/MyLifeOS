@@ -1064,6 +1064,18 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta (usa los "id" ex
     }
   }
 
+  /// Clasifica un lote pequeño de transacciones nuevas de WalletAI en JSON
+  /// para decidir con precisión su módulo destino en MyLifeOS:
+  /// `despensa`, `armario`, `utensilio`, `comida_fuera` o `ignorar`.
+  Future<String?> classifyWalletTransactionsJson(String prompt) async {
+    try {
+      return await _executePrompt(prompt: prompt, expectJson: true);
+    } catch (e) {
+      debugPrint('[GeminiService] classifyWalletTransactionsJson error: $e');
+      return null;
+    }
+  }
+
   Future<String> _mediaCacheKey(
     String prefix,
     String path, {
