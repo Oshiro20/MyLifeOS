@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 import 'package:go_router/go_router.dart';
 import 'package:data/data.dart';
 import 'package:finanzas/finanzas.dart';
@@ -20,6 +23,114 @@ import 'screens/onboarding_screen.dart';
 final _notifications = FlutterLocalNotificationsPlugin();
 final _appNotifications = AppNotificationsService(_notifications);
 void Function(int tab)? _onSelectCocinaTab;
+
+const String _bgNotifTaskName = 'com.mylifeos.background.notifications';
+const String _bgNotifUniqueId = 'mylifeos_bg_notifications_id';
+const String _preparedMealsPrefsKey = 'cocina_prepared_meals_v1';
+
+/// Construye el contexto real de notificaciones directamente desde SQLite + SharedPreferences
+/// para evitar condiciones de carrera con providers aún cargando y poder usarse en WorkManager.
+Future<SmartNotificationContext> _buildSmartNotificationContextFromDb(
+  AppDatabase db,
+) async {
+  final cocinaRepo = CocinaRepository(db);
+  final armarioRepo = ArmarioRepository(db);
+
+  final allIngredients = await cocinaRepo.getAllIngredients();
+  final rawPantry = allIngredients
+      .where((i) =>
+          i.subCategory != 'Porción guardada' && i.subCategory != 'Extra listo')
+      .toList();
+  final expiringItems =
+      rawPantry.where((i) => i.isExpiringSoon || i.isExpired).toList();
+
+  final garments = await armarioRepo.getAllGarments();
+  final dirtyCount = garments.where((g) => !g.isClean).length;
+
+  final recipes = await cocinaRepo.getAllRecipes();
+  final weeklyEntries = await cocinaRepo.getWeeklyMenu();
+  final today = DateTime.now().weekday;
+
+  String? nameFor(int mealType) {
+    final entry = weeklyEntries
+        .where((e) => e.dayOfWeek == today && e.mealType == mealType)
+        .firstOrNull;
+    if (entry == null) return null;
+    return recipes.where((r) => r.id == entry.recipeId).firstOrNull?.name;
+  }
+
+  int preparedCount = 0;
+  String? firstPreparedName;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_preparedMealsPrefsKey);
+    if (raw != null && raw.isNotEmpty) {
+      final list = jsonDecode(raw);
+      if (list is List) {
+        final active = list
+            .whereType<Map>()
+            .where(
+                (m) => ((m['remainingServings'] as num?)?.toDouble() ?? 0) > 0)
+            .toList();
+        preparedCount = active.length;
+        if (active.isNotEmpty) {
+          firstPreparedName = active.first['recipeName']?.toString();
+        }
+      }
+    }
+  } catch (_) {}
+
+  return SmartNotificationContext(
+    expiringPantryCount: expiringItems.length,
+    expiringPantryNames: expiringItems.map((e) => e.name).toList(),
+    preparedMealsCount: preparedCount,
+    firstPreparedMealName: firstPreparedName,
+    dirtyGarmentsCount: dirtyCount,
+    todayBreakfastName: nameFor(0),
+    todayLunchName: nameFor(1),
+    todayDinnerName: nameFor(2),
+  );
+}
+
+@pragma('vm:entry-point')
+void _myLifeOSBackgroundDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    if (task != _bgNotifTaskName) return Future.value(true);
+
+    AppDatabase? bgDb;
+    try {
+      AppNotificationsService.ensureTimeZonesInitialized();
+      final bgPlugin = FlutterLocalNotificationsPlugin();
+      await bgPlugin.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        ),
+      );
+
+      bgDb = AppDatabase();
+      final settings = await AppNotificationsService.loadPersistedSettings();
+      final ctx = await _buildSmartNotificationContextFromDb(bgDb);
+      await AppNotificationsService(bgPlugin).syncScheduledNotifications(
+        settings: settings,
+        context: ctx,
+      );
+
+      // Revisar actualizaciones también con la app cerrada (silencioso si no hay red)
+      try {
+        await MyLifeOSUpdateNotifier(bgPlugin).checkForUpdates();
+        await WalletUpdateNotifier(bgPlugin).checkForUpdates();
+      } catch (_) {}
+
+      return Future.value(true);
+    } catch (e) {
+      developer.log('Background task error: $e', name: 'MyLifeOS.Background');
+      return Future.value(false);
+    } finally {
+      await bgDb?.close();
+    }
+  });
+}
 
 // ── Router ───────────────────────────────────────────────────────────────────
 final _router = GoRouter(
@@ -133,8 +244,21 @@ Future<void> main() async {
       );
       unawaited(_appNotifications.requestPermissions());
 
-      // Inicializar backup automático
+      // Inicializar backup automático y tarea periódica de notificaciones en segundo plano
       await AutoBackupService.initialize();
+      try {
+        await Workmanager().initialize(_myLifeOSBackgroundDispatcher);
+        await Workmanager().registerPeriodicTask(
+          _bgNotifUniqueId,
+          _bgNotifTaskName,
+          frequency: const Duration(hours: 12),
+          constraints: Constraints(networkType: NetworkType.notRequired),
+          existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+        );
+      } catch (e) {
+        developer.log('Workmanager init error: $e',
+            name: 'MyLifeOS.Background');
+      }
 
       // Verificar actualizaciones de WalletAI en background
       WalletUpdateNotifier(_notifications).checkForUpdates();
@@ -144,13 +268,14 @@ Future<void> main() async {
       runApp(
         ProviderScope(
           overrides: [
-            appNotificationsServiceProvider.overrideWithValue(_appNotifications),
+            appNotificationsServiceProvider
+                .overrideWithValue(_appNotifications),
             cocinaRepositoryProvider.overrideWithValue(CocinaRepository(_db)),
             armarioRepositoryProvider.overrideWithValue(ArmarioRepository(_db)),
             foodCoachRepositoryProvider.overrideWith(
                 (ref) => FoodCoachRepository(_db, ref.watch(geminiProvider))),
-            pantryIngredientsFeedProvider.overrideWith((ref) =>
-                ref.read(cocinaRepositoryProvider).getAllIngredients),
+            pantryIngredientsFeedProvider.overrideWith(
+                (ref) => ref.read(cocinaRepositoryProvider).getAllIngredients),
             recipesFeedProvider.overrideWith(
                 (ref) => ref.read(cocinaRepositoryProvider).getAllRecipes),
             todayMealStatsFeedProvider.overrideWith(
@@ -249,55 +374,15 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
 
   Future<void> _syncSmartNotifications() async {
     try {
+      await ref.read(notificationSettingsProvider.notifier).load();
       final settings = ref.read(notificationSettingsProvider);
-      final rawPantry = ref
-          .read(inventoryProvider)
-          .ingredients
-          .where((i) =>
-              i.subCategory != 'Porción guardada' &&
-              i.subCategory != 'Extra listo')
-          .toList();
-      final expiringItems =
-          rawPantry.where((i) => i.isExpiringSoon || i.isExpired).toList();
-      final preparedMeals = ref.read(preparedMealsProvider);
-      final dirtyCount =
-          ref.read(armarioProvider).garments.where((g) => !g.isClean).length;
-      final recipes = ref.read(recipesProvider).recipes;
-      final weeklyState = ref.read(weeklyMenuProvider);
+      final context = await _buildSmartNotificationContextFromDb(_db);
 
-      String? todayBreakfast;
-      String? todayLunch;
-      String? todayDinner;
-      if (weeklyState is WeeklyMenuLoaded) {
-        final today = DateTime.now().weekday;
-        String? nameFor(int mealType) {
-          final entry = weeklyState.entries
-              .where((e) => e.dayOfWeek == today && e.mealType == mealType)
-              .firstOrNull;
-          if (entry == null) return null;
-          return recipes
-              .where((r) => r.id == entry.recipeId)
-              .firstOrNull
-              ?.name;
-        }
-
-        todayBreakfast = nameFor(0);
-        todayLunch = nameFor(1);
-        todayDinner = nameFor(2);
-      }
-
-      await ref.read(appNotificationsServiceProvider).syncScheduledNotifications(
+      await ref
+          .read(appNotificationsServiceProvider)
+          .syncScheduledNotifications(
             settings: settings,
-            context: SmartNotificationContext(
-              expiringPantryCount: expiringItems.length,
-              expiringPantryNames: expiringItems.map((e) => e.name).toList(),
-              preparedMealsCount: preparedMeals.length,
-              firstPreparedMealName: preparedMeals.firstOrNull?.recipeName,
-              dirtyGarmentsCount: dirtyCount,
-              todayBreakfastName: todayBreakfast,
-              todayLunchName: todayLunch,
-              todayDinnerName: todayDinner,
-            ),
+            context: context,
           );
     } catch (e) {
       developer.log('Smart notifications sync error: $e',
@@ -346,7 +431,8 @@ class _MyLifeOSAppState extends ConsumerState<MyLifeOSApp>
         int wardrobeCount = 0;
         for (final w in batch.wardrobe) {
           if (existingNames.contains(w.itemName.trim().toLowerCase())) continue;
-          final idx = w.garmentTypeIndex.clamp(0, GarmentType.values.length - 1);
+          final idx =
+              w.garmentTypeIndex.clamp(0, GarmentType.values.length - 1);
           await armarioNotifier.addGarment(WardrobeGarment(
             id: 'wal_${DateTime.now().microsecondsSinceEpoch}_$wardrobeCount',
             name: w.itemName,

@@ -261,6 +261,117 @@ class AppNotificationsService {
     }
   }
 
+  /// Verifica si el permiso de notificaciones está activo en el sistema.
+  Future<bool> areNotificationsEnabled() async {
+    final plugin = _plugin;
+    if (plugin == null) return true;
+    try {
+      final android = plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      return await android?.areNotificationsEnabled() ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Verifica si Android permite programar alarmas exactas (Android 12+).
+  Future<bool> canScheduleExactAlarms() async {
+    final plugin = _plugin;
+    if (plugin == null) return false;
+    try {
+      final android = plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      return await android?.canScheduleExactNotifications() ?? true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Solicita permiso de alarmas exactas en Android 12+.
+  Future<bool> requestExactAlarmPermission() async {
+    final plugin = _plugin;
+    if (plugin == null) return false;
+    try {
+      final android = plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final granted = await android?.requestExactAlarmsPermission();
+      return granted ?? await canScheduleExactAlarms();
+    } catch (e) {
+      debugPrint(
+          '[AppNotificationsService] requestExactAlarmPermission error: $e');
+      return false;
+    }
+  }
+
+  /// Lee las preferencias persistidas de notificaciones sin depender de Riverpod
+  /// (útil tanto en segundo plano con WorkManager como en arranque inicial).
+  static Future<NotificationSettings> loadPersistedSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_notifSettingsPrefsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          return NotificationSettings.fromJson(
+            Map<String, dynamic>.from(decoded),
+          );
+        }
+      }
+    } catch (_) {}
+    return const NotificationSettings();
+  }
+
+  Future<void> _zonedScheduleSafe({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails details,
+    DateTimeComponents? matchDateTimeComponents,
+    String? payload,
+  }) async {
+    final plugin = _plugin;
+    if (plugin == null) return;
+    final canExact = await canScheduleExactAlarms();
+    final primaryMode = canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+    try {
+      await plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: primaryMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
+        payload: payload,
+      );
+    } catch (e) {
+      if (primaryMode == AndroidScheduleMode.exactAllowWhileIdle) {
+        debugPrint(
+          '[AppNotificationsService] exactAllowWhileIdle falló ($e), usando inexactAllowWhileIdle',
+        );
+        await plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduledDate,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: matchDateTimeComponents,
+          payload: payload,
+        );
+      } else {
+        debugPrint('[AppNotificationsService] zonedSchedule error: $e');
+      }
+    }
+  }
+
   /// Construye el texto contextual para Desayuno, Almuerzo o Cena.
   static ({String title, String body}) buildMealCopy({
     required int mealSlot, // 0=desayuno, 1=almuerzo, 2=cena
@@ -412,17 +523,12 @@ class AppNotificationsService {
     required NotificationDetails details,
     required String payload,
   }) async {
-    final plugin = _plugin;
-    if (plugin == null) return;
-    await plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      nextInstanceOfTime(time),
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+    await _zonedScheduleSafe(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: nextInstanceOfTime(time),
+      details: details,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
@@ -439,15 +545,13 @@ class AppNotificationsService {
     try {
       final fireAt =
           tz.TZDateTime.now(tz.local).add(Duration(minutes: minutes));
-      await plugin.zonedSchedule(
-        cookingTimerId,
-        '⏰ ¡Tiempo cumplido en Cocina!',
-        '"$recipeName" ya debería estar listo. Toca para finalizar o guardar sobras.',
-        fireAt,
-        const NotificationDetails(android: _timerChannel),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+      await _zonedScheduleSafe(
+        id: cookingTimerId,
+        title: '⏰ ¡Tiempo cumplido en Cocina!',
+        body:
+            '"$recipeName" ya debería estar listo. Toca para finalizar o guardar sobras.',
+        scheduledDate: fireAt,
+        details: const NotificationDetails(android: _timerChannel),
         payload: '/cocina?tab=2',
       );
     } catch (e) {
@@ -461,6 +565,36 @@ class AppNotificationsService {
     try {
       await plugin.cancel(cookingTimerId);
     } catch (_) {}
+  }
+
+  /// Programa una notificación de prueba para dentro de [delay] (por defecto 10s)
+  /// para verificar que llega incluso con la app completamente cerrada.
+  Future<bool> scheduleTestNotificationIn({
+    Duration delay = const Duration(seconds: 10),
+  }) async {
+    final plugin = _plugin;
+    if (plugin == null) return false;
+    ensureTimeZonesInitialized();
+    final granted = await requestPermissions();
+    if (!granted) return false;
+    try {
+      final fireAt = tz.TZDateTime.now(tz.local).add(delay);
+      await plugin.cancel(testNotificationId + 1);
+      await _zonedScheduleSafe(
+        id: testNotificationId + 1,
+        title: '✅ MyLifeOS activo en segundo plano',
+        body:
+            'Si ves esto con la app cerrada, tus recordatorios diarios y temporizadores funcionan correctamente.',
+        scheduledDate: fireAt,
+        details: const NotificationDetails(android: _timerChannel),
+        payload: '/cocina?tab=2',
+      );
+      return true;
+    } catch (e) {
+      debugPrint(
+          '[AppNotificationsService] scheduleTestNotificationIn error: $e');
+      return false;
+    }
   }
 
   /// Envía una notificación inmediata de prueba para confirmar permisos en Android.
@@ -520,9 +654,9 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettings> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_notifSettingsPrefsKey, jsonEncode(next.toJson()));
     } catch (_) {}
-    await ref
-        .read(appNotificationsServiceProvider)
-        .syncScheduledNotifications(settings: next);
+    // Nota: la resincronización con el contexto real (despensa, armario, menú)
+    // se dispara automáticamente desde el listener en main.dart para no perder
+    // alertas contextuales al cambiar una preferencia.
   }
 }
 

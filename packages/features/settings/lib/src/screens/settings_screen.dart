@@ -372,10 +372,51 @@ class _AppearanceSection extends ConsumerWidget {
   }
 }
 
-class _NotificationsSection extends ConsumerWidget {
+class _NotificationsSection extends ConsumerStatefulWidget {
   final bool isDark;
 
   const _NotificationsSection({required this.isDark});
+
+  @override
+  ConsumerState<_NotificationsSection> createState() =>
+      _NotificationsSectionState();
+}
+
+class _NotificationsSectionState extends ConsumerState<_NotificationsSection>
+    with WidgetsBindingObserver {
+  bool _notificationsGranted = true;
+  bool _exactAlarmsGranted = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshPermissions();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPermissions();
+    }
+  }
+
+  Future<void> _refreshPermissions() async {
+    final service = ref.read(appNotificationsServiceProvider);
+    final notif = await service.areNotificationsEnabled();
+    final exact = await service.canScheduleExactAlarms();
+    if (!mounted) return;
+    setState(() {
+      _notificationsGranted = notif;
+      _exactAlarmsGranted = exact;
+    });
+  }
 
   Future<void> _pickTime(
     BuildContext context,
@@ -391,7 +432,8 @@ class _NotificationsSection extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
     final settings = ref.watch(notificationSettingsProvider);
     final notifier = ref.read(notificationSettingsProvider.notifier);
     final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
@@ -404,6 +446,108 @@ class _NotificationsSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : const Color(0xFF00C896).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00C896).withValues(alpha: 0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      _notificationsGranted
+                          ? Icons.check_circle_outline
+                          : Icons.warning_amber_rounded,
+                      size: 17,
+                      color: _notificationsGranted
+                          ? const Color(0xFF00C896)
+                          : Colors.orange,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _notificationsGranted
+                            ? 'Permiso de notificaciones activo'
+                            : 'Falta permiso de notificaciones',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (!_notificationsGranted)
+                      TextButton(
+                        onPressed: () async {
+                          await ref
+                              .read(appNotificationsServiceProvider)
+                              .requestPermissions();
+                          await _refreshPermissions();
+                        },
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('Activar',
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      _exactAlarmsGranted ? Icons.alarm_on : Icons.alarm_off,
+                      size: 17,
+                      color: _exactAlarmsGranted
+                          ? const Color(0xFF00C896)
+                          : Colors.amber,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _exactAlarmsGranted
+                            ? 'Alarmas exactas activas (puntuales con app cerrada)'
+                            : 'Alarmas exactas desactivadas (pueden retrasarse)',
+                        style: TextStyle(color: muted, fontSize: 11.5),
+                      ),
+                    ),
+                    if (!_exactAlarmsGranted)
+                      TextButton(
+                        onPressed: () async {
+                          await ref
+                              .read(appNotificationsServiceProvider)
+                              .requestExactAlarmPermission();
+                          await _refreshPermissions();
+                          // Re-disparar sync al habilitar alarmas exactas
+                          if (_exactAlarmsGranted) {
+                            await notifier.update(settings);
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('Permitir',
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tip: deja MyLifeOS en Batería → Sin restricciones en Android para recibir alertas con la app cerrada.',
+                  style: TextStyle(color: muted, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
           SwitchListTile.adaptive(
             dense: true,
             contentPadding: EdgeInsets.zero,
@@ -440,7 +584,8 @@ class _NotificationsSection extends ConsumerWidget {
                     onPressed: () => _pickTime(
                       context,
                       settings.breakfastTime,
-                      (t) => notifier.update(settings.copyWith(breakfastTime: t)),
+                      (t) =>
+                          notifier.update(settings.copyWith(breakfastTime: t)),
                     ),
                   ),
                   ActionChip(
@@ -561,24 +706,28 @@ class _NotificationsSection extends ConsumerWidget {
               onPressed: () async {
                 final ok = await ref
                     .read(appNotificationsServiceProvider)
-                    .sendTestNotification();
+                    .scheduleTestNotificationIn(
+                      delay: const Duration(seconds: 10),
+                    );
+                await _refreshPermissions();
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       ok
-                          ? '🔔 Notificación de prueba enviada al dispositivo'
+                          ? '⏱️ Prueba programada en 10s. Cierra MyLifeOS ahora para comprobar que llega en segundo plano.'
                           : '⚠️ Activa el permiso de notificaciones para MyLifeOS en Android',
                     ),
                     backgroundColor:
                         ok ? const Color(0xFF00C896) : Colors.orange,
+                    duration: const Duration(seconds: 5),
                   ),
                 );
               },
-              icon: const Icon(Icons.notifications_outlined,
+              icon: const Icon(Icons.timer_outlined,
                   size: 16, color: Color(0xFF00C896)),
               label: const Text(
-                'Enviar notificación de prueba',
+                'Probar notificación en 10s (cierra la app)',
                 style: TextStyle(
                   color: Color(0xFF00C896),
                   fontWeight: FontWeight.w600,
@@ -589,6 +738,35 @@ class _NotificationsSection extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () async {
+                final ok = await ref
+                    .read(appNotificationsServiceProvider)
+                    .sendTestNotification();
+                await _refreshPermissions();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? '🔔 Notificación inmediata enviada al dispositivo'
+                          : '⚠️ Activa el permiso de notificaciones para MyLifeOS en Android',
+                    ),
+                    backgroundColor:
+                        ok ? const Color(0xFF00C896) : Colors.orange,
+                  ),
+                );
+              },
+              icon: Icon(Icons.notifications_outlined, size: 16, color: muted),
+              label: Text(
+                'Enviar prueba inmediata',
+                style: TextStyle(color: muted, fontSize: 12.5),
               ),
             ),
           ),
