@@ -813,9 +813,48 @@ class WalletPantryBridgeService {
     'ceviche',
     'chifa',
     'chaufa',
-    'lomo saltado',
+    'chaufita',
+    'salchichaufa',
     'salchipapa',
+    'salchipollo',
+    'salchibroaster',
+    'salchiburger',
+    'mostrito',
+    'aeropuerto',
+    'combinado',
+    'lomo saltado',
+    'tallarin saltado',
+    'arroz con pollo',
+    'seco de res',
+    'seco de pollo',
+    'aji de gallina',
+    'anticucho',
+    'caldo de gallina',
+    'sopa wantan',
+    'causa rellena',
+    'papa a la huancaina',
+    'papa rellena',
+    'tamal',
+    'empanada',
+    'pan con chicharron',
+    'butifarra',
+    'sanguche',
+    'sandwich',
+    'sándwich',
     'broaster',
+    'alitas bbq',
+    'tequeno',
+    'tequeño',
+    'makis',
+    'sushi',
+    'ramen',
+    'shawarma',
+    'burrito',
+    'taco',
+    'combo',
+    'picarones',
+    'pollada',
+    'parrillada',
     'hamburguesa',
     'pizza',
     'kfc',
@@ -839,7 +878,7 @@ class WalletPantryBridgeService {
     if (_nonPantryNoiseKeywords.any((k) => _matchesWord(trimmed, k))) {
       return true;
     }
-    if (_outsideMealNameKeywords.any((k) => _matchesWord(trimmed, k))) {
+    if (isOutsideMealName(trimmed)) {
       return true;
     }
     return false;
@@ -849,7 +888,183 @@ class WalletPantryBridgeService {
   static bool isOutsideMealName(String rawName) {
     final trimmed = rawName.trim();
     if (trimmed.isEmpty) return false;
-    return _outsideMealNameKeywords.any((k) => _matchesWord(trimmed, k));
+    if (_outsideMealNameKeywords.any((k) => _matchesWord(trimmed, k))) {
+      return true;
+    }
+    // Platos compuestos peruanos tipo "salchichaufa", "salchipollo", "salchibroaster"
+    // sin confundirlos con el insumo crudo "salchicha" o "salchichon".
+    final norm = IngredientMatcher.normalizeText(trimmed);
+    final compoundSalchi = RegExp(r'\bsalchi([a-zñ]{3,})\b').allMatches(norm);
+    for (final m in compoundSalchi) {
+      final full = m.group(0) ?? '';
+      if (full != 'salchicha' &&
+          full != 'salchichas' &&
+          full != 'salchichon' &&
+          full != 'salchichones') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Expande multipacks de boleta/supermercado SOLO para el stock de Despensa
+  /// (manteniendo WalletAI fiel a la cantidad de packs de la boleta).
+  /// Ej: `"LECHE IDEAL 6 PACK 390G"` (qty: 1) -> `name: "Leche Ideal 390g"`,
+  /// `quantity: 6`, `unit: "lata"`, `gramsPerUnit: 390`.
+  static ({
+    String cleanName,
+    double expandedQuantity,
+    String unit,
+    double? gramsPerUnit,
+    bool wasExpanded,
+  }) expandMultipack(
+    String rawName, {
+    required double quantity,
+    required String unit,
+  }) {
+    final original = rawName.trim();
+    if (original.isEmpty || quantity <= 0) {
+      return (
+        cleanName: original,
+        expandedQuantity: quantity,
+        unit: unit,
+        gramsPerUnit: null,
+        wasExpanded: false,
+      );
+    }
+
+    // 1. Extraer peso/volumen unitario si existe (ej. 390G, 90g, 1L, 500ML) para equivalencias
+    double? gramsPerUnit;
+    final weightMatch = RegExp(
+      r'\b(\d+(?:[.,]\d+)?)\s*(g|gr|grs|gramos?|kg|ml|l|lt|litros?)\b',
+      caseSensitive: false,
+    ).firstMatch(original);
+    if (weightMatch != null) {
+      final val = double.tryParse(weightMatch.group(1)!.replaceAll(',', '.'));
+      final u = (weightMatch.group(2) ?? '').toLowerCase();
+      if (val != null && val > 0) {
+        if (u == 'kg' || u == 'l' || u == 'lt' || u.startsWith('litro')) {
+          gramsPerUnit = val * 1000.0;
+        } else {
+          gramsPerUnit = val;
+        }
+      }
+    }
+
+    // 2. Detectar multiplicador de multipack
+    int? packSize;
+    RegExpMatch? matchedPattern;
+
+    final patterns = <({RegExp regex, int Function(RegExpMatch) extract})>[
+      (
+        regex: RegExp(r'\b(\d{1,2})\s*[-]?\s*packs?\b', caseSensitive: false),
+        extract: (m) => int.tryParse(m.group(1) ?? '') ?? 0,
+      ),
+      (
+        regex: RegExp(r'\bpacks?\s*(?:x|de)\s*(\d{1,2})\b', caseSensitive: false),
+        extract: (m) => int.tryParse(m.group(1) ?? '') ?? 0,
+      ),
+      (
+        regex: RegExp(r'\bsix\s*[-]?\s*pack\b', caseSensitive: false),
+        extract: (_) => 6,
+      ),
+      (
+        regex: RegExp(r'\btri\s*[-]?\s*pack\b', caseSensitive: false),
+        extract: (_) => 3,
+      ),
+      (
+        regex: RegExp(r'\bbi\s*[-]?\s*pack\b', caseSensitive: false),
+        extract: (_) => 2,
+      ),
+      (
+        regex: RegExp(r'\b(?:band(?:eja)?|caja|display|bolsa)\s*x\s*(\d{1,2})\b',
+            caseSensitive: false),
+        extract: (m) => int.tryParse(m.group(1) ?? '') ?? 0,
+      ),
+      (
+        regex: RegExp(r'\bx\s*(\d{1,2})\s*(?:unds?|unid(?:ades)?|latas?|paqs?|sobres?|bots?)?\b',
+            caseSensitive: false),
+        extract: (m) => int.tryParse(m.group(1) ?? '') ?? 0,
+      ),
+      (
+        regex: RegExp(r'\bmedia\s+docena\b', caseSensitive: false),
+        extract: (_) => 6,
+      ),
+      (
+        regex: RegExp(r'\bdocena\b', caseSensitive: false),
+        extract: (_) => 12,
+      ),
+    ];
+
+    for (final p in patterns) {
+      final m = p.regex.firstMatch(original);
+      if (m != null) {
+        final count = p.extract(m);
+        if (count >= 2 && count <= 60) {
+          packSize = count;
+          matchedPattern = m;
+          break;
+        }
+      }
+    }
+
+    if (packSize == null || matchedPattern == null) {
+      return (
+        cleanName: original,
+        expandedQuantity: quantity,
+        unit: unit,
+        gramsPerUnit: gramsPerUnit,
+        wasExpanded: false,
+      );
+    }
+
+    // Limpiar el token de multipack del nombre para evitar confusión
+    final stripped = original
+        .replaceRange(matchedPattern.start, matchedPattern.end, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final cleanName = stripped.length >= 2 ? _toReadableTitle(stripped) : original;
+
+    // Elegir la unidad real más natural para las unidades sueltas
+    var resolvedUnit = MeasurementUnit.fromString(unit).label;
+    final lower = cleanName.toLowerCase();
+    final isCanned = _matchesWord(lower, 'leche') &&
+            (gramsPerUnit != null && gramsPerUnit >= 300 && gramsPerUnit <= 450) ||
+        _matchesWord(lower, 'atun') ||
+        _matchesWord(lower, 'sardina') ||
+        _matchesWord(lower, 'conserva') ||
+        _matchesWord(lower, 'cerveza');
+    final isPacket = _matchesWord(lower, 'galleta') ||
+        _matchesWord(lower, 'wafer') ||
+        _matchesWord(lower, 'fideo') ||
+        _matchesWord(lower, 'cereal');
+    if (isCanned) {
+      resolvedUnit = MeasurementUnit.lata.label;
+    } else if (isPacket && resolvedUnit == MeasurementUnit.unidades.label) {
+      resolvedUnit = MeasurementUnit.paquete.label;
+    }
+
+    return (
+      cleanName: cleanName,
+      expandedQuantity: quantity * packSize,
+      unit: resolvedUnit,
+      gramsPerUnit: gramsPerUnit,
+      wasExpanded: true,
+    );
+  }
+
+  static String _toReadableTitle(String raw) {
+    // Si viene todo en MAYÚSCULAS de boleta (ej. "LECHE IDEAL 390G"), pasarlo a formato legible
+    final isAllCaps = raw == raw.toUpperCase() && raw != raw.toLowerCase();
+    if (!isAllCaps) return raw;
+    return raw.split(' ').map((w) {
+      if (w.isEmpty) return w;
+      if (RegExp(r'^\d+(?:[.,]\d+)?(?:g|gr|kg|ml|l|lt)$', caseSensitive: false)
+          .hasMatch(w)) {
+        return w.toLowerCase();
+      }
+      return w[0].toUpperCase() + w.substring(1).toLowerCase();
+    }).join(' ');
   }
 
   static const _foodKeywords = [
@@ -1029,9 +1244,9 @@ class WalletPantryBridgeService {
       return null;
     }
 
-    // 4. Comidas servidas fuera de casa (Restaurante, Delivery, Almuerzo, Menú, Ensalada de frutas) -> FoodCoach, NO Despensa
+    // 4. Comidas servidas fuera de casa (Restaurante, Delivery, Almuerzo, Menú, Salchichaufa, Ensalada de frutas) -> FoodCoach, NO Despensa
     if (_outsideMealSubcategoryKeywords.any((k) => _matchesWord(subcategory, k)) ||
-        _outsideMealNameKeywords.any((k) => _matchesWord(lowerName, k)) ||
+        isOutsideMealName(lowerName) ||
         _restaurantNoiseKeywords.any((k) => _matchesWord(lowerName, k))) {
       return 'comida_fuera';
     }

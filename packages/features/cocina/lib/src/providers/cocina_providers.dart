@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -345,8 +346,24 @@ class InventoryNotifier extends Notifier<InventoryState> {
     }
     int count = 0;
     for (final entry in entries) {
-      final cleanName = entry.name.trim();
-      if (cleanName.isEmpty || entry.quantity <= 0) continue;
+      final rawCleanName = entry.name.trim();
+      if (rawCleanName.isEmpty || entry.quantity <= 0) continue;
+
+      // Expandir multipacks de supermercado (ej. "LECHE IDEAL 6 PACK 390G" -> 6 latas + equivalencia 390g)
+      final expanded = WalletPantryBridgeService.expandMultipack(
+        rawCleanName,
+        quantity: entry.quantity,
+        unit: entry.unit,
+      );
+      final cleanName = expanded.cleanName;
+      final effectiveQty = expanded.expandedQuantity;
+      final effectiveUnit = expanded.unit;
+
+      if (expanded.gramsPerUnit != null && expanded.gramsPerUnit! > 0) {
+        await ref
+            .read(ingredientEquivalencesProvider.notifier)
+            .setGramsPerUnit(cleanName, expanded.gramsPerUnit!);
+      }
 
       final existingIndex = state.ingredients.indexWhere(
         (ing) =>
@@ -356,8 +373,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
       if (existingIndex != -1) {
         final existing = state.ingredients[existingIndex];
         final converted = IngredientUnitNormalizer.convert(
-          entry.quantity,
-          MeasurementUnit.fromString(entry.unit),
+          effectiveQty,
+          MeasurementUnit.fromString(effectiveUnit),
           MeasurementUnit.fromString(existing.unit),
         );
         if (converted != null) {
@@ -391,8 +408,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
         primaryCategory: chosenCategory,
         subCategory: chosenSub,
         preparation: preparationOverride ?? detected.suggestedPreparation ?? '',
-        quantity: entry.quantity,
-        unit: entry.unit,
+        quantity: effectiveQty,
+        unit: effectiveUnit,
         expirationDate: expirationDateOverride,
         imageAssetId: null,
         storageArea: storageAreaOverride ?? 'Alacena',
@@ -487,12 +504,14 @@ class InventoryNotifier extends Notifier<InventoryState> {
   }
 
   /// Elimina de Despensa los artículos no comestibles / comidas servidas que se
-  /// colaron antes (ej. pasaje, bolsa, desodorante, condón, almuerzo) y reclasifica
-  /// insumos mal categorizados (ej. Ensalada en Aves -> Verduras, galletas/helados -> Snacks y dulces).
-  Future<({int removedCount, int recategorizedCount})>
+  /// colaron antes (ej. pasaje, bolsa, desodorante, condón, almuerzo, salchichaufa),
+  /// expande multipacks sin separar (ej. "LECHE IDEAL 6 PACK 390G" -> 6 latas) y
+  /// reclasifica insumos mal categorizados.
+  Future<({int removedCount, int recategorizedCount, int expandedCount})>
       cleanupMisclassifiedAndNoiseItems() async {
     int removed = 0;
     int recategorized = 0;
+    int expandedCount = 0;
     final current = List<InventoryIngredient>.from(state.ingredients);
 
     for (final ing in current) {
@@ -507,26 +526,224 @@ class InventoryNotifier extends Notifier<InventoryState> {
         continue;
       }
 
-      final detected = IngredientDetector.detect(ing.name);
-      final needsFix = detected.primaryCategory != null &&
-          detected.primaryCategory != ing.primaryCategory &&
-          (ing.primaryCategory == 'Otros' ||
-              (IngredientDetector.matchesWholeWord(ing.name, 'ensalada') &&
-                  ing.primaryCategory == 'Proteínas animales'));
-      if (needsFix) {
-        final updated = ing.copyWith(
-          primaryCategory: detected.primaryCategory!,
-          subCategory: detected.subCategory ?? ing.subCategory,
+      var working = ing;
+      bool changed = false;
+
+      // 1. Expandir multipacks pendientes (ej. "LECHE IDEAL 6 PACK 390G", 1.0 -> 6.0 latas)
+      final exp = WalletPantryBridgeService.expandMultipack(
+        working.name,
+        quantity: working.quantity,
+        unit: working.unit,
+      );
+      if (exp.wasExpanded) {
+        working = working.copyWith(
+          name: exp.cleanName,
+          quantity: exp.expandedQuantity,
+          unit: exp.unit,
         );
-        await _repo.updateIngredient(updated);
+        if (exp.gramsPerUnit != null && exp.gramsPerUnit! > 0) {
+          await ref
+              .read(ingredientEquivalencesProvider.notifier)
+              .setGramsPerUnit(exp.cleanName, exp.gramsPerUnit!);
+        }
+        expandedCount++;
+        changed = true;
+      }
+
+      // 2. Reclasificar insumos mal categorizados
+      final detected = IngredientDetector.detect(working.name);
+      final needsFix = detected.primaryCategory != null &&
+          detected.primaryCategory != working.primaryCategory &&
+          (working.primaryCategory == 'Otros' ||
+              (IngredientDetector.matchesWholeWord(working.name, 'ensalada') &&
+                  working.primaryCategory == 'Proteínas animales'));
+      if (needsFix) {
+        working = working.copyWith(
+          primaryCategory: detected.primaryCategory!,
+          subCategory: detected.subCategory ?? working.subCategory,
+        );
         recategorized++;
+        changed = true;
+      }
+
+      if (changed) {
+        await _repo.updateIngredient(working);
       }
     }
 
-    if (removed > 0 || recategorized > 0) {
+    if (removed > 0 || recategorized > 0 || expandedCount > 0) {
       await load();
     }
-    return (removedCount: removed, recategorizedCount: recategorized);
+    return (
+      removedCount: removed,
+      recategorizedCount: recategorized,
+      expandedCount: expandedCount,
+    );
+  }
+
+  /// Audita toda la Despensa actual usando IA en 1 sola llamada rápida para detectar
+  /// platos servidos fuera (ej. Salchichaufa, Mostrito), no-alimentos o multipacks sin expandir.
+  Future<
+      ({
+        List<({InventoryIngredient item, String reason})> toRemove,
+        List<
+            ({
+              InventoryIngredient item,
+              String newName,
+              double newQuantity,
+              String newUnit,
+              String newCategory,
+              String reason,
+            })> toFix,
+      })?> auditPantryWithAi() async {
+    final items = state.ingredients
+        .where((i) =>
+            i.subCategory != 'Porción guardada' &&
+            i.subCategory != 'Extra listo')
+        .toList();
+    if (items.isEmpty) {
+      return (toRemove: const <({InventoryIngredient item, String reason})>[], toFix: const <({InventoryIngredient item, String newName, double newQuantity, String newUnit, String newCategory, String reason})>[]);
+    }
+
+    final payload = items
+        .map((i) => {
+              'id': i.id,
+              'nombre': i.name,
+              'categoria': i.primaryCategory,
+              'cantidad': i.quantity,
+              'unidad': i.unit,
+            })
+        .toList();
+
+    final prompt = '''
+Eres el auditor inteligente de Despensa de MyLifeOS (Perú).
+Revisa esta lista actual de Despensa y detecta ÚNICAMENTE los ítems con problemas:
+1. "quitar": platos preparados/comida rápida servida fuera (ej. Salchichaufa, Mostrito, Aeropuerto, Almuerzo, Ceviche, Pollo a la brasa, Menú) o artículos NO comestibles (bolsas, pasajes, aseo, farmacia).
+   IMPORTANTE: SÍ conserva snacks/dulces empaquetados (galletas, chocolates, helados, barritas, cereales) porque el usuario hace seguimiento nutricional.
+2. "corregir": multipacks sin expandir (ej. "LECHE IDEAL 6 PACK 390G" con cantidad 1 -> nombre "Leche Ideal 390g", cantidad 6, unidad "lata", categoria "Lácteos") o ítems en categoría claramente incorrecta.
+
+Categorías válidas:
+["Proteínas animales", "Lácteos", "Verduras", "Frutas", "Tubérculos y raíces", "Legumbres", "Cereales y granos", "Harinas y derivados", "Aceites y grasas", "Condimentos y especias", "Salsas", "Endulzantes", "Snacks y dulces", "Otros"]
+
+Despensa actual:
+${jsonEncode(payload)}
+
+Devuelve SOLO JSON válido (sin markdown):
+{"quitar": [{"id": "...", "razon": "Plato de comida rápida"}], "corregir": [{"id": "...", "nombre": "Leche Ideal 390g", "cantidad": 6, "unidad": "lata", "categoria": "Lácteos", "razon": "Multipack de 6 latas"}]}
+''';
+
+    final raw =
+        await ref.read(geminiProvider).classifyWalletTransactionsJson(prompt);
+    if (raw == null || raw.trim().isEmpty) return null;
+
+    try {
+      final cleaned = raw
+          .replaceAll(RegExp(r'```json\s*', caseSensitive: false), '')
+          .replaceAll('```', '')
+          .trim();
+      final start = cleaned.indexOf('{');
+      final end = cleaned.lastIndexOf('}');
+      if (start == -1 || end <= start) return null;
+      final decoded = jsonDecode(cleaned.substring(start, end + 1));
+      if (decoded is! Map) return null;
+
+      final byId = {for (final i in items) i.id: i};
+      final toRemove = <({InventoryIngredient item, String reason})>[];
+      final toFix = <({
+        InventoryIngredient item,
+        String newName,
+        double newQuantity,
+        String newUnit,
+        String newCategory,
+        String reason,
+      })>[];
+
+      if (decoded['quitar'] is List) {
+        for (final row in decoded['quitar'] as List) {
+          if (row is! Map) continue;
+          final ing = byId[row['id']?.toString()];
+          if (ing != null) {
+            toRemove.add((
+              item: ing,
+              reason: row['razon']?.toString().trim().isNotEmpty == true
+                  ? row['razon'].toString().trim()
+                  : 'Ajeno a despensa',
+            ));
+          }
+        }
+      }
+
+      if (decoded['corregir'] is List) {
+        for (final row in decoded['corregir'] as List) {
+          if (row is! Map) continue;
+          final ing = byId[row['id']?.toString()];
+          if (ing == null) continue;
+          final newName = (row['nombre']?.toString().trim().isNotEmpty == true)
+              ? row['nombre'].toString().trim()
+              : ing.name;
+          final newQty = (row['cantidad'] as num?)?.toDouble() ?? ing.quantity;
+          final newUnit = (row['unidad']?.toString().trim().isNotEmpty == true)
+              ? MeasurementUnit.fromString(row['unidad'].toString()).label
+              : ing.unit;
+          final newCat =
+              (row['categoria']?.toString().trim().isNotEmpty == true)
+                  ? row['categoria'].toString().trim()
+                  : ing.primaryCategory;
+          toFix.add((
+            item: ing,
+            newName: newName,
+            newQuantity: newQty > 0 ? newQty : ing.quantity,
+            newUnit: newUnit,
+            newCategory: newCat,
+            reason: row['razon']?.toString().trim().isNotEmpty == true
+                ? row['razon'].toString().trim()
+                : 'Ajuste sugerido por IA',
+          ));
+        }
+      }
+
+      return (toRemove: toRemove, toFix: toFix);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Aplica los cambios confirmados de `auditPantryWithAi`.
+  Future<void> applyPantryAudit({
+    required List<String> idsToRemove,
+    required List<
+        ({
+          InventoryIngredient item,
+          String newName,
+          double newQuantity,
+          String newUnit,
+          String newCategory,
+        })> fixes,
+  }) async {
+    for (final id in idsToRemove) {
+      await _repo.deleteIngredient(id);
+    }
+    for (final f in fixes) {
+      await _repo.updateIngredient(
+        f.item.copyWith(
+          name: f.newName,
+          quantity: f.newQuantity,
+          unit: f.newUnit,
+          primaryCategory: f.newCategory,
+        ),
+      );
+      final exp = WalletPantryBridgeService.expandMultipack(
+        f.item.name,
+        quantity: f.item.quantity,
+        unit: f.item.unit,
+      );
+      if (exp.gramsPerUnit != null && exp.gramsPerUnit! > 0) {
+        await ref
+            .read(ingredientEquivalencesProvider.notifier)
+            .setGramsPerUnit(f.newName, exp.gramsPerUnit!);
+      }
+    }
+    await load();
   }
 
   void clearError() => state = state.copyWith(error: null);

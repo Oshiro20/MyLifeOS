@@ -22,6 +22,110 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
+  bool _isAuditingPantry = false;
+
+  Future<void> _runAiPantryAudit(BuildContext context) async {
+    if (_isAuditingPantry) return;
+    setState(() => _isAuditingPantry = true);
+    try {
+      final result =
+          await ref.read(inventoryProvider.notifier).auditPantryWithAi();
+      if (!context.mounted) return;
+      if (result == null) {
+        showError(
+          context,
+          'No se pudo conectar con la IA para auditar Despensa. Intenta de nuevo.',
+        );
+        return;
+      }
+      if (result.toRemove.isEmpty && result.toFix.isEmpty) {
+        showSuccess(context, '✨ Tu Despensa está impecable según la IA.');
+        return;
+      }
+
+      final apply = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('✨ Auditoría IA de Despensa'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (result.toRemove.isNotEmpty) ...[
+                  const Text(
+                    '🗑️ Quitar de Despensa:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  ...result.toRemove.map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '• ${e.item.name} — ${e.reason}',
+                        style: const TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (result.toFix.isNotEmpty) ...[
+                  const Text(
+                    '🔧 Corregir / separar multipacks:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  ...result.toFix.map(
+                    (f) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '• ${f.item.name} → ${f.newName} (${f.newQuantity} ${f.newUnit} · ${f.newCategory})',
+                        style: const TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Aplicar cambios'),
+            ),
+          ],
+        ),
+      );
+
+      if (apply == true && context.mounted) {
+        await ref.read(inventoryProvider.notifier).applyPantryAudit(
+              idsToRemove: result.toRemove.map((e) => e.item.id).toList(),
+              fixes: result.toFix
+                  .map((f) => (
+                        item: f.item,
+                        newName: f.newName,
+                        newQuantity: f.newQuantity,
+                        newUnit: f.newUnit,
+                        newCategory: f.newCategory,
+                      ))
+                  .toList(),
+            );
+        if (context.mounted) {
+          showSuccess(
+            context,
+            '✨ Aplicado: ${result.toRemove.length} quitado(s), ${result.toFix.length} corregido(s).',
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isAuditingPantry = false);
+    }
+  }
+
   Future<void> _showRescueIdeasDialog(
     BuildContext context,
     List<InventoryIngredient> rescueItems,
@@ -232,12 +336,19 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
       );
     }
 
-    // Banner de limpieza rápida si quedaron ítems no comestibles o mal clasificados de versiones previas
+    // Banner de limpieza rápida si quedaron ítems no comestibles, multipacks sin separar o mal clasificados
     if (_searchQuery.isEmpty) {
       final dirtyOrMisclassified = rawPantry.where((i) {
         if (WalletPantryBridgeService.isNonPantryNoiseName(i.name)) {
           return true;
         }
+        final exp = WalletPantryBridgeService.expandMultipack(
+          i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+        );
+        if (exp.wasExpanded) return true;
+
         final det = IngredientDetector.detect(i.name);
         return det.primaryCategory != null &&
             det.primaryCategory != i.primaryCategory &&
@@ -264,7 +375,7 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Detectamos ${dirtyOrMisclassified.length} ítem(s) ajenos a cocina o mal clasificados en Despensa.',
+                    'Detectamos ${dirtyOrMisclassified.length} ítem(s) por limpiar, separar multipack o reclasificar.',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -277,9 +388,18 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
                         .read(inventoryProvider.notifier)
                         .cleanupMisclassifiedAndNoiseItems();
                     if (!context.mounted) return;
+                    final parts = <String>[
+                      if (res.removedCount > 0) '${res.removedCount} quitado(s)',
+                      if (res.expandedCount > 0)
+                        '${res.expandedCount} multipack(s) separados',
+                      if (res.recategorizedCount > 0)
+                        '${res.recategorizedCount} reclasificado(s)',
+                    ];
                     showSuccess(
                       context,
-                      'Despensa ordenada: ${res.removedCount} quitado(s), ${res.recategorizedCount} reclasificado(s).',
+                      parts.isEmpty
+                          ? 'Despensa al día.'
+                          : 'Despensa ordenada: ${parts.join(', ')}.',
                     );
                   },
                   style: TextButton.styleFrom(
@@ -336,6 +456,39 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
                       const Color(0xFF00F0FF)),
                 ],
               ),
+              if (rawPantry.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: _isAuditingPantry
+                        ? null
+                        : () => _runAiPantryAudit(context),
+                    icon: _isAuditingPantry
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.cleaning_services_outlined,
+                            size: 15, color: Color(0xFF00C896)),
+                    label: Text(
+                      _isAuditingPantry
+                          ? 'Auditando Despensa con IA...'
+                          : '✨ Auditar Despensa con IA (detectar platos fuera / multipacks)',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF00C896),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                  ),
+                ),
+              ],
               if (rescueItems.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 SizedBox(

@@ -312,6 +312,36 @@ void main() {
       expect(secondBatch.appliances.single.name, 'Freidora de aire Oster');
     });
 
+    test(
+        'expandMultipack separa 6 pack de leche en 6 latas con 390g y filtra Salchichaufa pero conserva Salchicha',
+        () {
+      final milk = WalletPantryBridgeService.expandMultipack(
+        'LECHE IDEAL 6 PACK 390G',
+        quantity: 1,
+        unit: 'unidades',
+      );
+      expect(milk.wasExpanded, isTrue);
+      expect(milk.expandedQuantity, 6.0);
+      expect(milk.unit, 'lata');
+      expect(milk.cleanName, 'Leche Ideal 390g');
+      expect(milk.gramsPerUnit, 390.0);
+
+      final choc = WalletPantryBridgeService.expandMultipack(
+        'CHOCOLATE TABLETA 90G',
+        quantity: 2,
+        unit: 'unidades',
+      );
+      expect(choc.wasExpanded, isFalse);
+      expect(choc.expandedQuantity, 2.0);
+      expect(choc.gramsPerUnit, 90.0);
+
+      expect(WalletPantryBridgeService.isOutsideMealName('Salchichaufa'), isTrue);
+      expect(WalletPantryBridgeService.isNonPantryNoiseName('Salchichaufa'), isTrue);
+      expect(WalletPantryBridgeService.isOutsideMealName('Mostrito'), isTrue);
+      expect(WalletPantryBridgeService.isOutsideMealName('Salchicha'), isFalse);
+      expect(WalletPantryBridgeService.isNonPantryNoiseName('Salchicha'), isFalse);
+    });
+
     test('enruta compras de pollo entero hacia poultryBreakdowns en octavos', () async {
       SharedPreferences.setMockInitialValues({});
       final bridge = WalletPantryBridgeService();
