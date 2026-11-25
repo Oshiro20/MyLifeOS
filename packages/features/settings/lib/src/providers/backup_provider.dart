@@ -58,12 +58,12 @@ class BackupNotifier extends Notifier<BackupState> {
     state = state.copyWith(dbSizeBytes: size, lastModified: lastMod);
   }
 
-  Future<BackupResult> exportBackup() async {
+  Future<BackupResult> exportBackup({bool includePhotos = false}) async {
     state = state.copyWith(
       status: BackupStatus.exportingInProgress,
       clearMessage: true,
     );
-    final result = await _service.exportBackup();
+    final result = await _service.exportBackup(includePhotos: includePhotos);
     switch (result) {
       case BackupSuccess():
         state = state.copyWith(
@@ -95,6 +95,51 @@ class BackupNotifier extends Notifier<BackupState> {
           status: BackupStatus.done,
           lastMessage:
               '¡Restauración exitosa! Reinicia la app para aplicar los cambios.',
+        );
+      case BackupFailure():
+        state = state.copyWith(
+          status: BackupStatus.error,
+          lastMessage: result.message,
+        );
+      case BackupSuccess():
+        break;
+    }
+    await _loadInfo();
+    return result;
+  }
+
+  Future<CloudBackupOperationResult> uploadToCloud({
+    bool includePhotos = false,
+    bool force = false,
+  }) async {
+    state = state.copyWith(
+      status: BackupStatus.exportingInProgress,
+      clearMessage: true,
+    );
+    final result = await _service.uploadToCloud(
+      includePhotos: includePhotos,
+      force: force,
+    );
+    state = state.copyWith(
+      status: result.success ? BackupStatus.done : BackupStatus.error,
+      lastMessage: result.message,
+    );
+    await _loadInfo();
+    return result;
+  }
+
+  Future<BackupResult> restoreFromCloud() async {
+    state = state.copyWith(
+      status: BackupStatus.importingInProgress,
+      clearMessage: true,
+    );
+    final result = await _service.restoreFromCloud();
+    switch (result) {
+      case RestoreSuccess():
+        state = state.copyWith(
+          status: BackupStatus.done,
+          lastMessage:
+              '¡Respaldo en la nube restaurado! Reinicia la app para aplicar todos los datos.',
         );
       case BackupFailure():
         state = state.copyWith(

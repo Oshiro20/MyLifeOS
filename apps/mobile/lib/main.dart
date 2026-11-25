@@ -96,6 +96,25 @@ Future<SmartNotificationContext> _buildSmartNotificationContextFromDb(
 void _myLifeOSBackgroundDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
+
+    if (task == AutoBackupService.workmanagerTaskName) {
+      AppDatabase? bgDb;
+      try {
+        bgDb = AppDatabase();
+        final backupService = BackupService(
+          checkpointDbFn: () => bgDb!.checkpointWal(),
+        );
+        final ok = await AutoBackupService.runScheduledBackup(backupService);
+        return Future.value(ok);
+      } catch (e) {
+        developer.log('Background auto-backup error: $e',
+            name: 'MyLifeOS.AutoBackup');
+        return Future.value(false);
+      } finally {
+        await bgDb?.close();
+      }
+    }
+
     if (task != _bgNotifTaskName) return Future.value(true);
 
     AppDatabase? bgDb;
@@ -245,6 +264,29 @@ Future<void> main() async {
       unawaited(_appNotifications.requestPermissions());
 
       // Inicializar backup automático y tarea periódica de notificaciones en segundo plano
+      AutoBackupService.onScheduleChanged = (enabled, destination) async {
+        try {
+          if (enabled) {
+            await Workmanager().registerPeriodicTask(
+              AutoBackupService.workmanagerUniqueId,
+              AutoBackupService.workmanagerTaskName,
+              frequency: const Duration(hours: 24),
+              constraints: Constraints(
+                networkType: destination == 'local'
+                    ? NetworkType.notRequired
+                    : NetworkType.connected,
+              ),
+              existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+            );
+          } else {
+            await Workmanager()
+                .cancelByUniqueName(AutoBackupService.workmanagerUniqueId);
+          }
+        } catch (e) {
+          developer.log('AutoBackup schedule error: $e',
+              name: 'MyLifeOS.AutoBackup');
+        }
+      };
       await AutoBackupService.initialize();
       try {
         await Workmanager().initialize(_myLifeOSBackgroundDispatcher);
@@ -255,6 +297,20 @@ Future<void> main() async {
           constraints: Constraints(networkType: NetworkType.notRequired),
           existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
         );
+        if (await AutoBackupService.isEnabled()) {
+          final dest = await AutoBackupService.getDestination();
+          await Workmanager().registerPeriodicTask(
+            AutoBackupService.workmanagerUniqueId,
+            AutoBackupService.workmanagerTaskName,
+            frequency: const Duration(hours: 24),
+            constraints: Constraints(
+              networkType: dest == 'local'
+                  ? NetworkType.notRequired
+                  : NetworkType.connected,
+            ),
+            existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+          );
+        }
       } catch (e) {
         developer.log('Workmanager init error: $e',
             name: 'MyLifeOS.Background');

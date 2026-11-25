@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -81,7 +82,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 16),
 
           // ── Backup & Datos ────────────────────────────────────────────────
-          _BackupSection(backup: backup, ref: ref, isDark: isDark),
+          _BackupSection(backup: backup, isDark: isDark),
           const SizedBox(height: 16),
 
           // ── Módulos ───────────────────────────────────────────────────────
@@ -220,6 +221,9 @@ class _ProfileCard extends ConsumerWidget {
     controller.dispose();
     if (newName != null && newName.isNotEmpty) {
       await ref.read(userDisplayNameProvider.notifier).setName(newName);
+      if (await WalletCloudService.isSignedIn()) {
+        await WalletCloudService.updateProfile(displayName: newName);
+      }
     }
   }
 
@@ -900,128 +904,96 @@ class _ThemeChip extends StatelessWidget {
   }
 }
 
-// ── Backup Section ────────────────────────────────────────────────────────────
+// ── Cuenta del Ecosistema + Backup Nube & Local ──────────────────────────────
 
-class _BackupSection extends StatelessWidget {
+class _BackupSection extends ConsumerStatefulWidget {
   final BackupState backup;
-  final WidgetRef ref;
   final bool isDark;
-  const _BackupSection(
-      {required this.backup, required this.ref, required this.isDark});
+  const _BackupSection({required this.backup, required this.isDark});
 
   @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      isDark: isDark,
-      icon: Icons.cloud_sync_outlined,
-      title: 'Backup & Datos',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Info box
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00C896).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF00C896).withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.info_outline,
-                    color: Color(0xFF00C896), size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    backup.lastModified != null
-                        ? 'Tamaño actual: ${_formatSize(backup.dbSizeBytes)} · Último: ${backup.lastModified!.day.toString().padLeft(2, '0')}/${backup.lastModified!.month.toString().padLeft(2, '0')} ${backup.lastModified!.hour.toString().padLeft(2, '0')}:${backup.lastModified!.minute.toString().padLeft(2, '0')}'
-                        : 'Tamaño actual: ${_formatSize(backup.dbSizeBytes)}',
-                    style: const TextStyle(
-                      color: Color(0xFF00C896),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+  ConsumerState<_BackupSection> createState() => _BackupSectionState();
+}
 
-          // Estado real de backup automático
-          Builder(
-            builder: (context) {
-              final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
-              final subtitleColor =
-                  isDark ? Colors.white54 : const Color(0xFF4A7A65);
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.autorenew,
-                      color: Color(0xFFFFB74D), size: 18),
-                ),
-                title: Text(
-                  'Backup automático',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(
-                  'En desarrollo · Usa Exportar backup para respaldar tus datos',
-                  style: TextStyle(color: subtitleColor, fontSize: 11),
-                ),
-                trailing: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Pronto',
-                    style: TextStyle(
-                      color: Color(0xFFFFB74D),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
+class _BackupSectionState extends ConsumerState<_BackupSection> {
+  String? _cloudUsername;
+  String? _cloudDisplayName;
+  String? _cloudEmail;
+  bool _cloudHasRecoveryKey = false;
+  MyLifeOSCloudBackupMeta? _cloudBackupMeta;
+  bool _loadingCloud = false;
 
-          // Export button
-          _BackupActionTile(
-            icon: Icons.file_upload_outlined,
-            label: 'Exportar backup',
-            subtitle: 'Crear archivo .mylifeos_backup',
-            color: const Color(0xFF00C896),
-            isLoading: backup.status == BackupStatus.exportingInProgress,
-            onTap: () => _exportBackup(context, ref),
-          ),
-          const SizedBox(height: 8),
+  bool _includePhotos = false;
+  bool _autoBackupEnabled = false;
+  String _autoBackupDest = 'cloud';
+  String? _autoLastRunIso;
+  String? _autoLastStatus;
 
-          // Import button
-          _BackupActionTile(
-            icon: Icons.file_download_outlined,
-            label: 'Restaurar backup',
-            subtitle: 'Seleccionar archivo .mylifeos_backup',
-            color: const Color(0xFFFFB74D),
-            isLoading: backup.status == BackupStatus.importingInProgress,
-            onTap: () => _importBackup(context, ref),
-          ),
-        ],
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final session = await WalletCloudService.getSession();
+    final autoEnabled = await AutoBackupService.isEnabled();
+    final autoDest = await AutoBackupService.getDestination();
+    final includePhotos = await AutoBackupService.getIncludePhotos();
+    final lastRun = await AutoBackupService.getLastRunInfo();
+
+    if (!mounted) return;
+    setState(() {
+      _cloudUsername = session.username;
+      _cloudDisplayName = session.displayName;
+      _cloudEmail = session.email;
+      _cloudHasRecoveryKey = session.hasRecoveryKey;
+      _autoBackupEnabled = autoEnabled;
+      _autoBackupDest = autoDest;
+      _includePhotos = includePhotos;
+      _autoLastRunIso = lastRun.lastRunIso;
+      _autoLastStatus = lastRun.lastStatus;
+    });
+
+    if (session.token != null && session.token!.isNotEmpty) {
+      await _refreshCloudInfo();
+    }
+  }
+
+  Future<void> _refreshCloudInfo() async {
+    if (!mounted) return;
+    setState(() => _loadingCloud = true);
+    await WalletCloudService.fetchProfile();
+    final session = await WalletCloudService.getSession();
+    final status = await WalletCloudService.fetchMyLifeOSBackupStatus();
+    if (!mounted) return;
+    setState(() {
+      _loadingCloud = false;
+      _cloudUsername = session.username;
+      _cloudDisplayName = session.displayName;
+      _cloudEmail = session.email;
+      _cloudHasRecoveryKey = session.hasRecoveryKey;
+      if (status.success) {
+        _cloudBackupMeta = status.latestBackup;
+      }
+    });
+    if (session.displayName != null && session.displayName!.trim().isNotEmpty) {
+      final currentLocal = ref.read(userDisplayNameProvider);
+      if (currentLocal == 'Usuario' || currentLocal.trim().isEmpty) {
+        await ref
+            .read(userDisplayNameProvider.notifier)
+            .setName(session.displayName!.trim());
+      }
+    }
+  }
+
+  void _snack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : const Color(0xFF00C896),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -1032,42 +1004,1348 @@ class _BackupSection extends StatelessWidget {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  Future<void> _exportBackup(BuildContext context, WidgetRef ref) async {
+  String _formatIso(String? iso) {
+    if (iso == null || iso.isEmpty) return '—';
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return iso;
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _showRecoveryKeyDialog(String recoveryKey) async {
+    if (!mounted) return;
+    final fg = widget.isDark ? Colors.white : const Color(0xFF0A1F16);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            const Icon(Icons.vpn_key, color: Color(0xFFFFB74D)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Guarda tu Clave de Recuperación',
+                style: TextStyle(color: fg, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Esta clave se muestra una sola vez. Guárdala en un lugar seguro: te sirve para recuperar tu contraseña o usuario tanto en MyLifeOS como en WalletAI.',
+              style: TextStyle(color: fg.withValues(alpha: 0.75), fontSize: 12.5),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB74D).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFFB74D)),
+              ),
+              child: SelectableText(
+                recoveryKey,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: fg,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.4,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: recoveryKey));
+              _snack('Clave copiada al portapapeles');
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copiar clave'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00C896),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Ya la guardé',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openRecoverPasswordDialog() async {
+    final idCtrl = TextEditingController();
+    final keyCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    bool obscure = true;
+    bool submitting = false;
+    String? errorMsg;
+
+    final recoveredUser = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_reset, color: Color(0xFFFFB74D)),
+              SizedBox(width: 8),
+              Flexible(child: Text('Recuperar contraseña')),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Ingresa tu usuario o correo vinculado, tu clave de recuperación (MLO-...) y tu nueva contraseña.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: idCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Usuario o correo',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: keyCtrl,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Clave de recuperación',
+                    hintText: 'MLO-XXXX-XXXX-XXXX',
+                    prefixIcon: Icon(Icons.vpn_key_outlined),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: obscure,
+                  decoration: InputDecoration(
+                    labelText: 'Nueva contraseña',
+                    hintText: 'Mínimo 6 caracteres',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                          obscure ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () =>
+                          setDialogState(() => obscure = !obscure),
+                    ),
+                  ),
+                ),
+                if (errorMsg != null) ...[
+                  const SizedBox(height: 8),
+                  Text(errorMsg!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+              ),
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      if (idCtrl.text.trim().isEmpty ||
+                          keyCtrl.text.trim().length < 8 ||
+                          passCtrl.text.length < 6) {
+                        setDialogState(() {
+                          errorMsg =
+                              'Completa todos los campos (contraseña mín. 6).';
+                        });
+                        return;
+                      }
+                      setDialogState(() {
+                        submitting = true;
+                        errorMsg = null;
+                      });
+                      final res = await WalletCloudService.recoverPassword(
+                        identifier: idCtrl.text.trim(),
+                        recoveryKey: keyCtrl.text.trim(),
+                        newPassword: passCtrl.text,
+                      );
+                      if (!ctx.mounted) return;
+                      if (res.success) {
+                        Navigator.pop(ctx, res.username ?? idCtrl.text.trim());
+                      } else {
+                        setDialogState(() {
+                          submitting = false;
+                          errorMsg = res.message;
+                        });
+                      }
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Restablecer',
+                      style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (recoveredUser != null) {
+      _snack(
+          '✅ Contraseña actualizada para @$recoveredUser. Ya puedes iniciar sesión.');
+    }
+  }
+
+  Future<void> _openRecoverUsernameDialog() async {
+    final emailCtrl = TextEditingController();
+    final secretCtrl = TextEditingController();
+    bool useKey = false;
+    bool submitting = false;
+    String? errorMsg;
+
+    final found = await showDialog<({String username, String? displayName})>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: [
+              Icon(Icons.person_search, color: Color(0xFF00C896)),
+              SizedBox(width: 8),
+              Flexible(child: Text('Recuperar usuario')),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Ingresa tu correo vinculado y verifica con tu contraseña o clave de recuperación.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo vinculado',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: const Text('Usar clave de recuperación',
+                      style: TextStyle(fontSize: 12.5)),
+                  value: useKey,
+                  onChanged: (v) => setDialogState(() {
+                    useKey = v;
+                    secretCtrl.clear();
+                    errorMsg = null;
+                  }),
+                ),
+                TextField(
+                  controller: secretCtrl,
+                  obscureText: !useKey,
+                  textCapitalization: useKey
+                      ? TextCapitalization.characters
+                      : TextCapitalization.none,
+                  decoration: InputDecoration(
+                    labelText: useKey
+                        ? 'Clave de recuperación (MLO-...)'
+                        : 'Contraseña',
+                    prefixIcon: Icon(
+                        useKey ? Icons.vpn_key_outlined : Icons.lock_outline),
+                  ),
+                ),
+                if (errorMsg != null) ...[
+                  const SizedBox(height: 8),
+                  Text(errorMsg!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+              ),
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      if (!emailCtrl.text.contains('@') ||
+                          secretCtrl.text.trim().isEmpty) {
+                        setDialogState(() {
+                          errorMsg =
+                              'Ingresa un correo válido y tu verificación.';
+                        });
+                        return;
+                      }
+                      setDialogState(() {
+                        submitting = true;
+                        errorMsg = null;
+                      });
+                      final res = await WalletCloudService.recoverUsername(
+                        email: emailCtrl.text.trim(),
+                        password: useKey ? null : secretCtrl.text,
+                        recoveryKey: useKey ? secretCtrl.text.trim() : null,
+                      );
+                      if (!ctx.mounted) return;
+                      if (res.success && res.username != null) {
+                        Navigator.pop(ctx, (
+                          username: res.username!,
+                          displayName: res.displayName,
+                        ));
+                      } else {
+                        setDialogState(() {
+                          submitting = false;
+                          errorMsg = res.message;
+                        });
+                      }
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Consultar',
+                      style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (found != null && mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          title: const Text('Usuario encontrado'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (found.displayName != null && found.displayName!.isNotEmpty)
+                Text('Nombre: ${found.displayName}'),
+              const SizedBox(height: 6),
+              SelectableText(
+                'Usuario: @${found.username}',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: found.username));
+                Navigator.pop(ctx);
+                _snack('Usuario "${found.username}" copiado');
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copiar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Listo', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _openAuthDialog({required bool isRegister}) async {
+    final userCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    final displayCtrl = TextEditingController(
+      text: isRegister ? ref.read(userDisplayNameProvider) : '',
+    );
+    if (displayCtrl.text == 'Usuario') displayCtrl.clear();
+    final emailCtrl = TextEditingController();
+    bool obscure = true;
+    bool submitting = false;
+    String? errorMsg;
+
+    final result = await showDialog<
+        ({
+          bool success,
+          String message,
+          String username,
+          String? recoveryKey,
+          MyLifeOSCloudBackupMeta? myLifeOSBackup,
+        })>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: [
+              const Icon(Icons.account_circle_outlined,
+                  color: Color(0xFF00C896)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(isRegister
+                    ? 'Crear cuenta del Ecosistema'
+                    : 'Iniciar sesión (MyLifeOS + WalletAI)'),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isRegister
+                      ? 'Usa una sola cuenta para respaldar MyLifeOS y WalletAI y sincronizar ambos aplicativos.'
+                      : 'Ingresa tu usuario o correo vinculado y contraseña.',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                if (isRegister) ...[
+                  TextField(
+                    controller: displayCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre visible (opcional)',
+                      hintText: 'Ej: Joel Orbezo',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                TextField(
+                  controller: userCtrl,
+                  decoration: InputDecoration(
+                    labelText: isRegister
+                        ? 'Nombre de usuario (@)'
+                        : 'Usuario o correo',
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                ),
+                if (isRegister) ...[
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo de recuperación (opcional)',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: obscure,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    hintText: 'Mínimo 6 caracteres',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                          obscure ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () =>
+                          setDialogState(() => obscure = !obscure),
+                    ),
+                  ),
+                ),
+                if (!isRegister) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 4,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: submitting
+                            ? null
+                            : () {
+                                Navigator.pop(ctx);
+                                _openRecoverPasswordDialog();
+                              },
+                        child: const Text('¿Olvidaste contraseña?',
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                      TextButton(
+                        onPressed: submitting
+                            ? null
+                            : () {
+                                Navigator.pop(ctx);
+                                _openRecoverUsernameDialog();
+                              },
+                        child: const Text('¿Olvidaste usuario?',
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ],
+                if (errorMsg != null) ...[
+                  const SizedBox(height: 8),
+                  Text(errorMsg!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C896),
+              ),
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      final u = userCtrl.text.trim();
+                      final p = passCtrl.text;
+                      if (u.length < 3 || p.length < 6) {
+                        setDialogState(() {
+                          errorMsg =
+                              'Usuario mínimo 3 caracteres y contraseña mínimo 6.';
+                        });
+                        return;
+                      }
+                      setDialogState(() {
+                        submitting = true;
+                        errorMsg = null;
+                      });
+                      final res = await WalletCloudService.authenticate(
+                        username: u,
+                        password: p,
+                        isRegister: isRegister,
+                        displayName: displayCtrl.text.trim().isEmpty
+                            ? null
+                            : displayCtrl.text.trim(),
+                        email: emailCtrl.text.trim().isEmpty
+                            ? null
+                            : emailCtrl.text.trim(),
+                      );
+                      if (!ctx.mounted) return;
+                      if (res.success) {
+                        Navigator.pop(ctx, (
+                          success: true,
+                          message: res.message,
+                          username: res.username ?? u.toLowerCase(),
+                          recoveryKey: res.recoveryKey,
+                          myLifeOSBackup: res.myLifeOSBackup,
+                        ));
+                      } else {
+                        setDialogState(() {
+                          submitting = false;
+                          errorMsg = res.message;
+                        });
+                      }
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(isRegister ? 'Registrar' : 'Entrar',
+                      style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null || !result.success || !mounted) return;
+    await _loadState();
+    _snack('✅ ${result.message}');
+
+    if (result.recoveryKey != null && result.recoveryKey!.isNotEmpty) {
+      await _showRecoveryKeyDialog(result.recoveryKey!);
+    }
+
+    final cloudBackup = result.myLifeOSBackup;
+    if (cloudBackup != null && cloudBackup.exists && mounted) {
+      final restoreNow = await _showConfirmDialog(
+        context,
+        title: '☁️ Respaldo de MyLifeOS encontrado',
+        message:
+            'Encontramos un respaldo en tu cuenta (@${result.username}):\n\n'
+            '• Dispositivo: ${cloudBackup.deviceName ?? "Otro equipo"}\n'
+            '• Fecha: ${_formatIso(cloudBackup.updatedAt)}\n'
+            '• Tamaño: ${_formatSize(cloudBackup.sizeBytes)}'
+            '${cloudBackup.includesPhotos ? " (con fotos)" : ""}\n\n'
+            '¿Deseas restaurarlo ahora en este dispositivo?',
+        confirmLabel: 'Restaurar ahora',
+        confirmColor: const Color(0xFF00C896),
+      );
+      if (restoreNow && mounted) {
+        await _restoreFromCloud(skipConfirm: true);
+      }
+    }
+  }
+
+  Future<void> _openManageAccountDialog() async {
+    final displayCtrl = TextEditingController(
+      text: _cloudDisplayName ?? ref.read(userDisplayNameProvider),
+    );
+    final emailCtrl = TextEditingController(text: _cloudEmail ?? '');
+    final userCtrl = TextEditingController(text: _cloudUsername ?? '');
+    final userPwdCtrl = TextEditingController();
+    final curPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final regenPwdCtrl = TextEditingController();
+    bool saving = false;
+    String? errorMsg;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final usernameChanged = userCtrl.text.trim().toLowerCase() !=
+              (_cloudUsername ?? '').toLowerCase();
+          return AlertDialog(
+            backgroundColor: Theme.of(context).cardColor,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: const Row(
+              children: [
+                Icon(Icons.manage_accounts, color: Color(0xFF00C896)),
+                SizedBox(width: 8),
+                Flexible(child: Text('Perfil y Seguridad')),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Cuenta compartida con WalletAI',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: displayCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre visible',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo de recuperación (opcional)',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: userCtrl,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre de usuario (@)',
+                      prefixIcon: Icon(Icons.alternate_email),
+                    ),
+                  ),
+                  if (usernameChanged) ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: userPwdCtrl,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña actual (para cambiar @usuario)',
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00C896),
+                      ),
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (usernameChanged && userPwdCtrl.text.isEmpty) {
+                                setDialogState(() {
+                                  errorMsg =
+                                      'Ingresa tu contraseña actual para cambiar tu usuario.';
+                                });
+                                return;
+                              }
+                              setDialogState(() {
+                                saving = true;
+                                errorMsg = null;
+                              });
+                              final res =
+                                  await WalletCloudService.updateProfile(
+                                displayName: displayCtrl.text.trim(),
+                                email: emailCtrl.text.trim(),
+                                username: usernameChanged
+                                    ? userCtrl.text.trim()
+                                    : null,
+                                currentPassword:
+                                    usernameChanged ? userPwdCtrl.text : null,
+                              );
+                              if (!ctx.mounted) return;
+                              setDialogState(() => saving = false);
+                              if (res.success) {
+                                if (displayCtrl.text.trim().isNotEmpty) {
+                                  await ref
+                                      .read(userDisplayNameProvider.notifier)
+                                      .setName(displayCtrl.text.trim());
+                                }
+                                await _loadState();
+                                if (!ctx.mounted) return;
+                                Navigator.pop(ctx);
+                                _snack('✅ ${res.message}');
+                              } else {
+                                setDialogState(() => errorMsg = res.message);
+                              }
+                            },
+                      icon: const Icon(Icons.save_outlined,
+                          size: 18, color: Colors.white),
+                      label: const Text('Guardar perfil',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                  const Divider(height: 24),
+                  const Text('Cambiar contraseña',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: curPassCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Contraseña actual',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: newPassCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Nueva contraseña (mín. 6)',
+                      prefixIcon: Icon(Icons.lock_reset),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (curPassCtrl.text.isEmpty ||
+                                  newPassCtrl.text.length < 6) {
+                                setDialogState(() {
+                                  errorMsg =
+                                      'Ingresa contraseña actual y nueva (mín. 6).';
+                                });
+                                return;
+                              }
+                              setDialogState(() {
+                                saving = true;
+                                errorMsg = null;
+                              });
+                              final res =
+                                  await WalletCloudService.changePassword(
+                                currentPassword: curPassCtrl.text,
+                                newPassword: newPassCtrl.text,
+                              );
+                              if (!ctx.mounted) return;
+                              setDialogState(() => saving = false);
+                              if (res.success) {
+                                Navigator.pop(ctx);
+                                _snack('✅ ${res.message}');
+                              } else {
+                                setDialogState(() => errorMsg = res.message);
+                              }
+                            },
+                      child: const Text('Actualizar contraseña'),
+                    ),
+                  ),
+                  const Divider(height: 24),
+                  Row(
+                    children: [
+                      Icon(
+                        _cloudHasRecoveryKey
+                            ? Icons.verified_user
+                            : Icons.warning_amber,
+                        size: 18,
+                        color: _cloudHasRecoveryKey
+                            ? const Color(0xFF00C896)
+                            : const Color(0xFFFFB74D),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _cloudHasRecoveryKey
+                              ? 'Clave de recuperación activa'
+                              : 'Genera tu clave de recuperación',
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: regenPwdCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Contraseña actual para (re)generar clave',
+                      prefixIcon: Icon(Icons.vpn_key_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (regenPwdCtrl.text.isEmpty) {
+                                setDialogState(() {
+                                  errorMsg =
+                                      'Escribe tu contraseña actual para generar la clave.';
+                                });
+                                return;
+                              }
+                              setDialogState(() {
+                                saving = true;
+                                errorMsg = null;
+                              });
+                              final res = await WalletCloudService
+                                  .regenerateRecoveryKey(
+                                currentPassword: regenPwdCtrl.text,
+                              );
+                              if (!ctx.mounted) return;
+                              setDialogState(() => saving = false);
+                              if (res.success && res.recoveryKey != null) {
+                                await _loadState();
+                                if (!ctx.mounted) return;
+                                Navigator.pop(ctx);
+                                await _showRecoveryKeyDialog(res.recoveryKey!);
+                              } else {
+                                setDialogState(() => errorMsg = res.message);
+                              }
+                            },
+                      icon: const Icon(Icons.vpn_key, size: 17),
+                      label: Text(_cloudHasRecoveryKey
+                          ? 'Regenerar clave de recuperación'
+                          : 'Generar clave de recuperación ahora'),
+                    ),
+                  ),
+                  if (errorMsg != null) ...[
+                    const SizedBox(height: 8),
+                    Text(errorMsg!,
+                        style:
+                            const TextStyle(color: Colors.red, fontSize: 12)),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving ? null : () => Navigator.pop(ctx),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _uploadToCloud({bool force = false}) async {
+    final res = await ref.read(backupProvider.notifier).uploadToCloud(
+          includePhotos: _includePhotos,
+          force: force,
+        );
+    if (!mounted) return;
+
+    if (res.hasConflict && res.serverBackup != null) {
+      final b = res.serverBackup!;
+      final action = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          title: const Row(
+            children: [
+              Icon(Icons.sync_problem, color: Color(0xFFFFB74D)),
+              SizedBox(width: 8),
+              Flexible(child: Text('Conflicto entre dispositivos')),
+            ],
+          ),
+          content: Text(
+            'Otro equipo (${b.deviceName ?? "Otro celular"}) subió un respaldo más reciente el ${_formatIso(b.updatedAt)} (${_formatSize(b.sizeBytes)}).\n\n'
+            '¿Qué deseas hacer?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, 'download'),
+              child: const Text('Descargar nube'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB74D),
+              ),
+              onPressed: () => Navigator.pop(ctx, 'force'),
+              child: const Text('Sobrescribir nube',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (action == 'download') {
+        await _restoreFromCloud(skipConfirm: true);
+      } else if (action == 'force') {
+        await _uploadToCloud(force: true);
+      }
+      return;
+    }
+
+    await _refreshCloudInfo();
+    _snack(
+      res.success
+          ? '${res.message} (${_formatSize(res.sizeBytes)}${res.photosCount > 0 ? ', ${res.photosCount} fotos' : ''})'
+          : res.message,
+      isError: !res.success,
+    );
+  }
+
+  Future<void> _restoreFromCloud({bool skipConfirm = false}) async {
+    if (!skipConfirm) {
+      final ok = await _showConfirmDialog(
+        context,
+        title: '☁️ Restaurar desde la nube',
+        message:
+            'Se restaurará tu base de datos, preferencias, perfil corporal, equivalencias y fotos incluidas desde tu Cuenta del Ecosistema.\n\n'
+            'Tus datos actuales en este dispositivo serán reemplazados.',
+        confirmLabel: '¡Restaurar ahora!',
+        confirmColor: Colors.red,
+        isDestructive: true,
+      );
+      if (!ok || !mounted) return;
+    }
+
+    final result = await ref.read(backupProvider.notifier).restoreFromCloud();
+    if (!mounted) return;
+    if (result is RestoreSuccess) {
+      _snack(
+        '✅ Restaurado (${result.prefsRestored} ajustes'
+        '${result.photosRestored > 0 ? ', ${result.photosRestored} fotos' : ''}). Reinicia la app para aplicar todos los cambios.',
+      );
+    } else if (result is BackupFailure) {
+      _snack('❌ ${result.message}', isError: true);
+    }
+  }
+
+  Future<void> _toggleAutoBackup(bool enabled) async {
+    if (enabled &&
+        (_autoBackupDest == 'cloud' || _autoBackupDest == 'both') &&
+        _cloudUsername == null) {
+      _snack(
+        'Inicia sesión primero con tu Cuenta del Ecosistema o cambia el destino a Local.',
+        isError: true,
+      );
+      return;
+    }
+    if (enabled) {
+      await AutoBackupService.enable(
+        destination: _autoBackupDest,
+        includePhotos: _includePhotos,
+      );
+      _snack('✅ Backup automático diario activado ($_autoBackupDest)');
+    } else {
+      await AutoBackupService.disable();
+      _snack('Backup automático desactivado');
+    }
+    await _loadState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final backup = widget.backup;
+    final isDark = widget.isDark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final muted = isDark ? Colors.white54 : const Color(0xFF4A7A65);
+
+    return _SectionCard(
+      isDark: isDark,
+      icon: Icons.cloud_sync_outlined,
+      title: 'Cuenta & Backup en Nube',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Cuenta única del Ecosistema ──────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00C896).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00C896).withValues(alpha: 0.25),
+              ),
+            ),
+            child: _cloudUsername == null
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cuenta única (MyLifeOS + WalletAI)',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Inicia sesión para respaldar tu despensa, recetas, armario, perfil y preferencias en la nube.',
+                        style: TextStyle(color: muted, fontSize: 11.5),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00C896),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onPressed: () =>
+                                  _openAuthDialog(isRegister: false),
+                              icon: const Icon(Icons.login,
+                                  size: 16, color: Colors.white),
+                              label: const Text('Entrar',
+                                  style: TextStyle(color: Colors.white)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                side:
+                                    const BorderSide(color: Color(0xFF00C896)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              onPressed: () =>
+                                  _openAuthDialog(isRegister: true),
+                              icon: const Icon(Icons.person_add_alt_1,
+                                  size: 16, color: Color(0xFF00C896)),
+                              label: const Text('Crear cuenta',
+                                  style: TextStyle(color: Color(0xFF00C896))),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Center(
+                        child: TextButton(
+                          onPressed: _openRecoverPasswordDialog,
+                          child: const Text(
+                            '¿Olvidaste tu contraseña o usuario?',
+                            style: TextStyle(
+                                fontSize: 11.5, color: Color(0xFFFFB74D)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor:
+                                const Color(0xFF00C896).withValues(alpha: 0.2),
+                            child: const Icon(Icons.verified_user,
+                                color: Color(0xFF00C896), size: 18),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (_cloudDisplayName != null &&
+                                          _cloudDisplayName!.isNotEmpty)
+                                      ? _cloudDisplayName!
+                                      : '@$_cloudUsername',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  '@$_cloudUsername'
+                                  '${(_cloudEmail != null && _cloudEmail!.isNotEmpty) ? ' · $_cloudEmail' : ''}',
+                                  style:
+                                      TextStyle(color: muted, fontSize: 11.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.manage_accounts_outlined,
+                                color: Color(0xFF00C896), size: 20),
+                            tooltip: 'Editar perfil y seguridad',
+                            onPressed: _openManageAccountDialog,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.logout,
+                                color: Colors.redAccent, size: 19),
+                            tooltip: 'Cerrar sesión',
+                            onPressed: () async {
+                              await WalletCloudService.signOut();
+                              await _loadState();
+                              _snack('Sesión cerrada');
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _loadingCloud
+                            ? 'Consultando respaldo en la nube...'
+                            : (_cloudBackupMeta?.exists == true
+                                ? '☁️ Último respaldo nube: ${_formatIso(_cloudBackupMeta!.updatedAt)} '
+                                    '(${_formatSize(_cloudBackupMeta!.sizeBytes)}'
+                                    '${_cloudBackupMeta!.includesPhotos ? ', con fotos' : ''})'
+                                : 'Sin respaldo de MyLifeOS subido aún'),
+                        style: const TextStyle(
+                          color: Color(0xFF00C896),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (!_cloudHasRecoveryKey) ...[
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: _openManageAccountDialog,
+                          child: const Text(
+                            '⚠️ Recomendado: genera tu clave de recuperación en Perfil y Seguridad →',
+                            style: TextStyle(
+                              color: Color(0xFFFFB74D),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Switch incluir fotos del Armario y FoodCoach ─────────────────
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Incluir fotos (Armario / FoodCoach)',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Respaldo V2 incluye DB + preferencias + fotos opcionales',
+              style: TextStyle(color: muted, fontSize: 11),
+            ),
+            value: _includePhotos,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: (v) async {
+              setState(() => _includePhotos = v);
+              await AutoBackupService.setIncludePhotos(v);
+            },
+          ),
+
+          if (_cloudUsername != null) ...[
+            const SizedBox(height: 6),
+            _BackupActionTile(
+              icon: Icons.cloud_upload_outlined,
+              label: 'Subir copia a la nube ahora',
+              subtitle:
+                  'DB (${_formatSize(backup.dbSizeBytes)}) + ajustes${_includePhotos ? ' + fotos' : ''}',
+              color: const Color(0xFF00C896),
+              isLoading: backup.status == BackupStatus.exportingInProgress,
+              onTap: () => _uploadToCloud(),
+            ),
+            const SizedBox(height: 8),
+            _BackupActionTile(
+              icon: Icons.cloud_download_outlined,
+              label: 'Restaurar desde la nube',
+              subtitle: _cloudBackupMeta?.exists == true
+                  ? 'Equipo: ${_cloudBackupMeta!.deviceName ?? "Otro equipo"}'
+                  : 'Disponible al subir tu primer respaldo',
+              color: const Color(0xFF42A5F5),
+              isLoading: backup.status == BackupStatus.importingInProgress,
+              onTap: _cloudBackupMeta?.exists == true
+                  ? () => _restoreFromCloud()
+                  : () => _snack('Aún no tienes una copia en la nube.',
+                      isError: true),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+
+          // ── Backup automático diario (WorkManager real) ──────────────────
+          SwitchListTile.adaptive(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Backup automático diario (24h)',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              _autoBackupEnabled
+                  ? 'Activo · Destino: ${_autoBackupDest == 'cloud' ? 'Nube' : _autoBackupDest == 'local' ? 'Local' : 'Nube + Local'}'
+                      '${_autoLastRunIso != null ? '\nÚltimo: ${_formatIso(_autoLastRunIso)} (${_autoLastStatus ?? "OK"})' : ''}'
+                  : 'Desactivado · Se ejecuta en segundo plano cada 24h',
+              style: TextStyle(color: muted, fontSize: 11),
+            ),
+            value: _autoBackupEnabled,
+            activeTrackColor: const Color(0xFF00C896),
+            onChanged: _toggleAutoBackup,
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            initialValue: _autoBackupDest,
+            decoration: InputDecoration(
+              labelText: 'Destino del backup automático',
+              isDense: true,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            items: const [
+              DropdownMenuItem(
+                  value: 'cloud', child: Text('Nube (Cuenta Ecosistema)')),
+              DropdownMenuItem(
+                  value: 'local', child: Text('Local (en el dispositivo)')),
+              DropdownMenuItem(value: 'both', child: Text('Nube + Local')),
+            ],
+            onChanged: (val) async {
+              if (val == null) return;
+              setState(() => _autoBackupDest = val);
+              await AutoBackupService.setDestination(val);
+            },
+          ),
+
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+
+          // ── Backup local archivo .mylifeos_backup ────────────────────────
+          _BackupActionTile(
+            icon: Icons.file_upload_outlined,
+            label: 'Exportar archivo local',
+            subtitle: 'Crear .mylifeos_backup V2 (DB + ajustes)',
+            color: const Color(0xFF00C896),
+            isLoading: backup.status == BackupStatus.exportingInProgress,
+            onTap: () => _exportBackup(context),
+          ),
+          const SizedBox(height: 8),
+          _BackupActionTile(
+            icon: Icons.file_download_outlined,
+            label: 'Restaurar archivo local',
+            subtitle: 'Seleccionar archivo .mylifeos_backup',
+            color: const Color(0xFFFFB74D),
+            isLoading: backup.status == BackupStatus.importingInProgress,
+            onTap: () => _importBackup(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportBackup(BuildContext context) async {
     final ok = await _showConfirmDialog(
       context,
       title: '¿Exportar backup?',
       message:
-          'Se creará un archivo con todos tus datos. Guárdalo en un lugar seguro.',
+          'Se creará un archivo V2 con tu base de datos, perfil, preferencias${_includePhotos ? ' y fotos' : ''}.',
       confirmLabel: 'Exportar',
       confirmColor: const Color(0xFF00C896),
     );
     if (!ok) return;
 
-    final result = await ref.read(backupProvider.notifier).exportBackup();
-    if (!context.mounted) return;
+    final result = await ref
+        .read(backupProvider.notifier)
+        .exportBackup(includePhotos: _includePhotos);
+    if (!mounted) return;
 
     if (result is BackupSuccess) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Backup exportado correctamente'),
-            backgroundColor: Color(0xFF00C896),
-          ),
-        );
-      }
+      _snack(
+          '✅ Backup exportado (${_formatSize(result.sizeBytes)}, ${result.prefsCount} ajustes)');
     } else if (result is BackupFailure) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${result.message}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _snack('❌ ${result.message}', isError: true);
     }
   }
 
-  Future<void> _importBackup(BuildContext context, WidgetRef ref) async {
+  Future<void> _importBackup(BuildContext context) async {
     final step1 = await _showConfirmDialog(
       context,
       title: '⚠️ Restaurar backup',
@@ -1099,26 +2377,12 @@ class _BackupSection extends StatelessWidget {
     final backupResult = await ref
         .read(backupProvider.notifier)
         .importBackup(result.files.single.path!);
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (backupResult is RestoreSuccess) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ ¡Restauración exitosa! Reinicia la app.'),
-            backgroundColor: Color(0xFF00C896),
-          ),
-        );
-      }
+      _snack('✅ ¡Restauración exitosa! Reinicia la app para aplicar cambios.');
     } else if (backupResult is BackupFailure) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ ${backupResult.message}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _snack('❌ ${backupResult.message}', isError: true);
     }
   }
 
@@ -1130,7 +2394,7 @@ class _BackupSection extends StatelessWidget {
     required Color confirmColor,
     bool isDestructive = false,
   }) async {
-    final fg = isDark ? Colors.white : const Color(0xFF0A1F16);
+    final fg = widget.isDark ? Colors.white : const Color(0xFF0A1F16);
     final result = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(

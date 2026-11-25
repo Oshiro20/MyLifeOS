@@ -709,9 +709,16 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
         ),
       ));
 
-      listChildren.addAll(itemsInCat.map((i) => _IngredientTile(
-          ingredient: i,
-          onEdit: () => _showEditDialog(context, ref, i),
+      final customEquivs = ref.watch(ingredientEquivalencesProvider);
+      listChildren.addAll(itemsInCat.map((i) {
+        final normKey = IngredientMatcher.normalizeText(i.name);
+        final gramsPerUnit = customEquivs[normKey] ??
+            _extractNetContentFromName(i.name) ??
+            IngredientUnitNormalizer.defaultGramsPerUnit(i.name);
+        return _IngredientTile(
+            ingredient: i,
+            gramsPerUnit: gramsPerUnit,
+            onEdit: () => _showEditDialog(context, ref, i),
           onConsumeInFoodCoach: () async {
             final nextQty = i.quantity - 1;
             if (nextQty <= 0.01) {
@@ -749,7 +756,8 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
                   ),
                 );
           },
-          onDelete: () => _confirmDelete(context, ref, i.id, i.name))));
+          onDelete: () => _confirmDelete(context, ref, i.id, i.name));
+      }));
     }
 
     if (filteredIngredients.isEmpty) {
@@ -924,16 +932,111 @@ class _InventoryTabState extends ConsumerState<InventoryTab> with AppFeedback {
   }
 }
 
+// ── Utilidades de formato para envases y contenido neto ──────────────────────
+
+const Set<MeasurementUnit> _kContainerUnits = {
+  MeasurementUnit.lata,
+  MeasurementUnit.botella,
+  MeasurementUnit.paquete,
+  MeasurementUnit.caja,
+  MeasurementUnit.sobre,
+  MeasurementUnit.bolsa,
+};
+
+bool _isContainerUnit(MeasurementUnit unit) => _kContainerUnits.contains(unit);
+
+double? _extractNetContentFromName(String name) {
+  final m = RegExp(
+    r'(\d+(?:[.,]\d+)?)\s*(kg|g|gr|grs|ml|l|lt|lts)\b',
+    caseSensitive: false,
+  ).firstMatch(name);
+  if (m == null) return null;
+  final raw = double.tryParse(m.group(1)!.replaceAll(',', '.'));
+  if (raw == null || raw <= 0) return null;
+  final u = m.group(2)!.toLowerCase();
+  if (u == 'kg' || u == 'l' || u == 'lt' || u == 'lts') {
+    return raw * 1000.0;
+  }
+  return raw;
+}
+
+String _pluralContainerUnit(String unitLabel, int count) {
+  if (count == 1) return unitLabel;
+  switch (unitLabel.toLowerCase()) {
+    case 'lata':
+      return 'latas';
+    case 'botella':
+      return 'botellas';
+    case 'paquete':
+      return 'paquetes';
+    case 'caja':
+      return 'cajas';
+    case 'sobre':
+      return 'sobres';
+    case 'bolsa':
+      return 'bolsas';
+    default:
+      return unitLabel;
+  }
+}
+
+bool _isLiquidContainerItem(String name, String unitLabel) {
+  final low = name.toLowerCase();
+  return unitLabel == 'botella' ||
+      low.contains('aceite') ||
+      low.contains('jugo') ||
+      low.contains('agua') ||
+      low.contains('gaseosa') ||
+      low.contains('vinagre') ||
+      low.contains('sillao') ||
+      low.contains('yogurt') ||
+      low.contains('yogur');
+}
+
+String _formatInventoryStock(
+  InventoryIngredient ingredient,
+  double? gramsPerUnit,
+) {
+  final qty = ingredient.quantity;
+  final parsedUnit = MeasurementUnit.fromString(ingredient.unit);
+
+  String fmtNum(double v) => (v - v.roundToDouble()).abs() < 0.01
+      ? v.round().toString()
+      : double.parse(v.toStringAsFixed(2)).toString();
+
+  if (_isContainerUnit(parsedUnit) &&
+      gramsPerUnit != null &&
+      gramsPerUnit > 0) {
+    final massUnit =
+        _isLiquidContainerItem(ingredient.name, ingredient.unit) ? 'ml' : 'g';
+    final whole = qty.floor();
+    final rem = qty - whole;
+    if (rem > 0.03 && rem < 0.97) {
+      final openAmount = (rem * gramsPerUnit).round();
+      if (whole > 0) {
+        return '$whole ${_pluralContainerUnit(ingredient.unit, whole)} + 1 abierta (~$openAmount $massUnit)';
+      }
+      return '1 abierta (~$openAmount $massUnit de ${gramsPerUnit.round()} $massUnit)';
+    }
+    final rounded = qty.round();
+    return '$rounded ${_pluralContainerUnit(ingredient.unit, rounded)} (${gramsPerUnit.round()} $massUnit c/u)';
+  }
+
+  return '${fmtNum(qty)} ${ingredient.unit}';
+}
+
 // ── Sub-widgets ──────────────────────────────────────────────────────────────
 
 class _IngredientTile extends StatelessWidget {
   final InventoryIngredient ingredient;
+  final double? gramsPerUnit;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final Future<void> Function(double factor)? onQuickLevel;
   final Future<void> Function()? onConsumeInFoodCoach;
   const _IngredientTile({
     required this.ingredient,
+    this.gramsPerUnit,
     required this.onDelete,
     required this.onEdit,
     this.onQuickLevel,
@@ -995,7 +1098,7 @@ class _IngredientTile extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600)),
           subtitle: Text(
-            '${ingredient.subCategory != null ? "${ingredient.subCategory} • " : ""}${ingredient.quantity} ${ingredient.unit}'
+            '${ingredient.subCategory != null ? "${ingredient.subCategory} • " : ""}${_formatInventoryStock(ingredient, gramsPerUnit)}'
             '${ingredient.expirationDate != null ? " · cad. ${_fmt(ingredient.expirationDate!)}" : ""}',
             style: TextStyle(color: expiryColor, fontSize: 12),
           ),
@@ -1217,6 +1320,7 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
   final _nameCtrl = TextEditingController();
   final _qtyCtrl = TextEditingController(text: '1');
   final _subCategoryCtrl = TextEditingController();
+  final _netContentCtrl = TextEditingController();
   MeasurementUnit _unit = MeasurementUnit.unidades;
   String _primaryCategory = 'Otros';
   String _preparation =
@@ -1316,9 +1420,13 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       final customMap = ref.read(ingredientEquivalencesProvider);
       final key = IngredientMatcher.normalizeText(i.name);
       final gPerU = customMap[key] ??
+          _extractNetContentFromName(i.name) ??
           IngredientUnitNormalizer.defaultGramsPerUnit(i.name);
       if (gPerU != null && gPerU > 0) {
         _unitsPerKg = (1000.0 / gPerU).round().clamp(1, 50);
+        if (_isContainerUnit(_unit)) {
+          _netContentCtrl.text = gPerU.round().toString();
+        }
       }
     }
   }
@@ -1558,6 +1666,16 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
                       ),
                   ],
                 ),
+                if (_isContainerUnit(_unit)) ...[
+                  const SizedBox(height: 8),
+                  _field(
+                    _netContentCtrl,
+                    'Contenido por ${_unit.label} (g o ml, ej: 390)',
+                    Icons.inventory_2_outlined,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ],
                 if (_unit == MeasurementUnit.kg ||
                     _unit == MeasurementUnit.g) ...[
                   const SizedBox(height: 8),
@@ -1792,8 +1910,9 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     final suggestion = IngredientDetector.detect(val);
     final customMap = ref.read(ingredientEquivalencesProvider);
     final normKey = IngredientMatcher.normalizeText(val);
-    final gPerU =
-        customMap[normKey] ?? IngredientUnitNormalizer.defaultGramsPerUnit(val);
+    final gPerU = customMap[normKey] ??
+        _extractNetContentFromName(val) ??
+        IngredientUnitNormalizer.defaultGramsPerUnit(val);
 
     setState(() {
       if (suggestion.primaryCategory != null) {
@@ -1813,6 +1932,9 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
       }
       if (gPerU != null && gPerU > 0) {
         _unitsPerKg = (1000.0 / gPerU).round().clamp(1, 50);
+        if (_isContainerUnit(_unit) && _netContentCtrl.text.trim().isEmpty) {
+          _netContentCtrl.text = gPerU.round().toString();
+        }
       }
       _autoDetected = suggestion.primaryCategory != null ||
           suggestion.suggestedPreparation != null;
@@ -2051,7 +2173,13 @@ class _AddIngredientSheetState extends ConsumerState<_AddIngredientSheet> {
     setState(() => _saving = true);
     try {
       final cleanName = _nameCtrl.text.trim();
-      if ((_unit == MeasurementUnit.kg || _unit == MeasurementUnit.g) &&
+      final parsedNet =
+          double.tryParse(_netContentCtrl.text.trim().replaceAll(',', '.'));
+      if (_isContainerUnit(_unit) && parsedNet != null && parsedNet > 0) {
+        await ref
+            .read(ingredientEquivalencesProvider.notifier)
+            .setGramsPerUnit(cleanName, parsedNet);
+      } else if ((_unit == MeasurementUnit.kg || _unit == MeasurementUnit.g) &&
           _unitsPerKg != null &&
           _unitsPerKg! > 0) {
         await ref
